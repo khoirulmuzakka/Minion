@@ -7,4 +7,5 @@ I plan to include the following alghorithm :
   - Broyden–Fletcher–Goldfarb–Shanno (BFGS) algorithm
   - Levenberg–Marquardt (LM) algorithm
   - Nelder-Mead Simplex 
+  
  and provide a universal application programming interface (API) that can be use by anyone easily. 
