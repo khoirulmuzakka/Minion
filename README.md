@@ -1,6 +1,6 @@
 # Minion
 Minion is an optimization program written in c++ focusing on derivative-free methods.
-I plan to include the following alghorithm :
+We plan to include the following alghorithm :
   - Particle Swarm Optimization (PSO)
   - Genetic Algorithm (GA)
   - Baysesian Optimization (BO)
