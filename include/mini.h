@@ -13,10 +13,6 @@
 
 using std::cout, std::endl;
 
-
-//custom data structure to store (x, f(x))
-typedef std::map<arma::vec, double> evalpoint; 
-
 //error handling class when the subclass implement pure virtual functions wrongly.
 class NotImplementedError:public std::logic_error{
     public :
@@ -24,15 +20,28 @@ class NotImplementedError:public std::logic_error{
 };
 
 
+//custom data structure to store (x, f(x))
+typedef std::pair<arma::vec, double> evalpoint; 
+
+/**
+ * @brief struct to hold statistics during fitting processdownload film gratis
+ * */
+struct Statistics{
+            int numEval=0; //variable to store the number of function evaluation
+            int numIter=0; // variable to store the number of iteration
+            std::vector<double> min_point; //variable to store the minimum value
+            std::vector<evalpoint> history; //To store the function evaluation in each step.
+        }; 
+
 /**
  * @brief Logging class
  * @
  */
 class Logging {
-    private :
+    protected :
         int logLevel; 
         bool isTxt=true;
-        std::ofstream& logfile;
+        std::ofstream* logfile;
 
     public :
         const int logLevelInfo = 0; //everything is printed
@@ -40,50 +49,45 @@ class Logging {
         const int logLevelError = 2; //only error is printed
     
     public:
-        Logging(std::string logName, bool exportTxt= true){
-            logLevel = logLevelInfo;
-            isTxt = exportTxt;
-            if (isTxt==true){
-                logfile.open("log/"+logName+".txt");
-            };
-        };
 
+        /**
+         * @brief class contructor. 
+         * 
+         */
+        Logging(std::string logName, bool exportTxt= true);
+
+        /**
+         * @brief Destructor. Do some clean up here
+         */
         ~Logging(){
-            logfile.close();
+            logfile->close();
         };
 
         void setLogLevel(int logLevel){
             logLevel=logLevel;
         };
 
-        virtual void inform (std::string message){
-            if (logLevel == logLevelInfo){
-                std::cout<< "[INFO] " << message << std::endl;
-            };
-            if (isTxt==true){
-                logfile << "[INFO] " << message << "/n";
-            };
+        /**
+         * @brief function to give information on fitting process user 
+         */
+        virtual void info (std::string message);
+
+        /**
+         * @brief function to warn user if potentially uniexpected behaviour occurs. 
+         */
+        virtual void warn(std::string message);
+
+        /**
+         * @brief function to give error message to the user if error occurs. 
+         */
+        virtual void error(std::string message);
+
+        /**
+         * @brief Function to give out statistics of fit. 
+         */
+        virtual void stat (Statistics*){
+            throw NotImplementedError("Statistics has not yet been implemented");
         };
-
-        virtual void warn(std::string message){
-            if (logLevel <= logLevelWarning){
-                std::cout<< "[WARNING] " << message << std::endl;
-            };
-            if (isTxt==true){
-                logfile << "[WARNING] " << message << "/n";
-            };
-
-        };
-
-        virtual void error(std::string message){
-            if (logLevel <= logLevelError){
-                std::cout<< "[ERROR] " << message << std::endl;
-            };
-            if (isTxt==true){
-                logfile << "[ERROR] " << message << "/n";
-            };
-
-        };   
 
 };
 
@@ -112,21 +116,10 @@ class MinimizerBase {
         double tolSize=0; //variable to store the tolerance parameter        
         bool convStatus= false; //flag of convergence status
         bool storePoint=true; //flag to set whether or not evaluation history is kept.
-
-        /**
-        * @brief Struct for statistic purpose only
-        */
-        struct Statistics{
-            int numEval=0; //variable to store the number of function evaluation
-            int numIter=0; // variable to store the number of iteration
-            std::vector<double> min_point; //variable to store the minimum value
-            std::unique_ptr<arma::Col<evalpoint>> history(new arma::Col<evalpoint>) ; //To store the function evaluation in each step.
-        } stats; 
+        Statistics* stats (new Statistics);//variable to hold statistics        
 
     public:
         static int instanceCount; //static variable to count the number of instances created. Useful for creating multiple logs file
-
-
 
     public :
 
