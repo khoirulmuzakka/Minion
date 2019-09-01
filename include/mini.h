@@ -7,8 +7,8 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
-#include <chrono>
-#include <ctime>  
+
+ 
 
 
 using std::cout, std::endl;
@@ -18,20 +18,6 @@ class NotImplementedError:public std::logic_error{
     public :
         NotImplementedError (std::string message) : std::logic_error(message) {};
 };
-
-
-//custom data structure to store (x, f(x))
-typedef std::pair<arma::vec, double> evalpoint; 
-
-/**
- * @brief struct to hold statistics during fitting processdownload film gratis
- * */
-struct Statistics{
-            int numEval=0; //variable to store the number of function evaluation
-            int numIter=0; // variable to store the number of iteration
-            std::vector<double> min_point; //variable to store the minimum value
-            std::vector<evalpoint> history; //To store the function evaluation in each step.
-        }; 
 
 /**
  * @brief Logging class
@@ -110,17 +96,30 @@ class FunctionBase {
         };
 };
 
+//custom data structure to store (x, f(x))
+typedef std::pair<arma::vec, double> evalpoint; 
+
+/**
+ * @brief struct to hold statistics during fitting processdownload film gratis
+ * */
+struct Statistics{
+            int numEval=0; //variable to store the number of function evaluation
+            int numIter=0; // variable to store the number of iteration
+            arma::vec min_point; //variable to store the minimum value
+            std::vector<evalpoint> history; //To store the function evaluation in each step.
+        }; 
+
+
 class MinimizerBase {
     protected : 
-        arma::vec point ;// variable to store a point during function evaluation        
-        double tolSize=0; //variable to store the tolerance parameter        
-        bool convStatus= false; //flag of convergence status
-        bool storePoint=true; //flag to set whether or not evaluation history is kept.
-        Statistics* stats (new Statistics);//variable to hold statistics        
+        std::pair<arma::vec, std::vector<double>> init; //pair of initial point and bounds.
+        bool storePoint=true; //flag to set whether or not evaluation history is kept.    
+        bool convStatus= false; //flag of convergence status        
+        bool hasInit = false;   //flag to see if initial point has been chosen or not.
 
     public:
         static int instanceCount; //static variable to count the number of instances created. Useful for creating multiple logs file
-
+        Statistics* stats = new Statistics ;//pointer to variable to hold statistics.  
     public :
 
         /**
@@ -135,40 +134,33 @@ class MinimizerBase {
         /**
         *@brief Destructor. Do some clean up here.
         */
-        virtual ~MinimizerBase(){};
+        virtual ~MinimizerBase(){
+            delete stats;
+        };
 
 
         /**
         * @brief Set point of evaluation
-        * @param input point in the form of std::vector<double>
+        * @param A pair of input point (arma::vec) and a bound (std::vector<double>)
         */
-        void setPoint(arma::vec point){
-            point = point;
-        };
-
-        /** 
-        * @brief Pure virtual function to update a point during minimization procedure
-        * @param 
-        */
-        virtual void updatePoint()=0;
+        void setInitPoint(const std::pair<arma::vec, std::vector<double>> initial);
 
         /**
         *@brief Pure virtual function to find the global mnimimum. Please update the struct Statistics 
-        * along the way.
+        * along the way. Make sure that hasInit flag is true.
         * @param A Pointer to FunctionBase class. We use pointer here because we need polymorphism.
         */
         virtual void minimize(FunctionBase* func)=0; //
 
         /**
-        * @brief Set tolerance size to calculate uncertainty.
-        * @param Desired value for tolerance size
-        */
-        void setTolSize (double tol){
-            if (tolSize==0) {
-                throw NotImplementedError("tolSize has not been provided, set tolSize first");}
-            else tolSize=tol;
+         * @brief Another version of Minimize function
+         * @param Pointer to the function and initial point. 
+         */
+        virtual void minimize(FunctionBase* func, std::pair<arma::vec, std::vector<double>> initial ){
+            setInitPoint(initial);
+            minimize(func);
         };
-        
+
         /**
         * @brief method to set whether evaluation history is kept or not
         */
@@ -177,6 +169,39 @@ class MinimizerBase {
         };
 };
 
+/** 
+ * @brief Pipeline class to chain multiple minimizer
+ */
+class Pipeline : public MinimizerBase{
+    private :
+        std::vector<MinimizerBase*> pipe;//vector to store minimizers.
+
+    public:
+        /** 
+         * @brief Default contructor 
+         */
+        Pipeline(){};
+
+        /**
+         * @brief destructor
+         */
+        ~Pipeline(){};
+
+
+        /** 
+         * @brief function to add minimizer algorithm
+         */
+        void add_minimizer (MinimizerBase* minimizer){
+            pipe.push_back(minimizer);       
+        };
+
+        /**
+         * @brief Minimize function to find the minimum. 
+         * @param Pointer to FunctionBase-inherited object. 
+         */
+        void minimize(FunctionBase* fun){
+        };
+};
 
 
 
