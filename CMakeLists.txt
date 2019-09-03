@@ -6,3 +6,10 @@ set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_BUILD_TYPE DEBUG)
 
 include_directories( ./include)
+file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
+
+#compile the Minion lib
+add_library(minion STATIC ${LIB_SOURCE_FILES})
+target_link_libraries(minion armadillo)
+set_target_properties(minion PROPERTIES ARCHIVE_OUTPUT_DIRECTORY  ./lib)
+

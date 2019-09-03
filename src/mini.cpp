@@ -37,26 +37,25 @@ void Logging::error(std::string message){
 
         }; 
 
-void MinimizerBase::setInitPoint(const std::pair<arma::vec, std::vector<double>> initial){
+void MinimizerBase::setInitPoint( arma::vec point, std::vector<std::vector<double>> bou) {
+            assert (point.size()==dim);
+            assert (bou.size()== dim);
+            init = point;
+            bound = bou;
             hasInit = true;
-            if (initial.second.size()!=2){
-                std::cout << "Invalid bounds"<< std::endl;
-                hasInit = false;
-            };
-            init.first = initial.first;
-            init.second= initial.second;
         };
 
-
-void Pipeline::minimize(FunctionBase* func){
+void Pipeline::minimize (double (*func)(arma::vec p) ){
     for (int i=0; i<pipe.size(); i++){
-        if (i==0) pipe[i]->setInitPoint(init); //set init point to that of Pipeline.
-        if (i>0)  pipe[i]->setInitPoint( {(pipe[i-1]->stats)->min_point, init.second} );//set init to the last minimum
+        if (i==0) pipe[i]->setInitPoint(init, bound); //set init point to that of Pipeline.
+        if (i>0)  pipe[i]->setInitPoint( (pipe[i-1]->stats)->min_point, bound);//set init to the last minimum
         pipe[i]->minimize(func);
         if (storePoint==true){
             for (int j=0; j < ((pipe[i]->stats)->history).size(); j++){
                 (stats->history).push_back( ((pipe[i]->stats)->history)[j] );
             }; //store all history
-    };    
+        };    
+    };
+    hasMinimize = true;
 };
 
