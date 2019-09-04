@@ -6,13 +6,10 @@
 #include <random>
 
 
-typedef arma::vec swarmPos; //a vector of parameters. Or a Point in the parameter space.
-typedef arma::Col<swarmPos> flock; //A collection of points.
+typedef std::vector<double> swarm; //a vector of parameters. Or a Point in the parameter space.
+typedef std::vector<swarm> flock; //A collection of points.
 
-double randomVal (double low, double high, int precision=100){
-    double res = (high-low)*((std::rand() % precision) +1) / precision + low;
-    return res;
-};
+double randomVal (double low, double high, int precision=100);
 
 class PSO : public MinimizerBase{
     private :
@@ -21,7 +18,7 @@ class PSO : public MinimizerBase{
         std::string convMeth = "Iteration"; //Another option is by changes of gbest
         int maxIter = 2000; // the maximum number of iteration
         flock PBest; //a clollcetion (in the form of vector) of PBest 
-        swarmPos GBest;      
+        swarm GBest;      
 
 
     private :
@@ -30,35 +27,29 @@ class PSO : public MinimizerBase{
          * @params swarm size, bounds of the parameter space
          * @return a collection of swarm positions. 
          */
-        flock spreadSwarm(std::vector<std::vector<double>> boun);
+        flock spreadSwarm(const edge& boun);
 
         /**
          * @brief Function to evaluate a function for a flock
          * @params A flock and functions that need to be evaluated
          * @return a vector of size f.size() containing the results of evaluation
          */
-        arma::vec evaluation (flock f, double (*func) (arma::vec) );
-
-        /**
-         * @brief Override the setInitPoint function. Basically, take the bounds, and then spread the swarms.
-         */
-        virtual void setInitPoint( arma::vec point, std::vector<std::vector<double>> bou) override;
-
+        std::vector<double> evaluation (const flock& f, double (*func) (swarm) );
 
         /**
          * @brief function to update GBest, given the PBest flock.
          */
-        swarmPos updateGBest (flock PBest, double (*func) (arma::vec) );
+        swarm updateGBest (const flock& PBest, double (*func) (swarm) );
 
         /**
          * @brief function to update GBest
          */
-        flock updatePBest(flock f, flock PrevPBest,  double (*func) (arma::vec));
+        flock updatePBest(const flock& f, const flock& PrevPBest,  double (*func) (swarm));
 
         /**
          * @brief function to update the flock
          */
-        flock updateFlock(flock current, flock PBest, swarmPos GBest);
+        flock updateFlock(const flock& current, const flock& PBest, const swarm& GBest);
 
     public :
 
@@ -66,9 +57,16 @@ class PSO : public MinimizerBase{
          * @brief Constructor
          */
         PSO (int dimension, int swarmsize ): MinimizerBase(dimension), swarmSize(swarmsize) {
-            PBest.set_size(swarmsize);
-            GBest.set_size(dim);
+            PBest.resize(swarmsize);
+            GBest.resize(dim);
+            std::cout << "PSO object has been instantiated"<<std::endl;
         };
+
+        /**
+         * @brief Override the setInitPoint function. Basically, take the bounds, and then spread the swarms.
+         */
+        virtual void setInitPoint( const swarm& point, const edge& bou) override;
+
 
         /**
          * @brief function to set maximum iteration
@@ -86,7 +84,7 @@ class PSO : public MinimizerBase{
         /** 
          * @brief Self explanatory
          */
-        void minimize( double (*func) (arma::vec) ) override;       
+        void minimize( double (*func) (swarm) ) override;       
 
 };
 

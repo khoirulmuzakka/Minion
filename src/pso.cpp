@@ -1,74 +1,107 @@
 #include "pso.h"
+#include <algorithm>
 
-flock PSO::spreadSwarm(std::vector<std::vector<double>> boun){
-            flock f (dim);
-            for (int i=0; i<dim; i++){
-                f[i].set_size(boun.size());
-                for (int j=0; j<boun.size(); j++){
-                    f[i][j] = randomVal(boun[j][0], boun[j][1]);
+double randomVal (double low, double high, int precision=100){
+    double res;
+    res = ((high-low)*( (std::rand() % precision) +1 ) / precision ) + low;
+    return res;
+};
+
+void printPoint (std::vector<double> p){
+    std::cout << "the Minimum is [";
+    for (int i =0; i<p.size(); i++){
+        std::cout <<" "<<p[i]<<" ";
+    };
+    std::cout << "]"<< std::endl;
+};
+
+flock PSO::spreadSwarm(const edge& boun){
+            assert (boun.size() == dim);
+            flock f (swarmSize);
+            for (int i=0; i<swarmSize; i++){
+                f[i].resize(dim);
+                for (int j=0; j<dim; j++){
+                    (f[i])[j] = randomVal ( boun[j].first, boun[j].second);
                 };
             };
             hasInit = true;
             return f;
         };
 
-arma::vec PSO::evaluation (flock f, double (*func) (arma::vec) ){  
-            arma::vec eval(f.size());          
-            for (int i=0; i<f.size(); i++){
+std::vector<double> PSO::evaluation (const flock& f, double (*func) (swarm) ){ 
+            assert (f.size()== swarmSize); 
+            std::vector<double> eval(swarmSize);          
+            for (int i=0; i<swarmSize; i++){
                 eval[i] = func(f[i]);
                 (stats->numEval)++;
             };
             return eval;
         };
 
-void PSO::setInitPoint( arma::vec point, std::vector<std::vector<double>> bou){
+void PSO::setInitPoint( const swarm& point, const edge& bou){
     bound=bou;
     spreadSwarm(bou);
     hasInit = true;
 };
 
-swarmPos PSO::updateGBest (flock PBest, double (*func) (arma::vec) ){ 
-            arma::vec evals(swarmSize);
+swarm PSO::updateGBest (const flock& PBest, double (*func) (swarm) ){ 
+            std::vector<double> evals(swarmSize);
             evals = evaluation (PBest, func);
-            int max_ind = evals.index_min();
-            (stats->history).push_back({PBest[max_ind], evals[max_ind]}); // The gbest is stored in the stats
+            int min_ind = std::min_element(evals.begin(), evals.end())-evals.begin();
+            if (storePoint==true) 
+                (stats->history).push_back({PBest[min_ind], evals[min_ind]}); // The gbest is stored in the stats
             stats->numIter =  (stats->numIter)+1;  
-            return PBest[max_ind];
+            return PBest[min_ind];
         };
 
-flock PSO::updatePBest(flock newPBest, flock PrevPBest,  double (*func) (arma::vec)){
-            flock updatePBest (swarmSize);
+flock PSO::updatePBest(const flock& newPBest, const flock& PrevPBest,  double (*func) (swarm)){
+            flock upPBest (swarmSize);
             assert (newPBest.size() == PrevPBest.size());
-            for (int i; i < newPBest.size(); i++){
+            assert (newPBest.size()==swarmSize);
+            for (int i; i < swarmSize; i++){
+                upPBest[i].resize(dim);
                 if ( func(newPBest[i]) < func( PrevPBest[i]) ) {
-                    updatePBest[i] = newPBest[i];
+                    upPBest[i] = newPBest[i];
                 }
-                else updatePBest[i] = PrevPBest[i];
+                else upPBest[i] = PrevPBest[i];
             };
-            return updatePBest;
+            return upPBest;
         };
 
-flock PSO::updateFlock(flock current, flock PBest, swarmPos GBest){
+flock PSO::updateFlock(const flock& current, const flock& PBest, const swarm& GBest){
             flock newFlock(swarmSize);
             assert (current.size() == PBest.size());
             for (int i =0; i < current.size(); i++) {
                 arma::vec r1, r2;
                 r1.randu(dim);
-                r2.randu(dim);
-                newFlock[i] = hyperParam[0]*current[i]+ hyperParam[1]*r1%(current[i]-PBest[i])
-                                + hyperParam[2] * r2 % (current[i]-GBest);
+                r2.randu(dim);  
+                arma::vec point(dim);      
+                point = hyperParam[0]*arma::vec(current[i])+ hyperParam[1]* r1 % (arma::vec (current[i] )
+                        - arma::vec(PBest[i]) )  + hyperParam[2] * r2 % ( arma::vec(current[i]) - arma::vec(GBest) );
+                newFlock[i].resize(dim);
+                newFlock[i] = arma::conv_to< std::vector<double> >::from(point);
             };
+
+            return newFlock;
+
         };
 
- void PSO::minimize( double (*func) (arma::vec p) ) {
+ void PSO::minimize( double (*func) (swarm p) ) {
             assert (hasInit==true);
             flock flck = spreadSwarm(bound);
-            PBest = flck;
+            PBest = flck;            
             GBest = updateGBest(PBest, func);
             while (!convStatus) {
                 flck = updateFlock (flck, PBest, GBest);
                 PBest = updatePBest(flck, PBest, func);
+                if ( (stats->numEval % 100 ) ==0) {
+                    std::cout << "number of function evaluations : " << stats->numEval << std::endl;
+                };
                 GBest = updateGBest(PBest, func);
+                if ( (stats->numIter % 1000 ) ==0) {
+                    std::cout << "number of iterations : " << stats->numIter<< std::endl;
+                };
+
                 stats->numIter ++;
 
                 //now set convergence criterion 
@@ -76,7 +109,9 @@ flock PSO::updateFlock(flock current, flock PBest, swarmPos GBest){
                     std::cout << "the number of iterations has exceed the allowed maximum iterations.";
                     convStatus=true;
                     minimum = GBest;
-                    std::cout << " Minimization finished. "<< std::endl;
+                    std::cout << " Minimization finished after "<< stats->numEval << " function evaluation and "
+                                 << stats->numIter << " iterations" << std::endl;
+                    printPoint(minimum);
                 };            
              };
              hasMinimize =true;

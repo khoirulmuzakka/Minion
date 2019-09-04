@@ -37,7 +37,10 @@ void Logging::error(std::string message){
 
         }; 
 
-void MinimizerBase::setInitPoint( arma::vec point, std::vector<std::vector<double>> bou) {
+Statistics* MinimizerBase::stats = new Statistics;
+int MinimizerBase::instanceCount=0;
+
+void MinimizerBase::setInitPoint(const std::vector<double>&  point, const edge& bou) {
             assert (point.size()==dim);
             assert (bou.size()== dim);
             init = point;
@@ -45,10 +48,12 @@ void MinimizerBase::setInitPoint( arma::vec point, std::vector<std::vector<doubl
             hasInit = true;
         };
 
-void Pipeline::minimize (double (*func)(arma::vec p) ){
+
+void Pipeline::minimize (double (*func)(std::vector<double>  p) ){
+    assert (hasInit==true);
     for (int i=0; i<pipe.size(); i++){
         if (i==0) pipe[i]->setInitPoint(init, bound); //set init point to that of Pipeline.
-        if (i>0)  pipe[i]->setInitPoint( (pipe[i-1]->stats)->min_point, bound);//set init to the last minimum
+        if (i>0)  pipe[i]->setInitPoint( pipe[i-1]-> minimum, bound);//set init to the last minimum
         pipe[i]->minimize(func);
         if (storePoint==true){
             for (int j=0; j < ((pipe[i]->stats)->history).size(); j++){
@@ -57,5 +62,6 @@ void Pipeline::minimize (double (*func)(arma::vec p) ){
         };    
     };
     hasMinimize = true;
+    minimum = pipe.back()->getMinimum();
 };
 

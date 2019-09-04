@@ -18,7 +18,8 @@ class NotImplementedError:public std::logic_error{
 
 
 //custom data structure to store (x, f(x))
-typedef std::pair<arma::vec, double> evalpoint; 
+typedef std::pair<std::vector<double>, double> evalpoint; 
+typedef std::vector<std::pair< double, double>> edge;
 
 /**
  * @brief struct to hold statistics during fitting processdownload film gratis
@@ -26,7 +27,6 @@ typedef std::pair<arma::vec, double> evalpoint;
 struct Statistics{
             int numEval=0; //variable to store the number of function evaluation
             int numIter=0; // variable to store the number of iteration
-            arma::vec min_point; //variable to store the minimum value
             std::vector<evalpoint> history; //To store the function evaluation in each step.
         }; 
 
@@ -95,7 +95,9 @@ class Logging {
 */
 class FunctionBase {
     public :
-        FunctionBase(){}; //constructor
+        int dimension;
+    public :
+        FunctionBase(int dim): dimension(dim) {}; //constructor
         virtual ~FunctionBase(){};//destructor
 
         /**
@@ -103,14 +105,14 @@ class FunctionBase {
         * @param a point
         * @return result of function evaluation
         */
-        virtual double function(arma::vec p)=0;
+        virtual double function(std::vector<double> )=0;
 
         /**
          * @brief A virtual function to get a frist derivative
          * @param Index of variable, and point at which the derivative is evaluated
          * @return Value of the der
          */
-        virtual double getFirstDer (int index, arma::vec p) {
+        virtual double getFirstDer (int index, std::vector<double>  p) {
             throw NotImplementedError("first derivatives have not been implemented");
         };
 
@@ -119,11 +121,11 @@ class FunctionBase {
          * @param Indices of variable, and point at which the derivative is evaluated
          * @return Value of the second der
          */
-        virtual double getSecondDer (int index1, int index2, arma::vec p) {
+        virtual double getSecondDer (int index1, int index2, std::vector<double>  p) {
             throw NotImplementedError("first derivatives have not been implemented");
         };
 
-        arma::mat getHessian (arma::vec p){
+        arma::mat getHessian (std::vector<double>  p){
             arma::mat hessian (p.size(), p.size());
             for (int i=0; i<p.size(); i++){
                 for (int j=0; j<p.size(); j++){
@@ -139,18 +141,18 @@ class FunctionBase {
 class MinimizerBase {
     protected :
         int dim;  //dimension of the parameter space
-        arma::vec init; //initial point 
-        std::vector<std::vector<double>> bound; 
+        std::vector<double>  init; //initial point 
+        edge bound; 
         bool storePoint=true; //flag to set whether or not evaluation history is kept.    
         bool convStatus= false; //flag of convergence status        
         bool hasInit = false;   //flag to see if initial point has been chosen or not.
-        arma::vec minimum;
         bool hasMinimize = false;
         
 
     public:
         static int instanceCount; //static variable to count the number of instances created. Useful for creating multiple logs file
-        Statistics* stats = new Statistics ;//pointer to variable to hold statistics.  
+        static Statistics* stats ;//pointer to variable to hold statistics.  
+        std::vector<double>  minimum;
         
     public :
 
@@ -159,10 +161,10 @@ class MinimizerBase {
         * @param Pointer to the input function
         */
         MinimizerBase(int dim) : dim(dim) { 
-            std::cout << "Minimizer has been instantiated" << std::endl;
-            init.set_size(dim);
+            std::cout << "MinimizerBase has been instantiated" << std::endl;
+            init.resize(dim);
             bound.resize(dim);
-            minimum.set_size(dim);
+            minimum.resize(dim);
             instanceCount++;
         };
 
@@ -183,14 +185,14 @@ class MinimizerBase {
         * they have their own way to initialize the population. 
         * @param A pair of input point (arma::vec) and a bound (std::vector<double>)
         */
-        virtual void setInitPoint( arma::vec point, std::vector<std::vector<double>> bou);
+        virtual void setInitPoint( const std::vector<double>& , const edge&);
 
         /**
-        *@brief Pure virtual function to find the global mnimimum. Please update the struct Statistics 
+        *@brief Pure virtual function to find the global mnimimum. Please update the struct Statistics and minimum
         * along the way. Make sure that hasInit flag is true. At the end, change hasMinimize to true
         * @param Function pointer
         */
-        virtual void minimize(double (*func)(arma::vec p))=0; 
+        virtual void minimize(double (*func)(std::vector<double>  p))=0; 
 
         /**
         * @brief method to set whether evaluation history is kept or not
@@ -203,7 +205,7 @@ class MinimizerBase {
          * @brief Function to query the minimum
          * @return arma::vec of a minimum
          */
-        arma::vec getMinimum (){
+        std::vector<double> getMinimum (){
             assert (hasMinimize==true);
             return minimum;
         };
@@ -239,7 +241,7 @@ class Pipeline : public MinimizerBase{
          * @brief an Overloaded minimize function where the argument is a function pointer
          * @param A function pointer
          */
-        void minimize (double (*func)(arma::vec p)) override;
+        void minimize (double (*func)(std::vector<double> p)) override;
 };  
 
 
