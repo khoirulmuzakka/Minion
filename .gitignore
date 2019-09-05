@@ -8,19 +8,9 @@ MakeFile
 CMakeCache.txt
 Makefile_mem
 cmake-buil-debug/
-nCTEQpp.cbp
-src/examples/nvwa-nvwa.tar.gz
-src/theory/f123/fort.66
-libf123L.dylib
-lib*
-src/theory/f123/bin/F123L
-F123L
-*_
 cmake-build-debug
-ncteq.jpg
 doc/.DS_Store
 .DS_Store
-data/not_ready
 *.png
 *.ai
 doc/html
@@ -33,5 +23,4 @@ Makefile
 doc/fit_dummy*
 doc/doxy/html/
 doc/doxy/latex
-
-CMakeLists.txt
+.vscode/

@@ -1,119 +1,150 @@
 #include "pso.h"
 #include <algorithm>
+#include <iomanip>
 
-double randomVal (double low, double high, int precision=100){
-    double res;
-    res = ((high-low)*( (std::rand() % precision) +1 ) / precision ) + low;
-    return res;
-};
 
-void printPoint (std::vector<double> p){
-    std::cout << "the Minimum is [";
-    for (int i =0; i<p.size(); i++){
-        std::cout <<" "<<p[i]<<" ";
-    };
-    std::cout << "]"<< std::endl;
-};
-
-flock PSO::spreadSwarm(const edge& boun){
+flock PSO::spreadSwarm(edge boun){
             assert (boun.size() == dim);
-            flock f (swarmSize);
+            flock f (dim, swarmSize);
             for (int i=0; i<swarmSize; i++){
-                f[i].resize(dim);
                 for (int j=0; j<dim; j++){
-                    (f[i])[j] = randomVal ( boun[j].first, boun[j].second);
+                    f(j, i) = randomVal ( boun[j].first, boun[j].second );
                 };
             };
-            hasInit = true;
             return f;
         };
 
-std::vector<double> PSO::evaluation (const flock& f, double (*func) (swarm) ){ 
-            assert (f.size()== swarmSize); 
-            std::vector<double> eval(swarmSize);          
+arma::vec PSO::evaluation (flock f, FunctionBase* fun ){ 
+            assert ( getMatrixDim(f) == flock_dim);            
+            arma::vec eval(swarmSize);          
             for (int i=0; i<swarmSize; i++){
-                eval[i] = func(f[i]);
-                (stats->numEval)++;
+                eval[i] = fun->function(f.col(i)) ;
+                numEval++;
             };
             return eval;
         };
 
 void PSO::setInitPoint( const swarm& point, const edge& bou){
+    assert (point.size() == dim);
+    assert (bou.size() == dim);
     bound=bou;
-    spreadSwarm(bou);
-    hasInit = true;
+    init = point;
+    hasInit = true;         
 };
 
-swarm PSO::updateGBest (const flock& PBest, double (*func) (swarm) ){ 
-            std::vector<double> evals(swarmSize);
-            evals = evaluation (PBest, func);
-            int min_ind = std::min_element(evals.begin(), evals.end())-evals.begin();
-            if (storePoint==true) 
-                (stats->history).push_back({PBest[min_ind], evals[min_ind]}); // The gbest is stored in the stats
-            stats->numIter =  (stats->numIter)+1;  
-            return PBest[min_ind];
+swarm PSO::updateGBest (flock PBest, FunctionBase* fun ){ 
+            arma::vec evals(swarmSize);
+            evals = evaluation (PBest, fun);
+            int min_ind = evals.index_min();
+            std::pair <arma::vec, double> evalPoint = { PBest.col(min_ind), evals[min_ind]};
+            history->push_back(evalPoint); // The gbest is stored in the stats 
+            return PBest.col(min_ind);
         };
 
-flock PSO::updatePBest(const flock& newPBest, const flock& PrevPBest,  double (*func) (swarm)){
-            flock upPBest (swarmSize);
-            assert (newPBest.size() == PrevPBest.size());
-            assert (newPBest.size()==swarmSize);
-            for (int i; i < swarmSize; i++){
-                upPBest[i].resize(dim);
-                if ( func(newPBest[i]) < func( PrevPBest[i]) ) {
-                    upPBest[i] = newPBest[i];
-                }
-                else upPBest[i] = PrevPBest[i];
-            };
-            return upPBest;
+flock PSO::updatePBest(flock newPBest, flock prevPBest,  FunctionBase* fun){
+    flock upPBest (dim, swarmSize);
+    assert (getMatrixDim(newPBest) == flock_dim);
+    assert (getMatrixDim (prevPBest) == flock_dim);
+    for (int i; i < swarmSize; i++){
+        if ( fun->function( newPBest.col(i) ) < fun->function ( prevPBest.col(i)) ) {
+            upPBest.col(i) = newPBest.col(i);
+        }                   
+        else upPBest.col(i) = prevPBest.col(i);
+    };
+    return upPBest;
+};
+
+
+flock PSO::updateFlockSpeed(flock currentSpeed, flock currentPos, flock PBest, swarm GBest){
+            flock newSpeed(dim, swarmSize);
+            assert ( getMatrixDim(currentSpeed) == flock_dim);
+            assert ( getMatrixDim(PBest) == flock_dim); 
+            assert ( getMatrixDim(currentPos) == flock_dim); 
+
+            for (int i =0; i < swarmSize; i++) {
+                arma::vec r1 (dim, arma::fill::randu);
+                arma::vec r2 (dim, arma::fill::randu);
+                newSpeed.col(i) = hyperParam[0] * currentSpeed.col(i) + hyperParam[1] * r1 % ( PBest.col(i) - currentPos.col(i))
+                                    + hyperParam[2] * r2 % (GBest- currentPos.col(i));    
+            };     
+            return newSpeed;
         };
 
-flock PSO::updateFlock(const flock& current, const flock& PBest, const swarm& GBest){
-            flock newFlock(swarmSize);
-            assert (current.size() == PBest.size());
-            for (int i =0; i < current.size(); i++) {
-                arma::vec r1, r2;
-                r1.randu(dim);
-                r2.randu(dim);  
-                arma::vec point(dim);      
-                point = hyperParam[0]*arma::vec(current[i])+ hyperParam[1]* r1 % (arma::vec (current[i] )
-                        - arma::vec(PBest[i]) )  + hyperParam[2] * r2 % ( arma::vec(current[i]) - arma::vec(GBest) );
-                newFlock[i].resize(dim);
-                newFlock[i] = arma::conv_to< std::vector<double> >::from(point);
-            };
 
-            return newFlock;
-
-        };
-
- void PSO::minimize( double (*func) (swarm p) ) {
+ void PSO::minimize( FunctionBase* fun) {
             assert (hasInit==true);
-            flock flck = spreadSwarm(bound);
-            PBest = flck;            
-            GBest = updateGBest(PBest, func);
-            while (!convStatus) {
-                flck = updateFlock (flck, PBest, GBest);
-                PBest = updatePBest(flck, PBest, func);
-                if ( (stats->numEval % 100 ) ==0) {
-                    std::cout << "number of function evaluations : " << stats->numEval << std::endl;
-                };
-                GBest = updateGBest(PBest, func);
-                if ( (stats->numIter % 1000 ) ==0) {
-                    std::cout << "number of iterations : " << stats->numIter<< std::endl;
-                };
-
-                stats->numIter ++;
-
+            flock currentPos = spreadSwarm(bound);
+            currentPos.col(0) = init;
+            flock flockSpeed (dim, swarmSize, arma::fill::zeros);
+            PBest = currentPos; 
+            GBest = updateGBest(PBest, fun);
+            numIter++; 
+            while (!convStatus) {                
+                flockSpeed = updateFlockSpeed (flockSpeed, currentPos, PBest, GBest);
+                currentPos += flockSpeed;
+                PBest = updatePBest (currentPos, PBest, fun);
+                GBest = updateGBest(PBest, fun); 
+                numIter++;                         
+                if ( (numIter % 1) ==0) {    
+                    std::cout << std::setw(8) << std::left<< "Iter : " << 
+                                std::setw(5)<<  std::left<< numIter
+                                <<  std::setw(5) << std::left<<  " || " 
+                                << std::setw(8)<< std::left<<"Point : ";
+                                printPoint ((*history)[numIter-1].first);
+                                std::cout << " ||  Value : " 
+                                << std::setw(10)<<std::left<< (*history)[numIter-1].second << std::endl;
+                    };  
+                   /*
                 //now set convergence criterion 
-                if ((stats->numIter) > maxIter) {
-                    std::cout << "the number of iterations has exceed the allowed maximum iterations.";
-                    convStatus=true;
+                //In order to avoid unnecessary checking during the first 100 iteration
+                if ( ( (*history)[numIter-1].second - (*history)[numIter-2].second ) < tol ) {
+                    convStatus = true;
                     minimum = GBest;
-                    std::cout << " Minimization finished after "<< stats->numEval << " function evaluation and "
-                                 << stats->numIter << " iterations" << std::endl;
-                    printPoint(minimum);
-                };            
-             };
+                    std::cout << "----------------------------------------------------"<<std::endl;
+                    std::cout << "PSO converges with :\n" << std::setw(15)<<std::left << "Minimum" << ":";
+                    printPoint (minimum);
+                    std::cout << std::endl << std::setw (15)<< std::left << "Value"<< ": " << (*history)[numIter-1].second 
+                    << std::endl;
+                    
+                    std::cout << std::setw(15)<<std::left << "Number of Evaluation" << ": "<< numEval<<std::endl;
+                    std::cout << std::setw(15)<<std::left << "Number of Iteration" << ": "<< numIter<<std::endl;
+
+                    std::cout << "----------------------------------------------------"<<std::endl;
+                    break;                
+                    
+                };
+                */
+
+                // or If the maximum Iteration has been achieved      
+                if ((numIter) >=  maxIter) {
+                    minimum = GBest; 
+                    //convStatus = true;
+                    if (usingPipeline == false){
+                        std::cout << "----------------------------------------------------"<<std::endl;
+                        std::cout << "The Number of itration has reached the allowed maximum number of iterations\n";
+                        std::cout<<std::setw(15)<<std::left << "Current Minimum " << ":";
+                        printPoint (minimum);
+                        std::cout << std::endl << std::setw (15)<< std::left << "Value"<< ": " << (*history)[numIter-1].second 
+                        << std::endl;                    
+                        std::cout << std::setw(15)<<std::left << "Number of Evaluations" << ": "<< numEval<<std::endl;
+                        std::cout << std::setw(15)<<std::left << "Number of Iterations" << ": "<< numIter<<std::endl;
+                        std::cout << "----------------------------------------------------"<<std::endl;
+                        break;
+                    } else {
+                        std::cout << "----------------------------------------------------"<<std::endl;
+                        //std::cout << "Continuing on ....\n";
+                        std::cout<<std::setw(25)<<std::left << "Current Minimum " << ":";
+                        printPoint (minimum);
+                        std::cout << std::endl << std::setw (25)<< std::left << "Value"<< ": " << (*history)[numIter-1].second 
+                        << std::endl;                    
+                        std::cout << std::setw(25)<<std::left << "Number of Evaluations" << ": "<< numEval<<std::endl;
+                        std::cout << std::setw(25)<<std::left << "Number of Iterations" << ": "<< numIter<<std::endl;
+                        std::cout << "----------------------------------------------------"<<std::endl;
+                        break;                        
+                    };                        
+                };                                            
+             };  
+
              hasMinimize =true;
 };
 
