@@ -24,3 +24,5 @@ doc/fit_dummy*
 doc/doxy/html/
 doc/doxy/latex
 .vscode/
+
+build/*

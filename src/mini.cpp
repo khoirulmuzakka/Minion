@@ -10,7 +10,7 @@ double randomVal (double low, double high, int precision){
 void printPoint (const arma::vec& p){
     std::cout  << " [";
     for (int i =0; i<p.size(); i++){
-        std::cout << std::setw(13) << std::left << p[i] << " ";
+        std::cout << std::setw(8) << std::left << p[i] << " ";
     };
     std::cout << "] " ;
 };
@@ -69,10 +69,11 @@ int MinimizerBase::numIter =0;
 std::vector<  std::pair<arma::vec, double> >* MinimizerBase::history = new std::vector<  std::pair<arma::vec, double> >;
 
 void MinimizerBase::setInitPoint(const arma::vec&  point, const edge& bou) {
-            assert (point.size()==dim);
-            assert (bou.size()== dim);
+            assert (point.size()==bou.size());
             init = point;
             bound = bou;
+            dim = point.size();
+            minimum.resize(dim);
             hasInit = true;
         };
 
@@ -94,7 +95,6 @@ void Pipeline::modifyMaxIter () {
         };
 
 void Pipeline::setInitPoint(const arma::vec&  point, const edge& bou) {
-            assert (hasAdd == true); // make sure that the minimizer objects have been added
             assert (point.size()==dim);
             assert (bou.size()== dim);
             init = point;
@@ -102,14 +102,19 @@ void Pipeline::setInitPoint(const arma::vec&  point, const edge& bou) {
             hasInit = true;
 };           
 
-void Pipeline::minimize ( FunctionBase* fun){
+void Pipeline::minimize ( FunctionBase* fun, bool verbose){
+    assert (hasAdd == true);
+    assert (hasDim == true);
     assert (hasInit==true); //make sure that setInitPoint has been called.
+    assert (dim == fun->dimension);
     modifyMaxIter(); /// modeify MaxIter for each minimizer.
     for (int i=0; i<pipe.size(); i++){
+        pipe[i]->setDim(dim);
+        pipe[i]->hasDim = true;
         if (i==0) pipe[i]->setInitPoint(init, bound); //set init point to that of Pipeline.
         if (i>0)  pipe[i]->setInitPoint( pipe[i-1]-> minimum, bound);//set init to the last minimum
-        pipe[i]->minimize(fun);  
-       // if (convStatus == true) break;
+        pipe[i]->minimize(fun, verbose);  
+       if (convStatus == true) break;
     };
     hasMinimize = true;
     minimum = history->back().first;

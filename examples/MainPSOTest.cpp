@@ -7,9 +7,10 @@ const double pi = std::acos(-1); //pi value
 
 class Quadratic : public FunctionBase {
     public : 
+        Quadratic (){};
         Quadratic (int dimen): FunctionBase(dimen){}; //constructor
         //main quadratic function
-        double function (swarm p)override {
+        double function (const swarm& p) override {
             double res=0;
             for (int i=0; i<p.size(); i++){
                 res= res + std::pow(p[i], 2);
@@ -21,9 +22,10 @@ class Quadratic : public FunctionBase {
 class Rosenbrock : public FunctionBase{
     public : 
         //constructor
+        Rosenbrock(){};
         Rosenbrock (int dim):FunctionBase (dim){};
         //rosenbrock : we expect a minimum at x= (1,1,1,1) with f(x) = 0
-        double function (swarm p) override{
+        double function (const swarm& p) override{
             double res=0;
             for (int j=0; j < (dimension-1); j++ ){
                 res = res + 100* std::pow( p[j+1]-p[j]* p[j], 2)+ std::pow( 1- p[j]*p[j], 2) ;
@@ -34,9 +36,10 @@ class Rosenbrock : public FunctionBase{
 class Rastrigin :public FunctionBase{
     public :
         //constructor
+        Rastrigin(){};
         Rastrigin (int dim) : FunctionBase (dim) {};
         // rastrigin function : globalminimum happens at (0,0,..) with f(0)=0
-        double function (swarm p) override{
+        double function (const swarm& p) override{
             double res = 10*dimension;
             for (int j=0; j < dimension; j++ ){
                 res = res + p[j]*p[j] - 10*std::cos(2*pi*p[j]);
@@ -61,9 +64,9 @@ edge boun = generateBound (2, {-100, 100}); // Generate lower bound and upper bo
 std::vector<double> initial (2); 
 std::fill (initial.begin(), initial.end(), 75); //fill init
 
-Quadratic quad (2);
-Rosenbrock ros (2);
-Rastrigin ras (2);
+Quadratic quad; quad.setDim(2);
+Rosenbrock ros; ros.setDim(2);
+Rastrigin ras; ras.setDim(2);
 /*
 PSO pso (2, 40);
 pso.setInitPoint(initial, boun);
@@ -77,14 +80,15 @@ pso.minimize(&ros);
 
 
 //use Pipeline Feature
-PSO pso1 (2, 8); pso1.setMaxIter(100);
-PSO pso2 (2, 8); pso2.setMaxIter(100);
-PSO pso3 (2, 8); pso3.setMaxIter(100);
+PSO pso1 (20); pso1.setMaxIter(10); 
+PSO pso2 (10); pso2.setMaxIter(20);
+PSO pso3 (20); pso3.setMaxIter(40);
 
-Pipeline pipeline (2);
+Pipeline pipeline;
 pipeline.add_minimizer(&pso1);
 pipeline.add_minimizer(&pso2);
 pipeline.add_minimizer(&pso3);
+pipeline.setDim(2);
 pipeline.setInitPoint(initial, boun);
 pipeline.minimize(&ras);
 

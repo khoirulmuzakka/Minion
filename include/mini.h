@@ -90,8 +90,15 @@ class Logging {
 class FunctionBase {
     public :
         int dimension; //dimension of the parameter space
+        bool hasDimension = false; //flag to see if dimension has been provided
+        arma::vec minimum; //variable to tore the minimum
+        bool hasMinimize = false; //flag to see if minimum has been obtained
     public :
-        FunctionBase(int dim): dimension(dim) {}; //constructor
+        //constructor
+        FunctionBase() {};
+        FunctionBase(int dim) : dimension(dim) {
+            hasDimension = true;
+        }; 
         virtual ~FunctionBase(){};//destructor
 
         /**
@@ -99,15 +106,23 @@ class FunctionBase {
         * @param a point
         * @return result of function evaluation
         */
-        virtual double function(arma::vec)=0;
+        virtual double function(const arma::vec&)=0;
 
         /**
          * @brief A virtual function to get a first derivative
          * @param Index of variable, and point at which the derivative is evaluated
          * @return Value of the der
          */
-        virtual double getFirstDer (int index, arma::vec p) {
+        virtual double getFirstDer (const int& index, const arma::vec& p) {
             throw NotImplementedError("first derivatives have not been implemented");
+        };
+
+        /**
+         * @brief Function to set the dimension of the param space
+         */
+        void setDim (const int& dim){
+            dimension = dim;
+            hasDimension = true;
         };
 
         /**
@@ -115,7 +130,7 @@ class FunctionBase {
          * @param Indices of variable, and point at which the derivative is evaluated
          * @return Value of the second der
          */
-        virtual double getSecondDer (int index1, int index2, arma::vec p) {
+        virtual double getSecondDer (const int& index1, const int& index2, const arma::vec& p) {
             throw NotImplementedError("first derivatives have not been implemented");
         };
 
@@ -125,7 +140,7 @@ class FunctionBase {
          * @param a point in the parameter space.
          * @return hessian matrix
          */
-        arma::mat getHessian (arma::vec p){
+        arma::mat getHessian (const arma::vec& p){
             arma::mat hessian (p.size(), p.size());
             for (int i=0; i<p.size(); i++){
                 for (int j=0; j<p.size(); j++){
@@ -134,6 +149,15 @@ class FunctionBase {
             };
             return hessian;       
         };
+        
+        /**
+         * @brief Function to query the minimum
+         * @return arma::vec of a minimum
+         */
+        arma::vec getMinimum (){
+            assert (hasMinimize == true);
+            return minimum;
+        }
 };
 
 // custom datatype to store a bound. The length of vector equals to the dimension of param space
@@ -164,7 +188,8 @@ class MinimizerBase {
         static bool convStatus; //flag of convergence status        
         bool hasInit = false;   //flag to see if initial point has been chosen or not. 
         static int numEval; //variable to store the number of function evaluation.
-        static int numIter; //static variable to store the number of iteration        
+        static int numIter; //static variable to store the number of iteration     
+         
     
     public:
         int maxIter = 2000; // maximum iteration. If numIter>maxIter, the minimizer will stop.
@@ -174,17 +199,14 @@ class MinimizerBase {
         int dim;  //dimension of the parameter space
         arma::vec  init; //initial point 
         edge bound; // a vector of pair of lower bound and upper bound. 
+        bool hasDim=false;  
         
     public :
 
         /**
-        * @brief Constructor.
-        * @param Pointer to the input function
+        * @brief Default Constructor
         */
-        MinimizerBase(int dim) : dim(dim) { 
-            init.resize(dim);
-            bound.resize(dim);
-            minimum.resize(dim);
+        MinimizerBase(){
             instanceCount++;
         };
 
@@ -203,11 +225,22 @@ class MinimizerBase {
         virtual void setInitPoint( const arma::vec& , const edge&);
 
         /**
-        *@brief Pure virtual function to find the global mnimimum. Please update the numEval and numIter and minimum
+         * @brief Function to set the dimension of the parameter space
+         */
+        void setDim(const int& dimension) {
+            dim = dimension;
+            init.resize(dim);
+            bound.resize(dim);
+            minimum.resize(dim);
+            hasDim = true;
+        };
+
+        /**
+        *@brief Pure virtual function to find the global mnimimum. Please update the numEval and numIter and minimum, hasInit
         * along the way. Make sure that hasInit flag is true. At the end, change hasMinimize to true
         * @param Function base pointer object
         */
-        virtual void minimize( FunctionBase*)=0; 
+        virtual void minimize( FunctionBase*, bool verbose)=0; 
 
         /**
          * @brief Function to query the minimum
@@ -230,11 +263,11 @@ class MinimizerBase {
  * @brief Pipeline class to chain multiple minimizer
  */
 class Pipeline : public MinimizerBase{
-    private :
+    protected :
         std::vector<MinimizerBase*> pipe;//vector of pointer to store minimizers.
-        bool hasAdd= false; //flag to check if Pipeline::add has been called. 
+        bool hasAdd= false; //flag to check if Pipeline::addMinimizer has been called. 
 
-    private : 
+    protected : 
         /**
          * @brief MaxIter is a non-static variable. In order setMaxIter function to work correctly,
          * we need this function.
@@ -246,9 +279,9 @@ class Pipeline : public MinimizerBase{
         /** 
          * @brief Default contructor 
          */
-        Pipeline(int dim): MinimizerBase(dim) {
+        Pipeline() {
             usingPipeline = true;
-            std::cout << "Custom Minimizer is instantiated" << std::endl;
+            std::cout << "Custom Minimizer has been instantiated" << std::endl;
             std::cout << "----------------------------------------------------"<<std::endl;  
         };
 
@@ -260,22 +293,22 @@ class Pipeline : public MinimizerBase{
         /**
          * @brief set InitPoint for pipeline
          */
-        void setInitPoint(const arma::vec&  point, const edge& bou) override;
+        virtual void setInitPoint(const arma::vec&  point, const edge& bou) override;
             
 
         /** 
          * @brief function to add minimizer algorithm
          */
-        void add_minimizer (MinimizerBase* minimizer){
-            hasAdd = true; 
-            pipe.push_back(minimizer);       
+        virtual void add_minimizer (MinimizerBase* minimizer){
+            pipe.push_back(minimizer);   
+            hasAdd = true;     
         };
 
         /**
          * @brief an Overloaded minimize function 
          * @param A functionBase pointer object
          */
-        void minimize (FunctionBase*) override;
+        virtual void minimize (FunctionBase*, bool verbose=true) override;
 
 };  
 

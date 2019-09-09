@@ -7,15 +7,16 @@
 
 
 typedef arma::vec swarm; //a vector of parameters. Or a Point in the parameter space. Always has size (dim)
-typedef arma::mat flock; //A collection of points. always has size (dim, swarmSize)
+typedef arma::mat Flock; //A collection of points. always has size (dim, swarmSize)
 
 
 class PSO : public MinimizerBase{
     private :
         std::string convMeth = "Iteration"; //Another option is by changes of gbest
-        flock PBest; //a clollcetion (in the form of vector) of PBest 
+        Flock PBest; //a clollcetion (in the form of vector) of PBest 
         swarm GBest;      
         std::pair<int, int> flock_dim;
+        std::vector<double> hyperParam= {0.5,2,2}; // vector of (w, c1, c2)
 
 
     private :
@@ -24,33 +25,31 @@ class PSO : public MinimizerBase{
          * @params swarm size, bounds of the parameter space
          * @return a collection of swarm positions. 
          */
-        flock spreadSwarm( edge boun);
+        Flock spreadSwarm( edge boun);
 
         /**
          * @brief Function to evaluate a function for a flock
          * @params A flock and functions that need to be evaluated
          * @return a vector of size f.size() containing the results of evaluation
          */
-        arma::vec  evaluation (flock f, FunctionBase* fun );
+        arma::vec  evaluation (Flock& f, FunctionBase* fun );
 
         /**
          * @brief function to update GBest, given the PBest flock.
          */
-        swarm updateGBest (flock PBest, FunctionBase* fun);
+        swarm updateGBest (Flock& PBest, FunctionBase* fun);
 
         /**
          * @brief function to update GBest
          */
-        flock updatePBest( flock f,flock PrevPBest,  FunctionBase* fun);
+        Flock updatePBest( Flock& f, Flock& PrevPBest,  FunctionBase* fun);
 
         /**
          * @brief function to update the flock
          */
-        flock updateFlockSpeed(flock current, flock currentPos, flock PBest, swarm GBest);
+        Flock updateFlockSpeed(Flock& current, Flock& currentPos, Flock& PBest, swarm& GBest);
 
     public:
-         // the maximum number of iteration
-        std::vector<double> hyperParam= {0.5,2,2}; // vector of (w, c1, c2)
         int swarmSize; // the number of swarms
         double tol = 0.000001;
 
@@ -59,11 +58,8 @@ class PSO : public MinimizerBase{
         /**
          * @brief Constructor
          */
-        PSO (int dimension, int swarmsize ): MinimizerBase(dimension), swarmSize(swarmsize) {
-            PBest.resize(dim, swarmSize);
-            GBest.resize(dim);
+        PSO (int swarmsize ): swarmSize(swarmsize) {
             std::cout << "PSO object has been instantiated"<<std::endl;
-            flock_dim = {dim, swarmSize};
         };
 
         /**
@@ -88,7 +84,7 @@ class PSO : public MinimizerBase{
         /** 
          * @brief Self explanatory
          */
-        void minimize( FunctionBase* func ) override;       
+        void minimize( FunctionBase* func, bool verbose) override;       
 
 };
 
