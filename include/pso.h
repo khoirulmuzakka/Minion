@@ -8,6 +8,13 @@
 
 typedef arma::vec swarm; //a vector of parameters. Or a Point in the parameter space. Always has size (dim)
 typedef arma::mat Flock; //A collection of points. always has size (dim, swarmSize)
+typedef std::pair< Flock, arma::vec > FlockAndEval;
+
+/**
+ * @brief For multithreading, working directly on the function class is not safe.
+ * This function basically copy (clone) the original function class, hence it should be safer.
+ */
+double function (FunctionBase* f, arma::vec p);
 
 
 class PSO : public MinimizerBase{
@@ -17,6 +24,8 @@ class PSO : public MinimizerBase{
         swarm GBest;      
         std::pair<int, int> flock_dim;
         std::vector<double> hyperParam= {0.5,2,2}; // vector of (w, c1, c2)
+        bool multiThread = false;
+        FlockAndEval PBestAndEval;
 
 
     private :
@@ -37,17 +46,19 @@ class PSO : public MinimizerBase{
         /**
          * @brief function to update GBest, given the PBest flock.
          */
-        swarm updateGBest (Flock& PBest, FunctionBase* fun);
+        swarm updateGBest (FlockAndEval& PBestAndEval);
 
         /**
          * @brief function to update GBest
          */
-        Flock updatePBest( Flock& f, Flock& PrevPBest,  FunctionBase* fun);
+        FlockAndEval updatePBest( Flock& f, FlockAndEval& prevPBestEval,  FunctionBase* fun);
 
         /**
          * @brief function to update the flock
          */
         Flock updateFlockSpeed(Flock& current, Flock& currentPos, Flock& PBest, swarm& GBest);
+
+        
 
     public:
         int swarmSize; // the number of swarms
@@ -58,7 +69,7 @@ class PSO : public MinimizerBase{
         /**
          * @brief Constructor
          */
-        PSO (int swarmsize ): swarmSize(swarmsize) {
+        PSO (int swarmsize, bool multiThreading=false): swarmSize(swarmsize), multiThread (multiThreading) {
             std::cout << "PSO object has been instantiated"<<std::endl;
         };
 

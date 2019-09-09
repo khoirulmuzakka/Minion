@@ -2,6 +2,8 @@
 #include "mini.h"
 #include <pso.h>
 #include <cmath>
+#include <ctime>
+#include <cstdio>
 
 const double pi = std::acos(-1); //pi value
 
@@ -16,6 +18,15 @@ class Quadratic : public FunctionBase {
                 res= res + std::pow(p[i], 2);
             };
             return res;
+        };
+
+        Quadratic ( const Quadratic& old) : FunctionBase (old){
+            dimension = old.dimension;
+            hasDimension = old.hasDimension;
+        };
+
+        virtual Quadratic* clone() override {
+            return (new Quadratic (*this));
         };
 };
 
@@ -32,6 +43,16 @@ class Rosenbrock : public FunctionBase{
             };
             return res;
         };
+
+
+        Rosenbrock ( const Rosenbrock& old) : FunctionBase (old){
+            dimension = old.dimension;
+            hasDimension = old.hasDimension;
+        };
+
+        virtual Rosenbrock* clone() override {
+            return (new Rosenbrock (*this));
+        };
 };
 class Rastrigin :public FunctionBase{
     public :
@@ -45,6 +66,15 @@ class Rastrigin :public FunctionBase{
                 res = res + p[j]*p[j] - 10*std::cos(2*pi*p[j]);
             };   
             return res;
+        };
+
+        Rastrigin ( const Rastrigin& old) : FunctionBase (old){
+            dimension = old.dimension;
+            hasDimension = old.hasDimension;
+        };
+
+        virtual Rastrigin* clone() override {
+            return (new Rastrigin (*this));
         };
 
 };
@@ -80,8 +110,8 @@ pso.minimize(&ros);
 
 
 //use Pipeline Feature
-PSO pso1 (20); pso1.setMaxIter(10); 
-PSO pso2 (10); pso2.setMaxIter(20);
+PSO pso1 (20); pso1.setMaxIter(100); 
+PSO pso2 (10); pso2.setMaxIter(200);
 PSO pso3 (20); pso3.setMaxIter(40);
 
 Pipeline pipeline;
@@ -90,6 +120,14 @@ pipeline.add_minimizer(&pso2);
 pipeline.add_minimizer(&pso3);
 pipeline.setDim(2);
 pipeline.setInitPoint(initial, boun);
+
+
+std::clock_t start;
+double duration;
+start = std::clock();
+
 pipeline.minimize(&ras);
 
+duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+std::cout<<"Duration: "<< duration <<'\n';
 }

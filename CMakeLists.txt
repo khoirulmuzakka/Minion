@@ -5,6 +5,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -Wno-comment -Wno-return-
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_BUILD_TYPE DEBUG)
 
+OPTION (USE_OpenMP "Use OpenMP" ON)
+IF(USE_OpenMP)
+  FIND_PACKAGE(OpenMP)
+  IF(OPENMP_FOUND)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  ENDIF()
+ENDIF()
+
 include_directories( ./include)
 file(GLOB_RECURSE LIB_SOURCE_FILES "src/*.cpp")
 

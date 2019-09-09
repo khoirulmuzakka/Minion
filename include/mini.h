@@ -99,6 +99,20 @@ class FunctionBase {
         FunctionBase(int dim) : dimension(dim) {
             hasDimension = true;
         }; 
+
+        /**
+         * @brief Constrcutor to copy from another FunctionBase object. Used to copy a functionbase pointer
+         */
+        FunctionBase (const FunctionBase& old){
+            dimension = old.dimension;
+            hasDimension = old.hasDimension;
+        };
+
+        /**
+         * @brief Clone a FunctionBase pointer. Used to copy a FUnctionBAse class in Polymorphism.
+         */
+        virtual FunctionBase* clone(){throw NotImplementedError ("Clone function has not been implemented in your class function");};
+
         virtual ~FunctionBase(){};//destructor
 
         /**

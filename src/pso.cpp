@@ -2,6 +2,11 @@
 #include <algorithm>
 #include <iomanip>
 
+double function (FunctionBase* f, arma::vec p){
+    FunctionBase* func = f->clone();
+    return func->function(p);
+};
+
 
 Flock PSO::spreadSwarm(edge boun){
     assert (boun.size() == dim);
@@ -14,15 +19,28 @@ Flock PSO::spreadSwarm(edge boun){
     return f;
 };
 
+
+
 arma::vec PSO::evaluation (Flock& f, FunctionBase* fun ){ 
-    Flock upPBest (dim, swarmSize);
     assert ( getMatrixDim(f) == flock_dim);            
-    arma::vec eval(swarmSize);          
-    for (int i=0; i<swarmSize; i++){
-        eval[i] = fun->function(f.col(i)) ;
-        numEval++;
+    std::vector<double> eval;
+    eval.resize(swarmSize); 
+
+    if (multiThread) {
+    #pragma omp parallel for shared(eval)
+    for (int i=0; i<swarmSize; i++){        
+        eval[i] = function(fun, f.col(i)) ;
     };
-    return eval;
+    } else {
+        for (int i=0; i<swarmSize; i++){        
+            eval[i] = fun->function( f.col(i) ) ;
+    };
+    }
+
+
+    numEval = numEval + swarmSize;
+
+    return arma::vec(eval);
 };
 
 void PSO::setInitPoint( const swarm& point, const edge& bou){
@@ -31,32 +49,45 @@ void PSO::setInitPoint( const swarm& point, const edge& bou){
     flock_dim = {dim, swarmSize};
     PBest.resize(dim, swarmSize);
     GBest.resize(dim);
+    PBestAndEval.first.resize(dim, swarmSize);
+    PBestAndEval.second.resize(dim);
     bound=bou;
     init = point;
     hasInit = true;         
 };
 
-swarm PSO::updateGBest (Flock& PBest, FunctionBase* fun ){ 
-    Flock upPBest (dim, swarmSize);
-    arma::vec evals(swarmSize);
-    evals = evaluation (PBest, fun);
-    int min_ind = evals.index_min();
-    std::pair <arma::vec, double> evalPoint = { PBest.col(min_ind), evals[min_ind]};
+swarm PSO::updateGBest (FlockAndEval& PPBestAndEval){ 
+    assert (getMatrixDim (PPBestAndEval.first) == flock_dim);
+    assert (PPBestAndEval.second.size() == swarmSize);
+    
+    swarm newGbest (dim);
+    int min_ind = PPBestAndEval.second.index_min();
+    newGbest = PPBestAndEval.first.col(min_ind);
+    std::pair <arma::vec, double> evalPoint = { newGbest, PPBestAndEval.second[min_ind]};
     history->push_back(evalPoint); // The gbest is stored in the stats 
-    return PBest.col(min_ind);
+    return newGbest;
 };
 
-Flock PSO::updatePBest(Flock& newPBest, Flock& prevPBest,  FunctionBase* fun){
-    assert (getMatrixDim(newPBest) == flock_dim);
-    assert (getMatrixDim (prevPBest) == flock_dim);
+FlockAndEval PSO::updatePBest(Flock& currentPos, FlockAndEval& prevPBestAndEval,  FunctionBase* fun){
+    assert (getMatrixDim(currentPos) == flock_dim);
+    assert (getMatrixDim (prevPBestAndEval.first) == flock_dim);
+    assert (prevPBestAndEval.second.size() == swarmSize);
+    arma::vec currentPosEval = evaluation (currentPos, fun);
+    FlockAndEval newPBestAndEval;
+    newPBestAndEval.first.resize (dim, swarmSize);
+    newPBestAndEval.second.resize (swarmSize);
     Flock upPBest (dim, swarmSize);
     for (int i; i < swarmSize; i++){
-        if ( fun->function( newPBest.col(i) ) < fun->function ( prevPBest.col(i)) ) {
-            upPBest.col(i) = newPBest.col(i);
+        if ( currentPosEval[i]  < prevPBestAndEval.second[i] )  {
+            newPBestAndEval.first.col(i) = currentPos.col(i);
+            newPBestAndEval.second[i] = currentPosEval[i];
         }                   
-        else upPBest.col(i) = prevPBest.col(i);
+        else {
+            newPBestAndEval.first.col(i) = prevPBestAndEval.first.col(i);
+            newPBestAndEval.second[i] = prevPBestAndEval.second[i];
+        };
     };
-    return upPBest;
+    return newPBestAndEval;
 };
 
 
@@ -81,17 +112,21 @@ void PSO::minimize( FunctionBase* fun, bool verbose=true) {
     assert (fun->hasDimension= true);
     assert (hasInit==true);
     assert (dim == fun->dimension);  
+
     Flock currentPos = spreadSwarm(bound);
     currentPos.col(0) = init;
     Flock flockSpeed (dim, swarmSize, arma::fill::zeros);
     PBest = currentPos; 
-    GBest = updateGBest(PBest, fun);
+    PBestAndEval.first=PBest;
+    PBestAndEval.second = evaluation (PBest, fun);
+    GBest = updateGBest(PBestAndEval);
     numIter++; 
     while (!convStatus) {                
         flockSpeed = updateFlockSpeed (flockSpeed, currentPos, PBest, GBest);
         currentPos += flockSpeed;
-        PBest = updatePBest (currentPos, PBest, fun);
-        GBest = updateGBest(PBest, fun); 
+        PBestAndEval = updatePBest (currentPos, PBestAndEval,  fun);
+        PBest = PBestAndEval.first;
+        GBest = updateGBest(PBestAndEval); 
         numIter++; 
         if (verbose){                        
             if ( (numIter % 1) ==0) {    
