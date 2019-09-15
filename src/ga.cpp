@@ -1,125 +1,131 @@
-#include "pso.h"
-#include <algorithm>
-#include <iomanip>
+#include "ga.h"
 
-double function (FunctionBase* f, arma::vec p){
-    FunctionBase* func = f->clone();
-    return func->function(p);
-};
+Flock GA::selection (FunctionBase* fun, FlockAndEval& p)  {
+            //obtain the probability of getting seelcted
+            unsigned int numPop = getMatrixDim(p.first).second;
+            unsigned int dimen = getMatrixDim(p.first).first;
+            assert (numPop = popSize);
+            assert (dimen = dim);
+            arma::vec prob( numPop);
+            
+            double sum=0;
+            for (int i=0; i< numPop; i++){
+                sum = sum + p.second[i];
+            }; 
+            //update the prob;
+            for (int i=0; i<numPop; i++){
+                prob[i] = (sum - p.second[i] )/((numPop-1)*sum) ;
+            };
+            std::cout << prob  <<std::endl;
 
+            //Create a map of probability and point
+            std::vector<std::pair<swarm, std::pair<double, double> >> probPair (numPop);
+            double low = 0;
+            double high =0;
+            for (int i=0; i < numPop; i++){
+                high = high + prob[i];
+                probPair[i].first = p.first.col(i);
+                probPair[i].second.first = low;
+                probPair[i].second.second = high;
+                low = low + prob[i];
+            };
+            
+            arma::vec ran(numPop);
+            for (int i=0; i < numPop; i++){
+                ran[i] = randomVal();
+            } ; //populate ran
 
-Flock PSO::spreadSwarm(edge boun){
+            //sample from the distribution prob :
+            Flock newPop (dimen, numPop);
+            for (int i=0; i < numPop; i++){
+                for (int j=0; j < numPop; j++){
+                    if ( ran[i] <= probPair[j].second.second && ran[i] > probPair[j].second.first )
+                        newPop.col(i) = probPair[j].first;
+                };
+            };
+  
+            return newPop;
+        };
+
+Flock GA::spreadPop(edge boun){
     assert (boun.size() == dim);
-    Flock f (dim, swarmSize);
-    for (int i=0; i<swarmSize; i++){
+    Flock f (dim, popSize);
+    for (int i=0; i<popSize; i++){
         for (int j=0; j<dim; j++){
             f(j, i) = randomVal ( boun[j].first, boun[j].second );
+            std::cout << f(j, i)<<std::endl;
         };
     };
     return f;
 };
 
 
-
-arma::vec PSO::evaluation (Flock& f, FunctionBase* fun ){ 
-    assert ( getMatrixDim(f) == flock_dim);            
+arma::vec GA::evaluation (Flock& f, FunctionBase* fun ){ 
+    assert ( getMatrixDim(f) == popDim);            
     std::vector<double> eval;
-    eval.resize(swarmSize); 
-
-    if (multiThread) {
-    #pragma omp parallel for shared(eval)
-    for (int i=0; i<swarmSize; i++){        
-        eval[i] = function(fun, f.col(i)) ;
-    };
-    } else {
-        for (int i=0; i<swarmSize; i++){        
+    eval.resize(popSize); 
+    for (int i=0; i<popSize; i++){        
             eval[i] = fun->function( f.col(i) ) ;
     };
-    }
-    numEval = numEval + swarmSize;
-
+    numEval = numEval + popSize;
     return arma::vec(eval);
 };
 
-void PSO::initMinimizer( const swarm& point, const edge& bou){
+swarm GA::updatePopBest (FlockAndEval& PPBestAndEval){ 
+    assert (getMatrixDim (PPBestAndEval.first) == popDim);
+    assert (PPBestAndEval.second.size() == popSize);    
+    swarm newPopBest (dim);
+    int min_ind = PPBestAndEval.second.index_min();
+    newPopBest = PPBestAndEval.first.col(min_ind);
+    std::pair <arma::vec, double> evalPoint = { newPopBest, PPBestAndEval.second[min_ind]};
+    history->push_back(evalPoint); // The gbest is stored in the stats 
+    return newPopBest;
+};
+
+
+Flock GA::crossover (const Flock& pop){        
+    assert (getMatrixDim(pop) == popDim);
+    assert (popSize % 2 ==0);
+    Flock newPop ( dim, popSize );
+    for ( int i=0; i < (popSize-1); i=i+2){
+        newPop.col(i) = mate (pop.col(i), pop.col(i+1)).first;
+        newPop.col(i+1) = mate (pop.col(i), pop.col(i+1)).second;
+    };
+    return newPop;
+};
+
+void GA::initMinimizer( const swarm& point, const edge& bou){
     MinimizerBase::initMinimizer(point, bou);
-    flock_dim = {dim, swarmSize};
-    PBest.resize(dim, swarmSize);
-    GBest.resize(dim);
-    PBestAndEval.first.resize(dim, swarmSize);
-    PBestAndEval.second.resize(dim);    
+    popDim = {dim, popSize};
+    popBest.resize(dim);
+    parent.resize(dim, popSize);
+    popEval.first.resize(dim, popSize);
+    popEval.second.resize(dim);    
     hasInit = true;         
 };
 
-swarm PSO::updateGBest (FlockAndEval& PPBestAndEval){ 
-    assert (getMatrixDim (PPBestAndEval.first) == flock_dim);
-    assert (PPBestAndEval.second.size() == swarmSize);
-    
-    swarm newGbest (dim);
-    int min_ind = PPBestAndEval.second.index_min();
-    newGbest = PPBestAndEval.first.col(min_ind);
-    std::pair <arma::vec, double> evalPoint = { newGbest, PPBestAndEval.second[min_ind]};
-    history->push_back(evalPoint); // The gbest is stored in the stats 
-    return newGbest;
-};
-
-FlockAndEval PSO::updatePBest(Flock& currentPos, FlockAndEval& prevPBestAndEval,  FunctionBase* fun){
-    assert (getMatrixDim(currentPos) == flock_dim);
-    assert (getMatrixDim (prevPBestAndEval.first) == flock_dim);
-    assert (prevPBestAndEval.second.size() == swarmSize);
-    arma::vec currentPosEval = evaluation (currentPos, fun);
-    FlockAndEval newPBestAndEval;
-    newPBestAndEval.first.resize (dim, swarmSize);
-    newPBestAndEval.second.resize (swarmSize);
-    Flock upPBest (dim, swarmSize);
-    for (int i; i < swarmSize; i++){
-        if ( currentPosEval[i]  < prevPBestAndEval.second[i] )  {
-            newPBestAndEval.first.col(i) = currentPos.col(i);
-            newPBestAndEval.second[i] = currentPosEval[i];
-        }                   
-        else {
-            newPBestAndEval.first.col(i) = prevPBestAndEval.first.col(i);
-            newPBestAndEval.second[i] = prevPBestAndEval.second[i];
-        };
-    };
-    return newPBestAndEval;
-};
 
 
-Flock PSO::updateFlockSpeed(Flock& currentSpeed, Flock& currentPos, Flock& PBest, swarm& GBest){
-    Flock newSpeed(dim, swarmSize);
-    assert ( getMatrixDim(currentSpeed) == flock_dim);
-    assert ( getMatrixDim(PBest) == flock_dim); 
-    assert ( getMatrixDim(currentPos) == flock_dim); 
-
-    for (int i =0; i < swarmSize; i++) {
-        arma::vec r1 (dim, arma::fill::randu);
-        arma::vec r2 (dim, arma::fill::randu);
-        newSpeed.col(i) = hyperParam[0] * currentSpeed.col(i) + hyperParam[1] * r1 % ( PBest.col(i) - currentPos.col(i))
-                            + hyperParam[2] * r2 % (GBest- currentPos.col(i));    
-    };     
-    return newSpeed;
-};
-
-
-void PSO::minimize( FunctionBase* fun) {
+void GA::minimize( FunctionBase* fun) {
     if (!hasInit){
-        throw LogicError ("PSO is not yet initiated");
+        throw LogicError ("GA is not yet initiated");
     };
-    Flock currentPos = spreadSwarm(bound);
-    currentPos.col(0) = init;
-    Flock flockSpeed (dim, swarmSize, arma::fill::zeros);
-    PBest = currentPos; 
-    PBestAndEval.first=PBest;
-    PBestAndEval.second = evaluation (PBest, fun);
-    GBest = updateGBest(PBestAndEval);
-    numIter++; 
-    while (!stop) {                
-        flockSpeed = updateFlockSpeed (flockSpeed, currentPos, PBest, GBest);
-        currentPos += flockSpeed;
-        PBestAndEval = updatePBest (currentPos, PBestAndEval,  fun);
-        PBest = PBestAndEval.first;
-        GBest = updateGBest(PBestAndEval); 
+    Flock children = spreadPop(bound);
+    children.col(0) = init;  
+    
+    
+
+    while (!stop) {
+        std::cout <<children<<std::endl;
+        
+        popEval.first = children;
+        popEval.second = evaluation (children, fun);
+        popBest = updatePopBest (popEval);
+        std::cout << popBest<<std::endl;
+
+        parent = selection(fun, popEval);  
+        std::cout<<parent<<std::endl<<std::endl;  
+        children = crossover(parent); 
         numIter++; 
         if (verbose){                        
             if ( (numIter % 1) ==0) {    
@@ -155,7 +161,7 @@ void PSO::minimize( FunctionBase* fun) {
 
     // or If the maximum Iteration has been achieved      
         if ((numIter) >=  maxIter) {
-            minimum = GBest; 
+            minimum = popBest; 
             //convStatus = true;
             if (usingPipeline == false){
                 std::cout << "----------------------------------------------------"<<std::endl;
@@ -185,13 +191,8 @@ void PSO::minimize( FunctionBase* fun) {
 
 };
 
-void PSO::minimize( FunctionBase* fun, const swarm& point, const edge& bou) {
+void GA::minimize( FunctionBase* fun, const swarm& point, const edge& bou) {
     initMinimizer(point, bou);
     minimize(fun);    
 };
-
-    
-
-
-
 

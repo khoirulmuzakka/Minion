@@ -19,6 +19,8 @@ doc/latex
 *.trace
 *.mod
 Makefile
+bin/*
+lib/*
 
 doc/fit_dummy*
 doc/doxy/html/

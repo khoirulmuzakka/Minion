@@ -62,7 +62,6 @@ class PSO : public MinimizerBase{
 
     public:
         int swarmSize; // the number of swarms
-        double tol = 0.000001;
 
     public :
 
@@ -76,7 +75,7 @@ class PSO : public MinimizerBase{
         /**
          * @brief Override the setInitPoint function. Basically, take the bounds, and then spread the swarms.
          */
-        virtual void setInitPoint( const swarm& point, const edge& bou) override;
+        virtual void initMinimizer( const swarm& point, const edge& bou) override;
 
 
         /**
@@ -95,7 +94,13 @@ class PSO : public MinimizerBase{
         /** 
          * @brief Self explanatory
          */
-        void minimize( FunctionBase* func, bool verbose) override;       
+        void minimize( FunctionBase* func) override; 
+
+        
+        /**
+         * @brief Another minimize overloaded
+         */
+        void minimize( FunctionBase* fun, const swarm& point, const edge& bou);
 
 };
 

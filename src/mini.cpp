@@ -1,79 +1,27 @@
 #include "mini.h"
-#include <iomanip>
+#include "tools.h"
 
-double randomVal (double low, double high, int precision){
-    double res;
-    res = ((high-low)*( (std::rand() % precision) +1 ) / precision ) + low;
-    return res;
-};
-
-void printPoint (const arma::vec& p){
-    std::cout  << " [";
-    for (int i =0; i<p.size(); i++){
-        std::cout << std::setw(8) << std::left << p[i] << " ";
-    };
-    std::cout << "] " ;
-};
-
-
-std::pair<int, int> getMatrixDim (arma::mat m){
-    std::pair<int, int> dim;
-    dim.first = m.n_rows;
-    dim.second = m.n_cols;
-    return dim;
-};
-
-Logging::Logging(std::string logName, bool exportTxt){
-            logLevel = logLevelInfo;
-            isTxt = exportTxt;
-            if (isTxt==true){
-                logfile->open("log/"+logName+".txt");
-            };
-        };
-
-void Logging::info (std::string message){
-            if (logLevel == logLevelInfo){
-                std::cout<< "[INFO] " << message << std::endl;
-            };
-            if (isTxt==true){
-                *logfile << "[INFO] " << message << "/n";
-            };
-        };
-
-void Logging::warn(std::string message){
-            if (logLevel <= logLevelWarning){
-                std::cout<< "[WARNING] " << message << std::endl;
-            };
-            if (isTxt==true){
-                *logfile << "[WARNING] " << message << "/n";
-            };
-        };
-
-void Logging::error(std::string message){
-            if (logLevel <= logLevelError){
-                std::cout<< "[ERROR] " << message << std::endl;
-            };
-            if (isTxt==true){
-                *logfile << "[ERROR] " << message << "/n";
-            };
-
-        }; 
 
 bool MinimizerBase::usingPipeline = false; 
 bool MinimizerBase::hasFree = false;
-bool MinimizerBase::convStatus = false;
-int MinimizerBase::instanceCount=0;
+bool MinimizerBase::isConverge = false;
 int MinimizerBase::numEval = 0; //variable to store the number of function evaluation
 int MinimizerBase::numIter =0;
 //Lets allocate history pointer in the heap. Why? its size could be larger than 2 MB.
 std::vector<  std::pair<arma::vec, double> >* MinimizerBase::history = new std::vector<  std::pair<arma::vec, double> >;
 
-void MinimizerBase::setInitPoint(const arma::vec&  point, const edge& bou) {
-            assert (point.size()==bou.size());
+void MinimizerBase::initMinimizer(const arma::vec&  point) {
             init = point;
-            bound = bou;
             dim = point.size();
             minimum.resize(dim);
+            isBound = false;
+            hasInit = true;
+        };
+
+void MinimizerBase::initMinimizer(const arma::vec&  point, const edge& domain) {
+            initMinimizer(point);
+            bound = domain;
+            isBound = true;
             hasInit = true;
         };
 
@@ -94,29 +42,24 @@ void Pipeline::modifyMaxIter () {
             };
         };
 
-void Pipeline::setInitPoint(const arma::vec&  point, const edge& bou) {
-            assert (point.size()==dim);
-            assert (bou.size()== dim);
-            init = point;
-            bound = bou;
-            hasInit = true;
-};           
-
-void Pipeline::minimize ( FunctionBase* fun, bool verbose){
-    assert (hasAdd == true);
-    assert (hasDim == true);
-    assert (hasInit==true); //make sure that setInitPoint has been called.
-    assert (dim == fun->dimension);
-    modifyMaxIter(); /// modeify MaxIter for each minimizer.
+void Pipeline::minimize ( FunctionBase* fun){
+    if (!hasAdd)
+        throw LogicError ("You have not added any minimizer");
+    modifyMaxIter(); /// modify MaxIter for each minimizer.
     for (int i=0; i<pipe.size(); i++){
-        pipe[i]->setDim(dim);
-        pipe[i]->hasDim = true;
-        if (i==0) pipe[i]->setInitPoint(init, bound); //set init point to that of Pipeline.
-        if (i>0)  pipe[i]->setInitPoint( pipe[i-1]-> minimum, bound);//set init to the last minimum
-        pipe[i]->minimize(fun, verbose);  
-       if (convStatus == true) break;
+        if (isBound){
+            if (i==0) pipe[i]->initMinimizer(init, bound); //set init point to that of Pipeline.
+            if (i>0)  pipe[i]->initMinimizer( pipe[i-1]-> minimum, bound);//set init to the last minimum
+        } else {
+            if (i==0) pipe[i]->initMinimizer(init); //set init point to that of Pipeline.
+            if (i>0)  pipe[i]->initMinimizer( pipe[i-1]-> minimum);//set init to the last minimum
+        };
+        pipe[i]->minimize(fun);  
+        if (isConverge == true) {
+            minimum = pipe[i]->minimum;
+            break;
+        }
     };
-    hasMinimize = true;
-    minimum = history->back().first;
+    minimum = pipe.back()->minimum;
 };
 

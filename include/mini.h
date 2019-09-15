@@ -7,113 +7,44 @@
 #include <memory>
 #include <armadillo>
 #include <assert.h>
-
-/**
- * @brief Custom Function to generate random variable
- * @param lower bound, upper bound, and precision. Precision 100 mean we have 1/100 precision.
- * return double
- */
-double randomVal (double low, double high, int precision=100);
-
-/** 
- * @brief Custom function to print an arma::vec
- */
-void printPoint (const arma::vec& p);
-
-/**
- * @brief Simple function to get dimension of arma mat
- * @return a pair of (row, column)
- */
-std::pair<int, int> getMatrixDim (arma::mat m);
-
-//error handling class when the subclass implement pure virtual functions wrongly.
-class NotImplementedError:public std::logic_error{
-    public :
-        NotImplementedError (std::string message) : std::logic_error(message) {};
-};
+#include "tools.h"
 
 
-/**
- * @brief Logging class
- * @
- */
-class Logging {
-    protected :
-        int logLevel; 
-        bool isTxt=true;
-        std::ofstream* logfile;
-
-    public :
-        const int logLevelInfo = 0; //everything is printed
-        const int logLevelWarning=1; //only Warning and error is printed
-        const int logLevelError = 2; //only error is printed
-    
-    public:
-
-        /**
-         * @brief class contructor. 
-         * 
-         */
-        Logging(std::string logName, bool exportTxt= true);
-
-        /**
-         * @brief Destructor. Do some clean up here
-         */
-        ~Logging(){
-            logfile->close();
-        };
-
-        void setLogLevel(int logLevel){
-            logLevel=logLevel;
-        };
-
-        /**
-         * @brief function to give information on fitting process user 
-         */
-        virtual void info (std::string message);
-
-        /**
-         * @brief function to warn user if potentially uniexpected behaviour occurs. 
-         */
-        virtual void warn(std::string message);
-
-        /**
-         * @brief function to give error message to the user if error occurs. 
-         */
-        virtual void error(std::string message);
-};
-
-
+//#################################### FunctionBase ############################################
 /**
 * @brief base class that must be supclassed by its implementation class. 
 */
 class FunctionBase {
     public :
-        int dimension; //dimension of the parameter space
-        bool hasDimension = false; //flag to see if dimension has been provided
-        arma::vec minimum; //variable to tore the minimum
-        bool hasMinimize = false; //flag to see if minimum has been obtained
+        unsigned int dim; //dimension of the parameter space
+        bool hasMinimize = false; //flag to see if has minize has been called
+        arma::vec minimum; //variable to store the minimum
+
     public :
-        //constructor
-        FunctionBase() {};
-        FunctionBase(int dim) : dimension(dim) {
-            hasDimension = true;
-        }; 
+
+        /**
+         * @brief Constructor with the dimension of the param space specified
+         */
+        FunctionBase(int dim) : dim(dim) {}; 
 
         /**
          * @brief Constrcutor to copy from another FunctionBase object. Used to copy a functionbase pointer
          */
         FunctionBase (const FunctionBase& old){
-            dimension = old.dimension;
-            hasDimension = old.hasDimension;
+            dim = old.dim;
         };
 
         /**
          * @brief Clone a FunctionBase pointer. Used to copy a FUnctionBAse class in Polymorphism.
          */
-        virtual FunctionBase* clone(){throw NotImplementedError ("Clone function has not been implemented in your class function");};
-
-        virtual ~FunctionBase(){};//destructor
+        virtual FunctionBase* clone(){
+            throw NotImplementedError ("Clone function has not been implemented in your class function");
+        };
+        
+        /**
+         * @brief Destructor
+         */
+        virtual ~FunctionBase(){};
 
         /**
         * @brief pure virtual function that must be overridden by subclass
@@ -123,70 +54,53 @@ class FunctionBase {
         virtual double function(const arma::vec&)=0;
 
         /**
-         * @brief A virtual function to get a first derivative
-         * @param Index of variable, and point at which the derivative is evaluated
-         * @return Value of the der
-         */
-        virtual double getFirstDer (const int& index, const arma::vec& p) {
-            throw NotImplementedError("first derivatives have not been implemented");
-        };
-
-        /**
-         * @brief Function to set the dimension of the param space
-         */
-        void setDim (const int& dim){
-            dimension = dim;
-            hasDimension = true;
-        };
-
-        /**
-         * @brief A virtual function to get a frist derivative
-         * @param Indices of variable, and point at which the derivative is evaluated
-         * @return Value of the second der
-         */
-        virtual double getSecondDer (const int& index1, const int& index2, const arma::vec& p) {
-            throw NotImplementedError("first derivatives have not been implemented");
-        };
-
-        /**
-         * @brief Funtion to get a hessian matrix of the function. 
-         * Note that getSecondDer must be implemented first.
-         * @param a point in the parameter space.
-         * @return hessian matrix
-         */
-        arma::mat getHessian (const arma::vec& p){
-            arma::mat hessian (p.size(), p.size());
-            for (int i=0; i<p.size(); i++){
-                for (int j=0; j<p.size(); j++){
-                    hessian[i,j] = getSecondDer(i,j,p);
-                };
-            };
-            return hessian;       
-        };
-        
-        /**
          * @brief Function to query the minimum
          * @return arma::vec of a minimum
          */
         arma::vec getMinimum (){
-            assert (hasMinimize == true);
+            if (!hasMinimize)
+                throw LogicError ("You must perform minimization first");
             return minimum;
         }
 };
 
-// custom datatype to store a bound. The length of vector equals to the dimension of param space
-// the pair is (lower bound, upper bound)
+//###################################### End FunctionBAse ###########################################
+
+/**
+ * @brief  custom datatype to store a bound. The length of vector equals to the dimension of param space
+ * the pair is (lower bound, upper bound)
+ */
 typedef std::vector<std::pair< double, double>> edge; 
 
+
+//######################################### MinimizerBase ###########################################
 /**
  * @brief The main interface to the minimizer class. This is Pure virtual class so can not be instantiated.
  */
 class MinimizerBase {
     private :
         static bool hasFree; //flag to see if the memory has been freed from heap or not.        
+    
+    protected :
+        static bool usingPipeline; // flag if Pipeline (custom) minimizer is being used.                  
+        bool hasInit = false;   //flag to see if initial point has been chosen or not. 
+        static int numEval; //variable to store the number of function evaluation.
+        static int numIter; //static variable to store the number of iteration     
+        bool stop =false; //to stop for loop in while loop
+        static std::vector<  std::pair<arma::vec, double> >* history; //To store the function evaluation in each step. 
+        unsigned int dim;  //dimension of the parameter space 
+        arma::vec init; //initial point 
+        edge bound;
+        bool isBound = false; //flag if this is a bounded minimization
+    
+    public:
+        static bool isConverge; //flag of convergence status 
+        unsigned int maxIter = 20000; // maximum iteration. If numIter>maxIter, the minimizer will stop.
+        unsigned int maxEval = 200000;// Maximum number of function evaluation;   
+        bool verbose = true; //flag to print info when minimizing
+        arma::vec minimum;  //variable to store the minimum   
 
     private :
-
         /**
          * @brief Private function to delete history pointer. Will call this function in the class destructor.
          */
@@ -194,76 +108,50 @@ class MinimizerBase {
             delete history;
             hasFree=true;
             std::cout << "Memory has been freed" << std::endl;
-        };      
-    
-    protected :
-        static bool usingPipeline; // flag if Pipeline (custom) minimizer is being used.    
-        bool hasMinimize;           //flag if minimize function was called.
-        static bool convStatus; //flag of convergence status        
-        bool hasInit = false;   //flag to see if initial point has been chosen or not. 
-        static int numEval; //variable to store the number of function evaluation.
-        static int numIter; //static variable to store the number of iteration     
-         
-    
-    public:
-        int maxIter = 2000; // maximum iteration. If numIter>maxIter, the minimizer will stop.
-        static int instanceCount; //static variable to count the number of instances created. Useful for creating multiple logs file   
-        static std::vector<  std::pair<arma::vec, double> >* history; //To store the function evaluation in each step.         
-        arma::vec minimum;  //variable to store the minimum
-        int dim;  //dimension of the parameter space
-        arma::vec  init; //initial point 
-        edge bound; // a vector of pair of lower bound and upper bound. 
-        bool hasDim=false;  
+        };     
         
     public :
 
         /**
-        * @brief Default Constructor
+         * @brief Default contructor
+         */
+        MinimizerBase (){};
+
+        /**
+        * @brief Constructor. 
+        * @param Flag if this is a bounded or free minimizer
         */
-        MinimizerBase(){
-            instanceCount++;
+        MinimizerBase(const arma::vec& initial){
+            initMinimizer (initial);
         };
 
         /**
-        *@brief Destructor. Do some clean up here.
+        * @brief Constructor. 
+        * @param Flag if this is a bounded or free minimizer
         */
-        virtual ~MinimizerBase(){
-            if (hasFree == false) delHistory();
+        MinimizerBase(const arma::vec& initial, const edge& domain){
+            initMinimizer (initial, bound);
         };
-        
+  
         /**
-        * @brief Set initial point for minimzation. This is not needed in population-based algorithms since
-        * they have their own way to initialize the population. 
+        * @brief Set initial point for minimzation. This is overridden in population-based algorithms since
+        * they have their own way to initialize the population. Update the following (at least) : init,bound, dim, hasdim, hasInit
         * @param A pair of input point (arma::vec) and a bound (std::vector<double>)
         */
-        virtual void setInitPoint( const arma::vec& , const edge&);
+        virtual void initMinimizer( const arma::vec& initial);
 
         /**
-         * @brief Function to set the dimension of the parameter space
+         * @brief Virtual function to set initial point and domain (bound), which must be known by the minimizer before startminimizing
          */
-        void setDim(const int& dimension) {
-            dim = dimension;
-            init.resize(dim);
-            bound.resize(dim);
-            minimum.resize(dim);
-            hasDim = true;
-        };
+        virtual void initMinimizer ( const arma::vec& initial, const edge& domain);
+
 
         /**
-        *@brief Pure virtual function to find the global mnimimum. Please update the numEval and numIter and minimum, hasInit
-        * along the way. Make sure that hasInit flag is true. At the end, change hasMinimize to true
+        *@brief Pure virtual function to find the global mnimimum. Please update the numEval and numIter and minimum.
+        * Make sure that hasInit flag is true. At the end, change hasMinimize to true and update miimum and fun->minimum. 
         * @param Function base pointer object
         */
-        virtual void minimize( FunctionBase*, bool verbose)=0; 
-
-        /**
-         * @brief Function to query the minimum
-         * @return arma::vec of a minimum
-         */
-        arma::vec getMinimum (){
-            assert (hasMinimize==true);
-            return minimum;
-        }; 
+        virtual void minimize( FunctionBase*)=0; 
 
         /**
          * @brief A static Funtion to extract the history of function evaluation
@@ -272,7 +160,10 @@ class MinimizerBase {
         static std::pair< std::vector< arma::vec>, std::vector<double>> extractHistory ();
     
 };
+//#################################### End MinimizerBase #############################################
 
+
+//#################################### Pipeline ######################################################
 /** 
  * @brief Pipeline class to chain multiple minimizer
  */
@@ -299,16 +190,26 @@ class Pipeline : public MinimizerBase{
             std::cout << "----------------------------------------------------"<<std::endl;  
         };
 
+        /** 
+         * @brief  contructor 
+         */
+        Pipeline(const arma::vec& initial, const edge& domain) : MinimizerBase (initial, domain) {
+            Pipeline();
+            initMinimizer(initial, domain);
+        };
+
+        /** 
+         * @brief  contructor 
+         */
+        Pipeline(const arma::vec& initial): MinimizerBase (initial) {
+            Pipeline();
+            initMinimizer(initial);
+        };
+
         /**
          * @brief destructor
          */
-        ~Pipeline(){};
-
-        /**
-         * @brief set InitPoint for pipeline
-         */
-        virtual void setInitPoint(const arma::vec&  point, const edge& bou) override;
-            
+        ~Pipeline(){};            
 
         /** 
          * @brief function to add minimizer algorithm
@@ -322,9 +223,9 @@ class Pipeline : public MinimizerBase{
          * @brief an Overloaded minimize function 
          * @param A functionBase pointer object
          */
-        virtual void minimize (FunctionBase*, bool verbose=true) override;
+        virtual void minimize (FunctionBase*) override;
 
 };  
-
+//############################################### End Pipeline #########################################
 
 #endif

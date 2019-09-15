@@ -22,7 +22,7 @@ add_library(minion STATIC ${LIB_SOURCE_FILES})
 target_link_libraries(minion armadillo)
 set_target_properties(minion PROPERTIES ARCHIVE_OUTPUT_DIRECTORY  ./lib)
 
-#compile MainPSOTest.cpp
-add_executable(PSOTest  examples/MainPSOTest.cpp)
-target_link_libraries(PSOTest minion)
-set_target_properties(PSOTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+#compile MAinTest.cpp
+add_executable(Test  examples/MainTest.cpp)
+target_link_libraries(Test minion)
+set_target_properties(Test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
