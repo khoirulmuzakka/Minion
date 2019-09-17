@@ -15,7 +15,7 @@ class Quadratic : public FunctionBase {
         double function (const swarm& p) override {
             double res=0;
             for (int i=0; i<p.size(); i++){
-                res= res + std::pow(p[i]-45, 2);
+                res= res + std::pow(p[i]-5, 2);
             };
             return res;
         };
@@ -82,9 +82,9 @@ edge generateBound (int dim, std::pair<double, double> bo){
 int main(){  
 
 //Lets try PSO in 2 diemnsion  
-edge boun = generateBound (2, {20, 70}); // Generate lower bound and upper bound
+edge boun = generateBound (2, {-100, 100}); // Generate lower bound and upper bound
 std::vector<double> initial (2); 
-std::fill (initial.begin(), initial.end(), 75); //fill init
+std::fill (initial.begin(), initial.end(), 20); //fill init
 
 Quadratic quad (2);
 Rosenbrock ros(2);
@@ -99,10 +99,10 @@ pso.minimize(&quad);
 */
 
 
-GA ga(4);
+GA ga(1000);
 ga.initMinimizer(initial, boun);
-ga.setMaxIter (200);
-ga.minimize(&quad);
+ga.setMaxIter (100);
+ga.minimize(&ros);
  
 
 /*

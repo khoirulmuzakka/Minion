@@ -16,22 +16,13 @@ class GA : public MinimizerBase {
         swarm popBest;
         FlockAndEval popEval;
         Flock parent;
-        struct Convert {
-            Convert(double x){
-                Double = x;
-            };
-            Convert(long long x){
-                Int = x;
-            };
-            union {
-                double Double;
-                long long Int;
-            } ;
-        };
+        unsigned int numElite ;
 
     public :
         unsigned int popSize;  
-        double mutationRate = 0.1;      
+        double mutationRate = 0.001;    
+        double matingRate=1.0;
+        double eliteFraction = 0.1;
        
     protected :
 
@@ -59,80 +50,18 @@ class GA : public MinimizerBase {
          */
         swarm updatePopBest (FlockAndEval& PBestAndEval);
 
+
         /**
-         * @brief Mate two points to produce two children
+         * @brief Mate two points to produce two children. This method comes from the paper by (Leo Budin et all)
          */
-        virtual std::pair <swarm, swarm> mate (const swarm& p1, const swarm& p2){
-            assert (p1.size() == p2.size());
-            std::pair<swarm, swarm> children ;
-            std::pair< std::vector<long long> , std::vector<long long> > children_bin;
-
-            children.first.resize(p1.size());
-            children.second.resize(p1.size());
-            children_bin.first.resize(p1.size());
-            children_bin.second.resize(p1.size());
-
-            swarm r1 (p1.size(), arma::fill::randu);
-            swarm r2 (p1.size(), arma::fill::randu);
-
-            for (int i =0; i< p1.size(); i++){
-                children_bin.first [i] = ( Convert(p1[i]).Int & Convert(p2[i]).Int ) |
-                                         ( Convert(r1[i]).Int & ( Convert(p1[i]).Int ^ Convert(p2[i]).Int));
-                children_bin.second [i] = ( Convert(p1[i]).Int & Convert(p2[i]).Int ) |
-                                         ( Convert(r2[i]).Int & ( Convert(p1[i]).Int ^ Convert(p2[i]).Int));
-
-                children.first[i] = Convert(children_bin.first [i]).Double;
-                children.second[i] = Convert(children_bin.second [i]).Double;
-            };
-            return children;
-        };
-
+        virtual swarm mate (const swarm& p1, const swarm& p2);
+        
         /**
          * @brief FUnction to perfrom crossover
          */
-        virtual Flock crossover (const Flock& pop );
+        virtual Flock crossover (Flock& pop );
 
-        /**
-         * @brief scale up
-         */
-        swarm scaleDown (const swarm& p, const edge& bo){
-            assert (p.size() == bo.size());
-            swarm scaledPoint(p.size());
-            for (int i=0; i<p.size(); i++){
-                scaledPoint[i] = (p[i]-bo[i].first)/(bo[i].second-bo[i].first);
-            };
-            return scaledPoint;
-        };
-
-        /**
-         * @brief scale up
-         */
-        swarm scaleUp (const swarm& s, const edge& bo){
-            assert (s.size() == bo.size());
-            swarm scaledPoint(s.size());
-            for (int i=0; i<s.size(); i++){
-                scaledPoint[i] = bo[i].first+ (bo[i].second-bo[i].first)* s[i] ;
-            };
-            return scaledPoint;
-        };
-
-        Flock flockScaleDown (const Flock f, const edge& bo){
-            assert (getMatrixDim(f)== popDim);
-            Flock newPop (dim, popSize);
-            for (int i=0; i < popSize; i++){
-                newPop.col(i) = scaleDown (f.col(i), bo);
-            };
-            return newPop;
-        };
         
-        Flock flockScaleUp (const Flock f, const edge& bo){
-            assert (getMatrixDim(f)== popDim);
-            Flock newPop (dim, popSize);
-            for (int i=0; i < popSize; i++){
-                newPop.col(i) = scaleUp (f.col(i), bo);
-            };
-            return newPop;
-        };
 
 
     public :

@@ -16,6 +16,12 @@
  */
 double randomVal (double low=0, double high=1, int precision=10000);
 
+/**
+ * @brief Generate random integer bewteen two bounds. Lower bound inclusive, upper bound exclusive.
+ * /
+ */
+int randomInt (int low=0, int high=10);
+
 /** 
  * @brief Helper function to print an arma::vec
  */

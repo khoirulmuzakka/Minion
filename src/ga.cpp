@@ -1,23 +1,28 @@
 #include "ga.h"
 
 Flock GA::selection (FunctionBase* fun, FlockAndEval& p)  {
-            //obtain the probability of getting seelcted
+            //space reserving and checking
             unsigned int numPop = getMatrixDim(p.first).second;
             unsigned int dimen = getMatrixDim(p.first).first;
             assert (numPop = popSize);
-            assert (dimen = dim);
-            arma::vec prob( numPop);
-            
+            assert (dimen = dim);       
+            //identify the elite children
+            arma::uvec v= arma::sort_index(p.second, "ascending"); //sorted index from low eval to high eval
+            std::vector<swarm> eliteChildren (numElite);
+            for (unsigned int j=0; j < numElite; j++){
+                eliteChildren[j] = p.first.col(v[j]);
+            };
+            //start the selection 
+            arma::vec prob( numPop);            
             double sum=0;
             for (int i=0; i< numPop; i++){
                 sum = sum + p.second[i];
             }; 
-            //update the prob;
+            //update the prob;            
             for (int i=0; i<numPop; i++){
                 prob[i] = (sum - p.second[i] )/((numPop-1)*sum) ;
             };
-            std::cout << prob  <<std::endl;
-
+            //std::cout << prob  <<std::endl;
             //Create a map of probability and point
             std::vector<std::pair<swarm, std::pair<double, double> >> probPair (numPop);
             double low = 0;
@@ -30,22 +35,61 @@ Flock GA::selection (FunctionBase* fun, FlockAndEval& p)  {
                 low = low + prob[i];
             };
             
-            arma::vec ran(numPop);
-            for (int i=0; i < numPop; i++){
-                ran[i] = randomVal();
-            } ; //populate ran
-
             //sample from the distribution prob :
             Flock newPop (dimen, numPop);
             for (int i=0; i < numPop; i++){
-                for (int j=0; j < numPop; j++){
-                    if ( ran[i] <= probPair[j].second.second && ran[i] > probPair[j].second.first )
-                        newPop.col(i) = probPair[j].first;
+                if (i<numElite){
+                    newPop.col(i) = eliteChildren[i];
+                } else {
+                    double ran = randomVal();
+                    for (int j=0; j < numPop; j++){
+                        if ( ran <= probPair[j].second.second && ran > probPair[j].second.first )
+                            newPop.col(i) = probPair[j].first;
+                    };
                 };
-            };
-  
+            };        
+
             return newPop;
         };
+
+swarm GA::mate (const swarm& p1, const swarm& p2){
+    arma::vec low(dim);
+    arma::vec high(dim);
+    for (int i=0; i<dim;i++){
+        low[i] = bound[i].first;
+        high[i] = bound[i].second;
+    };
+    assert (p1.size() == p2.size());
+    assert (p1.size()==dim);
+    swarm child (p1.size()) ;
+    arma::vec r1 (p1.size(), arma::fill::randu);
+    arma::vec r2 (p1.size(), arma::fill::randu);
+    arma::vec r3 (p1.size(), arma::fill::randn);
+    arma::vec ones(p1.size()); ones.fill(1);
+    double ran = randomVal();
+    if (ran<mutationRate ){
+        child = r1%p1+ (ones-r1)%p2 + r3%(high-low) ;
+    } else
+    {
+        child = r1%p1+ (ones-r1)%p2;  
+    }
+    
+    return child;
+};
+
+Flock GA::crossover (Flock& pop){        
+    assert (getMatrixDim(pop) == popDim);
+    assert (popSize % 2 ==0);
+    for ( int i=numElite; i < popSize; i++){
+        double ran = randomVal();
+        int r1 = randomInt(0, popSize);
+        int r2 = randomInt(0, popSize);        
+        if (ran < matingRate){
+            pop.col(i) = mate (pop.col(r1), pop.col(r2));            
+        };
+    };
+    return pop;
+};
 
 Flock GA::spreadPop(edge boun){
     assert (boun.size() == dim);
@@ -53,9 +97,9 @@ Flock GA::spreadPop(edge boun){
     for (int i=0; i<popSize; i++){
         for (int j=0; j<dim; j++){
             f(j, i) = randomVal ( boun[j].first, boun[j].second );
-            std::cout << f(j, i)<<std::endl;
         };
     };
+    
     return f;
 };
 
@@ -83,16 +127,7 @@ swarm GA::updatePopBest (FlockAndEval& PPBestAndEval){
 };
 
 
-Flock GA::crossover (const Flock& pop){        
-    assert (getMatrixDim(pop) == popDim);
-    assert (popSize % 2 ==0);
-    Flock newPop ( dim, popSize );
-    for ( int i=0; i < (popSize-1); i=i+2){
-        newPop.col(i) = mate (pop.col(i), pop.col(i+1)).first;
-        newPop.col(i+1) = mate (pop.col(i), pop.col(i+1)).second;
-    };
-    return newPop;
-};
+
 
 void GA::initMinimizer( const swarm& point, const edge& bou){
     MinimizerBase::initMinimizer(point, bou);
@@ -101,7 +136,14 @@ void GA::initMinimizer( const swarm& point, const edge& bou){
     parent.resize(dim, popSize);
     popEval.first.resize(dim, popSize);
     popEval.second.resize(dim);    
-    hasInit = true;         
+    hasInit = true;   
+    //get the number of elite children
+    if (eliteFraction*popSize > 1.0){
+        unsigned int numElite = int(eliteFraction*popSize);
+    } else {
+        unsigned int numElite = 1;
+    };     
+    
 };
 
 
@@ -111,20 +153,21 @@ void GA::minimize( FunctionBase* fun) {
         throw LogicError ("GA is not yet initiated");
     };
     Flock children = spreadPop(bound);
-    children.col(0) = init;  
     
-    
-
+    children.col(0) = init;    
     while (!stop) {
-        std::cout <<children<<std::endl;
+        //std::cout <<children<<std::endl;
         
         popEval.first = children;
+         
         popEval.second = evaluation (children, fun);
+       
         popBest = updatePopBest (popEval);
-        std::cout << popBest<<std::endl;
-
-        parent = selection(fun, popEval);  
-        std::cout<<parent<<std::endl<<std::endl;  
+       // std::cout << popBest<<std::endl;
+        
+        parent = selection(fun, popEval);
+        
+        //std::cout<<parent<<std::endl<<std::endl;  
         children = crossover(parent); 
         numIter++; 
         if (verbose){                        

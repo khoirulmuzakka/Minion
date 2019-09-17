@@ -9,12 +9,31 @@ double randomVal (double low, double high, int precision){
     return res;
 };
 
+int randomInt (int low, int high){
+    int res;
+    res = (std::rand() % (high-low)) + low;
+    return res;
+};
+
 void printPoint (const arma::vec& p){
     std::cout  << " [";
     for (int i =0; i<p.size(); i++){
         std::cout << std::setw(8) << std::left << p[i] << " ";
     };
     std::cout << "] " ;
+};
+
+struct Convert {
+    Convert(double x){
+        Double = x;
+    };
+    Convert(long long x){
+        Int = x;
+    };
+    union {
+        double Double;
+        long long Int;
+    } ;
 };
 
 
