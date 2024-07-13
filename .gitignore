@@ -1,0 +1,15 @@
+.vscode/
+build/
+Logs/*.log
+src/__pycache__
+*/*/__pycache__
+.git
+*/__pycache__
+__pycache__
+python_env
+lib
+dist/
+Temp/
+Output/
+
+

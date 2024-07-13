@@ -1,0 +1,16 @@
+How to compile and use Minion library :
+-----------------------------
+
+1)  Install Dependencies
+    Run install_dependencies.bat file to install the required dependencies. 
+
+2)  Compile Cython Library
+    Run cython_compile.bat file to compile the Cython library.
+
+    Note: To compile the source code, you need Microsoft C++ Build Tools. This can be downloaded from https://visualstudio.microsoft.com/visual-cpp-build-tools/. 
+
+3)  Upon a succesfull compilation, library file (*.pyd) should be in ./lib. You can import the library as : 
+	import sys
+	custom_path = 'path/to/lib/'
+	sys.path.append(custom_path) 
+	from minion import *
