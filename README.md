@@ -101,7 +101,7 @@ int main() {
 
     // Output the results
     std::cout << "Best solution found: ";
-    for (const auto& val : result.best_solution) {
+    for (const auto& val : result.x) {
         std::cout << val << " ";
     }
     std::cout << "\nBest objective value: " << result.best_value << std::endl;
