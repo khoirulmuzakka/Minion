@@ -6,9 +6,11 @@ custom_path = os.path.join(current_file_directory, '../lib/Release/')
 sys.path.append(custom_path)
 
 import numpy as np
-from pyminioncpp import M_LJADE_AMR as cppM_LJADE_AMR
-from pyminioncpp import M_LSHADE_AMR as cppM_LSHADE_AMR
+from pyminioncpp import MFADE as cppMFADE
+from pyminioncpp import FADE as cppFADE
 from pyminioncpp import MinionResult as cppMinionResult
+from pyminioncpp import GWO_DE as cppGWO_DE
+
 
   
 class MinionResult:
@@ -131,10 +133,10 @@ class MinimizerBase:
         return [(b[0], b[1]) for b in bounds]
 
 
-class M_LJADE_AMR(MinimizerBase):
+class FADE(MinimizerBase):
     """
-    @class M_LJADE_AMR
-    @brief Implementation of the modified JADE with linear population size reduction with adaptive mutation rate (M-LJADE-AMR) algorithm.
+    @class FADE : Fully Adaptive Differential Evolution
+    @brief Implementation of the FADE algorithm.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -142,7 +144,7 @@ class M_LJADE_AMR(MinimizerBase):
     def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
                  strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, c=0.5, callback=None, boundStrategy="reflect-random", seed=None):
         """
-        @brief Constructor for M_LJADE_AMR.
+        @brief Constructor for FADE.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
@@ -153,7 +155,7 @@ class M_LJADE_AMR(MinimizerBase):
         @param strategy DE strategy to use.
         @param relTol Relative tolerance for convergence.
         @param minPopSize Minimum population size.
-        @param c Control parameter for M-LJADE-AMR.
+        @param c Control parameter for FADE.
         @param callback Callback function called after each iteration.
         @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
@@ -164,7 +166,7 @@ class M_LJADE_AMR(MinimizerBase):
         self.strategy = strategy
         self.minPopSize = minPopSize
         self.c = c
-        self.optimizer = cppM_LJADE_AMR(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
+        self.optimizer = cppFADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
                                         strategy, relTol, minPopSize, c, self.cppCallback, boundStrategy, self.seed)
     
     def optimize(self):
@@ -181,10 +183,10 @@ class M_LJADE_AMR(MinimizerBase):
         self.stdF = self.optimizer.muF
         return self.minionResult
     
-class M_LSHADE_AMR(MinimizerBase):
+class MFADE(MinimizerBase):
     """
-    @class M_LSHADE_AMR
-    @brief Implementation of the modified SHADE with linear population size reduction with adaptive mutation rate (M-LSHADE-AMR) algorithm.
+    @class MFADE : Fully Adaptive Differential Evolution with Memory
+    @brief Implementation of the MFADE algorithm.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -192,7 +194,7 @@ class M_LSHADE_AMR(MinimizerBase):
     def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
                  strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, memeorySize=30, callback=None, boundStrategy="reflect-random", seed=None):
         """
-        @brief Constructor for M_LSHADE_AMR.
+        @brief Constructor for MFADE.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
@@ -214,7 +216,7 @@ class M_LSHADE_AMR(MinimizerBase):
         self.strategy = strategy
         self.minPopSize = minPopSize
         self.memorySize=memeorySize
-        self.optimizer = cppM_LSHADE_AMR(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
+        self.optimizer = cppMFADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
                                         strategy, relTol, minPopSize, self.memorySize, self.cppCallback, self.boundStrategy, self.seed)
     
     def optimize(self):
@@ -229,4 +231,49 @@ class M_LSHADE_AMR(MinimizerBase):
         self.muF = self.optimizer.muF
         self.stdCR = self.optimizer.muCR
         self.stdF = self.optimizer.muF
+        return self.minionResult
+    
+
+class GWO_DE(MinimizerBase):
+    """
+    @class GWO_DE
+    @brief Implementation of the Grey Wolf Optimizer with Differential Evolution (GWO-DE) algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+
+    def __init__(self, func, bounds, data=None, x0=None, population_size=20, maxevals=1000, F=0.5, CR=0.7, elimination_prob=0.1, relTol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for GWO_DE.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param F Differential evolution scaling factor.
+        @param CR Crossover probability.
+        @param elimination_prob Probability of elimination.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+
+        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.F = F
+        self.CR = CR
+        self.elimination_prob = elimination_prob
+        self.optimizer = cppGWO_DE(self.func, self.bounds, self.x0cpp, population_size, maxevals, F, CR, elimination_prob, relTol, boundStrategy, self.seed, self.data, self.cppCallback)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using GWO-DE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult

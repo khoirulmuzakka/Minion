@@ -1,27 +1,27 @@
-#include "m_lshade_amr.h" 
+#include "fade.h" 
 
-M_LSHADE_AMR::M_LSHADE_AMR(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data, 
+FADE::FADE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data, 
                          const std::vector<double>& x0, int population_size, int maxevals, 
                          std::string strategy, double relTol, int minPopSize, 
-                         size_t memorySize, std::function<void(MinionResult*)> callback, std::string boundStrategy, int seed) 
-    : DE_Base(func, bounds, data, x0, population_size, maxevals, strategy, relTol, minPopSize, callback, boundStrategy, seed), memorySize(memorySize) {
+                         double c, std::function<void(MinionResult*)> callback, std::string boundStrategy, int seed) 
+    : DE_Base(func, bounds, data, x0, population_size, maxevals, strategy, relTol, minPopSize, callback, boundStrategy, seed),
+      meanCR(0.5), meanF(0.8), c(c) {
     F = std::vector<double>(popsize, 0.5);
     CR = std::vector<double>(popsize, 0.9);
 }
 
-void M_LSHADE_AMR::_adapt_parameters() {
+void FADE::_adapt_parameters() {
     std::vector<double> new_CR(popsize);
     std::vector<double> new_F(popsize);
 
-    std::vector<size_t> allind, selecIndices; 
-    for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
-    selecIndices = random_choice(allind, popsize); 
     for (int i = 0; i < popsize; ++i) {
-        new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        new_F[i] = rand_norm(M_F[selecIndices[i]], 0.1);
+        new_CR[i] = rand_norm(meanCR, 0.1);
+        new_F[i] = rand_norm(meanF, 0.1);
     }
-
+    CR = new_CR ;
+    F = new_F;
     double spread =  calcStdDev(fitness)/best_fitness;
+
     if (spread < 0.1) {
         double etaF = 0.5 - 5.0 * spread;
         double etaCR = 0.1 - spread;
@@ -43,12 +43,9 @@ void M_LSHADE_AMR::_adapt_parameters() {
     stdF.push_back(calcStdDev(F));
 };
 
-MinionResult M_LSHADE_AMR::optimize() {
+MinionResult FADE::optimize() {
     _initialize_population();
-    M_CR = rand_gen(0.2, 1.0, memorySize);
-    M_F = rand_gen(0.2, 1.5, memorySize);
     std::vector<std::vector<double>> all_trials(popsize, std::vector<double>(population[0].size()));
-
     MinionResult* minRes; 
 
     for (int iter = 0; iter <= maxiter; ++iter) {
@@ -89,22 +86,8 @@ MinionResult M_LSHADE_AMR::optimize() {
             weights_F = normalize_vector(weights_F);
             std::tie(muCR, stdCR) = getMeanStd(S_CR, weights);
             std::tie(muF, stdF) = getMeanStd(S_F, weights_F);
-            //if (stdCR<0.1){stdCR=0.1;};
-            //if (stdF<0.1){stdF=0.1;};
-            for (int i=0; i<S_CR.size(); ++i) {
-                M_CR.push_back( rand_norm(muCR, stdCR));
-                M_F.push_back(rand_norm(muF, stdF));
-            };
-            std::vector<size_t> allind, selecIndices; 
-            for (int i=0; i<M_CR.size(); ++i){ allind.push_back(i);};
-            selecIndices = random_choice(allind, memorySize); 
-            std::vector<double> newM_CR, newM_F;
-            for (int i=0; i<memorySize; ++i) {
-                newM_CR.push_back(M_CR[selecIndices[i]]);
-                newM_F.push_back(M_F[selecIndices[i]]);
-            }; 
-            M_CR = newM_CR ;
-            M_F = newM_F;
+            meanCR = (1 - c) * meanCR + c * muCR;
+            meanF = (1 - c) * meanF + c * muF;
         };
 
         if (popDecrease) {

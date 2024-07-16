@@ -5,7 +5,7 @@ Minion is a comprehensive library for derivative-free optimization algorithms, i
 ## Key Features
 
 - **Optimization Algorithms:**
-  - Includes Global Best Artificial Bee Colony (GABC), Adaptive Differential Evolution (M_LJADE_AMR and M_LSHADE_AMR).
+  - Includes Global Best Artificial Bee Colony (GABC), Adaptive Differential Evolution (MFADE and FADE).
 - **Customizable:**
   - Define your objective functions, constraints, and termination criteria for flexible optimization scenarios.
 - **Python and Cython Implementation:**
@@ -17,9 +17,9 @@ Minion is a comprehensive library for derivative-free optimization algorithms, i
 
 - **Global Best Artificial Bee Colony (GABC):**
   - Enhances exploration and exploitation capabilities using generalized search mechanisms inspired by honey bee foraging behavior.
-- **Modified JADE with Linear Population Size Reduction and Adaptive Mutation Rate (M_LJADE_AMR):**
+- **Fully Adaptive Differential Evolution (FADE):**
   - State-of-the-art variant of Differential Evolution (DE).
-- **Modified SHADE with Linear Population Size Reduction and Adaptive Mutation Rate (M_LSHADE_AMR):**
+- **Fully Adaptive Differential Evolution with Memory (MFADE):**
   - State-of-the-art variant of Differential Evolution (DE).
 
 ## Future Additions
@@ -49,7 +49,7 @@ Planned expansions include more evolutionary strategies, swarm intelligence meth
 
 ## Example: Minimizing the Rosenbrock Function
 
-Below is an example demonstrating how to use the `M_LJADE_AMR` class from the Minion library to minimize the Rosenbrock function.
+Below is an example demonstrating how to use the `MFADE` class from the Minion library to minimize the Rosenbrock function.
 
 ### Rosenbrock Function Minimization
 
@@ -94,17 +94,17 @@ int main() {
     int maxevals = 100000;
 
     // Create an instance of M_LJADE_AMR
-    minion::M_LJADE_AMR optimizer(rosenbrock, bounds, nullptr, x0, population_size, maxevals);
+    minion::FADE(rosenbrock, bounds, nullptr, x0, population_size, maxevals);
 
     // Run the optimizer
     minion::MinionResult result = optimizer.optimize();
 
     // Output the results
     std::cout << "Best solution found: ";
-    for (const auto& val : result.best_solution) {
+    for (const auto& val : result.x) {
         std::cout << val << " ";
     }
-    std::cout << "\nBest objective value: " << result.best_value << std::endl;
+    std::cout << "\nBest objective value: " << result.fun << std::endl;
 
     return 0;
 }

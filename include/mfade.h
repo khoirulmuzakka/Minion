@@ -1,13 +1,13 @@
-#ifndef M_LSHADE_AMR_H
-#define M_LSHADE_AMR_H
+#ifndef MFADE_H
+#define MFADE_H
 
 #include "de_base.h"
 
 /**
- * @class M_LJADE_AMR
- * @brief Class implementing of the modified SHADE with linear population size reduction with adaptive mutation rate (M-LJADE-AMR) algorithm.
+ * @class MFADE : Fully Adaptive Differential Evolution with Memory
+ * @brief Class implementing of the MFADE algorithm.
  */
-class M_LSHADE_AMR : public DE_Base {
+class MFADE : public DE_Base {
     public:
         std::vector<double> M_CR, M_F;
         size_t memorySize;
@@ -15,7 +15,7 @@ class M_LSHADE_AMR : public DE_Base {
 
     public :
         /**
-         * @brief Constructor forM_LSHADE_AMR.
+         * @brief Constructor for MFADE.
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
          * @param data Additional data to pass to the objective function.
@@ -30,7 +30,7 @@ class M_LSHADE_AMR : public DE_Base {
          * @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
          * @param seed The seed for the random number generator.
          */
-        M_LSHADE_AMR(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
+        MFADE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
                     const std::vector<double>& x0 = {}, int population_size = 30, int maxevals = 100000, 
                     std::string strategy = "current_to_pbest1bin", double relTol = 0.00001, int minPopSize = 10, 
                     size_t memorySize = 30, std::function<void(MinionResult*)> callback = nullptr,  std::string boundStrategy = "reflect-random", int seed = -1);

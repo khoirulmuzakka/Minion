@@ -1,13 +1,13 @@
-#ifndef M_LJADE_AMR_H
-#define M_LJADE_AMR_H
+#ifndef FADE_H
+#define FADE_H
 
 #include "de_base.h"
 
 /**
- * @class M_LJADE_AMR
- * @brief Class implementing of the modified JADE with linear population size reduction with adaptive mutation rate (M-LJADE-AMR) algorithm.
+ * @class FADE : Fully Adaptive Differential Evolution
+ * @brief Class implementing the FADE algorithm.
  */
-class M_LJADE_AMR : public DE_Base {
+class FADE : public DE_Base {
     public:
         double meanCR;
         double meanF;
@@ -31,7 +31,7 @@ class M_LJADE_AMR : public DE_Base {
          * @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
          * @param seed The seed for the random number generator.
          */
-        M_LJADE_AMR(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
+        FADE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
                     const std::vector<double>& x0 = {}, int population_size = 30, int maxevals = 100000, 
                     std::string strategy = "current_to_pbest1bin", double relTol = 0.00001, int minPopSize = 10, 
                     double c = 0.5, std::function<void(MinionResult*)> callback = nullptr, std::string boundStrategy = "reflect-random", int seed = -1);
