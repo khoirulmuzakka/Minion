@@ -22,10 +22,6 @@ Minion is a comprehensive library for derivative-free optimization algorithms, i
 - **Fully Adaptive Differential Evolution with Memory (MFADE):**
   - State-of-the-art variant of Differential Evolution (DE).
 
-## Future Additions
-
-Planned expansions include more evolutionary strategies, swarm intelligence methods, and metaheuristic algorithms based on community feedback and research advancements.
-
 ## How to Compile and Use Minion Library
 
 1. **Install Dependencies**
