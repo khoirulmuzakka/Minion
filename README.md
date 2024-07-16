@@ -5,18 +5,12 @@ Minion is a library for derivative-free optimization algorithms, implemented in 
 ## Key Features
 
 - **Optimization Algorithms:**
-  - Includes Global Best Artificial Bee Colony (GABC), Adaptive Differential Evolution (MFADE and FADE).
-- **Customizable:**
-  - Define your objective functions, constraints, and termination criteria for flexible optimization scenarios.
-- **Python and Cython Implementation:**
-  - Combines the ease of Python with the performance of Cython for critical sections, ensuring both readability and speed.
+  - Includes Adaptive Differential Evolution (MFADE and FADE), hybrid Grey Wolf - Differential Evolution (GWO-DE), and more. 
 - **Parallelizable:**
-  - Assumes vectorized function evaluations, enabling easy integration with multithreading or multiprocessing for enhanced computational efficiency.
+  - Always assumes vectorized function evaluations, enabling easy integration with multithreading or multiprocessing for enhanced computational efficiency.
 
 ## Algorithms Included
 
-- **Global Best Artificial Bee Colony (GABC):**
-  - Enhances exploration and exploitation capabilities using generalized search mechanisms inspired by honey bee foraging behavior.
 - **Fully Adaptive Differential Evolution (FADE):**
   - State-of-the-art variant of Differential Evolution (DE).
 - **Fully Adaptive Differential Evolution with Memory (MFADE):**
