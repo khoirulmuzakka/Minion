@@ -1,6 +1,6 @@
 # Minion: Derivative-Free Optimization Library
 
-Minion is a comprehensive library for derivative-free optimization algorithms, implemented in both C++ and Python. It offers a suite of state-of-the-art optimization techniques, specifically designed to efficiently solve complex optimization problems where gradients are either unavailable or expensive to compute.
+Minion is a library for derivative-free optimization algorithms, implemented in both C++ and Python. It offers a suite of state-of-the-art optimization techniques, specifically designed to efficiently solve complex optimization problems where gradients are unavailable.
 
 ## Key Features
 
