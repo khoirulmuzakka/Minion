@@ -12,6 +12,7 @@ DE_Base::DE_Base(MinionFunction func, const std::vector<std::pair<double, double
         if (minPopSize > original_popsize) throw std::invalid_argument("minPopSize must be smaller or equal to population_size.");
         popDecrease = minPopSize != original_popsize;
         maxiter = getMaxIter();
+        max_no_improve = 20+bounds.size();
 };
 
 size_t DE_Base::getMaxIter() {
@@ -63,7 +64,24 @@ void DE_Base::_initialize_population() {
     best = population[best_idx];
     best_fitness = fitness[best_idx];
     Nevals += popsize;
+    evalFrac = static_cast<double>(Nevals)/static_cast<double>(maxevals);
     history.push_back(new MinionResult(best, best_fitness, 0, popsize, false, "best initial fitness"));
+}
+
+void DE_Base::_disturb_population(std::vector<std::vector<double>>& pop){
+    std::vector<size_t> sortedInd = argsort(fitness, false); 
+    double Npop = round(fitness.size()/3.0);
+    if (Npop<2){Npop=2;};
+    for (size_t i=0; i<Npop; ++i){
+        std::vector<double> p = pop[sortedInd[i]];
+        for (size_t j=0; j<p.size(); ++j){
+            if (rand_gen()<0.33) { 
+                p[j] = evalFrac*p[j]+(1.0-evalFrac)*rand_gen(bounds[j].first, bounds[j].second) ;
+            };
+        }
+
+        pop[sortedInd[i]] = p;
+    };
 }
 
 std::vector<double> DE_Base::_mutate(int idx) {

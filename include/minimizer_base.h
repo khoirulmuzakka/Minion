@@ -42,6 +42,23 @@ struct MinionResult {
      * @brief Destructor.
      */
     ~MinionResult() {}
+
+    /**
+     * @brief Assignment operator.
+     * @param other The other MinionResult object to assign from.
+     * @return Reference to the assigned MinionResult object.
+     */
+    MinionResult& operator=(const MinionResult& other) {
+        if (this != &other) {
+            x = other.x;
+            fun = other.fun;
+            nit = other.nit;
+            nfev = other.nfev;
+            success = other.success;
+            message = other.message;
+        }
+        return *this;
+    }
 };
 
 

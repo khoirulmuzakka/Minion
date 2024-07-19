@@ -32,7 +32,11 @@ class DE_Base : public MinimizerBase {
         std::vector<double> best;
         double best_fitness;
         bool use_clip;
-        std::vector<double> F, CR;
+        std::vector<double> F,  CR;
+        size_t no_improve_counter= 0;
+        size_t max_no_improve;
+        double evalFrac;
+        size_t Ndisturbs = 0;
 
     public:
         /**
@@ -74,6 +78,11 @@ class DE_Base : public MinimizerBase {
          * @brief Initialize the population of candidate solutions.
          */
         void _initialize_population();
+
+        /**
+         * @brief reinitialized_population after no_improve_counter exceed max_no_improve
+         */
+        void _disturb_population(std::vector<std::vector<double>>& pop);
 
         /**
          * @brief Perform mutation on a candidate solution.

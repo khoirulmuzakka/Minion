@@ -11,5 +11,6 @@ lib
 dist/
 Temp/
 Output/
+bin
 
 

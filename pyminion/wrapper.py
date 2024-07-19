@@ -7,9 +7,14 @@ sys.path.append(custom_path)
 
 import numpy as np
 from pyminioncpp import MFADE as cppMFADE
+from pyminioncpp import LSHADE as cppLSHADE
 from pyminioncpp import FADE as cppFADE
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
+from pyminioncpp import Powell as cppPowell  # Import Powell
+from pyminioncpp import NelderMead as cppNelderMead 
+from pyminioncpp import CEC2020Functions as cppCEC2020Functions
+from pyminioncpp import CEC2022Functions as cppCEC2022Functions
 
 
   
@@ -45,7 +50,62 @@ class MinionResult:
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
                 f"nfev={self.nfev}, success={self.success}, message={self.message})")
     
+class CEC2020Functions:
+    """
+    @class CEC2020Functions
+    @brief A class to encapsulate CEC2020 test functions.
 
+    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    """
+
+    def __init__(self, function_number, dimension):
+        """
+        @brief Constructor for CEC2020Functions class.
+
+        @param function_number Function number (1-10).
+        @param dimension Dimension of the problem.
+        """
+        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-12.")
+        if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
+        self.cpp_func = cppCEC2020Functions(function_number, int(dimension))
+
+    def __call__(self, X, data=None):
+        """
+        @brief Evaluate the CEC2020 test function.
+
+        @param X Input vectors to evaluate.
+        @return Vector of function values corresponding to each input vector.
+        """
+        return self.cpp_func(X)
+
+class CEC2022Functions:
+    """
+    @class CEC2022Functions
+    @brief A class to encapsulate CEC2022 test functions.
+
+    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    """
+
+    def __init__(self, function_number, dimension):
+        """
+        @brief Constructor for CEC2020Functions class.
+
+        @param function_number Function number (1-10).
+        @param dimension Dimension of the problem.
+        """
+        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
+        if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
+        self.cpp_func = cppCEC2022Functions(function_number, int(dimension))
+
+    def __call__(self, X, data=None):
+        """
+        @brief Evaluate the CEC2022 test function.
+
+        @param X Input vectors to evaluate.
+        @return Vector of function values corresponding to each input vector.
+        """
+        return self.cpp_func(X)
+    
 class CalllbackWrapper: 
     """
     @class CalllbackWrapper
@@ -233,6 +293,55 @@ class MFADE(MinimizerBase):
         self.stdF = self.optimizer.muF
         return self.minionResult
     
+class LSHADE(MinimizerBase):
+    """
+    @class LSHADE 
+    @brief Implementation of the LSHADE algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+
+    def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
+                 strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, memeorySize=30, callback=None, boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for LSHADE.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param strategy DE strategy to use.
+        @param relTol Relative tolerance for convergence.
+        @param minPopSize Minimum population size.
+        @param memorySize memory size for CR and F.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+
+        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed )
+        self.population_size = population_size
+        self.strategy = strategy
+        self.minPopSize = minPopSize
+        self.memorySize=memeorySize
+        self.optimizer = cppLSHADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
+                                        strategy, relTol, minPopSize, self.memorySize, self.cppCallback, self.boundStrategy, self.seed)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using M-LSHADE-AMR.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.muCR = self.optimizer.muCR
+        self.muF = self.optimizer.muF
+        self.stdCR = self.optimizer.muCR
+        self.stdF = self.optimizer.muF
+        return self.minionResult
 
 class GWO_DE(MinimizerBase):
     """
@@ -271,6 +380,81 @@ class GWO_DE(MinimizerBase):
     def optimize(self):
         """
         @brief Optimize the objective function using GWO-DE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+    
+class Powell(MinimizerBase):
+    """
+    @class Powell
+    @brief Implementation of Powell's method for multidimensional optimization.
+
+    Inherits from MinimizerBase and implements the Powell optimization algorithm.
+    """
+
+    def __init__(self, func, bounds, data=None, x0=None, relTol=0.0001, maxevals=100000, callback=None,
+                 boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for Powell.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param relTol Relative tolerance for convergence.
+        @param maxevals Maximum number of function evaluations.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+
+        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
+        self.optimizer = cppPowell(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, relTol, maxevals, boundStrategy, self.seed)
+
+    def optimize(self):
+        """
+        @brief Optimize the objective function using Powell's method.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
+
+class NelderMead(MinimizerBase):
+    """
+    @class AdaptiveNelderMead
+    @brief Implementation of the Adaptive Nelder-Mead algorithm.
+
+    Inherits from MinimizerBase and implements the Adaptive Nelder-Mead optimization algorithm.
+    """
+
+    def __init__(self, func, bounds, data=None, x0=None, relTol=0.0001, maxevals=100000, callback=None,
+                 boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for AdaptiveNelderMead.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param relTol Relative tolerance for convergence.
+        @param maxevals Maximum number of function evaluations.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+
+        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
+        self.optimizer = cppNelderMead(self.func, self.bounds,  self.x0cpp, self.data, self.cppCallback, relTol, maxevals, boundStrategy, self.seed)
+
+    def optimize(self):
+        """
+        @brief Optimize the objective function using Adaptive Nelder-Mead.
 
         @return MinionResult object containing the optimization results.
         """

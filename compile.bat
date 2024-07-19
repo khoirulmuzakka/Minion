@@ -16,7 +16,7 @@ rem Run CMake to configure the project with Visual Studio 2022 generator
 cmake -G "Visual Studio 17 2022" ..
 
 rem Build the project using MSBuild
-cmake --build . --parallel 2 --config Release
+cmake --build . --clean-first --config Release
 
 rem Pause to see build output (optional)
 pause

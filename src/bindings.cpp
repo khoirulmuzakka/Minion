@@ -5,11 +5,30 @@
 #include "mfade.h"
 #include "fade.h"
 #include "gwo_de.h"
+#include "powell.h"
+#include "nelder_mead.h"
 #include "utility.h"
+#include "cec2020.h"
+#include "cec2022.h"
+#include "lshade.h"
+#include <exception>
 
 namespace py = pybind11;
 
+// Exception translator
+void translate_exception(const std::exception &e) {
+    PyErr_SetString(PyExc_RuntimeError, e.what());
+}
+
 PYBIND11_MODULE(pyminioncpp, m) {
+    py::register_exception_translator([](std::exception_ptr p) {
+        try {
+            if (p) std::rethrow_exception(p);
+        } catch (const std::exception &e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+        }
+    });
+
     py::class_<MinionResult>(m, "MinionResult")
         .def(py::init<>()) // Default constructor
         .def(py::init<const std::vector<double>&, double, int, int, bool, const std::string&>()) // Parameterized constructor
@@ -61,6 +80,7 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readwrite("meanF", &FADE::meanF)
         .def_readwrite("c", &FADE::c)
         .def_readwrite("history", &FADE::history)
+        .def_readwrite("Ndisturbs", &FADE::Ndisturbs)
         .def_readwrite("muCR", &FADE::muCR)
         .def_readwrite("muF", &FADE::muF)
         .def_readwrite("stdCR", &FADE::stdCR)
@@ -87,10 +107,38 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readwrite("M_F", &MFADE::M_F)
         .def_readwrite("memorySize", &MFADE::memorySize)
         .def_readwrite("history", &MFADE::history)
+        .def_readwrite("Ndisturbs", &MFADE::Ndisturbs)
         .def_readwrite("muCR", &MFADE::muCR)
         .def_readwrite("muF", &MFADE::muF)
         .def_readwrite("stdCR", &MFADE::stdCR)
         .def_readwrite("stdF", &MFADE::stdF);
+
+    py::class_<LSHADE, DE_Base>(m, "LSHADE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
+             py::arg("func"),
+             py::arg("bounds"),
+             py::arg("data") = nullptr,
+             py::arg("x0") = std::vector<double>{},
+             py::arg("population_size") = 30,
+             py::arg("maxevals") = 100000,
+             py::arg("strategy") = "current_to_pbest1bin",
+             py::arg("relTol") = 0.0001,
+             py::arg("minPopSize") = 10,
+             py::arg("memorySize") = 30,
+             py::arg("callback") = nullptr,
+             py::arg("boundStrategy") = "reflect-random",
+             py::arg("seed") = -1)
+        .def("optimize", &LSHADE::optimize)
+        .def("_adapt_parameters", &LSHADE::_adapt_parameters)
+        .def_readwrite("M_CR", &LSHADE::M_CR)
+        .def_readwrite("M_F", &LSHADE::M_F)
+        .def_readwrite("memorySize", &LSHADE::memorySize)
+        .def_readwrite("history", &LSHADE::history)
+        .def_readwrite("Ndisturbs", &LSHADE::Ndisturbs)
+        .def_readwrite("muCR", &LSHADE::muCR)
+        .def_readwrite("muF", &LSHADE::muF)
+        .def_readwrite("stdCR", &LSHADE::stdCR)
+        .def_readwrite("stdF", &LSHADE::stdF);
 
     py::class_<GWO_DE, MinimizerBase>(m, "GWO_DE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, size_t, int, double, double, double, double, std::string, int, void*, std::function<void(MinionResult*)>>(),
@@ -117,4 +165,42 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readwrite("population", &GWO_DE::population)
         .def_readwrite("fitness", &GWO_DE::fitness)
         .def_readwrite("eval_count", &GWO_DE::eval_count);
+
+    py::class_<Powell, MinimizerBase>(m, "Powell")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<double>&, void*, std::function<void(MinionResult*)>,
+                      double, int, std::string, int>(),
+             py::arg("func"),
+             py::arg("bounds"),
+             py::arg("x0") = std::vector<double>{},
+             py::arg("data") = nullptr,
+             py::arg("callback") = nullptr,
+             py::arg("relTol") = 0.0001,
+             py::arg("maxevals") = 100000,
+             py::arg("boundStrategy") = "reflect-random",
+             py::arg("seed") = -1)
+        .def("optimize", &Powell::optimize);
+
+    py::class_<NelderMead, MinimizerBase>(m, "NelderMead")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<double>&, void*, std::function<void(MinionResult*)>,
+                      double, int, std::string, int>(),
+             py::arg("func"),
+             py::arg("bounds"),
+             py::arg("x0") = std::vector<double>{},
+             py::arg("data") = nullptr,
+             py::arg("callback") = nullptr,
+             py::arg("relTol") = 0.0001,
+             py::arg("maxevals") = 100000,
+             py::arg("boundStrategy") = "reflect-random",
+             py::arg("seed") = -1)
+        .def("optimize", &NelderMead::optimize);
+
+    py::class_<CEC2020Functions>(m, "CEC2020Functions")
+        .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
+        .def("__call__", &CEC2020Functions::operator());
+
+    py::class_<CEC2022Functions>(m, "CEC2022Functions")
+        .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
+        .def("__call__", &CEC2022Functions::operator());
 }

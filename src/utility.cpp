@@ -164,7 +164,8 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
                     new_candidates[i][d] = dis(gen);
                 }
             }
-        } else {
+        } else if (strategy == "none") {}
+        else {
             throw std::invalid_argument("Invalid strategy. Choose from 'clip', 'reflect', 'random', or 'random-leftover'.");
         }
     }
