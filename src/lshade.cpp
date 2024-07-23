@@ -43,8 +43,8 @@ MinionResult LSHADE::optimize() {
 
         MinionResult* minRes; 
         size_t memoryIndex=0;
-
-        for (int iter = 0; iter <= maxiter; ++iter) {
+        size_t iter =0;
+        while (Nevals <= maxevals) {
             std::vector<double> S_CR, S_F,  weights, weights_F;
             _adapt_parameters();
             
@@ -126,6 +126,7 @@ MinionResult LSHADE::optimize() {
                 archive.erase(archive.begin() + random_index);
                 fitness_archive.erase(fitness_archive.begin()+random_index);
             }
+            iter = iter+1;
 
             minRes = new MinionResult(best, best_fitness, iter + 1, Nevals, false, "");
             history.push_back(minRes);

@@ -22,7 +22,6 @@ class DE_Base : public MinimizerBase {
         size_t popsize;
         size_t minPopSize;
         bool popDecrease;
-        size_t maxiter;
         size_t Nevals;
         double rangeScale;
         std::string strategy;
@@ -71,12 +70,6 @@ class DE_Base : public MinimizerBase {
                 delete minRes;
             };
         };
-
-        /**
-         * @brief Get the maximum number of iterations based on the current settings.
-         * @return The maximum number of iterations.
-         */
-        size_t getMaxIter();
 
         /**
          * @brief Initialize the population of candidate solutions.

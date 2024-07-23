@@ -9,7 +9,6 @@ import numpy as np
 from pyminioncpp import MFADE as cppMFADE
 from pyminioncpp import LSHADE as cppLSHADE
 from pyminioncpp import LJADE as cppLJADE
-from pyminioncpp import SJADE as cppSJADE
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
 from pyminioncpp import Powell as cppPowell  # Import Powell
@@ -233,55 +232,6 @@ class LJADE(MinimizerBase):
     def optimize(self):
         """
         @brief Optimize the objective function using M-LJADE-AMR.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.muCR = self.optimizer.muCR
-        self.muF = self.optimizer.muF
-        self.stdCR = self.optimizer.muCR
-        self.stdF = self.optimizer.muF
-        return self.minionResult
-    
-
-class SJADE(MinimizerBase):
-    """
-    @class SJADE : Fully Adaptive Differential Evolution
-    @brief Implementation of the SJADE algorithm.
-
-    Inherits from MinimizerBase and implements the optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
-             relTol=0.0, minPopSize=10, c=0.5, callback=None, boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for SJADE.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param population_size Population size.
-        @param maxevals Maximum number of function evaluations.
-        @param relTol Relative tolerance for convergence.
-        @param minPopSize Minimum population size.
-        @param c Control parameter for SJADE.
-        @param callback Callback function called after each iteration.
-        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed )
-        self.population_size = population_size
-        self.minPopSize = minPopSize
-        self.c = c
-        self.optimizer = cppSJADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
-                                         relTol, minPopSize, c, self.cppCallback, boundStrategy, self.seed)
-    
-    def optimize(self):
-        """
-        @brief Optimize the objective function using M-SJADE-AMR.
 
         @return MinionResult object containing the optimization results.
         """

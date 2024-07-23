@@ -47,11 +47,10 @@ MinionResult MFADE::optimize() {
         size_t iter =0;
         while (Nevals <= maxevals) {
             std::vector<double> S_CR, S_F,  weights, weights_F;
-
             _adapt_parameters();
-    
+
             for (int i = 0; i < popsize; ++i) {
-                int frac = static_cast<int>(round(0.5 * popsize));
+                int frac = static_cast<int>(round(0.2 * popsize));
                 if (frac <=2){p=2;}; 
                 std::vector<int> range(frac);
                 std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 0 to frac
@@ -136,7 +135,6 @@ MinionResult MFADE::optimize() {
 
             if (popDecrease) {
                 size_t new_population_size = static_cast<size_t>(((minPopSize - original_popsize) / static_cast<double>(maxevals) * Nevals + original_popsize));
-                if ( no_improve_counter >20 ) {new_population_size = popsize;}
                 if (popsize > new_population_size) {
                     popsize = new_population_size;
                     std::vector<size_t> sorted_index = argsort(fitness, false);

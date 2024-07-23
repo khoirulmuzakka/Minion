@@ -11,21 +11,8 @@ DE_Base::DE_Base(MinionFunction func, const std::vector<std::pair<double, double
         if (population_size < 10) population_size = 10;
         if (minPopSize > original_popsize) throw std::invalid_argument("minPopSize must be smaller or equal to population_size.");
         popDecrease = minPopSize != original_popsize;
-        maxiter = getMaxIter();
         max_no_improve = 20+bounds.size();
         archiveSize = 1*popsize;
-};
-
-size_t DE_Base::getMaxIter() {
-        if (!popDecrease) return static_cast<size_t>((maxevals / original_popsize));
-        size_t i = 0, n = popsize, max_iters = 0;
-        double ratio =  -static_cast<double>(original_popsize-minPopSize) / static_cast<double>(maxevals);
-        while (i < maxevals) {
-            max_iters = max_iters +1 ;
-            n = static_cast<int>(round( original_popsize + i * ratio ));
-            i += n;
-        }
-        return max_iters;
 };
 
 void DE_Base::_initialize_population() {
