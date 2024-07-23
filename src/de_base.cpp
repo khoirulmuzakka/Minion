@@ -13,6 +13,7 @@ DE_Base::DE_Base(MinionFunction func, const std::vector<std::pair<double, double
         popDecrease = minPopSize != original_popsize;
         maxiter = getMaxIter();
         max_no_improve = 20+bounds.size();
+        archiveSize = 1*popsize;
 };
 
 size_t DE_Base::getMaxIter() {
@@ -70,12 +71,13 @@ void DE_Base::_initialize_population() {
 
 void DE_Base::_disturb_population(std::vector<std::vector<double>>& pop){
     std::vector<size_t> sortedInd = argsort(fitness, false); 
-    double Npop = round(fitness.size()/3.0);
+    size_t Npop = popsize-5; //round(fitness.size()/2.0);
     if (Npop<2){Npop=2;};
     for (size_t i=0; i<Npop; ++i){
         std::vector<double> p = pop[sortedInd[i]];
         for (size_t j=0; j<p.size(); ++j){
-            if (rand_gen()<0.33) { 
+            if (rand_gen()<0.1) { 
+                //p[j] = evalFrac*p[j]+(1.0-evalFrac)*rand_gen(bounds[j].first, bounds[j].second) ;
                 p[j] = evalFrac*p[j]+(1.0-evalFrac)*rand_gen(bounds[j].first, bounds[j].second) ;
             };
         }
@@ -84,15 +86,15 @@ void DE_Base::_disturb_population(std::vector<std::vector<double>>& pop){
     };
 }
 
-std::vector<double> DE_Base::_mutate(int idx) {
+std::vector<double> DE_Base::_mutate(size_t idx, std::string& mutation_strategy) {
     std::vector<int> available_indices(popsize), indices;
-    int r1, r2, r3;
+    size_t r1, r2, r3;
     std::iota(available_indices.begin(), available_indices.end(), 0);
     available_indices.erase(available_indices.begin() + idx);
 
     std::vector<double> mutant;
 
-    if (strategy == "best1bin" || strategy == "best1exp") {
+    if (mutation_strategy == "best1bin" || mutation_strategy == "best1exp") {
         auto indices = random_choice<int>(available_indices, 2);
         r1 = indices[0];
         r2 = indices[1];
@@ -100,7 +102,7 @@ std::vector<double> DE_Base::_mutate(int idx) {
         for (size_t i = 0; i < best.size(); ++i) {
             mutant[i] += F[idx] * (population[r1][i] - population[r2][i]);
         }
-    } else if (strategy == "rand1bin" || strategy == "rand1exp") {
+    } else if (mutation_strategy == "rand1bin" || mutation_strategy == "rand1exp") {
         indices = random_choice<int>(available_indices, 3);
         r1  = indices[0];
         r2 = indices[1];
@@ -109,7 +111,7 @@ std::vector<double> DE_Base::_mutate(int idx) {
         for (size_t i = 0; i < population[r1].size(); ++i) {
             mutant[i] += F[idx] * (population[r2][i] - population[r3][i]);
         }
-    } else if (strategy == "current_to_best1bin" || strategy == "current_to_best1exp") {
+    } else if (mutation_strategy == "current_to_best1bin" || mutation_strategy == "current_to_best1exp") {
         auto indices = random_choice<int>(available_indices, 2);
         r1 = indices[0];
         r2 = indices[1];
@@ -117,9 +119,7 @@ std::vector<double> DE_Base::_mutate(int idx) {
         for (size_t i = 0; i < population[idx].size(); ++i) {
             mutant[i] += F[idx] * (best[i] - population[idx][i]) + F[idx] * (population[r1][i] - population[r2][i]);
         }
-    } else if (strategy == "current_to_pbest1bin" || strategy == "current_to_pbest1exp") {
-        int frac = static_cast<int>(0.2 * popsize);
-        int p = frac <= 1 ? 1 : random_choice(std::vector<int>(1, frac), 1).front();
+    } else if (mutation_strategy == "current_to_pbest1bin" || mutation_strategy == "current_to_pbest1exp") {   
         auto sorted_indices = argsort(fitness, true);
         std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + p);
         auto pbestind = random_choice(top_p_indices, 1).front();
@@ -130,8 +130,43 @@ std::vector<double> DE_Base::_mutate(int idx) {
         for (size_t i = 0; i < population[idx].size(); ++i) {
             mutant[i] += F[idx] * (population[pbestind][i] - population[idx][i]) + F[idx] * (population[r1][i] - population[r2][i]);
         }
+    } else if (mutation_strategy == "current_to_pbest_A1_1bin" || mutation_strategy == "current_to_pbest_A1_1exp") {   
+        auto sorted_indices = argsort(fitness, true);
+        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + p);
+        auto pbestind = random_choice(top_p_indices, 1).front();
+
+        std::vector<size_t> arch_ind(archive.size()+population.size()); 
+        std::iota(arch_ind.begin(), arch_ind.end(), 0);
+        auto indices = random_choice(available_indices, 1);
+        auto indices2 = random_choice(arch_ind, 1);
+        r1 = indices[0];
+        r2 = indices2[0];
+        mutant = population[idx];
+        for (size_t i = 0; i < population[idx].size(); ++i) {
+            if (r2 < archive.size()) {
+                mutant[i] += F[idx] * (population[pbestind][i] - population[idx][i]) + F[idx] * (population[r1][i] - archive[r2][i]);
+            } else {
+                mutant[i] += F[idx] * (population[pbestind][i] - population[idx][i]) + F[idx] * (population[r1][i] - population[r2-archive.size()][i]);
+            }
+        }
+    } else if (mutation_strategy == "current_to_pbest_A2_1bin" || mutation_strategy == "current_to_pbest_A2_1exp") {   
+        auto sorted_indices = argsort(fitness, true);
+        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + p);
+        auto pbestind = random_choice(top_p_indices, 1).front();
+        std::vector<size_t> arch_ind(archive.size()); 
+        if (archive.size()<=2) {
+            throw std::logic_error("Archive size is not sufficient");
+        };
+        std::iota(arch_ind.begin(), arch_ind.end(), 0);
+        auto indices = random_choice(arch_ind, 2);
+        r1 = indices[0];
+        r2 = indices[1];
+        mutant = population[idx];
+        for (size_t i = 0; i < population[idx].size(); ++i) {
+            mutant[i] += F[idx] * (population[pbestind][i] - population[idx][i]) + F[idx] * (archive[r1][i] - archive[r2][i]);
+        }
     } else {
-        throw std::invalid_argument("Unknown mutation strategy: " + strategy);
+        throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
     }
 
     return mutant;
@@ -162,13 +197,13 @@ std::vector<double> DE_Base::_crossover_exp(const std::vector<double>& target, c
     return trial;
 }
 
-std::vector<double> DE_Base::_crossover(const std::vector<double>& target, const std::vector<double>& mutant, double CR) {
-    if (strategy.find("bin") != std::string::npos) {
+std::vector<double> DE_Base::_crossover(const std::vector<double>& target, const std::vector<double>& mutant, double CR, std::string& mutation_strategy) {
+    if (mutation_strategy.find("bin") != std::string::npos) {
         return _crossover_bin(target, mutant, CR);
-    } else if (strategy.find("exp") != std::string::npos) {
+    } else if (mutation_strategy.find("exp") != std::string::npos) {
         return _crossover_exp(target, mutant, CR);
     } else {
-        throw std::invalid_argument("Unknown crossover strategy in mutation strategy: " + strategy);
+        throw std::invalid_argument("Unknown crossover strategy in mutation strategy: " + mutation_strategy);
     }
 }
 

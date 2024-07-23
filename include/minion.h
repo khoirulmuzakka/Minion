@@ -5,7 +5,7 @@
 #include "minimizer_base.h"
 #include "de_base.h"
 #include "mfade.h"
-#include "fade.h"
+#include "ljade.h"
 #include "gwo_de.h"
 #include "cec2020.h"
 #include "cec2022.h"
@@ -15,7 +15,7 @@ namespace minion {
     using ::MinionResult;
     using ::MinimizerBase;
     using ::DE_Base;
-    using ::FADE;
+    using ::LJADE;
     using ::MFADE;
     using ::GWO_DE;
     using ::CEC2020Functions;

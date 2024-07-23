@@ -12,7 +12,7 @@ void minimize_cec2020_functions(int function_number, int dimension, int populati
     }
     minion::CEC2020Functions cec2020(function_number, dimension);
     std::vector<std::pair<double, double>> bounds(dimension, std::make_pair(-100.0, 100.0));
-    minion::FADE fade(
+    minion::LJADE ljade(
         [&](const std::vector<std::vector<double>> & x, void* data) {
             return cec2020(x); // Call the operator with a single vector
         },
@@ -31,7 +31,7 @@ void minimize_cec2020_functions(int function_number, int dimension, int populati
     );
 
     // Optimize and get the result
-    MinionResult result = fade.optimize();
+    MinionResult result = ljade.optimize();
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
     std::cout << "Best Value: " << result.fun << "\n";

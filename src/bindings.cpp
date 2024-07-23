@@ -3,7 +3,8 @@
 #include <pybind11/functional.h>
 #include "minimizer_base.h" // Include your MinionResult struct definition
 #include "mfade.h"
-#include "fade.h"
+#include "ljade.h"
+#include "sjade.h"
 #include "gwo_de.h"
 #include "powell.h"
 #include "nelder_mead.h"
@@ -59,7 +60,7 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def("_crossover", &DE_Base::_crossover)
         .def("optimize", &DE_Base::optimize);
 
-    py::class_<FADE, DE_Base>(m, "FADE")
+    py::class_<LJADE, DE_Base>(m, "LJADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
              py::arg("func"),
              py::arg("bounds"),
@@ -74,17 +75,45 @@ PYBIND11_MODULE(pyminioncpp, m) {
              py::arg("callback") = nullptr,
              py::arg("boundStrategy") = "reflect-random",
              py::arg("seed") = -1)
-        .def("optimize", &FADE::optimize)
-        .def("_adapt_parameters", &FADE::_adapt_parameters)
-        .def_readwrite("meanCR", &FADE::meanCR)
-        .def_readwrite("meanF", &FADE::meanF)
-        .def_readwrite("c", &FADE::c)
-        .def_readwrite("history", &FADE::history)
-        .def_readwrite("Ndisturbs", &FADE::Ndisturbs)
-        .def_readwrite("muCR", &FADE::muCR)
-        .def_readwrite("muF", &FADE::muF)
-        .def_readwrite("stdCR", &FADE::stdCR)
-        .def_readwrite("stdF", &FADE::stdF);
+        .def("optimize", &LJADE::optimize)
+        .def("_adapt_parameters", &LJADE::_adapt_parameters)
+        .def_readwrite("meanCR", &LJADE::meanCR)
+        .def_readwrite("meanF", &LJADE::meanF)
+        .def_readwrite("c", &LJADE::c)
+        .def_readwrite("history", &LJADE::history)
+        .def_readwrite("Ndisturbs", &LJADE::Ndisturbs)
+        .def_readwrite("muCR", &LJADE::muCR)
+        .def_readwrite("muF", &LJADE::muF)
+        .def_readwrite("stdCR", &LJADE::stdCR)
+        .def_readwrite("stdF", &LJADE::stdF);
+
+    py::class_<SJADE, DE_Base>(m, "SJADE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
+             py::arg("func"),
+             py::arg("bounds"),
+             py::arg("data") = nullptr,
+             py::arg("x0") = std::vector<double>{},
+             py::arg("population_size") = 30,
+             py::arg("maxevals") = 100000,
+             py::arg("relTol") = 0.0001,
+             py::arg("minPopSize") = 10,
+             py::arg("c") = 0.5,
+             py::arg("callback") = nullptr,
+             py::arg("boundStrategy") = "reflect-random",
+             py::arg("seed") = -1)
+        .def("optimize", &SJADE::optimize)
+        .def("_adapt_parameters", &SJADE::_adapt_parameters)
+        .def_readwrite("meanCR", &SJADE::meanCR)
+        .def_readwrite("meanF", &SJADE::meanF)
+        .def_readwrite("meanCR2", &SJADE::meanCR2)
+        .def_readwrite("meanF2", &SJADE::meanF2)
+        .def_readwrite("c", &SJADE::c)
+        .def_readwrite("history", &SJADE::history)
+        .def_readwrite("Ndisturbs", &SJADE::Ndisturbs)
+        .def_readwrite("muCR", &SJADE::muCR)
+        .def_readwrite("muF", &SJADE::muF)
+        .def_readwrite("stdCR", &SJADE::stdCR)
+        .def_readwrite("stdF", &SJADE::stdF);
 
     py::class_<MFADE, DE_Base>(m, "MFADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),

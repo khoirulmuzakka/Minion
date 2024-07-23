@@ -37,6 +37,10 @@ class DE_Base : public MinimizerBase {
         size_t max_no_improve;
         double evalFrac;
         size_t Ndisturbs = 0;
+        size_t p= 2;
+        std::vector<std::vector<double>> archive;
+        std::vector<double> fitness_archive;
+        size_t archiveSize;
 
     public:
         /**
@@ -89,7 +93,7 @@ class DE_Base : public MinimizerBase {
          * @param idx The index of the candidate solution to mutate.
          * @return The mutant vector.
          */
-        std::vector<double> _mutate(int idx);
+        std::vector<double> _mutate(size_t idx, std::string& mutation_strategy);
 
         /**
          * @brief Perform binomial crossover between a target and mutant vector.
@@ -116,7 +120,7 @@ class DE_Base : public MinimizerBase {
          * @param CR The crossover probability.
          * @return The trial vector after crossover.
          */
-        std::vector<double> _crossover(const std::vector<double>& target, const std::vector<double>& mutant, double CR);    
+        std::vector<double> _crossover(const std::vector<double>& target, const std::vector<double>& mutant, double CR, std::string& mutation_strategy);    
 };
 
 

@@ -1,22 +1,24 @@
-#ifndef FADE_H
-#define FADE_H
+#ifndef LJADE_H
+#define LJADE_H
 
 #include "de_base.h"
 
 /**
- * @class FADE : Fully Adaptive Differential Evolution
- * @brief Class implementing the FADE algorithm.
+ * @class LJADE : Linear population reduction JADE
+ * @brief Class implementing the LJADE algorithm.
  */
-class FADE : public DE_Base {
+class LJADE : public DE_Base {
     public:
         double meanCR;
         double meanF;
+        double stddevCR=0.1; 
+        double stddevF=0.1;
         double c;
         std::vector<double> muCR, muF, stdCR, stdF;
 
     public :
         /**
-         * @brief Constructor for M_LJADE_AMR.
+         * @brief Constructor for LJADE.
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
          * @param data Additional data to pass to the objective function.
@@ -26,12 +28,12 @@ class FADE : public DE_Base {
          * @param strategy The DE strategy to use.
          * @param relTol The relative tolerance for convergence.
          * @param minPopSize The minimum population size.
-         * @param c The control parameter for M-LJADE-AMR.
+         * @param c The control parameter for LJADE.
          * @param callback A callback function to call after each iteration.
          * @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
          * @param seed The seed for the random number generator.
          */
-        FADE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
+        LJADE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
                     const std::vector<double>& x0 = {}, int population_size = 30, int maxevals = 100000, 
                     std::string strategy = "current_to_pbest1bin", double relTol = 0.00001, int minPopSize = 10, 
                     double c = 0.5, std::function<void(MinionResult*)> callback = nullptr, std::string boundStrategy = "reflect-random", int seed = -1);
