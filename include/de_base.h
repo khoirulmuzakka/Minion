@@ -22,7 +22,7 @@ class DE_Base : public MinimizerBase {
         size_t popsize;
         size_t minPopSize;
         bool popDecrease;
-        size_t Nevals;
+        size_t Nevals=0;
         double rangeScale;
         std::string strategy;
         std::vector<std::vector<double>> population;
@@ -38,7 +38,6 @@ class DE_Base : public MinimizerBase {
         size_t Ndisturbs = 0;
         size_t p= 2;
         std::vector<std::vector<double>> archive;
-        std::vector<double> fitness_archive;
         size_t archiveSize;
 
     public:
@@ -58,8 +57,8 @@ class DE_Base : public MinimizerBase {
          * @param seed The seed for the random number generator.
          */
         DE_Base(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data = nullptr, 
-                const std::vector<double>& x0 = {}, int population_size = 20, int maxevals = 1000000,
-                std::string strategy = "current_to_pbest1bin", double relTol = 0.0001, int minPopSize = 10,
+                const std::vector<double>& x0 = {}, size_t population_size = 20, size_t maxevals = 1000000,
+                std::string strategy = "current_to_pbest1bin", double relTol = 0.0001, size_t minPopSize = 10,
                 std::function<void(MinionResult*)> callback = nullptr, std::string boundStrategy = "reflect-random", int seed = -1);
         
         /**
@@ -74,7 +73,7 @@ class DE_Base : public MinimizerBase {
         /**
          * @brief Initialize the population of candidate solutions.
          */
-        void _initialize_population();
+        virtual void _initialize_population();
 
         /**
          * @brief reinitialized_population after no_improve_counter exceed max_no_improve

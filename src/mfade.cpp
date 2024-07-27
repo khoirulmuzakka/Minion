@@ -15,7 +15,7 @@ void MFADE::_adapt_parameters() {
 
     std::vector<size_t> allind, selecIndices; 
     for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
-    selecIndices = random_choice(allind, popsize); 
+    selecIndices = random_choice(allind, popsize, true); 
     for (int i = 0; i < popsize; ++i) {
         new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
         new_F[i] = rand_norm(M_F[selecIndices[i]], 0.1);
@@ -33,12 +33,9 @@ void MFADE::_adapt_parameters() {
 MinionResult MFADE::optimize() {
     try {
         no_improve_counter=0;
-        Ndisturbs =0;
         _initialize_population();
         M_CR = rand_gen(0.2, 0.8, memorySize);
         M_F = rand_gen(0.2, 0.8, memorySize);
-
-        std::vector<std::vector<double>> all_trials(popsize, std::vector<double>(population[0].size()));
 
         std::vector<size_t> sorted_indices;
         MinionResult* minRes; 
@@ -46,6 +43,7 @@ MinionResult MFADE::optimize() {
         std::string curr_strategy = strategy;
         size_t iter =0;
         while (Nevals <= maxevals) {
+            std::vector<std::vector<double>> all_trials(popsize, std::vector<double>(population[0].size()));
             std::vector<double> S_CR, S_F,  weights, weights_F;
             _adapt_parameters();
 
@@ -82,7 +80,6 @@ MinionResult MFADE::optimize() {
                     weights_F.push_back( w*F[i]*F[i]);
                 } else {
                     archive.push_back(all_trials[i]); 
-                    fitness_archive.push_back(all_trial_fitness[i]);
                 };
             }
 
@@ -132,53 +129,46 @@ MinionResult MFADE::optimize() {
                 M_CR = newM_CR ;
                 M_F = newM_F; 
             };
-
-            if (popDecrease) {
-                size_t new_population_size = static_cast<size_t>(((minPopSize - original_popsize) / static_cast<double>(maxevals) * Nevals + original_popsize));
-                if (popsize > new_population_size) {
-                    popsize = new_population_size;
-                    std::vector<size_t> sorted_index = argsort(fitness, false);
-                    std::vector<size_t> best_indexes (sorted_index.end()-popsize, sorted_index.end());
-                    std::vector<std::vector<double>> new_population_subset(popsize);
-                    std::vector<double> new_fitness_subset(popsize);
-                    for (int i = 0; i < popsize; ++i) {
-                        new_population_subset[i] = population[best_indexes[i]];
-                        new_fitness_subset[i] = fitness[best_indexes[i]];
-                    }
-                    population = std::move(new_population_subset);
-                    fitness = std::move(new_fitness_subset);
-                    best_idx = best_indexes.back();
-                    best = population[best_idx];
-                    best_fitness = fitness[best_idx]; 
-                };
-            } 
-
-            for (size_t i =0; i<popsize; i++){
-
-            }
-
+            archiveSize= static_cast<size_t> (2.6*popsize);
             while (archive.size() > archiveSize) {
                 size_t random_index = rand_int(archive.size());
                 archive.erase(archive.begin() + random_index);
-                fitness_archive.erase(fitness_archive.begin()+random_index);
             }
             
             iter = iter+1;
 
             minRes = new MinionResult(best, best_fitness, iter + 1, Nevals, false, "");
+            minionResult = minRes;
             history.push_back(minRes);
-            if (callback) { callback(minRes);};
-            double max_fitness = *std::max_element(fitness.begin(), fitness.end());
-            double min_fitness = *std::min_element(fitness.begin(), fitness.end());
-            double range = max_fitness - min_fitness;
-            
-            double relRange = 2.0*(max_fitness-min_fitness)/(max_fitness+min_fitness);
 
+
+            if (callback) { callback(minRes);};
+
+            double relRange = calcStdDev(fitness)/calcMean(fitness);
             if (relTol != 0.0 && relRange <= relTol) {
                 break;
             };
+
+            if (popDecrease) {
+                size_t new_population_size = static_cast<size_t>((static_cast<double>(static_cast<double>(minPopSize) - static_cast<double>(original_popsize))*(Nevals/static_cast<double>(maxevals) ) + original_popsize));
+                if (new_population_size<minPopSize) new_population_size=minPopSize;
+                if (popsize > new_population_size) {
+                    popsize = new_population_size;
+                    std::vector<size_t> sorted_index = argsort(fitness, true);
+                    std::vector<std::vector<double>> new_population_subset(popsize);
+                    std::vector<double> new_fitness_subset(popsize);
+                    for (int i = 0; i < popsize; ++i) {
+                        new_population_subset[i] = population[ sorted_index [i]];
+                        new_fitness_subset[i] = fitness[ sorted_index [i]];
+                    }
+                    population = new_population_subset;
+                    fitness = new_fitness_subset;
+                    best_idx = 0;
+                    best = population[best_idx];
+                    best_fitness = fitness[best_idx]; 
+                };
+            } 
         }
-        minionResult = minRes;
         return *minRes;
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

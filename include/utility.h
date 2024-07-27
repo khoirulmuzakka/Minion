@@ -35,17 +35,39 @@ std::mt19937& get_rng();
  * @tparam T The type of the elements in the vector.
  * @param v The input vector.
  * @param n The number of elements to select.
+ * @param replace If true, selection is done with replacement.
  * @return A vector containing n randomly selected elements from the input vector.
  */
 template <typename T>
-std::vector<T> random_choice(const std::vector<T>& v, size_t n) {
+std::vector<T> random_choice(const std::vector<T>& v, size_t n, bool replace = false) {
     std::vector<T> result;
-    std::vector<T> copy = v;
     std::mt19937& rng = get_rng();
-    std::shuffle(copy.begin(), copy.end(), rng);
-    result.insert(result.end(), copy.begin(), copy.begin() + n);
+
+    if (replace) {
+        std::uniform_int_distribution<size_t> dist(0, v.size() - 1);
+        for (size_t i = 0; i < n; ++i) {
+            result.push_back(v[dist(rng)]);
+        }
+    } else {
+        std::vector<T> copy = v;
+        std::shuffle(copy.begin(), copy.end(), rng);
+        result.insert(result.end(), copy.begin(), copy.begin() + n);
+    }
+
     return result;
 }
+
+
+/**
+ * @brief Create a vector of length N with elements selected randomly from 0 to Ninput - 1.
+ * @tparam T The type of the elements in the vector.
+ * @param Ninput The length of the initial vector (0 to Ninput - 1).
+ * @param N The number of elements to select.
+ * @param replace If true, selection is done with replacement.
+ * @return A vector of length N with randomly selected elements from 0 to Ninput - 1.
+ */
+std::vector<size_t> random_choice(size_t Ninput, size_t N, bool replace = false);
+
 
 /**
  * @brief Normalize the elements of a vector.

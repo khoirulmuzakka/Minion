@@ -197,11 +197,8 @@ namespace CEC2020{
 				f[i]+=700.0;
 				break;
 			case 4:	
-				hf01(&x[i*nx],&f[i],nx,OShift,M,SS,1,1);//F17 in cec 2014 (hf1 in cec 2014)
-			
-				f[i]=f[i]+1700.0;
-			
-	//             printf("f[%d]=%f\n",i,1.0);            
+				hf01(&x[i*nx],&f[i],nx,OShift,M,SS,1,1);//F17 in cec 2014 (hf1 in cec 2014)	
+				f[i]=f[i]+1700.0;          
 				break;
 			case 5:
 				rastrigin_func(&x[i*nx],&f[i],nx,OShift,M,1,1);

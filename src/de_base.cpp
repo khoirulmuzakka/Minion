@@ -1,18 +1,30 @@
 #include "de_base.h"
 #include "utility.h"
+#include <cmath> 
+
 
 DE_Base::DE_Base(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, void* data, 
-    const std::vector<double>& x0 , int population_size, int maxevals, std::string strategy , double relTol , int minPopSize,
+    const std::vector<double>& x0 , size_t population_size, size_t maxevals, std::string strategy , double relTol , size_t minPopSize,
     std::function<void(MinionResult*)> callback, std::string boundStrategy, int seed)
         : MinimizerBase(func, bounds, x0, data, callback, relTol, maxevals, boundStrategy, seed),
           original_popsize(population_size), popsize(population_size), minPopSize(minPopSize), 
           strategy(strategy), Nevals(0), rangeScale(1.0), use_clip(false) 
     {
-        if (population_size < 10) population_size = 10;
-        if (minPopSize > original_popsize) throw std::invalid_argument("minPopSize must be smaller or equal to population_size.");
+        if (population_size < 10) {
+            original_popsize = 10;
+            popsize = 10;
+        } ;
+
+        double eta = log10(maxevals);
+        if (population_size==0){
+            original_popsize = static_cast<size_t> (2.0*eta*eta + bounds.size()/2.0);
+            popsize = original_popsize;
+        };
+                
         popDecrease = minPopSize != original_popsize;
-        max_no_improve = 20+bounds.size();
-        archiveSize = 1*popsize;
+        max_no_improve = static_cast<size_t> (2.0*eta*eta + bounds.size());
+        archiveSize = static_cast<size_t> (2.6*popsize);  // this is take from LSHADE value.
+        if (minPopSize > original_popsize) throw std::invalid_argument("minPopSize must be smaller or equal to population_size.");
 };
 
 void DE_Base::_initialize_population() {
@@ -51,7 +63,7 @@ void DE_Base::_initialize_population() {
     best_idx = static_cast<int>(std::min_element(fitness.begin(), fitness.end()) - fitness.begin());
     best = population[best_idx];
     best_fitness = fitness[best_idx];
-    Nevals += popsize;
+    Nevals += population.size();
     evalFrac = static_cast<double>(Nevals)/static_cast<double>(maxevals);
     history.push_back(new MinionResult(best, best_fitness, 0, popsize, false, "best initial fitness"));
 }

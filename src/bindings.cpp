@@ -3,7 +3,7 @@
 #include <pybind11/functional.h>
 #include "minimizer_base.h" // Include your MinionResult struct definition
 #include "mfade.h"
-#include "ljade.h"
+#include "ebr_lshade.h"
 #include "gwo_de.h"
 #include "powell.h"
 #include "nelder_mead.h"
@@ -42,49 +42,17 @@ PYBIND11_MODULE(pyminioncpp, m) {
     py::class_<MinimizerBase>(m, "MinimizerBase")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<double>&, void*, std::function<void(MinionResult*)>,
-                      double, int, std::string, int>())
+                      double, size_t, std::string, int>())
         .def_readwrite("callback", &MinimizerBase::callback)
         .def_readwrite("history", &MinimizerBase::history)
         .def("optimize", &MinimizerBase::optimize);
 
     py::class_<DE_Base, MinimizerBase>(m, "DE_Base")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
-                      void*, const std::vector<double>&, int, int, std::string,
-                      double, int, std::function<void(MinionResult*)>, std::string, int>())
-        .def("_initialize_population", &DE_Base::_initialize_population)
-        .def("_mutate", &DE_Base::_mutate)
-        .def("_crossover_bin", &DE_Base::_crossover_bin)
-        .def("_crossover_exp", &DE_Base::_crossover_exp)
-        .def("_crossover", &DE_Base::_crossover)
+                      void*, const std::vector<double>&, size_t, size_t, std::string,
+                      double, size_t, std::function<void(MinionResult*)>, std::string, int>())
         .def("optimize", &DE_Base::optimize);
-
-    py::class_<LJADE, DE_Base>(m, "LJADE")
-        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
-             py::arg("func"),
-             py::arg("bounds"),
-             py::arg("data") = nullptr,
-             py::arg("x0") = std::vector<double>{},
-             py::arg("population_size") = 30,
-             py::arg("maxevals") = 100000,
-             py::arg("strategy") = "current_to_pbest1bin",
-             py::arg("relTol") = 0.0001,
-             py::arg("minPopSize") = 10,
-             py::arg("c") = 0.5,
-             py::arg("callback") = nullptr,
-             py::arg("boundStrategy") = "reflect-random",
-             py::arg("seed") = -1)
-        .def("optimize", &LJADE::optimize)
-        .def("_adapt_parameters", &LJADE::_adapt_parameters)
-        .def_readwrite("meanCR", &LJADE::meanCR)
-        .def_readwrite("meanF", &LJADE::meanF)
-        .def_readwrite("c", &LJADE::c)
-        .def_readwrite("history", &LJADE::history)
-        .def_readwrite("Ndisturbs", &LJADE::Ndisturbs)
-        .def_readwrite("muCR", &LJADE::muCR)
-        .def_readwrite("muF", &LJADE::muF)
-        .def_readwrite("stdCR", &LJADE::stdCR)
-        .def_readwrite("stdF", &LJADE::stdF);
-
+    
     py::class_<MFADE, DE_Base>(m, "MFADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
              py::arg("func"),
@@ -94,26 +62,46 @@ PYBIND11_MODULE(pyminioncpp, m) {
              py::arg("population_size") = 30,
              py::arg("maxevals") = 100000,
              py::arg("strategy") = "current_to_pbest1bin",
-             py::arg("relTol") = 0.0001,
+             py::arg("relTol_firstRun") = 0.001,
              py::arg("minPopSize") = 10,
              py::arg("memorySize") = 30,
              py::arg("callback") = nullptr,
              py::arg("boundStrategy") = "reflect-random",
              py::arg("seed") = -1)
         .def("optimize", &MFADE::optimize)
-        .def("_adapt_parameters", &MFADE::_adapt_parameters)
-        .def_readwrite("M_CR", &MFADE::M_CR)
-        .def_readwrite("M_F", &MFADE::M_F)
-        .def_readwrite("memorySize", &MFADE::memorySize)
         .def_readwrite("history", &MFADE::history)
-        .def_readwrite("Ndisturbs", &MFADE::Ndisturbs)
         .def_readwrite("muCR", &MFADE::muCR)
         .def_readwrite("muF", &MFADE::muF)
         .def_readwrite("stdCR", &MFADE::stdCR)
         .def_readwrite("stdF", &MFADE::stdF);
 
+    py::class_<EBR_LSHADE, DE_Base>(m, "EBR_LSHADE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      void*, const std::vector<double>&, size_t, int, double, size_t, size_t, 
+                      std::function<void(MinionResult*)>, size_t, double, std::string, int>(),
+             py::arg("func"),
+             py::arg("bounds"),
+             py::arg("data") = nullptr,
+             py::arg("x0") = std::vector<double>{},
+             py::arg("population_size") = 30,
+             py::arg("maxevals") = 100000,
+             py::arg("relTol_firstRun") = 0.01,
+             py::arg("minPopSize") = 5,
+             py::arg("memorySize") = 50,
+             py::arg("callback") = nullptr,
+             py::arg("max_restarts") = 0,
+             py::arg("startRefine") = 0.75,
+             py::arg("boundStrategy") = "reflect-random",
+             py::arg("seed") = -1)
+        .def_readwrite("muCR", &EBR_LSHADE::muCR)
+        .def_readwrite("muF", &EBR_LSHADE::muF)
+        .def_readwrite("stdCR", &EBR_LSHADE::stdCR)
+        .def_readwrite("stdF", &EBR_LSHADE::stdF)
+        .def_readwrite("history", &EBR_LSHADE::history)
+        .def("optimize", &EBR_LSHADE::optimize);
+
     py::class_<LSHADE, DE_Base>(m, "LSHADE")
-        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, int, int, std::string, double, int, double, std::function<void(MinionResult*)>, std::string, int>(),
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, void*, const std::vector<double>&, size_t, size_t, std::string, double, size_t, double, std::function<void(MinionResult*)>, std::string, int>(),
              py::arg("func"),
              py::arg("bounds"),
              py::arg("data") = nullptr,
@@ -128,12 +116,7 @@ PYBIND11_MODULE(pyminioncpp, m) {
              py::arg("boundStrategy") = "reflect-random",
              py::arg("seed") = -1)
         .def("optimize", &LSHADE::optimize)
-        .def("_adapt_parameters", &LSHADE::_adapt_parameters)
-        .def_readwrite("M_CR", &LSHADE::M_CR)
-        .def_readwrite("M_F", &LSHADE::M_F)
-        .def_readwrite("memorySize", &LSHADE::memorySize)
         .def_readwrite("history", &LSHADE::history)
-        .def_readwrite("Ndisturbs", &LSHADE::Ndisturbs)
         .def_readwrite("muCR", &LSHADE::muCR)
         .def_readwrite("muF", &LSHADE::muF)
         .def_readwrite("stdCR", &LSHADE::stdCR)

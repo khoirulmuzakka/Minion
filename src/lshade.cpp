@@ -16,7 +16,7 @@ void LSHADE::_adapt_parameters() {
 
     std::vector<size_t> allind, selecIndices; 
     for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
-    selecIndices = random_choice(allind, popsize); 
+    selecIndices = random_choice(allind, popsize, true); 
     for (int i = 0; i < popsize; ++i) {
         new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
         new_F[i] = rand_norm(M_F[selecIndices[i]], 0.1);
@@ -39,18 +39,17 @@ MinionResult LSHADE::optimize() {
         M_CR = std::vector<double>(memorySize, 0.5) ;
         M_F =  std::vector<double>(memorySize, 0.5) ;
 
-        std::vector<std::vector<double>> all_trials(popsize, std::vector<double>(population[0].size()));
-
         MinionResult* minRes; 
         size_t memoryIndex=0;
         size_t iter =0;
         while (Nevals <= maxevals) {
+            std::vector<std::vector<double>> all_trials(popsize, std::vector<double>(population[0].size()));
             std::vector<double> S_CR, S_F,  weights, weights_F;
             _adapt_parameters();
             
             for (int i = 0; i < popsize; ++i) {
 
-                int frac = static_cast<int>(round(0.2 * popsize));
+                int frac = static_cast<int>(round(0.11 * popsize));
                 if (frac <=2){p=2;}; 
                 std::vector<int> range(frac);
                 std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 0 to frac
@@ -59,11 +58,12 @@ MinionResult LSHADE::optimize() {
 
                 all_trials[i] = _crossover(population[i], _mutate(i, strategy), CR[i], strategy);
             }
+
             enforce_bounds(all_trials, bounds, boundStrategy);
 
             std::vector<double> all_trial_fitness = func(all_trials, data);
             std::replace_if(all_trial_fitness.begin(), all_trial_fitness.end(), [](double f) { return std::isnan(f); }, 1e+100);
-            Nevals += popsize;
+            Nevals += all_trials.size();
             evalFrac = static_cast<double>(Nevals)/maxevals;
 
             for (int i = 0; i < popsize; ++i) {
@@ -77,7 +77,6 @@ MinionResult LSHADE::optimize() {
                     weights_F.push_back( w*F[i]);
                 } else {
                     archive.push_back(all_trials[i]); 
-                    fitness_archive.push_back(all_trial_fitness[i]);
                 };
             }
 
@@ -100,46 +99,43 @@ MinionResult LSHADE::optimize() {
                         memoryIndex =0;
                 } else {memoryIndex = memoryIndex+1;}
             };
-
-            if (popDecrease) {
-            size_t new_population_size = static_cast<size_t>(((minPopSize - original_popsize) / static_cast<double>(maxevals) * Nevals + original_popsize));
-                if (popsize > new_population_size) {
-                    popsize = new_population_size;
-                    std::vector<size_t> sorted_index = argsort(fitness, false);
-                    std::vector<size_t> best_indexes (sorted_index.end()-popsize, sorted_index.end());
-                    std::vector<std::vector<double>> new_population_subset(popsize);
-                    std::vector<double> new_fitness_subset(popsize);
-                    for (int i = 0; i < popsize; ++i) {
-                        new_population_subset[i] = population[best_indexes[i]];
-                        new_fitness_subset[i] = fitness[best_indexes[i]];
-                    }
-                    population = std::move(new_population_subset);
-                    fitness = std::move(new_fitness_subset);
-                    best_idx = best_indexes.back();
-                    best = population[best_idx];
-                    best_fitness = fitness[best_idx]; 
-                };
-            } 
-
+            archiveSize= static_cast<size_t> (2.6*popsize);
             while (archive.size() > archiveSize) {
                 size_t random_index = rand_int(archive.size());
                 archive.erase(archive.begin() + random_index);
-                fitness_archive.erase(fitness_archive.begin()+random_index);
             }
             iter = iter+1;
 
             minRes = new MinionResult(best, best_fitness, iter + 1, Nevals, false, "");
+            minionResult = minRes;
             history.push_back(minRes);
-            if (callback) { callback(minRes);};
-            double max_fitness = *std::max_element(fitness.begin(), fitness.end());
-            double min_fitness = *std::min_element(fitness.begin(), fitness.end());
-            double range = max_fitness - min_fitness;
-            double relRange = 2.0*(max_fitness-min_fitness)/(max_fitness+min_fitness);
+
+            double relRange = calcStdDev(fitness)/calcMean(fitness);
             if (relTol != 0.0 && relRange <= relTol) {
                 break;
             };
+
+            if (popDecrease) {
+                size_t new_population_size = static_cast<size_t>((static_cast<double>(static_cast<double>(minPopSize) - static_cast<double>(original_popsize))*(Nevals/static_cast<double>(maxevals) ) + original_popsize));
+                if (new_population_size<minPopSize) new_population_size=minPopSize;
+                if (popsize > new_population_size) {
+                    popsize = new_population_size;
+                    std::vector<size_t> sorted_index = argsort(fitness, true);
+                    std::vector<std::vector<double>> new_population_subset(popsize);
+                    std::vector<double> new_fitness_subset(popsize);
+                    for (int i = 0; i < popsize; ++i) {
+                        new_population_subset[i] = population[ sorted_index [i]];
+                        new_fitness_subset[i] = fitness[ sorted_index [i]];
+                    }
+                    population = new_population_subset;
+                    fitness = new_fitness_subset;
+                    best_idx = 0;
+                    best = population[best_idx];
+                    best_fitness = fitness[best_idx]; 
+                };
+            } 
         }
-        minionResult = minRes;
+
         return *minRes;
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

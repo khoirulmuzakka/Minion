@@ -29,6 +29,18 @@ std::vector<double> rand_gen(double low, double high, size_t N) {
     return samples;
 }
 
+std::vector<size_t> random_choice(size_t Ninput, size_t N, bool replace) {
+    if (N > Ninput && !replace) {
+        throw std::invalid_argument("Cannot select more elements than are in the range without replacement");
+    }
+
+    // Generate initial vector of length Ninput
+    std::vector<size_t> v(Ninput);
+    std::iota(v.begin(), v.end(), 0); // Fill the vector with values 0 to Ninput - 1
+
+    return random_choice(v, N, replace);
+}
+
 size_t rand_int(size_t n) {
     int n_ = static_cast<int> (n);
     std::uniform_int_distribution<> dis(0, n_ - 1);

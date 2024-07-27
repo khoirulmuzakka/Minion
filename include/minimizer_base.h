@@ -82,7 +82,7 @@ class MinimizerBase {
          */
         MinimizerBase(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
                     void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double relTol = 0.0001, int maxevals = 100000, std::string boundStrategy = "reflect-random", int seed=-1);
+                    double relTol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random", int seed=-1);
 
         /**
          * @brief Virtual function to perform the optimization.
@@ -100,7 +100,7 @@ class MinimizerBase {
         void* data = nullptr;
         std::function<void(MinionResult*)> callback;
         double relTol;
-        int maxevals;
+        size_t maxevals;
         int seed;
         MinionResult* minionResult;
         std::vector<MinionResult*> history;

@@ -8,7 +8,7 @@ sys.path.append(custom_path)
 import numpy as np
 from pyminioncpp import MFADE as cppMFADE
 from pyminioncpp import LSHADE as cppLSHADE
-from pyminioncpp import LJADE as cppLJADE
+from pyminioncpp import EBR_LSHADE as cppEBR_LSHADE
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
 from pyminioncpp import Powell as cppPowell  # Import Powell
@@ -192,56 +192,6 @@ class MinimizerBase:
             raise ValueError("Invalid bounds. Bounds must be a list of (lower_bound, upper_bound).")
         return [(b[0], b[1]) for b in bounds]
 
-
-class LJADE(MinimizerBase):
-    """
-    @class LJADE : Fully Adaptive Differential Evolution
-    @brief Implementation of the LJADE algorithm.
-
-    Inherits from MinimizerBase and implements the optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
-                 strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, c=0.5, callback=None, boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for LJADE.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param population_size Population size.
-        @param maxevals Maximum number of function evaluations.
-        @param strategy DE strategy to use.
-        @param relTol Relative tolerance for convergence.
-        @param minPopSize Minimum population size.
-        @param c Control parameter for LJADE.
-        @param callback Callback function called after each iteration.
-        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed )
-        self.population_size = population_size
-        self.strategy = strategy
-        self.minPopSize = minPopSize
-        self.c = c
-        self.optimizer = cppLJADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
-                                        strategy, relTol, minPopSize, c, self.cppCallback, boundStrategy, self.seed)
-    
-    def optimize(self):
-        """
-        @brief Optimize the objective function using M-LJADE-AMR.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.muCR = self.optimizer.muCR
-        self.muF = self.optimizer.muF
-        self.stdCR = self.optimizer.muCR
-        self.stdF = self.optimizer.muF
-        return self.minionResult
     
 class MFADE(MinimizerBase):
     """
@@ -291,6 +241,62 @@ class MFADE(MinimizerBase):
         self.muF = self.optimizer.muF
         self.stdCR = self.optimizer.muCR
         self.stdF = self.optimizer.muF
+        return self.minionResult
+
+
+class EBR_LSHADE(MinimizerBase):
+    """
+    @class EBR_LSHADE : EBR_LSHADE : Exclusion-Based Restart LSHADE algorithm
+    @brief Implementation of the EBR-LSHADE algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+
+    def __init__(self, func, bounds, data=None, x0=None, population_size=0, maxevals=100000, 
+                 relTol_firstRun=0.01, minPopSize=5, memorySize=50, callback=None, max_restarts=10, 
+                 startRefine=0.75, boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for EBR_LSHADE.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size. 
+        @param maxevals Maximum number of function evaluations.
+        @param relTol_firstRun Relative tolerance for convergence in the first run.
+        @param minPopSize Minimum population size.
+        @param memorySize Memory size for CR and F.
+        @param callback Callback function called after each iteration.
+        @param max_restarts Maximum number of restarts.
+        @param startRefine Start refinement threshold.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+
+        super().__init__(func, bounds, data, x0, 0.0, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.relTol_firstRun = relTol_firstRun
+        self.minPopSize = minPopSize
+        self.memorySize = memorySize
+        self.max_restarts = max_restarts
+        self.startRefine = startRefine
+        self.optimizer = cppEBR_LSHADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
+                                      relTol_firstRun, minPopSize, memorySize, self.cppCallback, max_restarts, 
+                                      startRefine, self.boundStrategy, self.seed)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using EBR-LSHADE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.muCR = self.optimizer.muCR
+        self.muF = self.optimizer.muF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
         return self.minionResult
     
 class LSHADE(MinimizerBase):
