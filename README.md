@@ -5,15 +5,24 @@ Minion is a library for derivative-free optimization algorithms, implemented in 
 ## Key Features
 
 - **Optimization Algorithms:**
-  - Includes Adaptive Differential Evolution (MFADE and FADE), hybrid Grey Wolf - Differential Evolution (GWO-DE), and more. 
+  - Includes state-of-the arts variants of differential evolution, hybrid Grey Wolf - Differential Evolution (GWO-DE), and more. 
 - **Parallelizable:**
   - Always assumes vectorized function evaluations, enabling easy integration with multithreading or multiprocessing for enhanced computational efficiency.
 
 ## Algorithms Included
-
-- **Fully Adaptive Differential Evolution (FADE):**
+- **Nelder-Mead:**
+  - Widely-used optimization algorithm.
+- **JADE:**
   - State-of-the-art variant of Differential Evolution (DE).
-- **Fully Adaptive Differential Evolution with Memory (MFADE):**
+- **SHADE:**
+  - State-of-the-art variant of Differential Evolution (DE).
+- **LSHADE:**
+  - State-of-the-art variant of Differential Evolution (DE).
+- **LSHADE-RSP:**
+  - State-of-the-art variant of Differential Evolution (DE).
+- **NLSHADE-RSP:**
+  - State-of-the-art variant of Differential Evolution (DE).
+- **LSHADE-2:**
   - State-of-the-art variant of Differential Evolution (DE).
 
 ## How to Compile and Use Minion Library
