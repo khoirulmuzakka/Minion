@@ -57,6 +57,105 @@ std::vector<T> random_choice(const std::vector<T>& v, size_t n, bool replace = f
     return result;
 }
 
+/**
+ * @brief Template function to find the minimum value in a vector.
+ * 
+ * This function takes a vector of any numeric type and returns the minimum value
+ * in the vector. If the vector is empty, it throws a std::runtime_error.
+ * 
+ * @tparam T The type of the elements in the vector.
+ * @param vec The vector containing the elements.
+ * @return The minimum value in the vector.
+ * @throws std::runtime_error If the vector is empty.
+ */
+template <typename T>
+T findMin(const std::vector<T>& vec) {
+    // Check if the vector is empty
+    if (vec.empty()) {
+        throw std::runtime_error("The vector is empty");
+    }
+
+    // Use std::min_element to find the minimum element
+    auto minIt = std::min_element(vec.begin(), vec.end());
+
+    // Dereference the iterator to get the value
+    return *minIt;
+}
+
+/**
+ * @brief Template function to find the maximum value in a vector.
+ * 
+ * This function takes a vector of any numeric type and returns the maximum value
+ * in the vector. If the vector is empty, it throws a std::runtime_error.
+ * 
+ * @tparam T The type of the elements in the vector.
+ * @param vec The vector containing the elements.
+ * @return The maximum value in the vector.
+ * @throws std::runtime_error If the vector is empty.
+ */
+template <typename T>
+T findMax(const std::vector<T>& vec) {
+    // Check if the vector is empty
+    if (vec.empty()) {
+        throw std::runtime_error("The vector is empty");
+    }
+
+    // Use std::max_element to find the maximum element
+    auto maxIt = std::max_element(vec.begin(), vec.end());
+
+    // Dereference the iterator to get the value
+    return *maxIt;
+}
+
+/**
+ * @brief Template function to find the index of the minimum value in a vector.
+ * 
+ * This function takes a vector of any type and returns the index of the minimum value
+ * in the vector. If the vector is empty, it throws a std::runtime_error.
+ * 
+ * @tparam T The type of the elements in the vector.
+ * @param vec The vector containing the elements.
+ * @return The index of the minimum value in the vector.
+ * @throws std::runtime_error If the vector is empty.
+ */
+template <typename T>
+std::size_t findArgMin(const std::vector<T>& vec) {
+    // Check if the vector is empty
+    if (vec.empty()) {
+        throw std::runtime_error("The vector is empty");
+    }
+
+    // Use std::min_element to find the minimum element
+    auto minIt = std::min_element(vec.begin(), vec.end());
+
+    // Get the index of the minimum element
+    return std::distance(vec.begin(), minIt);
+}
+
+/**
+ * @brief Template function to find the index of the maximum value in a vector.
+ * 
+ * This function takes a vector of any type and returns the index of the maximum value
+ * in the vector. If the vector is empty, it throws a std::runtime_error.
+ * 
+ * @tparam T The type of the elements in the vector.
+ * @param vec The vector containing the elements.
+ * @return The index of the maximum value in the vector.
+ * @throws std::runtime_error If the vector is empty.
+ */
+template <typename T>
+std::size_t findArgMax(const std::vector<T>& vec) {
+    // Check if the vector is empty
+    if (vec.empty()) {
+        throw std::runtime_error("The vector is empty");
+    }
+
+    // Use std::max_element to find the maximum element
+    auto maxIt = std::max_element(vec.begin(), vec.end());
+
+    // Get the index of the maximum element
+    return std::distance(vec.begin(), maxIt);
+}
 
 /**
  * @brief Create a vector of length N with elements selected randomly from 0 to Ninput - 1.
@@ -199,5 +298,30 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
  * @param vec The input vector of vectors.
  */
 void printVectorOfVectors(const std::vector<std::vector<double>>& vec);
+
+/**
+ * @brief Computes the Euclidean distance between two points represented by vectors.
+ * 
+ * @param a The first point as a vector of doubles.
+ * @param b The second point as a vector of doubles.
+ * @return The Euclidean distance between points a and b.
+ */
+double euclideanDistance(const std::vector<double>& a, const std::vector<double>& b);
+
+/**
+ * @brief Calculates the center of a group of particles.
+ * 
+ * @param particles A vector of vectors where each inner vector represents the position of a particle.
+ * @return A vector representing the center of the particles.
+ */
+std::vector<double> calculateCenter(const std::vector<std::vector<double>>& particles);
+
+/**
+ * @brief Calculates the average Euclidean distance of each particle to the center of all particles.
+ * 
+ * @param particles A vector of vectors where each inner vector represents the position of a particle.
+ * @return The average Euclidean distance from each particle to the center.
+ */
+double averageEuclideanDistance(const std::vector<std::vector<double>>& particles);
 
 #endif

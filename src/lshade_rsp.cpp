@@ -1,6 +1,6 @@
-#include "lshade.h" 
+#include "lshade_rsp.h" 
 
-LSHADE::LSHADE(
+LSHADE_RSP::LSHADE_RSP(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
@@ -8,14 +8,18 @@ LSHADE::LSHADE(
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
     settings = LSHADE_Settings(options);
+    std::cerr << settings<<"\n";
+
+    print_variant(settings.getSetting("mutation_strategy"));
     mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
     memorySize = std::get<int>(settings.getSetting("memory_size"));
     archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
 
-    M_CR = std::vector<double>(memorySize, 0.5) ;
+    M_CR = std::vector<double>(memorySize, 0.7) ;
     M_F =  std::vector<double>(memorySize, 0.5) ;
     F = std::vector<double>(populationSize, 0.5);
-    CR = std::vector<double>(populationSize, 0.5);
+    CR = std::vector<double>(populationSize, 0.7);
+
     minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
     reduction_strategy = std::get<std::string>(settings.getSetting("reduction_strategy"));
     try {
@@ -23,13 +27,14 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     } catch (...) {
         popreduce = std::get<int>(settings.getSetting("population_reduction"));
     };
-    std::cout << "LSHADE instantiated. \n";
+    std::cout << "LSHADE_RSP instantiated. \n";
 };
 
 
-void LSHADE::adaptParameters() {
+void LSHADE_RSP::adaptParameters() {
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
+
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
@@ -41,6 +46,7 @@ void LSHADE::adaptParameters() {
             };
         }
     };
+
     if (!S_CR.empty()) {
         double muCR, sCR, muF, sF;
         weights = normalize_vector(weights); 
@@ -53,6 +59,7 @@ void LSHADE::adaptParameters() {
         if (memoryIndex == (memorySize-1)) memoryIndex =0;
         else memoryIndex++;
     };
+
     //update archive size
     size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
     while (archive.size() > archiveSize) {
@@ -61,7 +68,7 @@ void LSHADE::adaptParameters() {
     }
 
     // update population size
-    if ( popreduce) {
+    if (popreduce) {
         size_t new_population_size;
         if (reduction_strategy=="linear"){
             new_population_size = static_cast<size_t>((static_cast<double>(static_cast<double>(minPopSize) - static_cast<double>(populationSize))*(Nevals/static_cast<double>(maxevals) ) + populationSize));
@@ -75,7 +82,6 @@ void LSHADE::adaptParameters() {
         };
 
         if (new_population_size<minPopSize) new_population_size=minPopSize;
-
         if (population.size() > new_population_size) {
             std::vector<size_t> sorted_index = argsort(fitness, true);
 
@@ -106,8 +112,19 @@ void LSHADE::adaptParameters() {
         selecIndices = random_choice(allind, population.size(), true); 
     };
     for (int i = 0; i < population.size(); ++i) {
-        new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        new_F[i] = rand_norm(M_F[selecIndices[i]], 0.1);
+        size_t j = selecIndices[i];
+        new_CR[i] = rand_norm(M_CR[j], 0.1);
+        new_F[i] = rand_norm(M_F[j], 0.1);
+        if (j==(memorySize-1)){
+            new_CR[i] = rand_norm(0.9, 0.1);
+            new_F[i] = rand_norm(0.9, 0.1);
+        }
+        if (Nevals<0.25*maxevals) {
+            if (new_CR[i]<0.7) new_CR[i]=0.7;
+        }
+        if (Nevals<0.5*maxevals) {
+            if (new_CR[i]<0.6) new_CR[i]=0.6;
+        }
     }
 
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.01, 1.0); });
@@ -130,5 +147,4 @@ void LSHADE::adaptParameters() {
         if (ptemp<2){ptemp=2;}; 
         p[i] = ptemp;
     };
-
 };

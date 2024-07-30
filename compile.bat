@@ -17,7 +17,6 @@ cmake -G "Visual Studio 17 2022" ..
 
 rem Build the project using MSBuild
 cmake --build . --clean-first --config Release
-rem cmake --build . --clean-first --config Release
 
 rem Pause to see build output (optional)
 pause

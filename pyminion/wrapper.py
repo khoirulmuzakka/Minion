@@ -6,17 +6,17 @@ custom_path = os.path.join(current_file_directory, '../lib/Release/')
 sys.path.append(custom_path)
 
 import numpy as np
-from pyminioncpp import MFADE as cppMFADE
 from pyminioncpp import LSHADE as cppLSHADE
-from pyminioncpp import EBR_LSHADE as cppEBR_LSHADE
+from pyminioncpp import LSHADE2 as cppLSHADE2
+from pyminioncpp import LSHADE_RSP as cppLSHADE_RSP
+from pyminioncpp import Differential_Evolution as cppDifferential_Evolution
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
-from pyminioncpp import Powell as cppPowell  # Import Powell
 from pyminioncpp import NelderMead as cppNelderMead 
 from pyminioncpp import CEC2020Functions as cppCEC2020Functions
 from pyminioncpp import CEC2022Functions as cppCEC2022Functions
 
-
+from typing import Callable, Dict, Union, List, Optional
   
 class MinionResult:
     """
@@ -192,163 +192,7 @@ class MinimizerBase:
             raise ValueError("Invalid bounds. Bounds must be a list of (lower_bound, upper_bound).")
         return [(b[0], b[1]) for b in bounds]
 
-    
-class MFADE(MinimizerBase):
-    """
-    @class MFADE : Fully Adaptive Differential Evolution with Memory
-    @brief Implementation of the MFADE algorithm.
-
-    Inherits from MinimizerBase and implements the optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
-                 strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, memeorySize=30, callback=None, boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for MFADE.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param population_size Population size.
-        @param maxevals Maximum number of function evaluations.
-        @param strategy DE strategy to use.
-        @param relTol Relative tolerance for convergence.
-        @param minPopSize Minimum population size.
-        @param memorySize memory size for CR and F.
-        @param callback Callback function called after each iteration.
-        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed )
-        self.population_size = population_size
-        self.strategy = strategy
-        self.minPopSize = minPopSize
-        self.memorySize=memeorySize
-        self.optimizer = cppMFADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
-                                        strategy, relTol, minPopSize, self.memorySize, self.cppCallback, self.boundStrategy, self.seed)
-    
-    def optimize(self):
-        """
-        @brief Optimize the objective function using M-LSHADE-AMR.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.muCR = self.optimizer.muCR
-        self.muF = self.optimizer.muF
-        self.stdCR = self.optimizer.muCR
-        self.stdF = self.optimizer.muF
-        return self.minionResult
-
-
-class EBR_LSHADE(MinimizerBase):
-    """
-    @class EBR_LSHADE : EBR_LSHADE : Exclusion-Based Restart LSHADE algorithm
-    @brief Implementation of the EBR-LSHADE algorithm.
-
-    Inherits from MinimizerBase and implements the optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, population_size=0, maxevals=100000, 
-                 relTol_firstRun=0.01, minPopSize=5, memorySize=50, callback=None, max_restarts=10, 
-                 startRefine=0.75, boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for EBR_LSHADE.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param population_size Population size. 
-        @param maxevals Maximum number of function evaluations.
-        @param relTol_firstRun Relative tolerance for convergence in the first run.
-        @param minPopSize Minimum population size.
-        @param memorySize Memory size for CR and F.
-        @param callback Callback function called after each iteration.
-        @param max_restarts Maximum number of restarts.
-        @param startRefine Start refinement threshold.
-        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, 0.0, maxevals, callback, boundStrategy, seed)
-        self.population_size = population_size
-        self.relTol_firstRun = relTol_firstRun
-        self.minPopSize = minPopSize
-        self.memorySize = memorySize
-        self.max_restarts = max_restarts
-        self.startRefine = startRefine
-        self.optimizer = cppEBR_LSHADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
-                                      relTol_firstRun, minPopSize, memorySize, self.cppCallback, max_restarts, 
-                                      startRefine, self.boundStrategy, self.seed)
-    
-    def optimize(self):
-        """
-        @brief Optimize the objective function using EBR-LSHADE.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.muCR = self.optimizer.muCR
-        self.muF = self.optimizer.muF
-        self.stdCR = self.optimizer.stdCR
-        self.stdF = self.optimizer.stdF
-        return self.minionResult
-    
-class LSHADE(MinimizerBase):
-    """
-    @class LSHADE 
-    @brief Implementation of the LSHADE algorithm.
-
-    Inherits from MinimizerBase and implements the optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, population_size=30, maxevals=100000, 
-                 strategy="current_to_pbest1bin", relTol=0.0, minPopSize=10, memeorySize=30, callback=None, boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for LSHADE.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param population_size Population size.
-        @param maxevals Maximum number of function evaluations.
-        @param strategy DE strategy to use.
-        @param relTol Relative tolerance for convergence.
-        @param minPopSize Minimum population size.
-        @param memorySize memory size for CR and F.
-        @param callback Callback function called after each iteration.
-        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed )
-        self.population_size = population_size
-        self.strategy = strategy
-        self.minPopSize = minPopSize
-        self.memorySize=memeorySize
-        self.optimizer = cppLSHADE(self.func, self.bounds, self.data, self.x0cpp, population_size, maxevals, 
-                                        strategy, relTol, minPopSize, self.memorySize, self.cppCallback, self.boundStrategy, self.seed)
-    
-    def optimize(self):
-        """
-        @brief Optimize the objective function using M-LSHADE-AMR.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.muCR = self.optimizer.muCR
-        self.muF = self.optimizer.muF
-        self.stdCR = self.optimizer.muCR
-        self.stdF = self.optimizer.muF
-        return self.minionResult
-
+   
 class GWO_DE(MinimizerBase):
     """
     @class GWO_DE
@@ -392,44 +236,6 @@ class GWO_DE(MinimizerBase):
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
-    
-class Powell(MinimizerBase):
-    """
-    @class Powell
-    @brief Implementation of Powell's method for multidimensional optimization.
-
-    Inherits from MinimizerBase and implements the Powell optimization algorithm.
-    """
-
-    def __init__(self, func, bounds, data=None, x0=None, relTol=0.0001, maxevals=100000, callback=None,
-                 boundStrategy="reflect-random", seed=None):
-        """
-        @brief Constructor for Powell.
-
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-        @param seed Seed for the random number generator.
-        """
-
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
-        self.optimizer = cppPowell(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, relTol, maxevals, boundStrategy, self.seed)
-
-    def optimize(self):
-        """
-        @brief Optimize the objective function using Powell's method.
-
-        @return MinionResult object containing the optimization results.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        return self.minionResult
-
 
 class NelderMead(MinimizerBase):
     """
@@ -466,4 +272,203 @@ class NelderMead(MinimizerBase):
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
+
+
+class LSHADE(MinimizerBase):
+    """
+    @class LSHADE
+    @brief Implementation of the LSHADE algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 options: Dict[str, Union[int, float, str, bool]],
+                 x0: Optional[List[float]] = None,
+                 data: Optional[object] = None,
+                 callback: Optional[Callable[[MinionResult], None]] = None,
+                 tol: float = 0.0001,
+                 maxevals: int = 100000,
+                 boundStrategy: str = "reflect-random",
+                 seed: Optional[int] = None,
+                 population_size: int = 30):
+        """
+        @brief Constructor for LSHADE.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param options Dictionary of additional options for the algorithm.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.options = options
+        self.optimizer = cppLSHADE(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using LSHADE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
+        return self.minionResult
+    
+class LSHADE_RSP(MinimizerBase):
+    """
+    @class LSHAD_RSP
+    @brief Implementation of the LSHADE_RSP algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 options: Dict[str, Union[int, float, str, bool]],
+                 x0: Optional[List[float]] = None,
+                 data: Optional[object] = None,
+                 callback: Optional[Callable[[MinionResult], None]] = None,
+                 tol: float = 0.0001,
+                 maxevals: int = 100000,
+                 boundStrategy: str = "reflect-random",
+                 seed: Optional[int] = None,
+                 population_size: int = 30):
+        """
+        @brief Constructor for LSHADE_RSP.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param options Dictionary of additional options for the algorithm.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.options = options
+        self.optimizer = cppLSHADE_RSP(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using LSHADE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
+        return self.minionResult
+
+
+class LSHADE2(MinimizerBase):
+    """
+    @class LSHADE2
+    @brief Implementation of the LSHADE2 algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func, bounds, options, data=None, x0=None, population_size=100, maxevals=1000, tol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for LSHADE2.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param options Dictionary of additional options for the algorithm.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.options = options
+        self.optimizer = cppLSHADE2(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using LSHADE2.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
+        return self.minionResult
+
+
+class Differential_Evolution(MinimizerBase):
+    """
+    @class Differential_Evolution
+    @brief Implementation of the Differential Evolution algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func, bounds, data=None, x0=None, population_size=100, maxevals=1000, F=0.8, CR=0.9, tol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
+        """
+        @brief Constructor for Differential_Evolution.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param F Differential evolution scaling factor.
+        @param CR Crossover probability.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.optimizer = cppDifferential_Evolution(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using Differential Evolution.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
         return self.minionResult

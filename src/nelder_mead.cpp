@@ -2,8 +2,8 @@
 #include <algorithm>
 
 NelderMead::NelderMead(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0,
-                                       void* data, std::function<void(MinionResult*)> callback, double relTol, int maxevals, std::string boundStrategy, int seed)
-    : MinimizerBase(func, bounds, x0, data, callback, relTol, maxevals, boundStrategy, seed) {}
+                                       void* data, std::function<void(MinionResult*)> callback, double tol, int maxevals, std::string boundStrategy, int seed)
+    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {}
 
 
 MinionResult NelderMead::optimize() {
@@ -45,7 +45,7 @@ MinionResult NelderMead::optimize() {
 
             // Check convergence
             double frange = (*std::max_element(fvals.begin(), fvals.end()) - *std::min_element(fvals.begin(), fvals.end())) / calcMean(fvals);
-            if (frange < relTol) {
+            if (frange < stoppingTol) {
                 success = true;
                 message = "Optimization converged.";
                 break;

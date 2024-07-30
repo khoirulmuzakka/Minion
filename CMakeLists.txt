@@ -31,15 +31,15 @@ include_directories(
 )
 
 # --------------------- dynamic minion library -----------------------------------------#
-file(GLOB MINION_SOURCE_FILES src/*.cpp external/*.cpp)
-list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/bindings.cpp)
+#file(GLOB MINION_SOURCE_FILES src/*.cpp external/*.cpp)
+#list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/bindings.cpp)
 
-add_library(minion SHARED ${MINION_SOURCE_FILES})
-target_link_libraries(minion)
-set_target_properties(minion PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-)
+#add_library(minion SHARED ${MINION_SOURCE_FILES})
+#target_link_libraries(minion)
+#set_target_properties(minion PROPERTIES
+#    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+#    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+#)
 
 # --------------------- static minion library -----------------------------------------#
 file(GLOB MINION_SOURCE_FILES src/*.cpp external/*.cpp)
@@ -60,6 +60,6 @@ set_target_properties(pyminioncpp PROPERTIES
 )
 
 # --------------------- main files ---------------------------------------------#
-add_executable(main_cec2020 examples/main_cec2020.cpp)
-target_link_libraries(main_cec2020 PRIVATE minion_static)
-set_target_properties(main_cec2020 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+add_executable(main_cec examples/main_cec.cpp)
+target_link_libraries(main_cec PRIVATE minion_static)
+set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)

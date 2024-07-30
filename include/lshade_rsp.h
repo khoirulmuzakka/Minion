@@ -1,16 +1,17 @@
-#ifndef LSHADE_H
-#define LSHADE_H
+#ifndef LSHADE_RSP_H
+#define LSHADE_RSP_H
 
 #include "de.h"
 
 /**
- * @class LSHADE 
- * @brief Class implementing the LSHADE algorithm.
+ * @class LSHADE_RSP 
+ * @brief Class implementing the LSHADE-RSP algorithm.
  * 
- * The LSHADE class is an extension of the Differential Evolution algorithm 
- * with mechanisms for self-adaptation of control parameters.
+ * The LSHADE-RSP class 
+ * is an extension of the Differential Evolution algorithm with mechanisms for self-adaptation of control parameters and 
+ * randomized subpopulation handling.
  */
-class LSHADE : public Differential_Evolution {
+class LSHADE_RSP : public Differential_Evolution {
     public:
         std::vector<double> M_CR, M_F;
         size_t memorySize;
@@ -25,7 +26,7 @@ class LSHADE : public Differential_Evolution {
 
     public :
         /**
-         * @brief Constructor for LSHADE.
+         * @brief Constructor for LSHADE_RSP.
          * 
          * @param func The objective function to minimize.
          * @param bounds The bounds for the variables.
@@ -39,7 +40,7 @@ class LSHADE : public Differential_Evolution {
          * @param seed The seed for random number generation.
          * @param populationSize The size of the population.
          */
-        LSHADE(
+        LSHADE_RSP(
             MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::map<std::string, ConfigValue>& options, 
                     const std::vector<double>& x0 = {}, void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
                     double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
@@ -47,7 +48,7 @@ class LSHADE : public Differential_Evolution {
         );
 
         /**
-         * @brief Adapts parameters of the LSHADE algorithm.
+         * @brief Adapts parameters of the LSHADE-RSP algorithm.
          * 
          * This function overrides the adaptParameters function in the Differential_Evolution class.
          */

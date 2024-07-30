@@ -200,3 +200,38 @@ std::vector<double> normalize_vector(const std::vector<double>& input) {
     };
     return normalized;
 }
+
+double euclideanDistance(const std::vector<double>& a, const std::vector<double>& b) {
+        double sum = 0.0;
+        for (size_t i = 0; i < a.size(); ++i) {
+            sum += (a[i] - b[i]) * (a[i] - b[i]);
+        }
+        return std::sqrt(sum);
+    }
+
+// Function to calculate the center of particles
+std::vector<double> calculateCenter(const std::vector<std::vector<double>>& particles) {
+    size_t numParticles = particles.size();
+    size_t dimension = particles[0].size();
+    
+    std::vector<double> center(dimension, 0.0);
+    for (const auto& particle : particles) {
+        for (size_t i = 0; i < dimension; ++i) {
+            center[i] += particle[i];
+        }
+    }
+    for (size_t i = 0; i < dimension; ++i) {
+        center[i] /= numParticles;
+    }
+    return center;
+}
+
+// Function to calculate the average Euclidean distance to the center
+double averageEuclideanDistance(const std::vector<std::vector<double>>& particles) {
+    std::vector<double> center = calculateCenter(particles);
+    double totalDistance = 0.0;
+    for (const auto& particle : particles) {
+        totalDistance += euclideanDistance(particle, center);
+    }
+    return totalDistance / particles.size();
+} 

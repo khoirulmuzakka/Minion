@@ -7,6 +7,7 @@
 #include <cmath>
 #include "utility.h"
 #include <exception>
+#include "settings.h"
 
 
 /**
@@ -78,11 +79,16 @@ class MinimizerBase {
          * @param relTol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
-         * @param seed random seed. 
+         * @param seed global seed
          */
         MinimizerBase(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
                     void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double relTol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random", int seed=-1);
+                    double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1);
+
+        /**
+         * @brief destructor
+         */
+        ~MinimizerBase(){ }
 
         /**
          * @brief Virtual function to perform the optimization.
@@ -99,12 +105,13 @@ class MinimizerBase {
         std::vector<double> x0;
         void* data = nullptr;
         std::function<void(MinionResult*)> callback;
-        double relTol;
+        double stoppingTol;
         size_t maxevals;
-        int seed;
-        MinionResult* minionResult;
-        std::vector<MinionResult*> history;
+        MinionResult minionResult;
+        std::vector<MinionResult> history;
         std::string boundStrategy;
+        int seed;
+
 };
 
 #endif // MINIMIZER_BASE_H
