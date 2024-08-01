@@ -8,7 +8,8 @@
 #include "cec2020.h"
 #include "cec2022.h"
 #include "lshade.h"
-#include "lshade2.h"
+#include "arrde.h"
+#include "nlshadersp.h"
 #include "cec.h"
 
 namespace minion {
@@ -17,11 +18,12 @@ namespace minion {
     using ::MinimizerBase;
     using ::Differential_Evolution;
     using ::LSHADE;
-    using ::LSHADE2;
+    using ::ARRDE;
     using ::GWO_DE;
     using ::CEC2020Functions;
     using ::CEC2022Functions;
     using ::CECBase;
+    using ::NLSHADE_RSP;
 }
 
 #endif // MINION_H

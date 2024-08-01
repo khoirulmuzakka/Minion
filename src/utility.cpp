@@ -53,6 +53,11 @@ double rand_norm(double mu, double s) {
     return dis(gen);
 }
 
+double rand_cauchy(double location, double scale) {
+    std::cauchy_distribution<double> distribution(location, scale);
+    return distribution(get_rng());
+}
+
 std::vector<size_t> argsort(const std::vector<double>& v, bool ascending) {
     std::vector<size_t> indices(v.size());
     std::iota(indices.begin(), indices.end(), 0);

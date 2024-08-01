@@ -108,21 +108,21 @@ protected :
 
 
 /**
- * @class LSHADE2_Settings
- * @brief Class to store LSHADE2 options.
+ * @class ARRDE_Settings
+ * @brief Class to store ARRDE options.
  */
-class LSHADE2_Settings : public OptimizerSettings {
+class ARRDE_Settings : public OptimizerSettings {
 public : 
     /**
      * @brief default constuctor
      */
-    LSHADE2_Settings()=default;
+    ARRDE_Settings()=default;
 
     /**
      * @brief Constructor with a map.
      * @param init Map of key-value pairs for settings.
      */
-    LSHADE2_Settings(const std::map<std::string, ConfigValue>& init){
+    ARRDE_Settings(const std::map<std::string, ConfigValue>& init){
         init_default();
         setSettings(init);
     }

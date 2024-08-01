@@ -7,8 +7,8 @@ sys.path.append(custom_path)
 
 import numpy as np
 from pyminioncpp import LSHADE as cppLSHADE
-from pyminioncpp import LSHADE2 as cppLSHADE2
-from pyminioncpp import LSHADE_RSP as cppLSHADE_RSP
+from pyminioncpp import ARRDE as cppARRDE
+from pyminioncpp import NLSHADE_RSP as cppNLSHADE_RSP
 from pyminioncpp import Differential_Evolution as cppDifferential_Evolution
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
@@ -93,7 +93,7 @@ class CEC2022Functions:
         @param function_number Function number (1-10).
         @param dimension Dimension of the problem.
         """
-        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
+        if function_number not in range(1, 13) : raise Exception("Function number must be between 1-10.")
         if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
         self.cpp_func = cppCEC2022Functions(function_number, int(dimension))
 
@@ -330,7 +330,7 @@ class LSHADE(MinimizerBase):
         self.diversity = self.optimizer.diversity
         return self.minionResult
     
-class LSHADE_RSP(MinimizerBase):
+class NLSHADE_RSP(MinimizerBase):
     """
     @class LSHAD_RSP
     @brief Implementation of the LSHADE_RSP algorithm.
@@ -340,15 +340,16 @@ class LSHADE_RSP(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 options: Dict[str, Union[int, float, str, bool]],
                  x0: Optional[List[float]] = None,
                  data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
-                 tol: float = 0.0001,
+                 tol: float = 0.0,
                  maxevals: int = 100000,
                  boundStrategy: str = "reflect-random",
                  seed: Optional[int] = None,
-                 population_size: int = 30):
+                 population_size: int = 30, 
+                 memory_size : int=30, 
+                 archive_size_ratio: float=2.6):
         """
         @brief Constructor for LSHADE_RSP.
 
@@ -365,9 +366,7 @@ class LSHADE_RSP(MinimizerBase):
         @param seed Seed for the random number generator.
         """
         super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
-        self.population_size = population_size
-        self.options = options
-        self.optimizer = cppLSHADE_RSP(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+        self.optimizer = cppNLSHADE_RSP(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size, memory_size, archive_size_ratio)
     
     def optimize(self):
         """
@@ -377,25 +376,20 @@ class LSHADE_RSP(MinimizerBase):
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.meanCR = self.optimizer.meanCR
-        self.meanF = self.optimizer.meanF
-        self.stdCR = self.optimizer.stdCR
-        self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
 
 
-class LSHADE2(MinimizerBase):
+class ARRDE(MinimizerBase):
     """
-    @class LSHADE2
-    @brief Implementation of the LSHADE2 algorithm.
+    @class ARRDE
+    @brief Implementation of the ARRDE algorithm.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
     
     def __init__(self, func, bounds, options, data=None, x0=None, population_size=100, maxevals=1000, tol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
         """
-        @brief Constructor for LSHADE2.
+        @brief Constructor for ARRDE.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
@@ -412,11 +406,11 @@ class LSHADE2(MinimizerBase):
         super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
         self.population_size = population_size
         self.options = options
-        self.optimizer = cppLSHADE2(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+        self.optimizer = cppARRDE(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
     
     def optimize(self):
         """
-        @brief Optimize the objective function using LSHADE2.
+        @brief Optimize the objective function using ARRDE.
 
         @return MinionResult object containing the optimization results.
         """

@@ -215,6 +215,18 @@ size_t rand_int(size_t n);
 double rand_norm(double mu, double s);
 
 /**
+ * @brief Generate a random number from a Cauchy distribution.
+ * 
+ * This function generates a random number using a Cauchy distribution with a
+ * specified location (median) and scale (half-width at half-maximum).
+ * 
+ * @param location The location parameter of the Cauchy distribution.
+ * @param scale The scale parameter of the Cauchy distribution.
+ * @return A random number from the Cauchy distribution.
+ */
+double rand_cauchy(double location, double scale);
+
+/**
  * @brief Get the indices that would sort a vector.
  * @param v The input vector.
  * @param ascending Whether to sort in ascending order (default is true).
@@ -253,6 +265,25 @@ void printVector(const std::vector<T>& vec) {
         std::cerr << elem << " ";
     }
     std::cerr << "]" << std::endl;
+}
+
+/**
+ * @brief Checks if an element is present in a vector.
+ * 
+ * This function searches for the specified element within a vector and 
+ * returns true if the element is found, otherwise false.
+ * 
+ * @tparam T The type of elements stored in the vector.
+ * @param vec A constant reference to the vector to be searched.
+ * @param element A constant reference to the element to search for.
+ * @return true if the element is found in the vector, otherwise false.
+ */
+template <typename T>
+bool contains(const std::vector<T>& vec, const T& element) {
+    // Use std::find to search for the element in the vector
+    auto it = std::find(vec.begin(), vec.end(), element);
+    // Return true if the element is found, otherwise return false
+    return it != vec.end();
 }
 
 /**

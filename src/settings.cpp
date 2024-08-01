@@ -63,37 +63,37 @@ template void OptimizerSettings::setSetting<bool>(const std::string&, const bool
 
 void LSHADE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", "current_to_pbest_A1_1bin"},
-        {"memory_size", 100}, 
-        {"archive_size_ratio", 2.6}, 
-        {"population_reduction" , true}, 
-        {"reduction_strategy", "linear"}, //linear or exponential
-        {"minimum_population_size", 50}, 
+        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
+        {"memory_size", int(100)}, 
+        {"archive_size_ratio", double(2.6)}, 
+        {"population_reduction" , bool(true)}, 
+        {"minimum_population_size", int(5)}, 
+        {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
     };
     settings_ = default_settings_;
 }
 
-void LSHADE2_Settings::init_default() {
+void ARRDE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", "current_to_pbest_A1_1bin"},
-        {"memory_size", 100}, 
-        {"archive_size_ratio", 2.6}, 
-        {"population_reduction" , true}, 
-        {"minimum_population_size", 5}, 
-        {"reduction_strategy", "linear"}, //linear or exponential
-        {"max_no_improve", 50}
+        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
+        {"memory_size", int(100)}, 
+        {"archive_size_ratio", double(2.6)}, 
+        {"population_reduction" , bool(true)}, 
+        {"minimum_population_size", int(5)}, 
+        {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
+        {"refine_method", std::string("jade")} //jade or shade
     };
     settings_ = default_settings_;
 }
 
 void JADE_Settings::init_default() {
     default_settings_ = {
-        {"mutation_strategy", "current_to_pbest_A1_1bin"},
-        {"c", 0.1}, 
-        {"archive_size_ratio", 2.6}, 
-        {"population_reduction" , true}, 
-        {"reduction_strategy", "linear"}, //linear or exponential
-        {"minimum_population_size", 5}, 
+        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
+        {"c", double(0.1)}, 
+        {"archive_size_ratio", double(2.6)}, 
+        {"population_reduction" , bool(true)}, 
+        {"minimum_population_size", int(5)}, 
+        {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
     };
     settings_ = default_settings_;
 }

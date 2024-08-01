@@ -18,7 +18,7 @@
  */
 void minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022) {
 
-    if (function_number < 1 || function_number > 10) throw std::runtime_error("Function number must be between 1 and 10.");
+    if (function_number < 1 || function_number > 12) throw std::runtime_error("Function number must be between 1 and 10.");
 
     minion::CECBase* cecfunc;
     if (year==2020) cecfunc = new minion::CEC2020Functions(function_number, dimension);
@@ -34,6 +34,7 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
         {"population_reduction" , bool(true)}, 
         {"reduction_strategy", std::string("linear")}, //linear or exponential
         {"minimum_population_size", int(5)}, 
+        { "refine_method" , std::string("jade")}
     };  
 
     minion::LSHADE lshade (
@@ -43,7 +44,7 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
         bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, population_size
     );
 
-    minion::LSHADE2 lshade2 (
+    minion::ARRDE arrde (
         [&](const std::vector<std::vector<double>> & x, void* data) {
             return cecfunc->operator()(x); // Call the operator with a single vector
         },
@@ -52,12 +53,12 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
    
     // Optimize and get the result
     MinionResult result_lshade = lshade.optimize();
-    MinionResult result_lshade2 = lshade2.optimize();
+    MinionResult result_arrde = arrde.optimize();
 
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
     std::cout << "\tAlgo : "<<" LSHADE, Best Value: " << result_lshade.fun << "\n";
-    std::cout << "\tAlgo : "<<" LSHADE2, Best Value: " << result_lshade2.fun << "\n";
+    std::cout << "\tAlgo : "<<" LSHADE2, Best Value: " << result_arrde.fun << "\n";
     std::cout << std::endl;
     delete cecfunc;
 }
@@ -71,9 +72,13 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
  * @return int Returns 0 on successful completion.
  */
 int main() {
-    // Example: Minimize function 1 with dimension 10
-    for (int function_number = 1; function_number <11; ++function_number) {
-        minimize_cec_functions(function_number, 10, 200, 1000000, 2020);
+    int Nmaxevals = int(1e+6), dimension = 20;
+    int popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(Nmaxevals)), 1.8) + static_cast<double>(dimension)));
+    int year = 2022;
+
+    std::vector<int> funcnums = {2, 11};
+    for (auto& num : funcnums) {
+        minimize_cec_functions(num, dimension, popsize, Nmaxevals, year);
         std::cout << "\n";
     }
     return 0;
