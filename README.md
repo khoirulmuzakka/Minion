@@ -18,11 +18,11 @@ Minion is a library for derivative-free optimization algorithms, implemented in 
   - State-of-the-art variant of Differential Evolution (DE).
 - **LSHADE:**
   - State-of-the-art variant of Differential Evolution (DE).
-- **LSHADE-RSP:**
-  - State-of-the-art variant of Differential Evolution (DE).
 - **NLSHADE-RSP:**
   - State-of-the-art variant of Differential Evolution (DE).
-- **LSHADE-2:**
+- **GWO-DE:**
+  - Hybrid Grey Wolf-Deifferential Dvolution.
+- **ARRDE: Adaptive restart-refine DE**
   - State-of-the-art variant of Differential Evolution (DE).
 
 ## How to Compile and Use Minion Library
