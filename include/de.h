@@ -26,7 +26,7 @@ public :
     std::vector<double> F, CR;
     std::vector<size_t> p;
     std::string mutation_strategy;
-
+    double pA=0.5;
 
 protected : 
     /**

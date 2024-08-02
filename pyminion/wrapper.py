@@ -66,7 +66,7 @@ class CEC2020Functions:
         @param dimension Dimension of the problem.
         """
         if function_number not in range(1, 11) : raise Exception("Function number must be between 1-12.")
-        if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
+        if int(dimension) not in [2, 5, 10, 15, 20] : raise Exception("Dimension must be 2, 10, or 20.")
         self.cpp_func = cppCEC2020Functions(function_number, int(dimension))
 
     def __call__(self, X, data=None):

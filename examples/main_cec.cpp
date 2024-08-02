@@ -30,12 +30,26 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
     std::map<std::string, ConfigValue> options= std::map<std::string, ConfigValue> {
         {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
         {"memory_size", int(50)}, 
-        {"archive_size_ratio", double(2.0)}, 
+        {"archive_size_ratio", double(2.1)}, 
         {"population_reduction" , bool(true)}, 
         {"reduction_strategy", std::string("linear")}, //linear or exponential
         {"minimum_population_size", int(5)}, 
-        { "refine_method" , std::string("jade")}
+        { "refine_method" , std::string("shade")}
     };  
+
+    minion::ARRDE arrde (
+        [&](const std::vector<std::vector<double>> & x, void* data) {
+            return cecfunc->operator()(x); // Call the operator with a single vector
+        },
+        bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, population_size
+    );
+
+    minion::NLSHADE_RSP nlshadersp (
+         [&](const std::vector<std::vector<double>> & x, void* data) {
+            return cecfunc->operator()(x); // Call the operator with a single vector
+        },
+        bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, int(30*dimension), int(20*dimension), 2.1 
+    );
 
     minion::LSHADE lshade (
         [&](const std::vector<std::vector<double>> & x, void* data) {
@@ -44,21 +58,18 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
         bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, population_size
     );
 
-    minion::ARRDE arrde (
-        [&](const std::vector<std::vector<double>> & x, void* data) {
-            return cecfunc->operator()(x); // Call the operator with a single vector
-        },
-        bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, population_size
-    );
+    
    
     // Optimize and get the result
-    MinionResult result_lshade = lshade.optimize();
     MinionResult result_arrde = arrde.optimize();
+    MinionResult result_lshade = lshade.optimize();
+    MinionResult result_nlshadersp = nlshadersp.optimize();
 
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
     std::cout << "\tAlgo : "<<" LSHADE, Best Value: " << result_lshade.fun << "\n";
     std::cout << "\tAlgo : "<<" LSHADE2, Best Value: " << result_arrde.fun << "\n";
+    std::cout << "\tAlgo : "<<" NLSHADE_RSP, Best Value: " << result_nlshadersp.fun << "\n";
     std::cout << std::endl;
     delete cecfunc;
 }
@@ -73,10 +84,10 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
  */
 int main() {
     int Nmaxevals = int(1e+6), dimension = 20;
-    int popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(Nmaxevals)), 1.8) + static_cast<double>(dimension)));
-    int year = 2022;
+    int popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(Nmaxevals)), 2.0) + static_cast<double>(dimension)/2.0));
+    int year = 2020;
 
-    std::vector<int> funcnums = {2, 11};
+    std::vector<int> funcnums = {9};
     for (auto& num : funcnums) {
         minimize_cec_functions(num, dimension, popsize, Nmaxevals, year);
         std::cout << "\n";

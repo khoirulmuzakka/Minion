@@ -68,7 +68,7 @@ void LSHADE::adaptParameters() {
         } else if (reduction_strategy=="exponential") {
             new_population_size = static_cast<size_t>(static_cast<double>(populationSize)* std::pow(static_cast<double>(minPopSize)/static_cast<double>(populationSize), static_cast<double> (Nevals)/ static_cast<double>(maxevals)));
         } else if (reduction_strategy=="agsk"){
-            double ratio = static_cast<double>(Nevals)/populationSize;
+            double ratio = static_cast<double>(Nevals)/maxevals;
             new_population_size = static_cast<size_t>(round(populationSize + (minPopSize - static_cast<double> (populationSize)) * std::pow(ratio, 1.0-ratio) ));
         } else {
             throw std::logic_error("Uknnown reduction strategy");

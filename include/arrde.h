@@ -21,18 +21,21 @@ class ARRDE : public Differential_Evolution {
     private : 
         double archive_size_ratio;
         size_t memoryIndex=0;
-        size_t Nevals_refine=0;
 
         size_t minPopSize;
         std::string reduction_strategy;
         bool popreduce;
         std::string refine_method;
-        
-        bool firstrun=true;
-        bool final_refine = false;
+
         bool refine = false;
+        bool restart = false;
+        bool final_refine = false;
+        bool first_run = true;
         double muF_jade=0.5, muCR_jade=0.5;
         double bestOverall = 1e+100;
+
+        double strartRefine=0.7;
+        size_t Nrestart=0;
 
         std::vector<std::vector<std::pair<double, double>>> locals; 
 

@@ -73,18 +73,17 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
         auto pbestind = random_choice(top_p_indices, 1).front();
 
         std::vector<size_t> arch_ind(archive.size()+population.size()); 
-        std::vector<std::vector<double>> combine = archive;
-        for (auto el : population) combine.push_back(el);
         std::iota(arch_ind.begin(), arch_ind.end(), 0);
-        auto indices = random_choice(available_indices, 1);
-        auto indices2 = random_choice(arch_ind, 2);
+        auto indices = random_choice(available_indices, 2);
         r1 = indices[0];
-        r2 = indices2[0];
-        r3= indices2[1];
+
+        std::vector<double> vecA = population[indices[1]];
+        if (rand_gen()<pA && !archive.empty()){
+            auto r2 = random_choice(archive.size(), 1, false)[0];
+            vecA = archive[r2];
+        };
         mutant = population[idx];
-        for (size_t i = 0; i < population[idx].size(); ++i) {
-            mutant[i] += Find * (population[pbestind][i] - combine[r3][i]) + Find * (population[r1][i] - combine[r2][i]);
-        }
+        for (size_t i = 0; i < population[idx].size(); ++i) mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - vecA[i]);
     } else {
         throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
     }
@@ -105,14 +104,15 @@ std::vector<double> Differential_Evolution::_crossover_bin(const std::vector<dou
 };
 
 std::vector<double> Differential_Evolution::_crossover_exp(const std::vector<double>& target, const std::vector<double>& mutant, double C) {
-    std::vector<double> trial = target;
-    size_t n = rand_int(target.size());
-    int L = 0;
-    while (rand_gen() < C && L < target.size()) {
-        trial[n] = mutant[n];
-        n = (n + 1) % target.size();
+    size_t dimension = target.size();
+    size_t startLoc = rand_int(dimension);
+    size_t L = startLoc+1;
+    while(rand_gen() < C && L < dimension)
         L++;
-    }
+    std::vector<double> trial = target;
+    for(size_t j=startLoc; j!=L; j++)
+        trial[j] = mutant[j];
+
     return trial;
 }
 
@@ -198,7 +198,20 @@ MinionResult Differential_Evolution::optimize() {
             iter++;
             if (checkStopping()) break;
         }  
-        return history.back();  
+
+        auto minElementIter = std::min_element(history.begin(), history.end(), 
+                                                    [](const MinionResult& a, const MinionResult& b) {
+                                                        return a.fun < b.fun;
+                                                    });
+
+
+        if (minElementIter != history.end()) {
+            int minIndex = int(std::distance(history.begin(), minElementIter));
+            return history[minIndex];
+        } else {
+            std::cout << "Can not find the minimum in history."; 
+            return history.back();
+        };
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
