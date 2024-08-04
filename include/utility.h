@@ -295,6 +295,14 @@ bool contains(const std::vector<T>& vec, const T& element) {
 std::vector<std::vector<double>> latin_hypercube_sampling(const std::vector<std::pair<double, double>>& bounds, size_t population_size);
 
 /**
+ * @brief Perform random Sampling.
+ * @param bounds The bounds for each dimension.
+ * @param population_size The number of samples to generate.
+ * @return A vector of vectors containing the samples.
+ */
+std::vector<std::vector<double>> random_sampling(const std::vector<std::pair<double, double>>& bounds, size_t population_size);
+
+/**
  * @brief Calculate the mean and standard deviation of a vector.
  * @param arr The input vector.
  * @param weight The weights for each element.

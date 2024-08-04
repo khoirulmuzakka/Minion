@@ -85,7 +85,7 @@ MinionResult j2020::optimize () {
         age=0;
         indBest = 0;
 
-        P = latin_hypercube_sampling(bounds, size_t(NP));
+        P = random_sampling(bounds, size_t(NP));
 
         for (int i=0; i<NP; i++) { 
             parF[i] = Finit;     // init

@@ -73,21 +73,30 @@ std::vector<size_t> argsort(const std::vector<double>& v, bool ascending) {
 std::vector<std::vector<double>> latin_hypercube_sampling(const std::vector<std::pair<double, double>>& bounds, size_t population_size) {
     int dimensions = static_cast<int>(bounds.size());
     std::vector<std::vector<double>> sample(population_size, std::vector<double>(dimensions));
-    std::random_device rd;
-    std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dis(0.0, 1.0);
 
     for (int i = 0; i < dimensions; ++i) {
         std::vector<double> quantiles(population_size);
         for (int j = 0; j < population_size; ++j) {
-            quantiles[j] = dis(gen);
+            quantiles[j] = dis(get_rng());
         }
-        std::shuffle(quantiles.begin(), quantiles.end(), gen);
+        std::shuffle(quantiles.begin(), quantiles.end(), get_rng());
         for (int j = 0; j < population_size; ++j) {
             double lower_bound = bounds[i].first;
             double upper_bound = bounds[i].second;
             sample[j][i] = lower_bound + quantiles[j] * (upper_bound - lower_bound);
         }
+    }
+    return sample;
+}
+
+std::vector<std::vector<double>> random_sampling(const std::vector<std::pair<double, double>>& bounds, size_t population_size) {
+    int dimensions = static_cast<int>(bounds.size());
+    std::vector<std::vector<double>> sample;
+    for (size_t i=0; i<population_size; i++) {
+        std::vector<double> p;
+        for (size_t j=0; j<dimensions; j++) p.push_back( rand_gen(bounds[j].first, bounds[j].second));
+        sample.push_back(p);
     }
     return sample;
 }

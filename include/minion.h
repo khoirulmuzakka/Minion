@@ -7,6 +7,7 @@
 #include "gwo_de.h"
 #include "cec2020.h"
 #include "cec2022.h"
+#include "cec2017.h"
 #include "lshade.h"
 #include "arrde.h"
 #include "nlshadersp.h"
@@ -21,6 +22,7 @@ namespace minion {
     using ::LSHADE;
     using ::ARRDE;
     using ::GWO_DE;
+    using ::CEC2017Functions;
     using ::CEC2020Functions;
     using ::CEC2022Functions;
     using ::CECBase;

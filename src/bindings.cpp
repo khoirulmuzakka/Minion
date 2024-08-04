@@ -5,6 +5,7 @@
 #include "gwo_de.h"
 #include "nelder_mead.h"
 #include "utility.h"
+#include "cec2017.h"
 #include "cec2020.h"
 #include "cec2022.h"
 #include "lshade.h"
@@ -180,6 +181,10 @@ PYBIND11_MODULE(pyminioncpp, m) {
              py::arg("boundStrategy") = "reflect-random",
              py::arg("seed") = -1)
         .def("optimize", &NelderMead::optimize);
+
+    py::class_<CEC2017Functions>(m, "CEC2017Functions")
+        .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
+        .def("__call__", &CEC2017Functions::operator());
 
     py::class_<CEC2020Functions>(m, "CEC2020Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))

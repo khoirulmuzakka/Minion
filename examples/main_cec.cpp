@@ -17,12 +17,10 @@
  * @throws std::runtime_error If the function number is not between 1 and 10, or if the year is invalid.
  */
 void minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022) {
-
-    if (function_number < 1 || function_number > 12) throw std::runtime_error("Function number must be between 1 and 10.");
-
     minion::CECBase* cecfunc;
     if (year==2020) cecfunc = new minion::CEC2020Functions(function_number, dimension);
     else if (year==2022) cecfunc = new minion::CEC2022Functions(function_number, dimension);
+    else if (year==2017) cecfunc = new minion::CEC2017Functions(function_number, dimension);
     else throw std::runtime_error("Invalid year.");
 
     std::vector<std::pair<double, double>> bounds(dimension, std::make_pair(-100.0, 100.0));
@@ -90,14 +88,19 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
  * @return int Returns 0 on successful completion.
  */
 int main() {
-    int Nmaxevals = int(2e+5), dimension = 20;
+    int dimension = 30;
+    int Nmaxevals = int(1e+4*dimension);
     int popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(Nmaxevals)), 2.0) + static_cast<double>(dimension)/2.0));
-    int year = 2020;
+    int year = 2017;
 
-    std::vector<int> funcnums = { 9};
+    std::vector<int> funcnums = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                                11, 12,13, 14, 15, 16, 17, 18, 19, 20, 
+                                 21, 22, 23, 24, 25, 26, 27, 28, 29,  30};
     for (auto& num : funcnums) {
+        try {
         minimize_cec_functions(num, dimension, popsize, Nmaxevals, year);
         std::cout << "\n";
+        } catch (...){};
     }
     return 0;
 }
