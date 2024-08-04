@@ -11,6 +11,7 @@
 #include "arrde.h"
 #include "nlshadersp.h"
 #include "cec.h"
+#include "j2020.h"
 
 namespace minion {
     using ::MinionFunction;
@@ -24,6 +25,7 @@ namespace minion {
     using ::CEC2022Functions;
     using ::CECBase;
     using ::NLSHADE_RSP;
+    using ::j2020;
 }
 
 #endif // MINION_H

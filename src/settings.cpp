@@ -76,12 +76,10 @@ void LSHADE_Settings::init_default() {
 void ARRDE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
         {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
-        {"memory_size", int(100)}, 
-        {"archive_size_ratio", double(2.6)}, 
+        {"archive_size_ratio", double(2.1)}, 
         {"population_reduction" , bool(true)}, 
         {"minimum_population_size", int(5)}, 
         {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-        {"refine_method", std::string("jade")} //jade or shade
     };
     settings_ = default_settings_;
 }

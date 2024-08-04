@@ -9,12 +9,14 @@ import numpy as np
 from pyminioncpp import LSHADE as cppLSHADE
 from pyminioncpp import ARRDE as cppARRDE
 from pyminioncpp import NLSHADE_RSP as cppNLSHADE_RSP
+from pyminioncpp import j2020 as cppj2020
 from pyminioncpp import Differential_Evolution as cppDifferential_Evolution
 from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
 from pyminioncpp import NelderMead as cppNelderMead 
 from pyminioncpp import CEC2020Functions as cppCEC2020Functions
 from pyminioncpp import CEC2022Functions as cppCEC2022Functions
+
 
 from typing import Callable, Dict, Union, List, Optional
   
@@ -376,6 +378,50 @@ class NLSHADE_RSP(MinimizerBase):
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+    
+class j2020(MinimizerBase):
+    """
+    @class j2020
+    @brief Implementation of the j2020 algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[float]] = None,
+                 data: Optional[object] = None,
+                 callback: Optional[Callable[[MinionResult], None]] = None,
+                 tol: float = 0.0,
+                 maxevals: int = 100000,
+                 boundStrategy: str = "reflect-random",
+                 seed: Optional[int] = None):
+        """
+        @brief Constructor for 2020.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param options Dictionary of additional options for the algorithm.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.optimizer = cppj2020(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using j2020.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
         return self.minionResult
 
 

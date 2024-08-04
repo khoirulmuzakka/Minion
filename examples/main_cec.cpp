@@ -29,13 +29,18 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
 
     std::map<std::string, ConfigValue> options= std::map<std::string, ConfigValue> {
         {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
-        {"memory_size", int(50)}, 
         {"archive_size_ratio", double(2.1)}, 
         {"population_reduction" , bool(true)}, 
         {"reduction_strategy", std::string("linear")}, //linear or exponential
         {"minimum_population_size", int(5)}, 
-        { "refine_method" , std::string("shade")}
     };  
+
+    minion::j2020 jde20 (
+        [&](const std::vector<std::vector<double>> & x, void* data) {
+            return cecfunc->operator()(x); // Call the operator with a single vector
+        },
+        bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1
+    );
 
     minion::ARRDE arrde (
         [&](const std::vector<std::vector<double>> & x, void* data) {
@@ -61,14 +66,16 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
     
    
     // Optimize and get the result
+    MinionResult result_jde20 = jde20.optimize();
     MinionResult result_arrde = arrde.optimize();
     MinionResult result_lshade = lshade.optimize();
     MinionResult result_nlshadersp = nlshadersp.optimize();
 
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
+    std::cout << "\tAlgo : "<<" j2020, Best Value: " << result_jde20.fun << "\n";
     std::cout << "\tAlgo : "<<" LSHADE, Best Value: " << result_lshade.fun << "\n";
-    std::cout << "\tAlgo : "<<" LSHADE2, Best Value: " << result_arrde.fun << "\n";
+    std::cout << "\tAlgo : "<<" ARRDE, Best Value: " << result_arrde.fun << "\n";
     std::cout << "\tAlgo : "<<" NLSHADE_RSP, Best Value: " << result_nlshadersp.fun << "\n";
     std::cout << std::endl;
     delete cecfunc;
@@ -83,11 +90,11 @@ void minimize_cec_functions(int function_number, int dimension, int population_s
  * @return int Returns 0 on successful completion.
  */
 int main() {
-    int Nmaxevals = int(1e+6), dimension = 20;
+    int Nmaxevals = int(2e+5), dimension = 20;
     int popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(Nmaxevals)), 2.0) + static_cast<double>(dimension)/2.0));
     int year = 2020;
 
-    std::vector<int> funcnums = {9};
+    std::vector<int> funcnums = { 9};
     for (auto& num : funcnums) {
         minimize_cec_functions(num, dimension, popsize, Nmaxevals, year);
         std::cout << "\n";

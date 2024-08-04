@@ -11,6 +11,7 @@
 #include "de.h"
 #include "arrde.h"
 #include "nlshadersp.h"
+#include "j2020.h"
 #include <exception>
 
 namespace py = pybind11;
@@ -65,6 +66,21 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readonly("stdCR", &Differential_Evolution::stdCR)
         .def_readonly("stdF", &Differential_Evolution::stdF)
         .def_readonly("diversity", &Differential_Evolution::diversity);
+
+    py::class_<j2020, MinimizerBase>(m, "j2020")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&,
+             void*, std::function<void(MinionResult*)>, double, size_t, std::string, int>(),
+             py::arg("func"), 
+             py::arg("bounds"), 
+             py::arg("x0") = std::vector<double>{},
+             py::arg("data") = nullptr, 
+             py::arg("callback") = nullptr, 
+             py::arg("tol") = 1e-8,
+             py::arg("maxevals") = 100000, 
+             py::arg("boundStrategy") = "reflect-random", 
+             py::arg("seed") = -1)
+
+        .def("optimize", &j2020::optimize);
 
     py::class_<LSHADE, Differential_Evolution>(m, "LSHADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::map<std::string, ConfigValue>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
