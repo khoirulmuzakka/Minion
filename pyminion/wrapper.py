@@ -7,6 +7,7 @@ sys.path.append(custom_path)
 
 import numpy as np
 from pyminioncpp import LSHADE as cppLSHADE
+from pyminioncpp import LSHADE as cppJADE
 from pyminioncpp import ARRDE as cppARRDE
 from pyminioncpp import NLSHADE_RSP as cppNLSHADE_RSP
 from pyminioncpp import j2020 as cppj2020
@@ -360,6 +361,61 @@ class LSHADE(MinimizerBase):
         self.stdF = self.optimizer.stdF
         self.diversity = self.optimizer.diversity
         return self.minionResult
+    
+class JADE(MinimizerBase):
+    """
+    @class JADE
+    @brief Implementation of the JADE algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 options: Dict[str, Union[int, float, str, bool]],
+                 x0: Optional[List[float]] = None,
+                 data: Optional[object] = None,
+                 callback: Optional[Callable[[MinionResult], None]] = None,
+                 tol: float = 0.0001,
+                 maxevals: int = 100000,
+                 boundStrategy: str = "reflect-random",
+                 seed: Optional[int] = None,
+                 population_size: int = 30):
+        """
+        @brief Constructor for JADE.
+
+        @param func Objective function to minimize.
+        @param bounds Bounds for the decision variables.
+        @param options Dictionary of additional options for the algorithm.
+        @param data Additional data to pass to the objective function.
+        @param x0 Initial guess for the solution.
+        @param population_size Population size.
+        @param maxevals Maximum number of function evaluations.
+        @param relTol Relative tolerance for convergence.
+        @param callback Callback function called after each iteration.
+        @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
+        @param seed Seed for the random number generator.
+        """
+        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        self.population_size = population_size
+        self.options = options
+        self.optimizer = cppJADE(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
+    
+    def optimize(self):
+        """
+        @brief Optimize the objective function using JADE.
+
+        @return MinionResult object containing the optimization results.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
+        return self.minionResult
+    
     
 class NLSHADE_RSP(MinimizerBase):
     """

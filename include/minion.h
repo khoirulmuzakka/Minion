@@ -13,6 +13,7 @@
 #include "nlshadersp.h"
 #include "cec.h"
 #include "j2020.h"
+#include "jade.h"
 
 namespace minion {
     using ::MinionFunction;
@@ -28,6 +29,7 @@ namespace minion {
     using ::CECBase;
     using ::NLSHADE_RSP;
     using ::j2020;
+    using ::JADE;
 }
 
 #endif // MINION_H

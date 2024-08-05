@@ -34,25 +34,17 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
 
 void ARRDE::adaptParameters() {
 
-    //-------------------- update archive size -------------------------------------//
-    //update archive size
-    size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
-    while (archive.size() > archiveSize) {
-        size_t random_index = rand_int(archive.size());
-        archive.erase(archive.begin() + random_index);
-    }
-
     //-------------------- update population size -------------------------------------//
-    double Nevals_eff = double(Nevals), Maxevals_eff = double (maxevals); 
-    double minPopSize_eff = double(minPopSize);  
+    double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
+    double minPopSize_eff = double(std::max(double(minPopSize), bounds.size()/2.0));  
     double maxPopSize_eff = double(populationSize);
     
     if (final_refine){
         Nevals_eff = double(Nevals)-strartRefine*maxevals;
         Maxevals_eff =  (1.0-strartRefine)*maxevals;
         minPopSize_eff= double(minPopSize);
-        maxPopSize_eff =  double(bounds.size());
-    }
+        maxPopSize_eff =  double(bounds.size()+shift_finalrefine);
+    }    
     
     // update population size
     if ( popreduce) {
@@ -84,6 +76,15 @@ void ARRDE::adaptParameters() {
             fitness = new_fitness_subset;
         };
     } 
+
+    //-------------------- update archive size -------------------------------------//
+    //update archive size
+    size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
+    while (archive.size() > archiveSize) {
+        size_t random_index = rand_int(archive.size());
+        archive.erase(archive.begin() + random_index);
+    }
+
     
     //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
     NwoChanged+=population.size();
@@ -92,9 +93,9 @@ void ARRDE::adaptParameters() {
     double reltol;
     if (first_run) reltol = maxReltol;
     if (refine) reltol = std::max( maxReltol  +  (-maxReltol + minRelTol) * double(Nevals)/(strartRefine *maxevals), 0.0); // default for refine
-    if (restart) reltol = maxReltol; 
+    if (restart) reltol = std::max( maxReltol  +  (-maxReltol + minRelTol) * double(Nevals)/(strartRefine *maxevals), 0.0); //maxReltol; 
     if (final_refine) reltol = stoppingTol;
-    if ( calcStdDev(fitness)/calcMean(fitness)<reltol || Nevals>=strartRefine*maxevals || NwoChanged>=0.2*maxevals ) {
+    if ( calcStdDev(fitness)/calcMean(fitness)<reltol || Nevals>=strartRefine*maxevals){ //} || NwoChanged>=0.2*maxevals ) {
        
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
 
@@ -140,12 +141,13 @@ void ARRDE::adaptParameters() {
             if (randSize>=currSize) randSize= (currSize-1);
 
             if (Nevals>=strartRefine*maxevals){
-                currSize = bounds.size() + shift_finalrefine;
+                currSize = bounds.size()+shift_finalrefine; 
                 currArciveSize = size_t(archive_size_ratio*currSize);
                 randSize=0;
                 if (currSize>fitness_records.size()) randSize = currSize-fitness_records.size();
                 final_refine = true;
-                //std::cout << "Final Refine\n";
+                mutation_strategy = "best1bin";
+                //std::cout << "Final Refine start\n";
             }
 
             population.clear(); 
@@ -180,7 +182,10 @@ void ARRDE::adaptParameters() {
                     }
                 };
             } else {
-                auto sorted_ind = argsort(fitness_records, true);
+                auto indices = random_choice(fitness_records.size(), currSize, true);
+                std::vector<size_t> sorted_ind;
+                if (fitness_records.size()<currSize) sorted_ind = indices; 
+                else sorted_ind = argsort(fitness_records, true);
                 for (int k=0; k<currSize; k++){
                     population.push_back(population_records[sorted_ind[k]]); 
                     fitness.push_back(fitness_records[sorted_ind[k]]);
@@ -188,7 +193,7 @@ void ARRDE::adaptParameters() {
             }
             
             //update archive
-            if (refine || final_refine) for (auto& i : random_choice(fitness_records.size(), currArciveSize, true)) archive.push_back(population_records[i]);
+            if ( final_refine) for (auto& i : random_choice(fitness_records.size(), currArciveSize, true)) archive.push_back(population_records[i]);
             //std::cout << "-----Refined----- after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<<"\n";
 
             //update best individual
@@ -224,7 +229,6 @@ void ARRDE::adaptParameters() {
 
 
     //-------------------- update CR, F -------------------------------------//
-
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
     if (!fitness_before.empty()){
@@ -280,9 +284,10 @@ void ARRDE::adaptParameters() {
     for (int i = 0; i < population.size(); ++i) {
         //new_CR[i] = rand_norm(CRlist[i], 0.1);
         //new_F[i] = rand_norm(Flist[i], 0.1);
-
+        
         new_CR[ind_fitness_sorted[i]] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
-        new_F[ind_fitness_sorted[i]] = rand_norm(Flist[ind_cr_sorted[i]], 0.1);
+        new_F[ind_fitness_sorted[i]] = rand_cauchy(Flist[ind_cr_sorted[i]], 0.1);
+        
     }
     
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
@@ -293,7 +298,7 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.2;
-        if (restart) fraction = 0.8 - 0.6*Nevals/(strartRefine*maxevals);
+        if (restart) fraction = 0.8 - 0.5*Nevals/(strartRefine*maxevals);
         if (refine) fraction = 0.5 - 0.3*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.1;
         int maxp = static_cast<int>(round(fraction * population.size()));

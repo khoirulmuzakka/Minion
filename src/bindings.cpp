@@ -9,6 +9,7 @@
 #include "cec2020.h"
 #include "cec2022.h"
 #include "lshade.h"
+#include "jade.h"
 #include "de.h"
 #include "arrde.h"
 #include "nlshadersp.h"
@@ -102,6 +103,26 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readonly("stdCR", &LSHADE::stdCR)
         .def_readonly("stdF", &LSHADE::stdF)
         .def_readonly("diversity", &LSHADE::diversity);
+
+    py::class_<JADE, Differential_Evolution>(m, "JADE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::map<std::string, ConfigValue>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("options"), 
+            py::arg("x0") = std::vector<double>(), 
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("boundStrategy") = "reflect-random", 
+            py::arg("seed") = -1, 
+            py::arg("populationSize") = 30)
+        .def("optimize", &JADE::optimize)
+        .def_readonly("meanCR", &JADE::meanCR)
+        .def_readonly("meanF", &JADE::meanF)
+        .def_readonly("stdCR", &JADE::stdCR)
+        .def_readonly("stdF", &JADE::stdF)
+        .def_readonly("diversity", &JADE::diversity);
 
     py::class_<NLSHADE_RSP, MinimizerBase>(m, "NLSHADE_RSP")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, int, int, double>(),

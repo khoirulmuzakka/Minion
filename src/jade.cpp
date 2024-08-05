@@ -1,21 +1,16 @@
-#include "lshade.h" 
+#include "jade.h" 
 
-LSHADE::LSHADE(
+JADE::JADE(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
             size_t populationSize
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
-    settings = LSHADE_Settings(options);
+    settings = JADE_Settings(options);
     mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
-    memorySize = std::get<int>(settings.getSetting("memory_size"));
+    c = std::get<double>(settings.getSetting("c"));
     archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
-
-    M_CR = std::vector<double>(memorySize, 0.5) ;
-    M_F =  std::vector<double>(memorySize, 0.5) ;
-    F = std::vector<double>(populationSize, 0.5);
-    CR = std::vector<double>(populationSize, 0.5);
     minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
     reduction_strategy = std::get<std::string>(settings.getSetting("reduction_strategy"));
     try {
@@ -23,11 +18,12 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     } catch (...) {
         popreduce = std::get<int>(settings.getSetting("population_reduction"));
     };
-    std::cout << "LSHADE instantiated. \n";
+    std::cout << "JADE instantiated. \n";
 };
 
 
-void LSHADE::adaptParameters() {
+void JADE::adaptParameters() {
+    //update population size and archive 
     // update population size
     if ( popreduce) {
         size_t new_population_size;
@@ -57,7 +53,7 @@ void LSHADE::adaptParameters() {
             population = new_population_subset;
             fitness = new_fitness_subset;
         };
-    } 
+    }
 
     //update archive size
     size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
@@ -65,7 +61,8 @@ void LSHADE::adaptParameters() {
         size_t random_index = rand_int(archive.size());
         archive.erase(archive.begin() + random_index);
     }
-    
+
+
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
     if (!fitness_before.empty()){
@@ -74,23 +71,28 @@ void LSHADE::adaptParameters() {
                 double w = (fitness_before[i] - trial_fitness[i]);
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
-                weights.push_back(w);
-                weights_F.push_back( w*F[i]);
+                weights.push_back(1.0);
+                weights_F.push_back( 1.0*F[i]);
             };
         }
     };
+
+    //update muCR, muF
     if (!S_CR.empty()) {
-        double muCR, sCR, muF, sF;
+        double mCR, sCR, mF, sF;
+
         weights = normalize_vector(weights); 
         weights_F = normalize_vector(weights_F);
 
-        std::tie(muCR, sCR) = getMeanStd(S_CR, weights);
-        std::tie(muF, sF) = getMeanStd(S_F, weights_F);
-        M_CR[memoryIndex] = muCR;
-        M_F[memoryIndex] = muF;
-        if (memoryIndex == (memorySize-1)) memoryIndex =0;
-        else memoryIndex++;
+        std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
+        std::tie(mF, sF) = getMeanStd(S_F, weights_F);
+        double c_eff = double(S_CR.size())/(double(S_CR.size())+population.size());
+        if (c_eff<0.05) c_eff=0.05;
+        if (c!=0.0) c_eff = c;
+        muCR = (1-c_eff)*muCR+c_eff*mCR;
+        muF = (1-c_eff)*muF+c_eff*mF;
     };
+     
 
     //update F, CR
     F= std::vector<double>(population.size(), 0.5);
@@ -99,16 +101,9 @@ void LSHADE::adaptParameters() {
     std::vector<double> new_CR(population.size());
     std::vector<double> new_F(population.size());
 
-    std::vector<size_t> allind, selecIndices; 
-    for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
-    if (population.size() <= memorySize){
-        selecIndices = random_choice(allind, population.size(), false); //random choice without replacement when pop size is less than memeory size
-    } else {
-        selecIndices = random_choice(allind, population.size(), true); 
-    };
     for (int i = 0; i < population.size(); ++i) {
-        new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
+        new_CR[i] = rand_norm(muCR, 0.1);
+        new_F[i] = rand_cauchy(muF, 0.1);
     }
 
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
