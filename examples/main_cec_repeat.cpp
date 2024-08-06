@@ -109,7 +109,8 @@ int main(int argc, char* argv[]) {
     int dimension = 10;
     std::string algo="ARRDE";
     int popsize=0;
-
+    int year = 2017;
+    int Nmaxevals = int(1e+4*dimension);
     if (argc > 1) {
         numRuns = std::atoi(argv[1]); // Convert first argument to integer for numRuns
     }
@@ -123,12 +124,25 @@ int main(int argc, char* argv[]) {
         popsize = std::atoi(argv[4]); // Use third argument for algo, no conversion needed
     }
 
-    int Nmaxevals = int(1e+4*dimension);
-    int year = 2017;
+    if (argc > 5) {
+        year = std::atoi(argv[5]); // Use third argument for algo, no conversion needed
+    }
 
-    std::vector<int> funcnums = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    if (argc > 6) {
+        Nmaxevals = std::atoi(argv[6]); // Use third argument for algo, no conversion needed
+    }
+
+    std::cout << popsize << " "<< Nmaxevals<< "\n";
+    
+    
+
+    std::vector<int> funcnums; 
+    if (year==2017) funcnums = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                                 11, 12,13, 14, 15, 16, 17, 18, 19, 20, 
-                                 21, 22, 23, 24, 25, 26, 27, 28, 29};
+                                 21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
+    else if (year==2020) funcnums = {1,2,3,4,5,6,7,8,9, 10}; 
+    else if (year==2022) funcnums = {1,2,3,4,5,6,7,8,9, 10, 11, 12}; 
+    else throw std::runtime_error("Year invalid.");
 
     std::vector<std::vector<double>> results;
     for (int i=0; i<numRuns; i++){
@@ -137,7 +151,7 @@ int main(int argc, char* argv[]) {
         for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo));
         results.push_back(result_per_run);
     };
-    dumpResultsToFile(results, "results_"+algo+"_" + std::to_string(dimension)+ ".txt");
+    dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
 
     return 0;
 }

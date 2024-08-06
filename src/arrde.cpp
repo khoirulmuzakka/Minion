@@ -23,7 +23,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         } catch (...) {
             popreduce = std::get<int>(settings.getSetting("population_reduction"));
         };
-        shift_finalrefine = size_t(5+2.0*log10(strartRefine*maxevals));
+        shift_finalrefine = 0; //size_t(2.0*log10(strartRefine*maxevals));
         std::cout << "ARRDE instantiated. \n";
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
@@ -37,14 +37,14 @@ void ARRDE::adaptParameters() {
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
     double minPopSize_eff = double(std::max(double(minPopSize), bounds.size()/2.0));  
-    double maxPopSize_eff = double(populationSize);
-    
+    double maxPopSize_eff = double(populationSize); 
+
     if (final_refine){
-        Nevals_eff = double(Nevals)-strartRefine*maxevals;
-        Maxevals_eff =  (1.0-strartRefine)*maxevals;
+        Nevals_eff = double(Nevals)-double(Neval_stratrefine);
+        Maxevals_eff =  maxevals-double(Neval_stratrefine);
         minPopSize_eff= double(minPopSize);
-        maxPopSize_eff =  double(bounds.size()+shift_finalrefine);
-    }    
+        maxPopSize_eff = std::min(double(populationSize), bounds.size()+ bounds.size()/2.0 ) ;
+    }
     
     // update population size
     if ( popreduce) {
@@ -141,13 +141,14 @@ void ARRDE::adaptParameters() {
             if (randSize>=currSize) randSize= (currSize-1);
 
             if (Nevals>=strartRefine*maxevals){
-                currSize = bounds.size()+shift_finalrefine; 
+                currSize = std::min(populationSize, bounds.size()+ 5 ); 
                 currArciveSize = size_t(archive_size_ratio*currSize);
                 randSize=0;
                 if (currSize>fitness_records.size()) randSize = currSize-fitness_records.size();
                 final_refine = true;
-                mutation_strategy = "best1bin";
+                //mutation_strategy = "best1bin";
                 //std::cout << "Final Refine start\n";
+                Neval_stratrefine=Nevals;
             }
 
             population.clear(); 
@@ -244,16 +245,16 @@ void ARRDE::adaptParameters() {
     };
 
     if (!S_CR.empty()) {
-        double muCR, sCR, muF, sF;
+        double mCR, sCR, mF, sF;
         weights = normalize_vector(weights); 
         weights_F = normalize_vector(weights_F);
 
-        std::tie(muCR, sCR) = getMeanStd(S_CR, weights);
-        std::tie(muF, sF) = getMeanStd(S_F, weights_F);
+        std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
+        std::tie(mF, sF) = getMeanStd(S_F, weights_F);
 
         //update for LSHADE
-        M_CR[memoryIndex] = muCR;
-        M_F[memoryIndex] = muF;
+        M_CR[memoryIndex] = mCR;
+        M_F[memoryIndex] = mF;
         if (memoryIndex == (memorySize-1)) memoryIndex =0;
         else memoryIndex++;
     };
@@ -282,12 +283,8 @@ void ARRDE::adaptParameters() {
     auto ind_cr_sorted = argsort(CRlist, true); 
     auto ind_fitness_sorted = argsort(fitness, true);
     for (int i = 0; i < population.size(); ++i) {
-        //new_CR[i] = rand_norm(CRlist[i], 0.1);
-        //new_F[i] = rand_norm(Flist[i], 0.1);
-        
         new_CR[ind_fitness_sorted[i]] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
-        new_F[ind_fitness_sorted[i]] = rand_cauchy(Flist[ind_cr_sorted[i]], 0.1);
-        
+        new_F[ind_fitness_sorted[i]] = rand_cauchy(Flist[ind_cr_sorted[i]], 0.1);    
     }
     
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });

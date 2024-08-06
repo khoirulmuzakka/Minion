@@ -21,6 +21,7 @@ class ARRDE : public Differential_Evolution {
     private : 
         double archive_size_ratio;
         size_t memoryIndex=0;
+        size_t Neval_stratrefine=0;
 
         size_t minPopSize;
         std::string reduction_strategy;
