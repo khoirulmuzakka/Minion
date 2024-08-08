@@ -16,12 +16,22 @@ double minimize_cec_functions(int function_number, int dimension, int population
     std::vector<std::pair<double, double>> bounds(dimension, std::make_pair(-100.0, 100.0));
 
     std::map<std::string, ConfigValue> options= std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
+        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
+        {"memory_size", int(50)},
         {"archive_size_ratio", double(2.0)}, 
         {"population_reduction" , bool(true)}, 
         {"reduction_strategy", std::string("linear")}, //linear or exponential
         {"minimum_population_size", int(5)}, 
         {"c", 0.1},
+    };  
+
+    std::map<std::string, ConfigValue> options_jso = std::map<std::string, ConfigValue> {
+        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
+        {"memory_size", int(5)},
+        {"archive_size_ratio", double(1.0)}, 
+        {"population_reduction" , bool(true)}, 
+        {"reduction_strategy", std::string("linear")}, //linear or exponential
+        {"minimum_population_size", int(4)}, 
     };  
 
     int popsize=population_size;
@@ -60,6 +70,14 @@ double minimize_cec_functions(int function_number, int dimension, int population
     } else if (algo == "JADE"){ 
         if (population_size==0) popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(max_evals)), 2.0) + static_cast<double>(dimension)/2.0));
         optimizer = new minion::JADE(
+            [&](const std::vector<std::vector<double>> & x, void* data) {
+                return cecfunc->operator()(x); // Call the operator with a single vector
+            },
+            bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize
+        );
+    } else if (algo == "jSO"){ 
+        if (population_size==0) popsize = int(25.0*log10(dimension)*sqrt(dimension));
+        optimizer = new minion::jSO(
             [&](const std::vector<std::vector<double>> & x, void* data) {
                 return cecfunc->operator()(x); // Call the operator with a single vector
             },

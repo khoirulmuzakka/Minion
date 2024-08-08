@@ -13,7 +13,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
         memorySize=size_t(archive_size_ratio*populationSize);
 
-        M_CR = std::vector<double>(memorySize, 0.5) ;
+        M_CR = std::vector<double>(memorySize, 0.8) ;
         M_F =  std::vector<double>(memorySize, 0.5) ;
 
         minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
@@ -24,6 +24,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
             popreduce = std::get<int>(settings.getSetting("population_reduction"));
         };
         shift_finalrefine = 0; //size_t(2.0*log10(strartRefine*maxevals));
+        Fw=1.1;
         std::cout << "ARRDE instantiated. \n";
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
@@ -146,7 +147,6 @@ void ARRDE::adaptParameters() {
                 randSize=0;
                 if (currSize>fitness_records.size()) randSize = currSize-fitness_records.size();
                 final_refine = true;
-                //mutation_strategy = "best1bin";
                 //std::cout << "Final Refine start\n";
                 Neval_stratrefine=Nevals;
             }
@@ -207,20 +207,24 @@ void ARRDE::adaptParameters() {
             Nrestart=0;
             if (final_refine) refine =false;
         };
+
         memorySize = size_t(archive_size_ratio*population.size());
         memoryIndex=0;
 
         if (refine){
-            M_CR = rand_gen(0.2, 0.8, memorySize);
-            M_F =  rand_gen(0.4, 0.6, memorySize);
+            M_CR =  rand_gen(0.5, 0.7, memorySize);
+            M_F =  rand_gen(0.3, 0.6, memorySize);
+            Fw=0.8+0.5*Nevals/(strartRefine*maxevals);
         };
 
         if (restart){ //when restarting
-            M_CR = std::vector<double>(memorySize, 0.5);
-            M_F =  rand_gen(0.1, 0.2, memorySize);
+            M_CR = rand_gen(0.5, 0.7, memorySize);
+            M_F =  rand_gen(0.1, 0.3, memorySize);
+            Fw= 0.7+0.2*Nevals/(strartRefine*maxevals);
         }
 
         if (final_refine){
+            Fw=2.0;
             M_CR = std::vector<double>(memorySize, 0.5);
             M_F = std::vector<double>(memorySize, 0.5);
         };
@@ -255,8 +259,11 @@ void ARRDE::adaptParameters() {
         //update for LSHADE
         M_CR[memoryIndex] = mCR;
         M_F[memoryIndex] = mF;
-        if (memoryIndex == (memorySize-1)) memoryIndex =0;
-        else memoryIndex++;
+        if (memoryIndex == (memorySize-1)) {
+            M_CR[memoryIndex] = 0.9;
+            M_F[memoryIndex] = 0.9;
+            memoryIndex =0;
+        }else memoryIndex++;
     };
 
     //update F, CR
@@ -280,11 +287,27 @@ void ARRDE::adaptParameters() {
     };
 
     //sort CR and fitness in the ascending order 
+    auto ind_f_sorted = argsort(Flist, true); 
     auto ind_cr_sorted = argsort(CRlist, true); 
     auto ind_fitness_sorted = argsort(fitness, true);
     for (int i = 0; i < population.size(); ++i) {
-        new_CR[ind_fitness_sorted[i]] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
-        new_F[ind_fitness_sorted[i]] = rand_cauchy(Flist[ind_cr_sorted[i]], 0.1);    
+        size_t j= ind_fitness_sorted[i];
+        if ( refine || final_refine){
+            new_CR[j] = rand_norm(CRlist[ind_f_sorted[i]], 0.1);
+            new_F[j] = rand_cauchy(Flist[ind_f_sorted[i]], 0.1);   
+        } else {
+            new_CR[j] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
+            new_F[j] = rand_cauchy(Flist[ind_cr_sorted[i]], 0.1);  
+        };
+
+        if (Nevals<0.5*(strartRefine*maxevals)){
+            if (restart || refine){
+                if (new_CR[j]<0.5) new_CR[j]=0.5;
+                if (new_F[j]>0.8) new_F[j]=0.8;
+            };
+        }
+        if (final_refine && new_CR[j]<0.5) new_CR[j]=0.5;
+        if (final_refine && new_F[j]>0.8) new_F[j]=0.8;
     }
     
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
@@ -295,10 +318,10 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.2;
-        if (restart) fraction = 0.8 - 0.5*Nevals/(strartRefine*maxevals);
-        if (refine) fraction = 0.5 - 0.3*Nevals/(strartRefine*maxevals);
+        if (restart || refine) fraction = 0.6 - 0.4*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.1;
         int maxp = static_cast<int>(round(fraction * population.size()));
+        if (maxp<2) maxp =2; 
         std::vector<int> range(maxp);
         std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 1 to frac
         ptemp = random_choice(range, 1).front();

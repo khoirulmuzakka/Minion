@@ -14,6 +14,7 @@
 #include "cec.h"
 #include "j2020.h"
 #include "jade.h"
+#include "jso.h"
 
 namespace minion {
     using ::MinionFunction;
@@ -30,6 +31,7 @@ namespace minion {
     using ::NLSHADE_RSP;
     using ::j2020;
     using ::JADE;
+    using ::jSO;
 }
 
 #endif // MINION_H

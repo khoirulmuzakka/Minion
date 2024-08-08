@@ -84,7 +84,28 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
         };
         mutant = population[idx];
         for (size_t i = 0; i < population[idx].size(); ++i) mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - vecA[i]);
-    } else {
+
+    }  else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
+        auto sorted_indices = argsort(fitness, true);
+        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
+        auto pbestind = random_choice(top_p_indices, 1).front();
+
+        std::vector<size_t> arch_ind(archive.size()+population.size()); 
+        std::iota(arch_ind.begin(), arch_ind.end(), 0);
+        auto indices = random_choice(available_indices, 1);
+        auto indices2 = random_choice(arch_ind, 1);
+        r1 = indices[0];
+        r2 = indices2[0];
+        mutant = population[idx];
+        for (size_t i = 0; i < population[idx].size(); ++i) {
+            if (r2 < archive.size()) {
+                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - archive[r2][i]);
+            } else {
+                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2-archive.size()][i]);
+            }
+        }
+    
+    }else {
         throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
     }
     return mutant;
