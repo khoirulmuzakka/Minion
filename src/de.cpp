@@ -105,7 +105,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
             }
         }
     
-    }else {
+    } else {
         throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
     }
     return mutant;

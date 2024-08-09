@@ -34,6 +34,14 @@ double minimize_cec_functions(int function_number, int dimension, int population
         {"minimum_population_size", int(4)}, 
     };  
 
+    std::map<std::string, ConfigValue> options_arrde= std::map<std::string, ConfigValue> {
+        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
+        {"archive_size_ratio", double(2.0)}, 
+        {"population_reduction" , bool(true)}, 
+        {"reduction_strategy", std::string("linear")}, //linear or exponential
+        {"minimum_population_size", int(5)}, 
+    };  
+
     int popsize=population_size;
 
     if (algo == "j2020") {
@@ -49,7 +57,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
             [&](const std::vector<std::vector<double>> & x, void* data) {
                 return cecfunc->operator()(x); // Call the operator with a single vector
             },
-            bounds, options, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize
+            bounds, options_arrde, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize
         );
     } else if (algo == "NLSHADE_RSP") {
         if (population_size==0) popsize = std::min(int(30*dimension), 1000);
@@ -158,7 +166,7 @@ int main(int argc, char* argv[]) {
     if (year==2017) funcnums = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                                 11, 12,13, 14, 15, 16, 17, 18, 19, 20, 
                                  21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
-    else if (year==2020) funcnums = {1,2,3,4,5,6,7,8,9, 10}; 
+    else if (year==2020) funcnums =  {1,2,3,4,5,6,7,8,9, 10}; 
     else if (year==2022) funcnums = {1,2,3,4,5,6,7,8,9, 10, 11, 12}; 
     else throw std::runtime_error("Year invalid.");
 

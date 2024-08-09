@@ -33,7 +33,7 @@ class ARRDE : public Differential_Evolution {
         bool first_run = true;
         double bestOverall = std::numeric_limits<double>::max();
 
-        double strartRefine=0.9;
+        double strartRefine=0.8;
         size_t Nrestart=0;
         size_t NwoChanged=0;
         size_t shift_finalrefine;
@@ -93,6 +93,10 @@ class ARRDE : public Differential_Evolution {
          */
         void update_locals();
 
+        /**
+         * @brief Remove element from a avector
+         */
+        void removeElement(std::vector<size_t>& vec, size_t x);
 
     public :
         /**
