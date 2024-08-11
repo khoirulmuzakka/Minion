@@ -67,6 +67,14 @@ double minimize_cec_functions(int function_number, int dimension, int population
             },
             bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize , std::min(int(20*dimension), 1000), 2.1 
         );
+    } else if (algo == "LSRTDE") {
+        if (population_size==0) popsize = 20*dimension;
+        optimizer = new minion::LSRTDE (
+            [&](const std::vector<std::vector<double>> & x, void* data) {
+                return cecfunc->operator()(x); // Call the operator with a single vector
+            },
+            bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize 
+        );
     } else if (algo == "LSHADE"){ 
         if (population_size==0) popsize = static_cast<int>(std::ceil(std::pow(std::log10(static_cast<double>(max_evals)), 2.0) + static_cast<double>(dimension)/2.0));
         optimizer = new minion::LSHADE(
@@ -166,7 +174,7 @@ int main(int argc, char* argv[]) {
     if (year==2017) funcnums = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                                 11, 12,13, 14, 15, 16, 17, 18, 19, 20, 
                                  21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
-    else if (year==2020) funcnums =  {1,2,3,4,5,6,7,8,9, 10}; 
+    else if (year==2020) funcnums = {1,2,3,4,5,6,7,8,9, 10}; 
     else if (year==2022) funcnums = {1,2,3,4,5,6,7,8,9, 10, 11, 12}; 
     else throw std::runtime_error("Year invalid.");
 

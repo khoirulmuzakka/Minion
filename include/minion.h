@@ -15,6 +15,7 @@
 #include "j2020.h"
 #include "jade.h"
 #include "jso.h"
+#include "lsrtde.h"
 
 namespace minion {
     using ::MinionFunction;
@@ -32,6 +33,7 @@ namespace minion {
     using ::j2020;
     using ::JADE;
     using ::jSO;
+    using ::LSRTDE;
 }
 
 #endif // MINION_H
