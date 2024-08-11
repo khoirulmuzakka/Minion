@@ -39,7 +39,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
         {"archive_size_ratio", double(2.0)}, 
         {"population_reduction" , bool(true)}, 
         {"reduction_strategy", std::string("linear")}, //linear or exponential
-        {"minimum_population_size", int(5)}, 
+        {"minimum_population_size", int(4)}, 
     };  
 
     int popsize=population_size;

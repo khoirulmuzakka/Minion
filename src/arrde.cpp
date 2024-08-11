@@ -23,10 +23,9 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         } catch (...) {
             popreduce = std::get<int>(settings.getSetting("population_reduction"));
         };
-        shift_finalrefine = 0; //size_t(2.0*log10(strartRefine*maxevals));
         Fw=1.1;
         std::cout << "ARRDE instantiated. \n";
-        restartRelTol= 0.04/log10(strartRefine*maxevals);
+        restartRelTol= 0.005;
         reltol = restartRelTol;
         refineRelTol = restartRelTol;
 
@@ -41,7 +40,7 @@ void ARRDE::adaptParameters() {
 
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
-    double minPopSize_eff = double(std::max(double(minPopSize), bounds.size()/2.0));  
+    double minPopSize_eff = (std::max(double(minPopSize), bounds.size()/2.0));  
     double maxPopSize_eff = double(populationSize); 
 
     if (final_refine){
@@ -93,17 +92,7 @@ void ARRDE::adaptParameters() {
     
     //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
     NwoChanged+=population.size();
-    /*
-    double maxReltol= 0.04/log10(strartRefine*maxevals);
-    double minRelTol = 0.00004/log10(strartRefine*maxevals);
-    double reltol;
-
-    if (first_run) reltol = maxRelto;
-    if (refine) reltol = std::max( maxReltol  +  (-maxReltol + minRelTol) * double(Nevals)/(strartRefine *maxevals), 0.0); // default for refine
-    if (restart) reltol = maxReltol; //::max( maxReltol  +  (-maxReltol + minRelTol) * double(Nevals)/(strartRefine *maxevals), 0.0); //maxReltol; 
-    if (final_refine) reltol = stoppingTol;
-    */
-    if ( calcStdDev(fitness)/calcMean(fitness)<reltol || Nevals>=strartRefine*maxevals){ //} || NwoChanged>=0.2*maxevals ) {
+    if ( calcStdDev(fitness)/calcMean(fitness)<=reltol || Nevals>=strartRefine*maxevals){ 
        
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
 
@@ -235,9 +224,9 @@ void ARRDE::adaptParameters() {
         memoryIndex=0;
 
         if (refine){
-            M_CR =  rand_gen(0.3, 0.7, memorySize);
+            M_CR =  rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.3, 0.6, memorySize);
-            Fw=0.8+0.5*Nevals/(strartRefine*maxevals);
+            Fw=0.7+0.3*Nevals/(strartRefine*maxevals);
         };
 
         if (restart){ //when restarting
@@ -262,11 +251,12 @@ void ARRDE::adaptParameters() {
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = abs((fitness_before[i] - trial_fitness[i]) / (1e-100 + fitness_before[i]));
+                double w = abs((fitness_before[i] - trial_fitness[i])/(1e-100 + fitness_before[i]));
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
                 weights.push_back(w);
                 weights_F.push_back( w*F[i]);
+                sr=sr+1.0;
             };
         }
     };
@@ -279,17 +269,16 @@ void ARRDE::adaptParameters() {
         std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
         std::tie(mF, sF) = getMeanStd(S_F, weights_F);
 
-        //update for LSHADE
         M_CR[memoryIndex] = mCR;
         M_F[memoryIndex] = mF;
+
     } else {
-        M_CR[memoryIndex] = M_CR[memoryIndex]*1.5;
+        M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2.0, 1.0);
         M_F[memoryIndex] = M_F[memoryIndex]*0.5;
     }
+    sr=0.0;
 
     if (memoryIndex == (memorySize-1)) {
-            M_CR[memoryIndex] = 0.9;
-            M_F[memoryIndex] = 0.9;
             memoryIndex =0;
     }else memoryIndex++;
 
@@ -327,14 +316,14 @@ void ARRDE::adaptParameters() {
     }
     
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
-    std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.0, 1.5); });
+    std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.0, 1.); });
 
     //update p 
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.2;
-        if (restart || refine) fraction =0.5 - 0.3*Nevals/(strartRefine*maxevals);
+        if (restart || refine) fraction = 0.5 - 0.3*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.2;
         int maxp = static_cast<int>(round(fraction * population.size()));
         if (maxp<2) maxp =2; 

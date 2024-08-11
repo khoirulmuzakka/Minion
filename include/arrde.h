@@ -36,6 +36,7 @@ class ARRDE : public Differential_Evolution {
         double reltol;
         double restartRelTol;
         double refineRelTol;
+        double sr=0.0;
 
         double strartRefine=0.8;
         size_t Nrestart=0;
