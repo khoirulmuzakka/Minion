@@ -133,7 +133,7 @@ void LSRTDE::MainCycle()
     std::vector<double> fun_pop; 
     for(int IndIter=0;IndIter<NIndsFront;IndIter++) pop.push_back(Popul[IndIter]);
     fun_pop= func(pop, data);
-    NFEval+=pop.size();
+    NFEval+= int(pop.size());
     for(int IndIter=0;IndIter<NIndsFront;IndIter++)
     {
         FitArr[IndIter] = fun_pop[IndIter];
@@ -202,8 +202,8 @@ void LSRTDE::MainCycle()
         std::vector<int> tco;
         for(int IndIter=0;IndIter<NIndsFront;IndIter++)
         {
-            TheChosenOne = rand_int(NIndsFront); 
-            MemoryCurrentIndex = rand_int(MemorySize);
+            TheChosenOne = int(rand_int(NIndsFront)); 
+            MemoryCurrentIndex = int(rand_int(MemorySize));
             do
                 prand = Indices[rand_int(psizeval)];
             while(prand == TheChosenOne);
@@ -219,7 +219,7 @@ void LSRTDE::MainCycle()
             Cr = rand_norm(MemoryCr[MemoryCurrentIndex],0.05);
             Cr = std::min(std::max(Cr,0.0),1.0);
             double ActualCr = 0;
-            int WillCrossover = rand_int(NVars);
+            int WillCrossover = int(rand_int(NVars));
             for(int j=0;j!=NVars;j++)
             {
                 if(rand_gen() < Cr || WillCrossover == j)
@@ -241,7 +241,7 @@ void LSRTDE::MainCycle()
         }; 
         
         fun_pop= func(pop, data); 
-        NFEval+=pop.size();
+        NFEval+=int(pop.size());
         size_t best_index = findArgMin(fun_pop);
         std::vector<double> bestInd = pop[best_index ];
 

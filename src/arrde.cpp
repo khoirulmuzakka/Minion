@@ -224,9 +224,9 @@ void ARRDE::adaptParameters() {
         memoryIndex=0;
 
         if (refine){
-            M_CR =  rand_gen(0.5, 0.7, memorySize);
-            M_F =  rand_gen(0.3, 0.6, memorySize);
-            Fw=0.7+0.3*Nevals/(strartRefine*maxevals);
+            M_CR =  rand_gen(0.3, 0.7, memorySize);
+            M_F =  rand_gen(0.3, 0.7, memorySize);
+            Fw=0.7+0.2*Nevals/(strartRefine*maxevals);
         };
 
         if (restart){ //when restarting
@@ -323,7 +323,7 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.2;
-        if (restart || refine) fraction = 0.5 - 0.3*Nevals/(strartRefine*maxevals);
+        if (restart || refine) fraction = 0.5 - 0.4*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.2;
         int maxp = static_cast<int>(round(fraction * population.size()));
         if (maxp<2) maxp =2; 

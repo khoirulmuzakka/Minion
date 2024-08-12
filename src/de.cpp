@@ -52,10 +52,8 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
         std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
         auto pbestind = random_choice(top_p_indices, 1).front();
 
-        std::vector<size_t> arch_ind(archive.size()+population.size()); 
-        std::iota(arch_ind.begin(), arch_ind.end(), 0);
         auto indices = random_choice(available_indices, 1);
-        auto indices2 = random_choice(arch_ind, 1);
+        auto indices2 = random_choice(archive.size()+population.size(), 1);
         r1 = indices[0];
         r2 = indices2[0];
         mutant = population[idx];
@@ -66,34 +64,14 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
                 mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2-archive.size()][i]);
             }
         }
-    
-    }else if (mutation_strategy == "current_to_pbest_A2_1bin" || mutation_strategy == "current_to_pbest_A2_1exp") {   
-        auto sorted_indices = argsort(fitness, true);
-        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
-        auto pbestind = random_choice(top_p_indices, 1).front();
-
-        std::vector<size_t> arch_ind(archive.size()+population.size()); 
-        std::iota(arch_ind.begin(), arch_ind.end(), 0);
-        auto indices = random_choice(available_indices, 2);
-        r1 = indices[0];
-
-        std::vector<double> vecA = population[indices[1]];
-        if (rand_gen()<pA && !archive.empty()){
-            auto r2 = random_choice(archive.size(), 1, false)[0];
-            vecA = archive[r2];
-        };
-        mutant = population[idx];
-        for (size_t i = 0; i < population[idx].size(); ++i) mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - vecA[i]);
 
     }  else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
         auto sorted_indices = argsort(fitness, true);
         std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
         auto pbestind = random_choice(top_p_indices, 1).front();
 
-        std::vector<size_t> arch_ind(archive.size()+population.size()); 
-        std::iota(arch_ind.begin(), arch_ind.end(), 0);
         auto indices = random_choice(available_indices, 1);
-        auto indices2 = random_choice(arch_ind, 1);
+        auto indices2 = random_choice(archive.size()+population.size(), 1);
         r1 = indices[0];
         r2 = indices2[0];
         mutant = population[idx];
@@ -112,14 +90,10 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
 };
 
 std::vector<double> Differential_Evolution::_crossover_bin(const std::vector<double>& target, const std::vector<double>& mutant, double C) {
-    std::vector<double> trial(target.size());
-    std::vector<bool> crossover_mask(target.size());
-    std::generate(crossover_mask.begin(), crossover_mask.end(), [C] { return rand_gen() < C; });
-    if (std::none_of(crossover_mask.begin(), crossover_mask.end(), [](bool v) { return v; })) {
-        crossover_mask[rand_int(target.size())] = true;
-    }
+    std::vector<double> trial = target; 
+    size_t randInd = rand_int(target.size());
     for (size_t i = 0; i < target.size(); ++i) {
-        trial[i] = crossover_mask[i] ? mutant[i] : target[i];
+        if (rand_gen()<C || i==randInd) trial[i] = mutant[i];
     }
     return trial;
 };

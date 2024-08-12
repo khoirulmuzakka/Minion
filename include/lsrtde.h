@@ -173,7 +173,7 @@ public :
                     double tol = 1e-8, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
                     int populationSize=100) :
              MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
-                PopulSize= 20*bounds.size();
+                PopulSize= int(20*bounds.size());
                 MaxFEval = int(maxevals);
                 Initialize(PopulSize, int(bounds.size()));
                 std::cout << "LSRTDE instantiated.\n";
