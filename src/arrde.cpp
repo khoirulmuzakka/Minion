@@ -224,13 +224,13 @@ void ARRDE::adaptParameters() {
         memoryIndex=0;
 
         if (refine){
-            M_CR =  rand_gen(0.3, 0.7, memorySize);
+            M_CR =  rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.3, 0.7, memorySize);
             Fw=0.7+0.2*Nevals/(strartRefine*maxevals);
         };
 
         if (restart){ //when restarting
-            M_CR = rand_gen(0.3, 0.7, memorySize);
+            M_CR = rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.1, 0.3, memorySize);
             Fw= 0.7+0.2*Nevals/(strartRefine*maxevals);
         }
@@ -273,8 +273,8 @@ void ARRDE::adaptParameters() {
         M_F[memoryIndex] = mF;
 
     } else {
-        M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2.0, 1.0);
-        M_F[memoryIndex] = std::max(0.3*M_F[memoryIndex], 0.01);
+        M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2, 1.0);
+        M_F[memoryIndex] = std::max(0.5*M_F[memoryIndex], 0.01);
     }
     sr=0.0;
 
@@ -312,7 +312,7 @@ void ARRDE::adaptParameters() {
         new_CR[j] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
         new_F[j] = rand_cauchy(Flist[ind_f_sorted[i]], 0.1); 
 
-        if (Nevals < 0.5*maxevals && new_F[j]>0.7 && refine) new_F[j]=0.7; 
+        if (Nevals < 0.5*strartRefine*maxevals && new_F[j]>0.7 && refine) new_F[j]=0.7; 
         if (final_refine && new_CR[j]<0.5) new_CR[j]=0.5;
     }
     
