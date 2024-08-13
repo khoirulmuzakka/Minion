@@ -226,13 +226,13 @@ void ARRDE::adaptParameters() {
         if (refine){
             M_CR =  rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.3, 0.7, memorySize);
-            Fw=0.7+0.2*Nevals/(strartRefine*maxevals);
+            Fw=0.7+0.5*Nevals/(strartRefine*maxevals);
         };
 
         if (restart){ //when restarting
             M_CR = rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.1, 0.3, memorySize);
-            Fw= 0.7+0.2*Nevals/(strartRefine*maxevals);
+            Fw= 0.6+0.4*Nevals/(strartRefine*maxevals);
         }
 
         if (final_refine){
