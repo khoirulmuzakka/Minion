@@ -134,7 +134,7 @@ void ARRDE::adaptParameters() {
 
             size_t currSize = population.size();
             size_t currArciveSize = archive.size();
-            double randomSizeFrac = std::max(0.5- 0.5*double(Nevals)/(strartRefine*maxevals), 0.0);
+            double randomSizeFrac = std::max(0.5 - 0.5*double(Nevals)/(strartRefine*maxevals), 0.0);
             size_t randSize = size_t(currSize*randomSizeFrac);
             if (randSize>=currSize) randSize= (currSize-1);
 
@@ -230,7 +230,7 @@ void ARRDE::adaptParameters() {
         };
 
         if (restart){ //when restarting
-            M_CR = rand_gen(0.5, 0.7, memorySize);
+            M_CR = rand_gen(0.3, 0.7, memorySize);
             M_F =  rand_gen(0.1, 0.3, memorySize);
             Fw= 0.7+0.2*Nevals/(strartRefine*maxevals);
         }
@@ -274,7 +274,7 @@ void ARRDE::adaptParameters() {
 
     } else {
         M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2.0, 1.0);
-        M_F[memoryIndex] = M_F[memoryIndex]*0.5;
+        M_F[memoryIndex] = std::max(0.3*M_F[memoryIndex], 0.01);
     }
     sr=0.0;
 
@@ -311,6 +311,7 @@ void ARRDE::adaptParameters() {
 
         new_CR[j] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
         new_F[j] = rand_cauchy(Flist[ind_f_sorted[i]], 0.1); 
+
         if (Nevals < 0.5*maxevals && new_F[j]>0.7 && refine) new_F[j]=0.7; 
         if (final_refine && new_CR[j]<0.5) new_CR[j]=0.5;
     }
