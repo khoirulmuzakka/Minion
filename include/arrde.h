@@ -17,6 +17,7 @@ class ARRDE : public Differential_Evolution {
         ARRDE_Settings settings;
         std::vector<std::vector<double>> population_records, archive_records;
         std::vector<double> fitness_records;
+        std::vector<double> MCR_records, MF_records;
 
     private : 
         double archive_size_ratio;
@@ -40,8 +41,6 @@ class ARRDE : public Differential_Evolution {
 
         double strartRefine=0.8;
         size_t Nrestart=0;
-        size_t NwoChanged=0;
-        size_t shift_finalrefine;
         std::vector<std::vector<std::pair<double, double>>> locals; 
 
     private :
