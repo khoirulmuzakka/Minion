@@ -47,7 +47,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
         for (size_t i = 0; i < population[idx].size(); ++i) {
             mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
         }
-    } else if (mutation_strategy == "current_to_pbest_A1_1bin" || mutation_strategy == "current_to_pbest_A1_1exp") {   
+    } else if (mutation_strategy == "current_to_pbest_A_1bin" || mutation_strategy == "current_to_pbest_A_1exp") {   
         auto sorted_indices = argsort(fitness, true);
         std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
         auto pbestind = random_choice(top_p_indices, 1).front();

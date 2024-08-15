@@ -3,7 +3,9 @@
 
 NelderMead::NelderMead(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0,
                                        void* data, std::function<void(MinionResult*)> callback, double tol, int maxevals, std::string boundStrategy, int seed)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {}
+    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
+        //printVector(x0);
+    }
 
 
 MinionResult NelderMead::optimize() {
@@ -15,25 +17,38 @@ MinionResult NelderMead::optimize() {
         for (size_t i = 0; i < n; ++i) {
             simplex[i] = x0;
             if (x0[i] != 0) {
-                simplex[i][i] += 0.05 * (bounds[i].second - bounds[i].first);
+                simplex[i][i] += 0.5 * (bounds[i].second - bounds[i].first);
             } else {
-                simplex[i][i] += 0.05;
+                simplex[i][i] += 0.5;
             }
         }
+
+        simplex= latin_hypercube_sampling(bounds, bounds.size()+1); 
+        simplex[0] = x0;
 
         // Evaluate function values at the initial simplex points
         std::vector<double> fvals(n + 1);
         enforce_bounds(simplex, bounds, boundStrategy);
         fvals = func(simplex, data);
+        bestIndex = findArgMin(fvals); 
+        best = simplex[bestIndex];
+        fbest = fvals[bestIndex];
 
         size_t iter = 0;
         size_t nfev = n + 1;
         bool success = false;
         std::string message = "";
 
-        while (nfev < maxevals) {
+        do {
+            if (no_improve_counter>5000){
+                simplex = latin_hypercube_sampling(bounds, bounds.size()+1);
+                fvals = func(simplex, data); 
+                simplex[0]= best;
+                fvals[0] = fbest;
+                nfev+=fvals.size();
+            }   
             // Sort simplex and fvals based on fvals
-            std::vector<size_t> indices = argsort(fvals);
+            std::vector<size_t> indices = argsort(fvals, true);
             std::vector<std::vector<double>> simplex_sorted(n + 1);
             std::vector<double> fvals_sorted(n + 1);
             for (size_t i = 0; i <= n; ++i) {
@@ -43,9 +58,18 @@ MinionResult NelderMead::optimize() {
             simplex = simplex_sorted;
             fvals = fvals_sorted;
 
+            if (fvals[0]<fbest) {
+                fbest = fvals[0]; 
+                best = simplex[0]; 
+                no_improve_counter=0;
+            } else {
+                no_improve_counter++;
+            };
+
             // Check convergence
-            double frange = (*std::max_element(fvals.begin(), fvals.end()) - *std::min_element(fvals.begin(), fvals.end())) / calcMean(fvals);
+            double frange =calcStdDev(fvals)/ calcMean(fvals);
             if (frange < stoppingTol) {
+                std::cout << "Simplex converged";
                 success = true;
                 message = "Optimization converged.";
                 break;
@@ -125,9 +149,9 @@ MinionResult NelderMead::optimize() {
                     nfev += n;
                 }
             }
-
+            //std::cout << fvals[0] << "\n";
             ++iter;
-        }
+        } while (nfev < maxevals);
 
         if (!success) {
             message = "Maximum number of evaluations reached.";

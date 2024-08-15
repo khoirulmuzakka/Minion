@@ -13,7 +13,7 @@
 class JADE : public Differential_Evolution {
     public:
         JADE_Settings settings;
-        double c=0.0;
+        double c=0.1;
         double muCR=0.5; 
         double muF=0.5;
 

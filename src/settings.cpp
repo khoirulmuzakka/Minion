@@ -63,11 +63,11 @@ template void OptimizerSettings::setSetting<bool>(const std::string&, const bool
 
 void LSHADE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
+        {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
         {"memory_size", int(100)}, 
         {"archive_size_ratio", double(2.6)}, 
         {"population_reduction" , bool(true)}, 
-        {"minimum_population_size", int(5)}, 
+        {"minimum_population_size", int(4)}, 
         {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
     };
     settings_ = default_settings_;
@@ -75,10 +75,10 @@ void LSHADE_Settings::init_default() {
 
 void ARRDE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
-        {"archive_size_ratio", double(2.1)}, 
+        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
+        {"archive_size_ratio", double(2.0)}, 
         {"population_reduction" , bool(true)}, 
-        {"minimum_population_size", int(5)}, 
+        {"minimum_population_size", int(4)}, 
         {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
     };
     settings_ = default_settings_;
@@ -86,11 +86,11 @@ void ARRDE_Settings::init_default() {
 
 void JADE_Settings::init_default() {
     default_settings_ = {
-        {"mutation_strategy", std::string("current_to_pbest_A1_1bin")},
-        {"c", double(0.0)}, 
+        {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
+        {"c", double(0.1)}, 
         {"archive_size_ratio", double(1.0)}, 
         {"population_reduction" , bool(true)}, 
-        {"minimum_population_size", int(5)}, 
+        {"minimum_population_size", int(4)}, 
         {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
     };
     settings_ = default_settings_;

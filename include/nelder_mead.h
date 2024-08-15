@@ -38,6 +38,10 @@ public:
 
 private : 
     std::vector<std::vector<double>> xtemp;
+    std::vector<double> best; 
+    double fbest; 
+    int no_improve_counter=0;
+    size_t bestIndex;
 };
 
 #endif // ADAPTIVE_NELDER_MEAD_H

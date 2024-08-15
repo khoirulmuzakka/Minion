@@ -118,12 +118,9 @@ void JADE::adaptParameters() {
     p = std::vector<size_t>(population.size(), 1);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.2;
-        int maxp = static_cast<int>(round(fraction * population.size()));
-        std::vector<int> range(maxp);
-        std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 1 to frac
-        ptemp = random_choice(range, 1).front();
-        if (ptemp<2){ptemp=2;}; 
+        double fraction = 0.05;
+        int maxp = int(round(fraction * population.size()));
+        ptemp = std::max(2, maxp);
         p[i] = ptemp;
     };
 

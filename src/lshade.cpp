@@ -123,11 +123,9 @@ void LSHADE::adaptParameters() {
     p = std::vector<size_t>(population.size(), 1);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.2;
-        int maxp = static_cast<int>(round(fraction * population.size()));
-        std::vector<int> range(maxp);
-        std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 1 to frac
-        ptemp = random_choice(range, 1).front();
+        double fraction = 0.11;
+        int maxp = std::max(2, static_cast<int>(round(fraction * population.size())));
+        ptemp = random_choice(maxp, 1).front();
         if (ptemp<2){ptemp=2;}; 
         p[i] = ptemp;
     };
