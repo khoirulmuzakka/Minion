@@ -49,7 +49,6 @@ void ARRDE::adaptParameters() {
         minPopSize_eff= double(minPopSize);
         maxPopSize_eff = std::min(double(populationSize), bounds.size()+  2.0*sqrt(double(bounds.size()))) ;
     }
-    
     // update population size
     if ( popreduce) {
         size_t new_population_size;
@@ -89,7 +88,6 @@ void ARRDE::adaptParameters() {
         archive.erase(archive.begin() + random_index);
     }
 
-    
     //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
 
     if ( calcStdDev(fitness)/calcMean(fitness)<=reltol || Nevals>=strartRefine*maxevals){ 
@@ -103,7 +101,7 @@ void ARRDE::adaptParameters() {
 
         //spawn new generation if there is no improvement to the current best overall.
         if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<2)) {
-            //std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
+           // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
             for (int i =0; i<population.size(); i++){
                 population_records.push_back(population[i]);
                 fitness_records.push_back(fitness[i]);
@@ -119,7 +117,7 @@ void ARRDE::adaptParameters() {
 
             fitness = func(population, data);
             Nevals+=population.size();
-
+            fitness_before.clear();
             size_t best_idx = argsort(fitness, true)[0];
             best_fitness = fitness[best_idx]; 
             best = population[best_idx];
@@ -150,7 +148,7 @@ void ARRDE::adaptParameters() {
                 currArciveSize = size_t(archive_size_ratio*currSize);
                 final_refine = true;
                 Neval_stratrefine=Nevals;
-                //std::cout << "Final Refine start\n";
+               // std::cout << "Final Refine start\n";
             }
 
             population.clear(); 
@@ -184,6 +182,7 @@ void ARRDE::adaptParameters() {
                     removeElement(random_indices2, random_indices[k]);
                 }
                 reltol = 0.0;
+                fitness_before.clear();
             }
             
             //update archive
@@ -224,15 +223,17 @@ void ARRDE::adaptParameters() {
                if (first_run) {
                 //std::cout << "First run then final refine : " << best_fitness << "\n";
                 Fw=0.7;
+                first_run=false;
                } else  Fw=1.8;
                M_CR = std::vector<double>(memorySize, 0.5);
                M_F = std::vector<double>(memorySize, 0.5);
+               //printVector(fitness);
+               //std::cout << "Final refine officially start\n";
             };
+            
         };
 
     };      
-
-
     //-------------------- update CR, F -------------------------------------//
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
@@ -273,8 +274,6 @@ void ARRDE::adaptParameters() {
         memoryIndex =0;
     }else memoryIndex++;
 
-    
-
     //update F, CR
     F= std::vector<double>(population.size(), 0.5);
     CR= std::vector<double>(population.size(), 0.5);
@@ -294,7 +293,6 @@ void ARRDE::adaptParameters() {
         CRlist.push_back(M_CR[selectIndices[i]]); 
         Flist.push_back(M_F[selectIndices[i]]); 
     };
-
     //sort CR and fitness in the ascending order 
     auto ind_f_sorted = argsort(Flist, true); 
     auto ind_cr_sorted = argsort(CRlist, true); 
@@ -315,7 +313,7 @@ void ARRDE::adaptParameters() {
         double fraction = 0.2;
         if (restart) fraction = 0.5-0.3*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.2;
-        int maxp = static_cast<int>(round(fraction * population.size()));
+        int maxp = int(round(fraction * population.size()));
         if (maxp<2) maxp =2; 
         std::vector<int> range(maxp);
         std::iota(range.begin(), range.end(), 1); // Fill the vector with values from 1 to frac
@@ -323,7 +321,6 @@ void ARRDE::adaptParameters() {
         if (ptemp<2){ptemp=2;}; 
         p[i] = ptemp;
     };
-
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
