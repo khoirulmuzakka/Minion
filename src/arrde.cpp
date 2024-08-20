@@ -11,7 +11,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     try {
         mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
         archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
-        memorySize=  size_t(20+10.0*log10(maxevals)); //size_t(bounds.size());
+        memorySize= size_t(archive_size_ratio*  populationSize); //size_t(bounds.size());
 
         M_CR = std::vector<double>(memorySize, 0.8) ;
         M_F =  std::vector<double>(memorySize, 0.5) ;
@@ -23,7 +23,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         } catch (...) {
             popreduce = std::get<int>(settings.getSetting("population_reduction"));
         };
-        Fw=1.1;
+        Fw=1.2;
         std::cout << "ARRDE instantiated. \n";
         restartRelTol= 0.005;
         reltol = 0.005;
@@ -40,15 +40,15 @@ void ARRDE::adaptParameters() {
 
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
-    double minPopSize_eff = std::max(4.0, 0.75*bounds.size()); //(std::max(double(minPopSize), bounds.size()/2.0));  
-    double maxPopSize_eff = std::min(std::max(10.0, 5.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 1000.0); // double(populationSize); 
+    double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); //(std::max(double(minPopSize), bounds.size()/2.0));  
+    double maxPopSize_eff = std::min(std::max(10.0, 2.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 1000.0); // double(populationSize); 
     if (!final_refine) reduction_strategy="agsk"; 
     else reduction_strategy="agsk"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
-        minPopSize_eff= std::max(4.0, 0.5*bounds.size()); 
-        maxPopSize_eff = std::max(10.0, 2.0*double(bounds.size())+std::pow(log10(maxevals), 2.0)  );
+        minPopSize_eff= std::max(4.0, 0.75*bounds.size()); 
+        maxPopSize_eff = std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  );
     }
     // update population size
     if ( popreduce) {
@@ -102,7 +102,7 @@ void ARRDE::adaptParameters() {
 
         //spawn new generation if there is no improvement to the current best overall.
         if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<2)) {
-           // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
+            //std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
             for (int i =0; i<population.size(); i++){
                 population_records.push_back(population[i]);
                 fitness_records.push_back(fitness[i]);
@@ -129,11 +129,11 @@ void ARRDE::adaptParameters() {
             reltol= restartRelTol;
             Nrestart++;
             
-           // memorySize = size_t(archive_size_ratio*bounds.size());
+            memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
-            Fw= 0.6+0.6*Nevals/(strartRefine*maxevals);
+            Fw= 1.0-0.4*Nevals/(strartRefine*maxevals);
             M_CR = rand_gen(0.5, 0.7, memorySize);
-            M_F =  rand_gen(0.05, 0.2, memorySize);
+            M_F =  rand_gen(0.1, 0.2, memorySize);
         
         } else if (!final_refine) {
             for (int i =0; i<population.size(); i++){
@@ -149,7 +149,7 @@ void ARRDE::adaptParameters() {
                 currArciveSize = size_t(currSize);
                 final_refine = true;
                 Neval_stratrefine=Nevals;
-               // std::cout << "Final Refine start\n";
+                //std::cout << "Final Refine start\n";
             }
 
             population.clear(); 
@@ -208,28 +208,22 @@ void ARRDE::adaptParameters() {
             Nrestart=0;
             if (final_refine) refine =false;
 
-            //memorySize = size_t(archive_size_ratio*population.size());
+            memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
 
-            Fw=0.7+0.8*Nevals/(strartRefine*maxevals);
+            Fw=0.8+0.4*Nevals/(strartRefine*maxevals);
             if (!MCR_records.empty()){
                 M_CR = random_choice(MCR_records, memorySize, true); 
                 M_F = random_choice(MF_records, memorySize, true);
             } else {
-                M_CR =  rand_gen(0.4, 0.7, memorySize);
+                M_CR =  rand_gen(0.5, 0.7, memorySize);
                 M_F =  rand_gen(0.4, 0.6, memorySize);
             };
 
             if (final_refine){
-               if (first_run) {
-                //std::cout << "First run then final refine : " << best_fitness << "\n";
-                Fw=0.7;
-                first_run=false;
-               } else  Fw=1.7;
-               M_CR = std::vector<double>(memorySize, 0.5);
-               M_F = std::vector<double>(memorySize, 0.5);
-               //printVector(fitness);
-               //std::cout << "Final refine officially start\n";
+               Fw=1.7;
+              // M_CR = std::vector<double>(memorySize, 0.5);
+               //M_F = std::vector<double>(memorySize, 0.5);
             };
             
         };
@@ -258,9 +252,8 @@ void ARRDE::adaptParameters() {
 
         std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
         std::tie(mF, sF) = getMeanStd(S_F, weights_F);
-        double c = 0.5; // std::max(0.05, double(S_CR.size())/population.size());
-        M_CR[memoryIndex] = mCR; //(1.0-c)*M_CR[memoryIndex]+c*mCR;
-        M_F[memoryIndex] = mF; //(1.0-c)*M_F[memoryIndex]+c*mF;
+        M_CR[memoryIndex] = mCR ; 
+        M_F[memoryIndex] = mF; 
     } else {
        // std::cout << calcMean(M_CR) << " "<< calcMean(M_F)<<"\n";
         if ( M_CR[memoryIndex] <0.5) M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2.0, 1.0);

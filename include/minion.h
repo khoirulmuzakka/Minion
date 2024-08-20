@@ -17,6 +17,7 @@
 #include "jso.h"
 #include "lsrtde.h"
 #include "nelder_mead.h"
+#include "lshade2.h"
 
 namespace minion {
     using ::MinionFunction;
@@ -36,6 +37,7 @@ namespace minion {
     using ::jSO;
     using ::LSRTDE;
     using ::NelderMead;
+    using ::LSHADE2;
 }
 
 #endif // MINION_H

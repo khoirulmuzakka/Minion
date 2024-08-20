@@ -57,7 +57,8 @@ void LSRTDE::Initialize(int _newNInds, int _newNVars)
     Indices = new int[PopulSize];
     Indices2 = new int[PopulSize];
 
-    Popul = latin_hypercube_sampling(bounds, PopulSize);
+    Popul = random_sampling(bounds, PopulSize);
+    if (!x0.empty()) Popul[0] =x0;
     for(int i=0;i!=PopulSize;i++)
         tempSuccessCr[i] = 0;
     for(int i=0;i!=MemorySize;i++)
@@ -144,6 +145,7 @@ void LSRTDE::MainCycle()
             globalbestinit = true;
         }
     }
+
     double minfit = FitArr[0];
     double maxfit = FitArr[0];
     for(int i=0;i!=NIndsFront;i++)
@@ -163,7 +165,7 @@ void LSRTDE::MainCycle()
     }
     PFIndex = 0;
     while(NFEval < MaxFEval)
-    {
+    {   
         double meanF = 0.4+tanh(SuccessRate*5)*0.25;
         double sigmaF = 0.02;
         minfit = FitArr[0];
@@ -242,9 +244,6 @@ void LSRTDE::MainCycle()
         
         fun_pop= func(pop, data); 
         NFEval+=int(pop.size());
-        size_t best_index = findArgMin(fun_pop);
-        std::vector<double> bestInd = pop[best_index ];
-
         for(int IndIter=0;IndIter<NIndsFront;IndIter++){
             double TempFit = fun_pop[IndIter];
             TheChosenOne = tco[IndIter];
@@ -264,6 +263,7 @@ void LSRTDE::MainCycle()
                 PFIndex = (PFIndex + 1)%NIndsFront;
             }
         }
+
         SuccessRate = double(SuccessFilled)/double(NIndsFront);
         newNIndsFront = int(double(4-NIndsFrontMax)/double(MaxFEval)*NFEval + NIndsFrontMax);
         RemoveWorst(NIndsFront,newNIndsFront);
@@ -272,9 +272,6 @@ void LSRTDE::MainCycle()
         NIndsCurrent = NIndsFront + SuccessFilled;
         SuccessFilled = 0;
         Generation++;	
-
-        history.push_back(MinionResult( bestInd, fun_pop[best_index], Generation, NFEval, false, ""));
-
         if(NIndsCurrent > NIndsFront)
         {
             minfit = FitArr[0];
@@ -295,6 +292,11 @@ void LSRTDE::MainCycle()
                 for(int j=0;j!=NVars;j++)
                     Popul[i][j] = PopulTemp[i][j];
         }
+        size_t best_index = findArgMin(FitArrFront);
+        std::vector<double> bestInd = Popul[best_index ];
+        history.push_back(MinionResult( bestInd, FitArrFront[best_index], Generation, NFEval, false, ""));
+
+
     }
     
 }
