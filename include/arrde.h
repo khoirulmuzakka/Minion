@@ -41,6 +41,8 @@ class ARRDE : public Differential_Evolution {
 
         double strartRefine=0.8;
         size_t Nrestart=0;
+        size_t numRestart=0; 
+        size_t numRefine=0;
         std::vector<std::vector<std::pair<double, double>>> locals; 
 
     private :
