@@ -150,7 +150,7 @@ void ARRDE::adaptParameters() {
             size_t currArciveSize = archive.size();
 
             if (Nevals>=strartRefine*maxevals){
-                currSize = std::min(populationSize, size_t(bounds.size()+ 2.0*sqrt(double(bounds.size()))) ); 
+                currSize = size_t(std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  ));
                 currArciveSize = size_t(currSize);
                 final_refine = true;
                 Neval_stratrefine=Nevals;
