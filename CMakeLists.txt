@@ -9,7 +9,7 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result")
 endif()
 
 if (POLICY CMP0148)
@@ -17,11 +17,16 @@ if (POLICY CMP0148)
 endif()
 
 # Specify pybind11 include directory
-set(PYBIND11_INCLUDE_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/include")
-
-# Find pybind11
-set(pybind11_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/share/cmake/pybind11")
+if(WIN32)
+    set(PYBIND11_INCLUDE_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/include")
+    set(pybind11_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/share/cmake/pybind11")
+else()
+    #find_package(pybind11 REQUIRED)
+    set(PYBIND11_INCLUDE_DIR "/home/muzakka/anaconda3/lib/python3.11/site-packages/pybind11/include")
+    set(pybind11_DIR "/home/muzakka/anaconda3/lib/python3.11/site-packages/pybind11/share/cmake/pybind11")
+endif()
 find_package(pybind11 REQUIRED)
+
 
 # Add include directories
 include_directories(

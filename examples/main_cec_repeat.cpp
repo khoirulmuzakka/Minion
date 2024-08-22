@@ -2,6 +2,7 @@
 #include <vector>
 #include <utility>
 #include "minion.h"
+#include <chrono>
 
 
 double minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022, std::string algo="ARRDE") {
@@ -208,8 +209,12 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<double>> results;
     for (int i=0; i<numRuns; i++){
         std::cout << "\nRun : "<< i+1 << "\n";
+        auto start = std::chrono::high_resolution_clock::now();
         std::vector<double> result_per_run;
         for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo));
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+        std::cout << "Elapsed time: " << duration << " seconds" << std::endl;
         results.push_back(result_per_run);
     };
     dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
