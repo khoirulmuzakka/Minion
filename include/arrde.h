@@ -32,7 +32,7 @@ class ARRDE : public Differential_Evolution {
         bool restart = false;
         bool final_refine = false;
         bool first_run = true;
-        double bestOverall = std::numeric_limits<double>::max();
+        double bestOverall =  std::numeric_limits<double>::max();
         double decrease=0.9;
         double reltol;
         double restartRelTol;

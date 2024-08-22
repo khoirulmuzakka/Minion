@@ -177,13 +177,13 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
             // Resample a new value within a limited range close to the bounds for out-of-range candidates
             for (size_t i = 0; i < new_candidates.size(); ++i) {
                 if (new_candidates[i][d] < lower_bound) {
-                    double d_lower = std::abs(new_candidates[i][d] - lower_bound);
+                    double d_lower = fabs(new_candidates[i][d] - lower_bound);
                     double low_range = lower_bound;
                     double high_range = lower_bound + std::min(d_lower, e);
                     std::uniform_real_distribution<double> dis(low_range, high_range);
                     new_candidates[i][d] = dis(gen);
                 } else if (new_candidates[i][d] > upper_bound) {
-                    double d_upper = std::abs(new_candidates[i][d] - upper_bound);
+                    double d_upper = fabs(new_candidates[i][d] - upper_bound);
                     double low_range = upper_bound - std::min(d_upper, e);
                     double high_range = upper_bound;
                     std::uniform_real_distribution<double> dis(low_range, high_range);

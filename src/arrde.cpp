@@ -51,35 +51,34 @@ void ARRDE::adaptParameters() {
         maxPopSize_eff = std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  );
     }
     // update population size
-    if ( popreduce) {
-        size_t new_population_size;
-        if (reduction_strategy=="linear"){
-            new_population_size =size_t( (minPopSize_eff - maxPopSize_eff) * (Nevals_eff/Maxevals_eff ) + maxPopSize_eff);
-        } else if (reduction_strategy=="exponential") {
-            new_population_size = size_t(maxPopSize_eff * std::pow(minPopSize_eff/maxPopSize_eff, double(Nevals_eff)/double(Maxevals_eff)));
-        } else if (reduction_strategy=="agsk"){
-            double ratio = Nevals_eff/Maxevals_eff;
-            new_population_size = size_t(round(maxPopSize_eff + (minPopSize_eff - maxPopSize_eff) * std::pow(ratio, 1.0-ratio) ));
-        } else {
-            throw std::logic_error("Uknnown reduction strategy");
-        };
-        
+    size_t new_population_size;
+    if (reduction_strategy=="linear"){
+        new_population_size =size_t( (minPopSize_eff - maxPopSize_eff) * (Nevals_eff/Maxevals_eff ) + maxPopSize_eff);
+    } else if (reduction_strategy=="exponential") {
+        new_population_size = size_t(maxPopSize_eff * std::pow(minPopSize_eff/maxPopSize_eff, double(Nevals_eff)/double(Maxevals_eff)));
+    } else if (reduction_strategy=="agsk"){
+        double ratio = Nevals_eff/Maxevals_eff;
+        new_population_size = size_t(round(maxPopSize_eff + (minPopSize_eff - maxPopSize_eff) * std::pow(ratio, 1.0-ratio) ));
+    } else {
+        throw std::logic_error("Uknnown reduction strategy");
+    };
+    
 
-        if (new_population_size<minPopSize_eff) new_population_size= size_t(minPopSize_eff);
-        if (population.size() > new_population_size) {
-            std::vector<size_t> sorted_index = argsort(fitness, true);
+    if (new_population_size<minPopSize_eff) new_population_size= size_t(minPopSize_eff);
+    if (population.size() > new_population_size) {
+        std::vector<size_t> sorted_index = argsort(fitness, true);
 
-            std::vector<std::vector<double>> new_population_subset(new_population_size);
-            std::vector<double> new_fitness_subset(new_population_size);
-            for (int i = 0; i < new_population_size; ++i) {
-                new_population_subset[i] = population[ sorted_index [i]];
-                new_fitness_subset[i] = fitness[ sorted_index [i]];
-            }
+        std::vector<std::vector<double>> new_population_subset(new_population_size);
+        std::vector<double> new_fitness_subset(new_population_size);
+        for (int i = 0; i < new_population_size; ++i) {
+            new_population_subset[i] = population[ sorted_index [i]];
+            new_fitness_subset[i] = fitness[ sorted_index [i]];
+        }
 
-            population = new_population_subset;
-            fitness = new_fitness_subset;
-        };
-    } 
+        population = new_population_subset;
+        fitness = new_fitness_subset;
+    };
+
 
     //-------------------- update archive size -------------------------------------//
     //update archive size
@@ -100,13 +99,11 @@ void ARRDE::adaptParameters() {
             for (auto el : M_F) MF_records.push_back(el);
         };
         double maxRestart;
-        if (Nevals<0.3*strartRefine*maxevals) maxRestart=1; 
-        else if  (Nevals<0.5*strartRefine*maxevals) maxRestart=1; 
-        else if  (Nevals<0.7*strartRefine*maxevals) maxRestart=2; 
+        if (Nevals<0.5*strartRefine*maxevals) maxRestart=1; 
         else maxRestart=2; 
         //spawn new generation if there is no improvement to the current best overall.
         if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<maxRestart)) {
-            //std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
+           // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
             for (int i =0; i<population.size(); i++){
                 population_records.push_back(population[i]);
                 fitness_records.push_back(fitness[i]);
@@ -151,10 +148,10 @@ void ARRDE::adaptParameters() {
 
             if (Nevals>=strartRefine*maxevals){
                 currSize = size_t(std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  ));
-                currArciveSize = size_t(currSize);
+                currArciveSize = size_t(archive_size_ratio*currSize);
                 final_refine = true;
                 Neval_stratrefine=Nevals;
-                //std::cout << "Final Refine start\n";
+               // std::cout << "Final Refine start\n";
             }
 
             population.clear(); 
@@ -241,7 +238,7 @@ void ARRDE::adaptParameters() {
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = abs((fitness_before[i] - trial_fitness[i])/(1e-100 + fitness_before[i]));
+                double w = fabs((fitness_before[i] - trial_fitness[i])/(1e-100 + fitness_before[i]));
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
                 weights.push_back(w);
@@ -261,7 +258,6 @@ void ARRDE::adaptParameters() {
         M_CR[memoryIndex] = mCR ; 
         M_F[memoryIndex] = mF; 
     } else {
-       // std::cout << calcMean(M_CR) << " "<< calcMean(M_F)<<"\n";
         if ( M_CR[memoryIndex] <0.5) M_CR[memoryIndex] = std::min(M_CR[memoryIndex]*2.0, 1.0);
         if (M_F[memoryIndex]>0.1) M_F[memoryIndex] = std::max(0.5*M_F[memoryIndex], 0.1);
     }

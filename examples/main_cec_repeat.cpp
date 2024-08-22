@@ -139,6 +139,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
     std::cout << "\tAlgo : "<< algo << ". Best Value: " << result.fun << "\n";
+    std::cout << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
 
     delete cecfunc;
     delete optimizer;

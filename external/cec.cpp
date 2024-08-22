@@ -58,5 +58,6 @@ std::vector<double> CECBase::operator()(const std::vector<std::vector<double>>& 
     // Free memory
     delete[] x;
     delete[] f_temp;
+    Ncalls+=mx;
     return f;
 };

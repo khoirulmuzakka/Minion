@@ -134,9 +134,9 @@ std::vector<double> GWO_DE::update_position(const std::vector<double>& X, const 
     std::vector<double> D_delta(dimension);
 
     for (size_t i = 0; i < dimension; ++i) {
-        D_alpha[i] = std::abs(C[i] * alpha_pos[i] - X[i]);
-        D_beta[i] = std::abs(C[i] * beta_pos[i] - X[i]);
-        D_delta[i] = std::abs(C[i] * delta_pos[i] - X[i]);
+        D_alpha[i] = fabs(C[i] * alpha_pos[i] - X[i]);
+        D_beta[i] = fabs(C[i] * beta_pos[i] - X[i]);
+        D_delta[i] = fabs(C[i] * delta_pos[i] - X[i]);
     }
 
     std::vector<double> X1(dimension);

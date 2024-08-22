@@ -30,7 +30,9 @@ protected:
     int dimension_;         ///< Dimension of the problem
     int function_number_;   ///< Function number
     CECTestFunc testfunc;
-
+    
+public : 
+    size_t Ncalls=0;
 
 public:
     /**

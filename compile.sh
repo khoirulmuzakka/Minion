@@ -20,5 +20,3 @@ cmake -G "Unix Makefiles" ..
 # Build the project using the default build tool
 cmake --build . --clean-first --config Release -- -j8
 
-# Optional: Pause to see build output (only for debugging, usually not needed)
-read -p "Press any key to continue..."
