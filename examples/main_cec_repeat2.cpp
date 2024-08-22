@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<std::vector<double>> results;
         for (int i=0; i<numRuns; i++){
-            std::cout << "\nRun : "<< i+1 << "with maxevals : " << Nmaxevals << "\n";
+            std::cout << "\nRun : "<< i+1 << ", with maxevals : " << Nmaxevals << "\n";
             std::vector<double> result_per_run;
             for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo));
             results.push_back(result_per_run);

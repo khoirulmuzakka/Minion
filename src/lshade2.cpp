@@ -8,15 +8,15 @@ LSHADE2::LSHADE2(
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
     settings = LSHADE_Settings(options);
-    populationSize = size_t(10.0*bounds.size()+ std::pow(log10(maxevals),3.0));
+    populationSize = size_t(20.0*bounds.size()+ std::pow(log10(maxevals),3.0));
     mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
-    archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
+    archive_size_ratio = 2.0; //std::get<double>(settings.getSetting("archive_size_ratio"));
     memorySize = size_t(archive_size_ratio*populationSize);
 
-    M_CR = std::vector<double>(memorySize, 0.5) ;
+    M_CR = std::vector<double>(memorySize, 0.7) ;
     M_F =  rand_gen(0.1, 0.2, memorySize);
 
-    minPopSize = size_t(bounds.size()/2.0);
+    minPopSize = size_t(4);
     reduction_strategy = "agsk";
     popreduce=true;
     std::cout << "LSHADE2 instantiated. \n";
@@ -63,12 +63,14 @@ void LSHADE2::adaptParameters() {
     }
 
     //update memory 
-    memorySize= static_cast<size_t> (archive_size_ratio*population.size());
+    /*
+    memorySize= size_t (archive_size_ratio*population.size());
     while (M_CR.size() > memorySize) {
         size_t random_index = rand_int(M_CR.size());
         M_CR.erase(M_CR.begin() + random_index);
         M_F.erase(M_F.begin() + random_index);
     }
+    */
     
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
@@ -91,6 +93,7 @@ void LSHADE2::adaptParameters() {
 
         std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
         std::tie(mF, sF) = getMeanStd(S_F, weights_F);
+        if (memoryIndex>memorySize-1) memoryIndex=0;
         M_CR[memoryIndex] = mCR ; 
         M_F[memoryIndex] = mF; 
     } else {
@@ -138,5 +141,9 @@ void LSHADE2::adaptParameters() {
         if (ptemp<2){ptemp=2;}; 
         p[i] = ptemp;
     };
+    if (Nevals<0.3) Fw=0.5; 
+    else if (Nevals<0.5) Fw=0.7; 
+    else if (Nevals<0.8) Fw=0.8; 
+    else Fw=1.5;
 
 };

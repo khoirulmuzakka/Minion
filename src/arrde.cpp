@@ -43,11 +43,11 @@ void ARRDE::adaptParameters() {
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); //(std::max(double(minPopSize), bounds.size()/2.0));  
     double maxPopSize_eff = std::min(std::max(10.0, 2.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 1000.0); // double(populationSize); 
     if (!final_refine) reduction_strategy="agsk"; 
-    else reduction_strategy="agsk"; 
+    else reduction_strategy="linear"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
-        minPopSize_eff= std::max(4.0, 0.75*bounds.size()); 
+        minPopSize_eff= 4.0; //std::max(4.0, 0.5*bounds.size()); 
         maxPopSize_eff = std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  );
     }
     // update population size
@@ -98,9 +98,9 @@ void ARRDE::adaptParameters() {
             for (auto el : M_CR) MCR_records.push_back(el);
             for (auto el : M_F) MF_records.push_back(el);
         };
-        double maxRestart;
-        if (Nevals<0.5*strartRefine*maxevals) maxRestart=1; 
-        else maxRestart=2; 
+        double maxRestart =2;
+        //if (Nevals<0.5*strartRefine*maxevals) maxRestart=2; 
+        //else maxRestart=2; 
         //spawn new generation if there is no improvement to the current best overall.
         if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<maxRestart)) {
            // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
@@ -133,7 +133,7 @@ void ARRDE::adaptParameters() {
             
             memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
-            Fw= 0.8-0.2*Nevals/(strartRefine*maxevals);
+            Fw= 0.6+0.4*Nevals/(strartRefine*maxevals);
             M_CR = rand_gen(0.5, 0.7, memorySize);
             M_F =  rand_gen(0.1, 0.2, memorySize);
         
@@ -303,7 +303,8 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.2;
-        if (restart) fraction = 0.5-0.3*Nevals/(strartRefine*maxevals);
+        if (refine) fraction = 0.2;//0.1+0.2*Nevals/(strartRefine*maxevals);
+        if (restart) fraction = 0.2+0.4*Nevals/(strartRefine*maxevals);
         if (final_refine) fraction = 0.2;
         int maxp = int(round(fraction * population.size()));
         if (maxp<2) maxp =2; 
