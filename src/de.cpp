@@ -124,6 +124,9 @@ std::vector<double> Differential_Evolution::crossover(const std::vector<double>&
 
 void Differential_Evolution::init (){
     population = latin_hypercube_sampling(bounds, populationSize);
+    if (!x0.empty()) {
+        population[0] = x0;
+    };
     fitness = func(population, data);
     size_t best_idx = findArgMin(fitness);
     best = population[best_idx];
@@ -146,7 +149,7 @@ void Differential_Evolution::adaptParameters(){
     F= std::vector<double>(population.size(), 0.5);
     CR= std::vector<double>(population.size(), 0.5);
     p = std::vector<size_t>(population.size(), 1);
-    mutation_strategy="current_to_pbest1bin";
+    mutation_strategy="best1bin";
     
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
@@ -167,7 +170,7 @@ MinionResult Differential_Evolution::optimize() {
     try {
         init();
         size_t iter=1;
-        while(Nevals < maxevals) {
+        do {
             adaptParameters();
             std::vector<std::vector<double>> trials(population.size(), std::vector<double>(population[0].size()));
             doDE_operation(trials);
@@ -192,7 +195,7 @@ MinionResult Differential_Evolution::optimize() {
             history.push_back(MinionResult(best, best_fitness, iter, Nevals, false, ""));
             iter++;
             if (checkStopping()) break;
-        }  
+        } while(Nevals < maxevals); 
 
         auto minElementIter = std::min_element(history.begin(), history.end(), 
                                                     [](const MinionResult& a, const MinionResult& b) {

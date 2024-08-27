@@ -6,6 +6,7 @@
 /**
  * @class LSHADE2 
  * @brief Class implementing the LSHADE2 algorithm.
+ * This is my play ground for experimenting with LSHADE variant
  * 
  * The LSHADE2 class is an extension of the Differential Evolution algorithm 
  * with mechanisms for self-adaptation of control parameters.

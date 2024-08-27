@@ -19,4 +19,3 @@ cmake -G "Unix Makefiles" ..
 
 # Build the project using the default build tool
 cmake --build . --clean-first --config Release -- -j8
-

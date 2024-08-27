@@ -79,6 +79,7 @@ protected:
 protected:
     std::map<std::string, ConfigValue> settings_;
     std::map<std::string, ConfigValue> default_settings_;
+    std::string settingsName="";
 };
 
 
@@ -98,31 +99,7 @@ public :
      * @param init Map of key-value pairs for settings.
      */
     LSHADE_Settings(const std::map<std::string, ConfigValue>& init){
-        init_default();
-        setSettings(init);
-    }
-
-protected :
-    void init_default() override;
-};
-
-
-/**
- * @class ARRDE_Settings
- * @brief Class to store ARRDE options.
- */
-class ARRDE_Settings : public OptimizerSettings {
-public : 
-    /**
-     * @brief default constuctor
-     */
-    ARRDE_Settings()=default;
-
-    /**
-     * @brief Constructor with a map.
-     * @param init Map of key-value pairs for settings.
-     */
-    ARRDE_Settings(const std::map<std::string, ConfigValue>& init){
+        settingsName="LSHADE Settings";
         init_default();
         setSettings(init);
     }
@@ -148,6 +125,7 @@ public :
      * @param init Map of key-value pairs for settings.
      */
     JADE_Settings(const std::map<std::string, ConfigValue>& init){
+        settingsName="JADE Settings";
         init_default();
         setSettings(init);
     }

@@ -6,6 +6,7 @@
 /**
  * @class JADE 
  * @brief Class implementing the JADE algorithm.
+ * Reference : J. Zhang and A. C. Sanderson, "JADE: Adaptive Differential Evolution With Optional External Archive," in IEEE Transactions on Evolutionary Computation, vol. 13, no. 5, pp. 945-958, Oct. 2009, doi: 10.1109/TEVC.2009.2014613.
  * 
  * The JADE class is an extension of the Differential Evolution algorithm 
  * with mechanisms for self-adaptation of control parameters.
@@ -43,7 +44,7 @@ class JADE : public Differential_Evolution {
             MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::map<std::string, ConfigValue>& options, 
                     const std::vector<double>& x0 = {}, void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
                     double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
-                    size_t populationSize=30
+                    size_t populationSize=0
         );
 
         /**

@@ -17,7 +17,7 @@ void OptimizerSettings::setSetting(const std::string& key, const T& value) {
         settings_[key] = value;
     } else {
         // Key does not exist, insert the new value
-        std::cout << "Warning : settings key " << key <<" is not recognized. Hence it will be ignored.\n";
+        std::cout << "Warning : settings key " << key <<" is not recognized by "<<settingsName<<". Hence it will be ignored.\n";
     };
 }
 
@@ -63,7 +63,6 @@ template void OptimizerSettings::setSetting<bool>(const std::string&, const bool
 
 void LSHADE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
         {"memory_size", int(100)}, 
         {"archive_size_ratio", double(2.6)}, 
         {"population_reduction" , bool(true)}, 
@@ -73,16 +72,6 @@ void LSHADE_Settings::init_default() {
     settings_ = default_settings_;
 }
 
-void ARRDE_Settings::init_default() {
-    default_settings_ = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
-        {"archive_size_ratio", double(2.0)}, 
-        {"population_reduction" , bool(true)}, 
-        {"minimum_population_size", int(4)}, 
-        {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-    };
-    settings_ = default_settings_;
-}
 
 void JADE_Settings::init_default() {
     default_settings_ = {
@@ -91,7 +80,7 @@ void JADE_Settings::init_default() {
         {"archive_size_ratio", double(1.0)}, 
         {"population_reduction" , bool(true)}, 
         {"minimum_population_size", int(4)}, 
-        {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
+        {"reduction_strategy", std::string("linear")},
     };
     settings_ = default_settings_;
 }

@@ -4,9 +4,17 @@ JADE::JADE(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populationSize
+            size_t populsize
 ) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
+Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
+    if (populationSize==0){
+         size_t dimension = bounds.size();
+         if (dimension <=10) populationSize = 30; 
+            else if (dimension>10 && dimension<=30) populationSize=100; 
+            else if (dimension>30 && dimension<=50) populationSize=200;
+            else if (dimension>50 && dimension<=70) populationSize=300;
+            else populationSize=400;
+    }
     settings = JADE_Settings(options);
     mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
     c = std::get<double>(settings.getSetting("c"));
@@ -18,7 +26,6 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     } catch (...) {
         popreduce = std::get<int>(settings.getSetting("population_reduction"));
     };
-    std::cout << "JADE instantiated. \n";
 };
 
 
@@ -86,7 +93,7 @@ void JADE::adaptParameters() {
 
         std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
         std::tie(mF, sF) = getMeanStd(S_F, weights_F);
-        double c_eff = double(S_CR.size())/(double(S_CR.size())+population.size());
+        double c_eff = double(S_CR.size())/double(population.size());
         if (c_eff<0.05) c_eff=0.05;
         if (c!=0.0) c_eff = c;
         muCR = (1-c_eff)*muCR+c_eff*mCR;

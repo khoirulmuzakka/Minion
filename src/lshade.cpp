@@ -4,11 +4,12 @@ LSHADE::LSHADE(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populationSize
+            size_t populsize
 ) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
+Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
+    if (populationSize==0) populationSize=18*bounds.size();
     settings = LSHADE_Settings(options);
-    mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
+    mutation_strategy= "current_to_pbest_A_1bin";
     memorySize = std::get<int>(settings.getSetting("memory_size"));
     archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
 
@@ -23,7 +24,6 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     } catch (...) {
         popreduce = std::get<int>(settings.getSetting("population_reduction"));
     };
-    std::cout << "LSHADE instantiated. \n";
 };
 
 

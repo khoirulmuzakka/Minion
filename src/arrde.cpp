@@ -1,34 +1,25 @@
 #include "arrde.h" 
 
 ARRDE::ARRDE(
-    MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
+    MinionFunction func, const std::vector<std::pair<double, double>>& bounds,
             const std::vector<double>& x0, void* data , std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populationSize
+            size_t populsize
 ) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
-    settings = ARRDE_Settings(options);
+Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
     try {
-        mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
-        archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
-        memorySize= size_t(archive_size_ratio *  populationSize); //size_t(bounds.size());
+        if (populationSize==0) populationSize = std::min(std::max(10.0, 2.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 1000.0); 
+        mutation_strategy= "current_to_pbest_AW_1bin";
+        archive_size_ratio = 2.0;
+        memorySize= size_t( archive_size_ratio*populationSize);
 
         M_CR = std::vector<double>(memorySize, 0.8) ;
         M_F =  std::vector<double>(memorySize, 0.5) ;
-
-        minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
-        reduction_strategy = std::get<std::string>(settings.getSetting("reduction_strategy"));
-        try {
-            popreduce = std::get<bool>(settings.getSetting("population_reduction"));
-        } catch (...) {
-            popreduce = std::get<int>(settings.getSetting("population_reduction"));
-        };
-        Fw=1.2;
-        std::cout << "ARRDE instantiated. \n";
+        Fw=1.5;  
         restartRelTol= 0.005;
         reltol = 0.005;
         refineRelTol = restartRelTol;
-
+        
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
         throw std::runtime_error(e.what());
@@ -41,7 +32,7 @@ void ARRDE::adaptParameters() {
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); //(std::max(double(minPopSize), bounds.size()/2.0));  ,
-    double maxPopSize_eff = std::min(std::max(10.0, 2.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 1000.0); // double(populationSize); 
+    double maxPopSize_eff = populationSize; 
     if (!final_refine) reduction_strategy="agsk"; 
     else reduction_strategy="linear"; 
     if (final_refine){

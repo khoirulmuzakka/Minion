@@ -1,15 +1,5 @@
 #include "j2020.h"
 
-void j2020::initialization(const int NP) {
-    std::vector<double> pvec;
-    for (int i = 0; i<NP; i++)
-        pvec.clear();
-        for (int j = 0; j<D; j++) {
-            pvec.push_back(rand_gen(bounds[j].first, bounds[j].second));
-        };
-        P.push_back(pvec);
-    };
-
 double j2020::Dist(const std::vector<double>& A, const std::vector<double>& B) { 
     double dist=0.0;
     for (int j = 0; j<D; j++) 
@@ -70,8 +60,9 @@ MinionResult j2020::optimize () {
         long age;   // how many times the best cost does not improve
         long long cCopy; // counter for copy
 
-        int bNP=D*7;     // cec2019: bNP=1000
-        int sNP=D;       //D*1;       
+        int bNP= int(0.875*double(populsize));    
+        int sNP=int(0.125*double(populsize)); 
+     
         int NP=bNP+sNP;   // both population size together
         double bestCOST = std::numeric_limits<double>::max(); // cost of globalBEST
         std::vector<double> parF(NP), parCR(NP);   // each individual has own F and CR
@@ -86,6 +77,7 @@ MinionResult j2020::optimize () {
         indBest = 0;
 
         P = random_sampling(bounds, size_t(NP));
+        if (!x0.empty()) P[0] = x0;
 
         for (int i=0; i<NP; i++) { 
             parF[i] = Finit;     // init

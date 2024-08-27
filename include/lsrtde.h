@@ -13,6 +13,7 @@
  * @brief Header file for the LSRTDE class, which implements a minimization algorithm.
  * 
  * This code is adapted from the original LSRTDE code from Suganthan's GitHub repository.
+ * Reference : V. Stanovov and E. Semenkin, "Success Rate-based Adaptive Differential Evolution L-SRTDE for CEC 2024 Competition," 2024 IEEE Congress on Evolutionary Computation (CEC), Yokohama, Japan, 2024, pp. 1-8, doi: 10.1109/CEC60901.2024.10611907.
  */
 
 
@@ -170,13 +171,12 @@ public :
      */
     LSRTDE(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
                     void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 1e-8, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
-                    int populationSize=100) :
-             MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
-                PopulSize= int(20*bounds.size());
+                    size_t maxevals = 100000, int seed=-1, int populationSize=0) :
+             MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, "random", seed) {
+                PopulSize=populationSize;
+                if (PopulSize==0) PopulSize= 20*bounds.size();
                 MaxFEval = int(maxevals);
                 Initialize(PopulSize, int(bounds.size()));
-                std::cout << "LSRTDE instantiated.\n";
             }
 
     /**

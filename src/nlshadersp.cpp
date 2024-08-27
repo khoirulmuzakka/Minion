@@ -146,6 +146,9 @@ void NLSHADE_RSP::Initialize(int newNInds, int newNVars, int NewMemSize, double 
 	for (int i = 0; i<NIndsMax; i++)
 		for (int j = 0; j<NVars; j++)
 			Popul[i][j] = rand_gen(bounds[j].first, bounds[j].second);
+    if (!x0.empty()) {
+        for (int j = 0; j<NVars; j++) Popul[0][j] =x0[j]; 
+    };
     Donor = new double[NVars];
     Trial = new double[NVars];
     Rands = new int[NIndsMax];

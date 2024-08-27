@@ -20,10 +20,14 @@ endif()
 if(WIN32)
     set(PYBIND11_INCLUDE_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/include")
     set(pybind11_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/share/cmake/pybind11")
-else()
+else() 
+    if(DEFINED ENV{CONDA_PREFIX})
+        set(CMAKE_C_COMPILER "$ENV{CONDA_PREFIX}/bin/x86_64-conda-linux-gnu-gcc")
+        set(CMAKE_CXX_COMPILER "$ENV{CONDA_PREFIX}/bin/x86_64-conda-linux-gnu-g++")
+    endif()
     #find_package(pybind11 REQUIRED)
-    set(PYBIND11_INCLUDE_DIR "/home/muzakka/anaconda3/lib/python3.12/site-packages/pybind11/include")
-    set(pybind11_DIR "/home/muzakka/anaconda3/lib/python3.12/site-packages/pybind11/share/cmake/pybind11")
+    set(PYBIND11_INCLUDE_DIR "$ENV{CONDA_PREFIX}/lib/python3.11/site-packages/pybind11/include")
+    set(pybind11_DIR "$ENV{CONDA_PREFIX}/lib/python3.11/site-packages/pybind11/share/cmake/pybind11")
 endif()
 find_package(pybind11 REQUIRED)
 
@@ -65,10 +69,6 @@ set_target_properties(pyminioncpp PROPERTIES
 )
 
 # --------------------- main files ---------------------------------------------#
-add_executable(main_cec examples/main_cec.cpp)
-target_link_libraries(main_cec PRIVATE minion_static)
-set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-
 add_executable(main_repeat examples/main_cec_repeat.cpp)
 target_link_libraries(main_repeat PRIVATE minion_static)
 set_target_properties(main_repeat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)

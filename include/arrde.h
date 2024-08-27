@@ -14,7 +14,6 @@ class ARRDE : public Differential_Evolution {
     public:
         std::vector<double> M_CR, M_F;
         size_t memorySize=50;
-        ARRDE_Settings settings;
         std::vector<std::vector<double>> population_records, archive_records;
         std::vector<double> fitness_records;
         std::vector<double> MCR_records, MF_records;
@@ -121,10 +120,10 @@ class ARRDE : public Differential_Evolution {
          * @param populationSize The size of the population.
          */
         ARRDE(
-            MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
+            MinionFunction func, const std::vector<std::pair<double, double>>& bounds,
                     const std::vector<double>& x0 = {}, void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
                     double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
-                    size_t populationSize=30
+                    size_t populationSize=0
         );
 
         /**

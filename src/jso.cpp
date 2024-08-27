@@ -4,9 +4,11 @@ jSO::jSO(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populationSize
+            size_t populsize
 ) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populationSize){
+Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
+    double dimension = double(bounds.size());
+    if (populationSize==0) populationSize=int(25.0*log10(dimension)*sqrt(dimension));
     settings = LSHADE_Settings(options);
     mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
     memorySize = std::get<int>(settings.getSetting("memory_size"));
@@ -22,8 +24,6 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     } catch (...) {
         popreduce = std::get<int>(settings.getSetting("population_reduction"));
     };
-    
-    std::cout << "jSO instantiated. \n";
 };
 
 

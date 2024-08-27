@@ -19,7 +19,6 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
     minPopSize = size_t(4);
     reduction_strategy = "agsk";
     popreduce=true;
-    std::cout << "LSHADE2 instantiated. \n";
 };
 
 

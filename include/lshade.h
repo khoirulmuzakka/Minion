@@ -6,6 +6,7 @@
 /**
  * @class LSHADE 
  * @brief Class implementing the LSHADE algorithm.
+ * Reference : R. Tanabe and A. S. Fukunaga, "Improving the search performance of SHADE using linear population size reduction," 2014 IEEE Congress on Evolutionary Computation (CEC), Beijing, China, 2014, pp. 1658-1665, doi: 10.1109/CEC.2014.6900380.
  * 
  * The LSHADE class is an extension of the Differential Evolution algorithm 
  * with mechanisms for self-adaptation of control parameters.

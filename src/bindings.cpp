@@ -14,6 +14,7 @@
 #include "arrde.h"
 #include "nlshadersp.h"
 #include "j2020.h"
+#include "lsrtde.h"
 #include <exception>
 
 namespace py = pybind11;
@@ -71,18 +72,33 @@ PYBIND11_MODULE(pyminioncpp, m) {
 
     py::class_<j2020, MinimizerBase>(m, "j2020")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&,
-             void*, std::function<void(MinionResult*)>, double, size_t, std::string, int>(),
+             void*, std::function<void(MinionResult*)>,  size_t,  int, int>(),
              py::arg("func"), 
              py::arg("bounds"), 
              py::arg("x0") = std::vector<double>{},
              py::arg("data") = nullptr, 
              py::arg("callback") = nullptr, 
-             py::arg("tol") = 1e-8,
-             py::arg("maxevals") = 100000, 
-             py::arg("boundStrategy") = "reflect-random", 
-             py::arg("seed") = -1)
+             py::arg("maxevals") = 100000,  
+             py::arg("seed") = -1, 
+             py::arg("populationSize") = 0
+             )
 
         .def("optimize", &j2020::optimize);
+
+    py::class_<LSRTDE, MinimizerBase>(m, "LSRTDE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&,
+             void*, std::function<void(MinionResult*)>,  size_t,  int, int>(),
+             py::arg("func"), 
+             py::arg("bounds"), 
+             py::arg("x0") = std::vector<double>{},
+             py::arg("data") = nullptr, 
+             py::arg("callback") = nullptr, 
+             py::arg("maxevals") = 100000,  
+             py::arg("seed") = -1, 
+             py::arg("populationSize") = 0
+             )
+
+        .def("optimize", &LSRTDE::optimize);
 
     py::class_<LSHADE, Differential_Evolution>(m, "LSHADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::map<std::string, ConfigValue>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
@@ -96,7 +112,7 @@ PYBIND11_MODULE(pyminioncpp, m) {
             py::arg("maxevals") = 100000, 
             py::arg("boundStrategy") = "reflect-random", 
             py::arg("seed") = -1, 
-            py::arg("populationSize") = 30)
+            py::arg("populationSize") = 0)
         .def("optimize", &LSHADE::optimize)
         .def_readonly("meanCR", &LSHADE::meanCR)
         .def_readonly("meanF", &LSHADE::meanF)
@@ -116,7 +132,7 @@ PYBIND11_MODULE(pyminioncpp, m) {
             py::arg("maxevals") = 100000, 
             py::arg("boundStrategy") = "reflect-random", 
             py::arg("seed") = -1, 
-            py::arg("populationSize") = 30)
+            py::arg("populationSize") = 0)
         .def("optimize", &JADE::optimize)
         .def_readonly("meanCR", &JADE::meanCR)
         .def_readonly("meanF", &JADE::meanF)
@@ -125,36 +141,34 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readonly("diversity", &JADE::diversity);
 
     py::class_<NLSHADE_RSP, MinimizerBase>(m, "NLSHADE_RSP")
-        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, int, int, double>(),
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, size_t,  int, int, int, double>(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<double>(), 
             py::arg("data") = nullptr, 
             py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
             py::arg("maxevals") = 100000, 
-            py::arg("boundStrategy") = "reflect-random", 
             py::arg("seed") = -1, 
-            py::arg("populationSize") = 30, 
+            py::arg("populationSize") = 0, 
             py::arg("memorySize") = 30, 
             py::arg("archiveSizeRatio") = 2.6)
         .def_readwrite("callback", &MinimizerBase::callback)
         .def_readwrite("history", &MinimizerBase::history)
         .def("optimize", &MinimizerBase::optimize);
 
+
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
-        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::map<std::string, ConfigValue>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
             py::arg("func"), 
             py::arg("bounds"), 
-            py::arg("options"), 
             py::arg("x0") = std::vector<double>(), 
             py::arg("data") = nullptr, 
             py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("tol") = 0.0, 
             py::arg("maxevals") = 100000, 
             py::arg("boundStrategy") = "reflect-random", 
             py::arg("seed") = -1, 
-            py::arg("populationSize") = 30)
+            py::arg("populationSize") = 0)
         .def("optimize", &ARRDE::optimize)
         .def_readonly("meanCR", &ARRDE::meanCR)
         .def_readonly("meanF", &ARRDE::meanF)

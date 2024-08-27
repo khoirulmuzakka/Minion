@@ -13,6 +13,7 @@
  * @brief Header file for the NLSHADE_RSP class, which implements a minimization algorithm.
  * 
  * This code is adapted from the original NLSHADE_RSP code from Suganthan's GitHub repository.
+ * Reference : V. Stanovov, S. Akhmedova and E. Semenkin, "NL-SHADE-RSP Algorithm with Adaptive Archive and Selective Pressure for CEC 2021 Numerical Optimization," 2021 IEEE Congress on Evolutionary Computation (CEC), Kraków, Poland, 2021, pp. 809-816, doi: 10.1109/CEC45853.2021.9504959.
  */
 
 
@@ -279,13 +280,13 @@ public :
      * @param archiveSizeRatio Ratio for determining the archive size.
      */
     NLSHADE_RSP(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
-                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 1e-8, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
-                    int populationSize=30, int memorySize=100, double archiveSizeRatio=2.6) :
-             MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
+                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr, size_t maxevals = 100000, int seed=-1, 
+                    int populationSize=0, int memorySize=100, double archiveSizeRatio=2.6) :
+             MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, "random", seed) {
                 MaxFEval = int(maxevals);
-                Initialize(populationSize, int(bounds.size()), memorySize, archiveSizeRatio);
-                std::cout << "NLSHADE_RSP instantiated.\n";
+                int populsize = populationSize;
+                if (populsize==0) populsize= std::max(std::min(int(30*bounds.size()), 1000), 10);
+                Initialize(populsize, int(bounds.size()), memorySize, archiveSizeRatio);
             }
 
     /**

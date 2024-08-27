@@ -13,6 +13,7 @@
  * @brief Header file for the j2020 class.
  *
  * This file was adapted from the original j2020 code obtained from Suganthan's GitHub repository.
+ * Reference : J. Brest, M. S. Maučec and B. Bošković, "Differential Evolution Algorithm for Single Objective Bound-Constrained Optimization: Algorithm j2020," 2020 IEEE Congress on Evolutionary Computation (CEC), Glasgow, UK, 2020, pp. 1-8, doi: 10.1109/CEC48606.2020.9185551.
  */
 
 /**
@@ -25,6 +26,7 @@
  */
 class j2020 :public MinimizerBase{
 private : 
+    size_t populsize;
     const int myPrec=11;    // setprecision(myPrec) for cout
     long mySeed;            // 
     const double eps=1e-12;
@@ -52,9 +54,6 @@ private :
     const double myEqs = 0.25; // for reset populations  CEC2019:0.25
 
 private : 
-
-    void initialization(const int NP) ;
-
     double Dist(const std::vector<double>& A, const std::vector<double>& B);
     
     int crowding(std::vector<std::vector<double>> myP, const std::vector<double>& U, const int NP);
@@ -83,10 +82,11 @@ public :
      */
     j2020(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
                     void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 1e-8, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1):
-                     MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
-                    D = int(bounds.size());
-                std::cout << "j2020 instantiated.\n";
+                    size_t maxevals = 100000, int seed=-1, size_t populationSize=0):
+                     MinimizerBase(func, bounds, x0, data, callback,0.0, maxevals, "random", seed) {
+                     D = int(bounds.size());
+                     populsize = populationSize;
+                     if (populsize==0) populsize = 8*D; 
             };
 
     /**
