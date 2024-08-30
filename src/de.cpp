@@ -136,7 +136,9 @@ void Differential_Evolution::init (){
 };
 
 bool Differential_Evolution::checkStopping(){
-    double relRange = calcStdDev(fitness)/calcMean(fitness);
+    double fmax = findMax(fitness); 
+    double fmin = findMin(fitness);
+    double relRange = (fmax-fmin)/fabs(calcMean(fitness));
     diversity.push_back(relRange);
     bool stop = false;
     if (relRange <= stoppingTol) {

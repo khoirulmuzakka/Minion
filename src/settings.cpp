@@ -63,7 +63,7 @@ template void OptimizerSettings::setSetting<bool>(const std::string&, const bool
 
 void LSHADE_Settings::init_default() {
     default_settings_ = std::map<std::string, ConfigValue> {
-        {"memory_size", int(100)}, 
+        {"memory_size", int(6)}, 
         {"archive_size_ratio", double(2.6)}, 
         {"population_reduction" , bool(true)}, 
         {"minimum_population_size", int(4)}, 

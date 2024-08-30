@@ -15,7 +15,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
 
         M_CR = std::vector<double>(memorySize, 0.8) ;
         M_F =  std::vector<double>(memorySize, 0.5) ;
-        Fw=1.5;  
+        Fw=1.2;  
         restartRelTol= 0.005;
         reltol = 0.005;
         refineRelTol = restartRelTol;
@@ -81,7 +81,7 @@ void ARRDE::adaptParameters() {
 
     //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
 
-    if ( calcStdDev(fitness)/calcMean(fitness)<=reltol || Nevals>=strartRefine*maxevals){ 
+    if ( calcStdDev(fitness)/fabs(calcMean(fitness))<=reltol || Nevals>=strartRefine*maxevals){ 
        
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
 
@@ -90,8 +90,6 @@ void ARRDE::adaptParameters() {
             for (auto el : M_F) MF_records.push_back(el);
         };
         double maxRestart =2;
-        //if (Nevals<0.5*strartRefine*maxevals) maxRestart=1; 
-        //else maxRestart=2; 
         //spawn new generation if there is no improvement to the current best overall.
         if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<maxRestart)) {
            // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
@@ -206,30 +204,27 @@ void ARRDE::adaptParameters() {
             memoryIndex=0;
 
             Fw=0.8+0.5*Nevals/(strartRefine*maxevals);
+            if (final_refine) Fw=1.5;
+
             if (!MCR_records.empty()){
                 M_CR = random_choice(MCR_records, memorySize, true); 
                 M_F = random_choice(MF_records, memorySize, true);
             } else {
                 M_CR = std::vector<double>(memorySize, 0.5);
                 M_F = std::vector<double>(memorySize, 0.5);
-            };
-
-            if (final_refine){
-               Fw=1.5;
-              // M_CR = std::vector<double>(memorySize, 0.5);
-               //M_F = std::vector<double>(memorySize, 0.5);
-            };
-            
+            };            
         };
 
     };      
     //-------------------- update CR, F -------------------------------------//
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
+    
     if (!fitness_before.empty()){
+        double fbmin = calcMean(trial_fitness);
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = fabs((fitness_before[i] - trial_fitness[i])/(1e-100 + fitness_before[i]));
+                double w = fabs((fitness_before[i] - trial_fitness[i])/(1.0 + fabs(trial_fitness[i]- fbmin)));
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
                 weights.push_back(w);

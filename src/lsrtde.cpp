@@ -241,7 +241,6 @@ void LSRTDE::MainCycle()
             acr.push_back(ActualCr);
             tco.push_back(TheChosenOne);
         }; 
-        
         fun_pop= func(pop, data); 
         NFEval+=int(pop.size());
         for(int IndIter=0;IndIter<NIndsFront;IndIter++){

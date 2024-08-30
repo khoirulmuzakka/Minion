@@ -9,12 +9,26 @@ double minimize_cec_functions(int function_number, int dimension, int population
     minion::CECBase* cecfunc;
     minion::MinimizerBase* optimizer;
 
+    std::vector<std::pair<double, double>> bounds;
+    if (year==2019) {
+        if (function_number ==1) dimension =9; 
+        else if (function_number==2) dimension =16; 
+        else if (function_number==3) dimension =18;
+        else dimension=10;
+        for (int i=0; i<dimension; i++) {
+            if (function_number ==1) bounds.push_back(std::make_pair(-8192, 8192)); 
+            else if (function_number==2) bounds.push_back(std::make_pair(-16384, 16384)); 
+            else if (function_number==3) bounds.push_back(std::make_pair(-4, 4)); 
+            else bounds.push_back(std::make_pair(-100, 100));
+        }
+    } else bounds = std::vector<std::pair<double, double>>(dimension, std::make_pair(-100.0, 100.0));
+
     if (year==2020) cecfunc = new minion::CEC2020Functions(function_number, dimension);
     else if (year==2022) cecfunc = new minion::CEC2022Functions(function_number, dimension);
     else if (year==2017) cecfunc = new minion::CEC2017Functions(function_number, dimension);
+    else if (year==2019) cecfunc = new minion::CEC2019Functions(function_number, dimension);
     else throw std::runtime_error("Invalid year.");
 
-    std::vector<std::pair<double, double>> bounds(dimension, std::make_pair(-100.0, 100.0));
 
     std::map<std::string, ConfigValue> options_lshade= std::map<std::string, ConfigValue> {
         {"memory_size", int(6)},
@@ -111,7 +125,6 @@ double minimize_cec_functions(int function_number, int dimension, int population
         );
     } else throw std::runtime_error("unknown algorithm!");
     
-   
     // Optimize and get the result
     MinionResult result = optimizer->optimize();
     double ret = result.fun;
@@ -177,13 +190,10 @@ int main(int argc, char* argv[]) {
         Nmaxevals = std::atoi(argv[6]); // Use third argument for algo, no conversion needed
     }
 
-    std::cout << popsize << " "<< Nmaxevals<< "\n";
-    
-    
 
     std::vector<int> funcnums; 
     if (year==2017) funcnums =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,13, 14, 15, 16, 17, 18, 19, 20,  21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
-    else if (year==2020) funcnums =  {1,2,3,4,5,6,7,8,9, 10}; 
+    else if (year==2020 || year == 2019) funcnums =  {1,2,3,4,5,6,7,8,9, 10}; 
     else if (year==2022) funcnums =  {1,2,3,4,5,6,7,8,9, 10, 11, 12}; 
     else throw std::runtime_error("Year invalid.");
 

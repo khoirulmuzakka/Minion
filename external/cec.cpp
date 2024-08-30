@@ -47,6 +47,7 @@ std::vector<double> CECBase::operator()(const std::vector<std::vector<double>>& 
     try {
     	testfunc(x, f_temp, nx, mx, function_number_);
 	} catch (const std::exception& e) {
+                std::cerr << "Problem occurs when evaluating the test function.\n";
                 delete[] x;
                 delete[] f_temp;
                 throw std::runtime_error(e.what());

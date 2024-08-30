@@ -46,6 +46,10 @@ namespace CEC2022 {
             free(y);
             free(z);
             free(x_bound);
+
+            OShift=nullptr;
+            M=nullptr;
+            
             y=(double *)malloc(sizeof(double)  *  nx);
             z=(double *)malloc(sizeof(double)  *  nx);
             x_bound=(double *)malloc(sizeof(double)  *  nx);
