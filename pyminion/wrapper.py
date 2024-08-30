@@ -18,6 +18,7 @@ from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
 from pyminioncpp import NelderMead as cppNelderMead 
 from pyminioncpp import CEC2017Functions as cppCEC2017Functions
+from pyminioncpp import CEC2019Functions as cppCEC2019Functions
 from pyminioncpp import CEC2020Functions as cppCEC2020Functions
 from pyminioncpp import CEC2022Functions as cppCEC2022Functions
 
@@ -75,9 +76,40 @@ class CEC2017Functions:
         if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
         self.cpp_func = cppCEC2017Functions(function_number, int(dimension))
 
-    def __call__(self, X, data=None):
+    def __call__(self, X):
         """
-        @brief Evaluate the CEC2020 test function.
+        @brief Evaluate the CEC2019 test function.
+
+        @param X Input vectors to evaluate.
+        @return Vector of function values corresponding to each input vector.
+        """
+        return self.cpp_func(X)
+    
+class CEC2019Functions:
+    """
+    @class CEC2019Functions
+    @brief A class to encapsulate CEC2019 test functions.
+
+    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    """
+
+    def __init__(self, function_number):
+        """
+        @brief Constructor for CEC2019Functions class.
+
+        @param function_number Function number (1-10).
+        @param dimension Dimension of the problem.
+        """
+        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
+        if function_number==1 : dimension=9
+        elif function_number==2:  dimension = 16
+        elif function_number==3 : dimension=18
+        else: dimension =10
+        self.cpp_func = cppCEC2019Functions(function_number, int(dimension))
+
+    def __call__(self, X):
+        """
+        @brief Evaluate the CEC2019 test function.
 
         @param X Input vectors to evaluate.
         @return Vector of function values corresponding to each input vector.
@@ -103,7 +135,7 @@ class CEC2020Functions:
         if int(dimension) not in [2, 5, 10, 15, 20] : raise Exception("Dimension must be 2, 10, or 20.")
         self.cpp_func = cppCEC2020Functions(function_number, int(dimension))
 
-    def __call__(self, X, data=None):
+    def __call__(self, X):
         """
         @brief Evaluate the CEC2020 test function.
 
@@ -131,7 +163,7 @@ class CEC2022Functions:
         if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
         self.cpp_func = cppCEC2022Functions(function_number, int(dimension))
 
-    def __call__(self, X, data=None):
+    def __call__(self, X):
         """
         @brief Evaluate the CEC2022 test function.
 
