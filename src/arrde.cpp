@@ -91,7 +91,7 @@ void ARRDE::adaptParameters() {
         };
         double maxRestart =2;
         //spawn new generation if there is no improvement to the current best overall.
-        if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<maxRestart)) {
+        if ((first_run && Nevals<strartRefine*maxevals)  || (bestOverall<=best_fitness  && Nevals<strartRefine*maxevals && Nrestart<maxRestart) || refine ) {
            // std::cout << "Restarted after " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol<< "\n";
             for (int i =0; i<population.size(); i++){
                 population_records.push_back(population[i]);
@@ -160,7 +160,7 @@ void ARRDE::adaptParameters() {
                     fitness.push_back(fitness_records[random_indices[i]]);
                     removeElement(random_indices2, random_indices[i]);
                 }
-                refineRelTol = decrease*refineRelTol;
+                refineRelTol = std::max(1e-10, decrease*refineRelTol);
                 reltol = refineRelTol;
                 numRefine++;
             } else {
@@ -203,8 +203,8 @@ void ARRDE::adaptParameters() {
             memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
 
-            Fw=0.8+0.5*Nevals/(strartRefine*maxevals);
-            if (final_refine) Fw=1.5;
+            Fw= 1.2;//0.8+0.4*Nevals/(strartRefine*maxevals);
+            if (final_refine) Fw=1.2;
 
             if (!MCR_records.empty()){
                 M_CR = random_choice(MCR_records, memorySize, true); 
