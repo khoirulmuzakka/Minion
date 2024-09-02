@@ -96,7 +96,6 @@ namespace CEC2017{
             if (fpt==NULL)
             {
                 printf("\n Error: Cannot open input file for reading \n");
-                std::cout << FileName << "\n";
             }
 
             if (func_num<20)
@@ -140,7 +139,6 @@ namespace CEC2017{
                 if (fpt==NULL)
                 {
                     printf("\n Error: Cannot open input file for reading \n");
-                    std::cout << FileName << "\n";
                 }
                 SS=(int *)malloc(nx*sizeof(int));
                 if (SS==NULL)
@@ -158,7 +156,6 @@ namespace CEC2017{
                 if (fpt==NULL)
                 {
                     printf("\n Error: Cannot open input file for reading \n");
-                    std::cout << FileName << "\n";
                 }
                 SS=(int *)malloc(nx*cf_num*sizeof(int));
                 if (SS==NULL)

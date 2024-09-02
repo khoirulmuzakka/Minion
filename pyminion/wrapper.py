@@ -18,6 +18,7 @@ from pyminioncpp import MinionResult as cppMinionResult
 from pyminioncpp import GWO_DE as cppGWO_DE
 from pyminioncpp import NelderMead as cppNelderMead 
 from pyminioncpp import CEC2017Functions as cppCEC2017Functions
+from pyminioncpp import CEC2014Functions as cppCEC2014Functions
 from pyminioncpp import CEC2019Functions as cppCEC2019Functions
 from pyminioncpp import CEC2020Functions as cppCEC2020Functions
 from pyminioncpp import CEC2022Functions as cppCEC2022Functions
@@ -57,6 +58,34 @@ class MinionResult:
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
                 f"nfev={self.nfev}, success={self.success}, message={self.message})")
 
+class CEC2014Functions:
+    """
+    @class CEC2014Functions
+    @brief A class to encapsulate CEC2014 test functions.
+
+    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    """
+
+    def __init__(self, function_number, dimension):
+        """
+        @brief Constructor for CEC2014Functions class.
+
+        @param function_number Function number (1-30).
+        @param dimension Dimension of the problem.
+        """
+        if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
+        if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
+        self.cpp_func = cppCEC2014Functions(function_number, int(dimension))
+
+    def __call__(self, X):
+        """
+        @brief Evaluate the CEC2014 test function.
+
+        @param X Input vectors to evaluate.
+        @return Vector of function values corresponding to each input vector.
+        """
+        return self.cpp_func(X)
+    
 class CEC2017Functions:
     """
     @class CEC2017Functions
@@ -78,7 +107,7 @@ class CEC2017Functions:
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2019 test function.
+        @brief Evaluate the CEC2017 test function.
 
         @param X Input vectors to evaluate.
         @return Vector of function values corresponding to each input vector.

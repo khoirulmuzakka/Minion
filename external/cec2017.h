@@ -25,7 +25,8 @@ public:
 
 namespace CEC2017 {       
     /**
-     * All function below are unmodified from the original source :  
+     * All function below are unmodified from the original source : 
+     * https://github.com/P-N-Suganthan/CEC2017-BoundContrained 
      * 
     */
     void cec17_test_func(double *x, double *f, int nx, int mx,int func_num);
