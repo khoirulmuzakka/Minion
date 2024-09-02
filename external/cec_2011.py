@@ -182,7 +182,7 @@ class Problem10:
         self.ub = np.array(6 * [1., ] + 6 * [180., ])
 
     def evaluate(self, x):
-        return self.eng.feval('antennafunccircular', x, [50.0, 120.0], 18.00, 0.5)
+        return self.eng.antennafunccircular(x, matlab.double([50.0, 120.0]), 18.00, 0.5)
 
 class Problem11_1:
     def __init__(self, path="/matlab_cec2011/pro_11"):
