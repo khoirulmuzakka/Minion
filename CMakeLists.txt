@@ -16,19 +16,28 @@ if (POLICY CMP0148)
   cmake_policy(SET CMP0148 NEW)
 endif()
 
-# Specify pybind11 include directory
-if(WIN32)
+
+if (APPLE)
+    set(CMAKE_C_COMPILER /usr/bin/clang)
+    set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+    set(PYBIND11_INCLUDE_DIR "$ENV{CONDA_PREFIX}/include/pybind11")
+    set(pybind11_DIR "$ENV{CONDA_PREFIX}/share/cmake/pybind11")
+    
+elseif (WIN32)
+    # Windows-specific settings
     set(PYBIND11_INCLUDE_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/include")
     set(pybind11_DIR "C:/Users/khoir/AppData/Roaming/Python/Python312/site-packages/pybind11/share/cmake/pybind11")
-else() 
+
+elseif (CMAKE_COMPILER_IS_GNUCXX)
+    # GCC-specific settings (e.g., for Linux)
     if(DEFINED ENV{CONDA_PREFIX})
         set(CMAKE_C_COMPILER "$ENV{CONDA_PREFIX}/bin/x86_64-conda-linux-gnu-gcc")
         set(CMAKE_CXX_COMPILER "$ENV{CONDA_PREFIX}/bin/x86_64-conda-linux-gnu-g++")
     endif()
-    #find_package(pybind11 REQUIRED)
     set(PYBIND11_INCLUDE_DIR "$ENV{CONDA_PREFIX}/lib/python3.11/site-packages/pybind11/include")
     set(pybind11_DIR "$ENV{CONDA_PREFIX}/lib/python3.11/site-packages/pybind11/share/cmake/pybind11")
 endif()
+
 find_package(pybind11 REQUIRED)
 
 

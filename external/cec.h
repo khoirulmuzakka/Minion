@@ -2,7 +2,7 @@
 #define CEC_H
 #include <stdio.h>
 #include <math.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <vector>
 #include <string>
 #include <cstdio>
