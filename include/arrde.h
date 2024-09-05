@@ -132,6 +132,8 @@ class ARRDE : public Differential_Evolution {
          * This function overrides the adaptParameters function in the Differential_Evolution class.
          */
         void adaptParameters() override;
+
+        bool checkStopping() override;
 };
 
 #endif

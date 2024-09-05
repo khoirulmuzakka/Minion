@@ -16,5 +16,7 @@ external/implementations
 external/random_generator
 results
 examples/test.py
+examples/*.txt
+examples/*.csv
 
 

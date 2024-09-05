@@ -86,7 +86,7 @@ public :
                      MinimizerBase(func, bounds, x0, data, callback,0.0, maxevals, "random", seed) {
                      D = int(bounds.size());
                      populsize = populationSize;
-                     if (populsize==0) populsize = 8*D; 
+                     if (populsize==0) populsize = std::min(1000, 8*D); 
             };
 
     /**

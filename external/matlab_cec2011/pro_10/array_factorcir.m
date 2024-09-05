@@ -19,6 +19,7 @@ pi=3.141592654;
       shi=cos(phi-delphi)-cos(phi_desired*(pi/180)-delphi);
       shi=shi*dim*distance;
       y=y+x1(i1)*cos(shi+x1(dim/2+i1)*(pi/180));
+      
   end;
    for i1=dim/2+1:dim
       delphi=2*pi*(i1-1)/dim;

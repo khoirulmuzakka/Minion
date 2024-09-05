@@ -10,7 +10,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     minion::MinimizerBase* optimizer;
 
     std::vector<std::pair<double, double>> bounds;
-    if (year==2019) {
+    if (year==2019) { 
         if (function_number ==1) dimension =9; 
         else if (function_number==2) dimension =16; 
         else if (function_number==3) dimension =18;
