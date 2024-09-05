@@ -22,7 +22,7 @@ for j in range(31):
     print("Run : ", j)
     for i in range(1, 23):
         result = {}
-        func = CEC2011(function_number=i, max_workers=4)
+        func = CEC2011(function_number=i, max_workers=10)
         bounds = func.getBounds()
         dimension = func.dimension
         Nmaxeval=50000

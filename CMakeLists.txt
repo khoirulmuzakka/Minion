@@ -20,6 +20,8 @@ endif()
 if (APPLE)
     set(CMAKE_C_COMPILER /usr/bin/clang)
     set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+    #set(CMAKE_C_COMPILER /usr/bin/gcc)
+    #set(CMAKE_CXX_COMPILER /usr/bin/g++)
     set(PYBIND11_INCLUDE_DIR "$ENV{CONDA_PREFIX}/include/pybind11")
     set(pybind11_DIR "$ENV{CONDA_PREFIX}/share/cmake/pybind11")
     
