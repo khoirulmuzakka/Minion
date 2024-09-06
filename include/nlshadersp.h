@@ -285,7 +285,7 @@ public :
              MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, "random", seed) {
                 MaxFEval = int(maxevals);
                 int populsize = populationSize;
-                if (populsize==0) populsize= std::max(std::min(int(30*bounds.size()), 1000), 10);
+                if (populsize==0) populsize= std::max(int(30*bounds.size()), 10);
                 Initialize(populsize, int(bounds.size()), memorySize, archiveSizeRatio);
             }
 

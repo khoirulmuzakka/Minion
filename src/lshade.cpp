@@ -7,7 +7,7 @@ LSHADE::LSHADE(
             size_t populsize
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
-    if (populationSize==0) populationSize= std::min(size_t(1000), 18*bounds.size());
+    if (populationSize==0) populationSize= 18*bounds.size();
     settings = LSHADE_Settings(options);
     mutation_strategy= "current_to_pbest_A_1bin";
     memorySize = std::get<int>(settings.getSetting("memory_size"));
