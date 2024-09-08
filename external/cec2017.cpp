@@ -61,7 +61,7 @@ namespace CEC2017{
             }
 
             /* Load Matrix M*/
-            sprintf(FileName, "%s/input_data_2017/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2017/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
@@ -91,7 +91,7 @@ namespace CEC2017{
             fclose(fpt);
 
             /* Load shift_data */
-            sprintf(FileName, "%s/input_data_2017/shift_data_%d.txt", dirPath.c_str(), func_num);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2017/shift_data_%d.txt", dirPath.c_str(), func_num);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
@@ -134,7 +134,7 @@ namespace CEC2017{
 
             if (func_num>=11&&func_num<=20)
             {
-                sprintf(FileName, "%s/input_data_2017/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
+                snprintf(FileName, sizeof(FileName), "%s/input_data_2017/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {
@@ -151,7 +151,7 @@ namespace CEC2017{
             }
             else if (func_num==29||func_num==30)
             {
-                sprintf(FileName, "%s/input_data_2017/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
+                snprintf(FileName, sizeof(FileName), "%s/input_data_2017/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {

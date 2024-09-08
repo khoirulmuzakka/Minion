@@ -71,7 +71,7 @@ namespace CEC2020{
 			}
 
 			/* Load Matrix M*/
-			sprintf(FileName, "%s/input_data_2020/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
+			snprintf(FileName, sizeof(FileName), "%s/input_data_2020/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
 			fpt = fopen(FileName,"r");
 			if (fpt==NULL)
 			{
@@ -100,7 +100,7 @@ namespace CEC2020{
 			fclose(fpt);
 			
 			/* Load shift_data */
-			sprintf(FileName, "%s/input_data_2020/shift_data_%d.txt",dirPath.c_str(), func_num);
+			snprintf(FileName, sizeof(FileName), "%s/input_data_2020/shift_data_%d.txt",dirPath.c_str(), func_num);
 			fpt = fopen(FileName,"r");
 			if (fpt==NULL)
 			{
@@ -143,7 +143,7 @@ namespace CEC2020{
 			
 			if (func_num==4||func_num==6||(func_num>=11&&func_num<=20))//4 hf01 6 hf03 in cec2020**
 			{
-				sprintf(FileName, "%s/input_data_2020/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
+				snprintf(FileName, sizeof(FileName), "%s/input_data_2020/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
 				fpt = fopen(FileName,"r");
 				if (fpt==NULL)
 				{
@@ -160,7 +160,7 @@ namespace CEC2020{
 			}
 			else if (func_num==29||func_num==30)
 			{
-				sprintf(FileName, "%s/input_data_2020/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
+				snprintf(FileName, sizeof(FileName), "%s/input_data_2020/shuffle_data_%d_D%d.txt", dirPath.c_str(), func_num, nx);
 				fpt = fopen(FileName,"r");
 				if (fpt==NULL)
 				{

@@ -61,7 +61,7 @@ namespace CEC2019{
             /* Load Matrix M*/
             if (func_num > 3)
             {
-            sprintf(FileName, "%s/input_data_2019/M_%d_D%d.txt",  dirPath.c_str(), func_num,nx);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2019/M_%d_D%d.txt",  dirPath.c_str(), func_num,nx);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
@@ -81,7 +81,7 @@ namespace CEC2019{
             /* Load shift_data */
             if (func_num > 3)
             {
-            sprintf(FileName, "%s/input_data_2019/shift_data_%d.txt",  dirPath.c_str(), func_num);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2019/shift_data_%d.txt",  dirPath.c_str(), func_num);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {

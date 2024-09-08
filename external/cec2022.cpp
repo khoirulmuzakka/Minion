@@ -66,7 +66,7 @@ namespace CEC2022 {
             }
 
             /* Load Matrix M*/
-            sprintf(FileName, "%s/input_data_2022/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2022/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
@@ -95,7 +95,7 @@ namespace CEC2022 {
             fclose(fpt);
 
             /* Load shift_data */
-            sprintf(FileName, "%s/input_data_2022/shift_data_%d.txt",  dirPath.c_str(), func_num);
+            snprintf(FileName, sizeof(FileName), "%s/input_data_2022/shift_data_%d.txt",  dirPath.c_str(), func_num);
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
@@ -141,7 +141,7 @@ namespace CEC2022 {
 
             if (func_num>=6&&func_num<=8)
             {
-                sprintf(FileName, "%s/input_data_2022/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
+                snprintf(FileName,sizeof(FileName),  "%s/input_data_2022/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {

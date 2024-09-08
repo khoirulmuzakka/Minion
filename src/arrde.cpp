@@ -34,14 +34,14 @@ void ARRDE::adaptParameters() {
 
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
-    double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); //(std::max(double(minPopSize), bounds.size()/2.0));  ,
+    double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); 
     double maxPopSize_eff = populationSize; 
     if (!final_refine) reduction_strategy="agsk"; 
     else reduction_strategy="linear"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
-        minPopSize_eff= 4.0; //std::max(4.0, 0.5*bounds.size()); 
+        minPopSize_eff= 4.0; 
         maxPopSize_eff = std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  );
     }
     // update population size
@@ -57,7 +57,6 @@ void ARRDE::adaptParameters() {
         throw std::logic_error("Uknnown reduction strategy");
     };
     
-
     if (new_population_size<minPopSize_eff) new_population_size= size_t(minPopSize_eff);
     if (population.size() > new_population_size) {
         std::vector<size_t> sorted_index = argsort(fitness, true);
@@ -73,7 +72,6 @@ void ARRDE::adaptParameters() {
         fitness = new_fitness_subset;
     };
 
-
     //-------------------- update archive size -------------------------------------//
     //update archive size
     size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
@@ -88,7 +86,7 @@ void ARRDE::adaptParameters() {
        
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
 
-        if (refine){
+        if (first_run || refine){
             for (auto el : M_CR) MCR_records.push_back(el);
             for (auto el : M_F) MF_records.push_back(el);
         };
@@ -121,13 +119,12 @@ void ARRDE::adaptParameters() {
             first_run = false;
             reltol= restartRelTol;
             Nrestart++;
-            numRestart++;
             
             memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
             Fw= 0.8+0.5*Nevals/(strartRefine*maxevals);
-            M_CR = rand_gen(0.5, 0.7, memorySize);
-            M_F =  rand_gen(0.1, 0.2, memorySize);
+            M_CR = rand_gen(0.4, 0.7, memorySize);
+            M_F =  std::vector<double>(memorySize, 0.1);
         
         } else if (!final_refine) {
             for (int i =0; i<population.size(); i++){
@@ -165,7 +162,6 @@ void ARRDE::adaptParameters() {
                 }
                 refineRelTol = decrease*refineRelTol ; //std::max(1e-8, decrease*refineRelTol);
                 reltol = refineRelTol;
-                numRefine++;
             } else {
                 if (fitness_records.size()<currSize) {
                     random_indices = random_choice(fitness_records.size(), currSize, true);
@@ -205,14 +201,10 @@ void ARRDE::adaptParameters() {
 
             memorySize = size_t(archive_size_ratio*population.size());
             memoryIndex=0;
-            Fw= 1.2;
-            if (!MCR_records.empty()){
-                M_CR = random_choice(MCR_records, memorySize, true); 
-                M_F = random_choice(MF_records, memorySize, true);
-            } else {
-                M_CR = std::vector<double>(memorySize, 0.5);
-                M_F = std::vector<double>(memorySize, 0.5);
-            };            
+            if (final_refine) Fw= 1.2;
+            if (refine) Fw=0.8+0.5*Nevals/(strartRefine*maxevals);
+            M_CR = random_choice(MCR_records, memorySize, true); 
+            M_F = random_choice(MF_records, memorySize, true);          
         };
 
     };      
@@ -229,7 +221,6 @@ void ARRDE::adaptParameters() {
                 S_F.push_back(F[i]);
                 weights.push_back(w);
                 weights_F.push_back( w*F[i]);
-                sr=sr+1.0;
             };
         }
     };
@@ -253,8 +244,6 @@ void ARRDE::adaptParameters() {
            hasUpdate=true;
         };
     }
-    
-    sr=0.0;
 
     if (hasUpdate){
         if (memoryIndex == (memorySize-1)) memoryIndex =0;
@@ -298,9 +287,7 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.3;
-        if (refine) fraction =  0.3;
         if (restart) fraction = 0.3+0.2*Nevals/(strartRefine*maxevals);
-        if (final_refine) fraction = 0.3;
         int maxp = std::max(2, static_cast<int>(round(fraction * population.size())));
         ptemp = random_choice(maxp, 1).front();
         if (ptemp<2){ptemp=2;}; 
