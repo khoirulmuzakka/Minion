@@ -17,6 +17,7 @@ class ARRDE : public Differential_Evolution {
         std::vector<std::vector<double>> population_records, archive_records;
         std::vector<double> fitness_records;
         std::vector<double> MCR_records, MF_records;
+        double memorySizeRatio=2.0;
 
     private : 
         double archive_size_ratio;

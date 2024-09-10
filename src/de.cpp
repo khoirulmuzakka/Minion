@@ -93,7 +93,9 @@ std::vector<double> Differential_Evolution::_crossover_bin(const std::vector<dou
     std::vector<double> trial = target; 
     size_t randInd = rand_int(target.size());
     for (size_t i = 0; i < target.size(); ++i) {
-        if (rand_gen()<C || i==randInd) trial[i] = mutant[i];
+        if (rand_gen()<C || i==randInd) {
+            trial[i] = mutant[i];
+        };
     }
     return trial;
 };
@@ -123,7 +125,8 @@ std::vector<double> Differential_Evolution::crossover(const std::vector<double>&
 
 
 void Differential_Evolution::init (){
-    population = latin_hypercube_sampling(bounds, populationSize);
+    if (useLatin) population = latin_hypercube_sampling(bounds, populationSize);
+    else population = random_sampling(bounds, populationSize);
     if (!x0.empty()) {
         population[0] = x0;
     };

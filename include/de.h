@@ -26,8 +26,9 @@ public :
     std::vector<double> F, CR;
     std::vector<size_t> p;
     std::string mutation_strategy;
+    bool useLatin = false;
     double pA=0.5;
-
+    
 protected : 
     /**
      * @brief Mutates a given individual.
