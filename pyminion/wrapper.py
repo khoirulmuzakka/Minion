@@ -22,6 +22,7 @@ from pyminioncpp import CEC2014Functions as cppCEC2014Functions
 from pyminioncpp import CEC2019Functions as cppCEC2019Functions
 from pyminioncpp import CEC2020Functions as cppCEC2020Functions
 from pyminioncpp import CEC2022Functions as cppCEC2022Functions
+import pybind11
 
 
 from typing import Callable, Dict, Union, List, Optional
@@ -236,7 +237,7 @@ class MinimizerBase:
     Provides common functionality for optimization algorithms.
     """
 
-    def __init__(self,  func, bounds, data=None,  x0=None, relTol= 0.0001, maxevals=100000, callback= None, boundStrategy="reflect-random", seed=None) : 
+    def __init__(self,  func, bounds, x0=None, relTol= 0.0001, maxevals=100000, callback= None, boundStrategy="reflect-random", seed=None) : 
         """
         @brief Constructor for MinimizerBase class.
 
@@ -251,13 +252,13 @@ class MinimizerBase:
         @param seed Seed for the random number generator.
         """
 
-        self.func = func 
+        self.pyfunc = func 
         self.bounds = self._validate_bounds(bounds)
         self.x0 = x0 
         if self.x0 is not None : 
             if len(self.x0) != len(self.bounds) : raise ValueError("x0 must have the same dimension as the length of the bounds.")   
         self.x0cpp = self.x0 if self.x0 is not None else []
-        self.data = data
+        self.data = None
 
         self.callback = callback  
         self.cppCallback = CalllbackWrapper(self.callback) if callback is not None else None
@@ -268,6 +269,12 @@ class MinimizerBase:
         self.history = []
         self.minionResult = None
         self.boundStrategy = boundStrategy
+
+    def func(self, xmat, data) : 
+        """
+        @brief the minion library accept function with signature func(matrix, data. This basically function basically decorate the original pyfunc into an acceptable form.
+        """
+        return self.pyfunc(xmat) 
 
     def _validate_bounds(self, bounds):
         """
@@ -296,13 +303,12 @@ class GWO_DE(MinimizerBase):
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
 
-    def __init__(self, func, bounds, data=None, x0=None, population_size=20, maxevals=1000, F=0.5, CR=0.7, elimination_prob=0.1, relTol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
+    def __init__(self, func, bounds, x0=None, population_size=20, maxevals=1000, F=0.5, CR=0.7, elimination_prob=0.1, relTol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
         """
         @brief Constructor for GWO_DE.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -315,7 +321,7 @@ class GWO_DE(MinimizerBase):
         @param seed Seed for the random number generator.
         """
 
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, boundStrategy, seed)
         self.population_size = population_size
         self.F = F
         self.CR = CR
@@ -340,14 +346,13 @@ class NelderMead(MinimizerBase):
     Inherits from MinimizerBase and implements the Adaptive Nelder-Mead optimization algorithm.
     """
 
-    def __init__(self, func, bounds, data=None, x0=None, relTol=0.0001, maxevals=100000, callback=None,
+    def __init__(self, func, bounds, x0=None, relTol=0.0001, maxevals=100000, callback=None,
                  boundStrategy="reflect-random", seed=None):
         """
         @brief Constructor for AdaptiveNelderMead.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param relTol Relative tolerance for convergence.
         @param maxevals Maximum number of function evaluations.
@@ -356,7 +361,7 @@ class NelderMead(MinimizerBase):
         @param seed Seed for the random number generator.
         """
 
-        super().__init__(func, bounds, data, x0, relTol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, boundStrategy, seed)
         self.optimizer = cppNelderMead(self.func, self.bounds,  self.x0cpp, self.data, self.cppCallback, relTol, maxevals, boundStrategy, self.seed)
 
     def optimize(self):
@@ -381,9 +386,8 @@ class LSHADE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 options: Dict[str, Union[int, float, str, bool]],
+                 options: Dict[str, Union[int, float, str, bool]]={},
                  x0: Optional[List[float]] = None,
-                 data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
                  tol: float = 0.0001,
                  maxevals: int = 100000,
@@ -396,7 +400,6 @@ class LSHADE(MinimizerBase):
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
         @param options Dictionary of additional options for the algorithm.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -405,7 +408,7 @@ class LSHADE(MinimizerBase):
         @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
         """
-        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds, x0, tol, maxevals, callback, boundStrategy, seed)
         self.population_size = population_size
         self.options = options
         self.optimizer = cppLSHADE(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
@@ -435,9 +438,8 @@ class JADE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 options: Dict[str, Union[int, float, str, bool]],
+                 options: Dict[str, Union[int, float, str, bool]]={},
                  x0: Optional[List[float]] = None,
-                 data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
                  tol: float = 0.0001,
                  maxevals: int = 100000,
@@ -450,7 +452,6 @@ class JADE(MinimizerBase):
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
         @param options Dictionary of additional options for the algorithm.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -459,7 +460,7 @@ class JADE(MinimizerBase):
         @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
         """
-        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds,  x0, tol, maxevals, callback, boundStrategy, seed)
         self.population_size = population_size
         self.options = options
         self.optimizer = cppJADE(self.func, self.bounds, self.options, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
@@ -491,7 +492,6 @@ class NLSHADE_RSP(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[float]] = None,
-                 data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
                  maxevals: int = 100000,
                  seed: Optional[int] = None,
@@ -504,7 +504,6 @@ class NLSHADE_RSP(MinimizerBase):
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
         @param options Dictionary of additional options for the algorithm.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -513,7 +512,7 @@ class NLSHADE_RSP(MinimizerBase):
         @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
         """
-        super().__init__(func, bounds, data, x0, 0.0, maxevals, callback, "random", seed)
+        super().__init__(func, bounds, x0, 0.0, maxevals, callback, "random", seed)
         self.optimizer = cppNLSHADE_RSP(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, maxevals, self.seed, population_size, memory_size, archive_size_ratio)
     
     def optimize(self):
@@ -537,7 +536,6 @@ class j2020(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[float]] = None,
-                 data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
                  maxevals: int = 100000,
                  seed: Optional[int] = None, 
@@ -548,7 +546,6 @@ class j2020(MinimizerBase):
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
         @param options Dictionary of additional options for the algorithm.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param maxevals Maximum number of function evaluations.
         @param relTol Relative tolerance for convergence.
@@ -557,7 +554,7 @@ class j2020(MinimizerBase):
         @param seed Seed for the random number generator.
         @param population_size Population size.
         """
-        super().__init__(func, bounds, data, x0, 0.0, maxevals, callback, "random", seed)
+        super().__init__(func, bounds, x0, 0.0, maxevals, callback, "random", seed)
         self.optimizer = cppj2020(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, maxevals,self.seed, populationSize)
     
     def optimize(self):
@@ -580,7 +577,6 @@ class LSRTDE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[float]] = None,
-                 data: Optional[object] = None,
                  callback: Optional[Callable[[MinionResult], None]] = None,
                  maxevals: int = 100000,
                  seed: Optional[int] = None, 
@@ -591,7 +587,6 @@ class LSRTDE(MinimizerBase):
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
         @param options Dictionary of additional options for the algorithm.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param maxevals Maximum number of function evaluations.
         @param relTol Relative tolerance for convergence.
@@ -599,7 +594,7 @@ class LSRTDE(MinimizerBase):
         @param seed Seed for the random number generator.
         @param population_size Population size.
         """
-        super().__init__(func, bounds, data, x0, 0.0, maxevals, callback, "random", seed)
+        super().__init__(func, bounds, x0, 0.0, maxevals, callback, "random", seed)
         self.optimizer = cppLSRTDE(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, maxevals,self.seed, populationSize)
     
     def optimize(self):
@@ -620,13 +615,12 @@ class ARRDE(MinimizerBase):
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
     
-    def __init__(self, func, bounds, data=None, x0=None, population_size=0, maxevals=1000, tol=0.0, callback=None, boundStrategy="reflect-random", seed=None):
+    def __init__(self, func, bounds, x0=None, population_size=0, maxevals=1000, tol=0.0, callback=None, boundStrategy="reflect-random", seed=None):
         """
         @brief Constructor for ARRDE.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -635,7 +629,7 @@ class ARRDE(MinimizerBase):
         @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
         """
-        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds, x0, tol, maxevals, callback, boundStrategy, seed)
         self.population_size = population_size
         self.optimizer = cppARRDE(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
     
@@ -663,13 +657,12 @@ class Differential_Evolution(MinimizerBase):
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
     
-    def __init__(self, func, bounds, data=None, x0=None, population_size=100, maxevals=1000, F=0.8, CR=0.9, tol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
+    def __init__(self, func, bounds, x0=None, population_size=100, maxevals=1000, F=0.8, CR=0.9, tol=0.0001, callback=None, boundStrategy="reflect-random", seed=None):
         """
         @brief Constructor for Differential_Evolution.
 
         @param func Objective function to minimize.
         @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
         @param x0 Initial guess for the solution.
         @param population_size Population size.
         @param maxevals Maximum number of function evaluations.
@@ -680,7 +673,7 @@ class Differential_Evolution(MinimizerBase):
         @param boundStrategy Strategy when bounds are violated. Available strategies: "random", "reflect", "reflect-random", "clip".
         @param seed Seed for the random number generator.
         """
-        super().__init__(func, bounds, data, x0, tol, maxevals, callback, boundStrategy, seed)
+        super().__init__(func, bounds, x0, tol, maxevals, callback, boundStrategy, seed)
         self.optimizer = cppDifferential_Evolution(self.func, self.bounds, self.x0cpp, self.data, self.cppCallback, tol, maxevals, boundStrategy, self.seed, population_size)
     
     def optimize(self):
