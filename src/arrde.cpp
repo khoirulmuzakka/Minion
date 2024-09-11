@@ -8,7 +8,7 @@ ARRDE::ARRDE(
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
     try {
-        if (populationSize==0) populationSize = std::min(std::max(10.0, 3.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 500.0); 
+        if (populationSize==0) populationSize = size_t(std::min(std::max(10.0, 3.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 500.0)); 
         mutation_strategy= "current_to_pbest_AW_1bin";
         archive_size_ratio = 2.0;
         memorySize= size_t( memorySizeRatio*populationSize);
@@ -36,7 +36,7 @@ void ARRDE::adaptParameters() {
     //-------------------- update population size -------------------------------------//
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); 
-    double maxPopSize_eff = populationSize; 
+    double maxPopSize_eff = double(populationSize); 
     if (!final_refine) reduction_strategy="exponential"; 
     else reduction_strategy="linear"; 
     if (final_refine){

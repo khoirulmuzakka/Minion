@@ -428,10 +428,14 @@ class CEC2011:
         elif self.num==22 : 
             p= Problem13()
         else : raise Exception("Invalid function number")
+        self.problems.append(p)
         return p
     
     def __del__(self):
-        for p in self.problems : p.eng.quit()
+        try :
+            for p in self.problems : p.eng.quit()
+            self.problemInstance.eng.quit()
+        except Exception as e : print(e)
         self.executor.shutdown(wait=True)
     
     def _get_problem_instance(self):
@@ -466,7 +470,7 @@ class CEC2011:
         result = problem_instance.evaluate(np.array(x))
         self.results[i] = result
 
-    def evaluate(self, xs, data=None):
+    def evaluate(self, xs):
         """
         Evaluates multiple solutions in parallel.
         
@@ -475,8 +479,6 @@ class CEC2011:
         
         Args:
             xs (list of lists or np.array): A list of solution vectors to be evaluated.
-            data (optional): Additional data that might be needed for evaluation.
-        
         Returns:
             np.array: An array containing the evaluation results for each solution vector.
         """

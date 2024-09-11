@@ -174,7 +174,7 @@ public :
                     size_t maxevals = 100000, int seed=-1, int populationSize=0) :
              MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, "random", seed) {
                 PopulSize=populationSize;
-                if (PopulSize==0) PopulSize=  20*bounds.size();
+                if (PopulSize==0) PopulSize=  int(20*bounds.size());
                 MaxFEval = int(maxevals);
                 Initialize(PopulSize, int(bounds.size()));
             }

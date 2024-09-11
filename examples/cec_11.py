@@ -3,6 +3,7 @@ import os
 sys.path.append("./../")
 sys.path.append("./../external")
 sys.path.append("./../external")
+sys.path.append("./../lib/Release")
 import numpy as np
 import time
 from scipy.optimize import differential_evolution, minimize
@@ -13,6 +14,7 @@ import threading
 from cec_2011 import * #commmet out this line if you do not have matlab installed
 import pandas as pd
 from pyminion.test import MWUT
+import gc
 
 
 
@@ -21,6 +23,7 @@ for j in range(31):
     print("\n\n\n")
     print("Run : ", j)
     for i in range(1, 23):
+        if (i==3 or i==4):  continue
         result = {}
         func = CEC2011(function_number=i, max_workers=10)
         bounds = func.getBounds()
@@ -33,13 +36,13 @@ for j in range(31):
         print("--------------------- Function : ", i, ", dimension : ", dimension, ", maxevals : ", Nmaxeval, "----------------")
         #result =minimize(objective_function, initial_guess, args=(), method='Nelder-Mead', options={"maxfev":Nmaxeval, "adaptive":True }  ) 
         #print("SIMPLEX done")
-        result_arrde = ARRDE(func.evaluate, bounds, data=None,  x0=None, population_size=0, maxevals=Nmaxeval, tol=0.0 ).optimize()
+        result_arrde = ARRDE(func.evaluate, bounds,   x0=None, population_size=0, maxevals=Nmaxeval, tol=0.0 ).optimize()
         print("\tObj ARRDE :  ", result_arrde.fun)
-        result_lsrtde = LSRTDE(func.evaluate, bounds, data=None,  x0=None, populationSize=0, maxevals=Nmaxeval ).optimize()
+        result_lsrtde = LSRTDE(func.evaluate, bounds, x0=None, populationSize=0, maxevals=Nmaxeval ).optimize()
         print("\tObj LSRTDE :  ", result_lsrtde.fun)
-        result_lshade = LSHADE(func.evaluate, bounds, data=None,  x0=None, population_size=0, maxevals=Nmaxeval, options= {}).optimize()
+        result_lshade = LSHADE(func.evaluate, bounds,  x0=None, population_size=0, maxevals=Nmaxeval, options= {}).optimize()
         print("\tObj LSHADE :  ", result_lshade.fun)
-        result_nlshadersp = NLSHADE_RSP (func.evaluate, bounds, data=None, x0=None, population_size=0, 
+        result_nlshadersp = NLSHADE_RSP (func.evaluate, bounds, x0=None, population_size=0, 
                             maxevals=Nmaxeval, callback=None, seed=None, memory_size=20*dimension, archive_size_ratio=2.1).optimize()
         print("\tObj NLSHADE RSP :  ", result_nlshadersp.fun)
         #result_j20 = j2020(func.evaluate, bounds, data=None,  x0=None, populationSize=0, maxevals=Nmaxeval ).optimize()
@@ -55,6 +58,11 @@ for j in range(31):
         results.append(result)
         print("")
         del func
+        gc.collect()
+        try :
+            os.system("taskkill /F /IM MATLAB.exe")
+            os.system("taskkill /F /IM  MathWorksServiceHost.exe")
+        except : print("Can not kill matlab.")
 
 
 
@@ -62,6 +70,7 @@ algoRes = {"NLSHADE_RSP" : [],  "ARRDE":[], "LSHADE": [], "LSRTDE":[] }
 
 for algo in algoRes.keys() :
     for num in range(1, 23): 
+        if num in [3,4] : continue
         ar = []
         for res in results : 
             if res["Function_number"]== num : ar.append(res[algo])
