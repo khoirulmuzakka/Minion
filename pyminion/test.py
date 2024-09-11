@@ -1,5 +1,6 @@
 from scipy.stats import mannwhitneyu
 import numpy as np
+from scipy.stats import rankdata
 
 
 def MWUT (A, B, alpha=0.05) : 
@@ -26,12 +27,17 @@ def MWUT (A, B, alpha=0.05) :
     """
 
     statistic, p_value = mannwhitneyu(A, B, alternative='two-sided')
-    #print(p_value)
-    mA = np.mean(A)
-    mB = np.mean(B)
+
+    combined_data = np.concatenate((A, B))
+    ranks = rankdata(combined_data)
+    ranks_A = ranks[:len(A)]
+    ranks_B = ranks[len(A):]
+    rank_sum_A = np.sum(ranks_A)
+    rank_sum_B = np.sum(ranks_B)
 
     ret = 0 # null hypothesis
     if p_value <alpha : 
-        if mA < mB : ret=1 # A wins
-        elif mA >  mB : ret =-1 # A lose
+        if rank_sum_A < rank_sum_B : ret=1 # A wins
+        elif rank_sum_A >  rank_sum_B : ret =-1 # A lose
+        elif rank_sum_A == rank_sum_B : ret =0 # tie
     return ret
