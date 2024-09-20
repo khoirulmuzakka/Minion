@@ -273,17 +273,18 @@ void ARRDE::adaptParameters() {
         new_CR[j] = rand_norm(CRlist[ind_cr_sorted[i]], 0.1);
         new_F[j] = rand_cauchy(Flist[ind_f_sorted[i]], 0.1); 
     }
-    double minCR = 1.0/double(bounds.size());
-    std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [minCR](double cr) { return clamp(cr, minCR, 1.0); });
+    
+    std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
     std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.0, 1.); });
 
     //update p 
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction= 0.3+0.2*Nevals/maxevals; 
-        ptemp= size_t(round(fraction * population.size()));
-        if (ptemp<2 ) ptemp=2; 
+        double fraction = 0.2+0.2*Nevals/maxevals;
+        int maxp = std::max(2, static_cast<int>(round(fraction * population.size())));
+        ptemp = random_choice(maxp, 1).front();
+        if (ptemp<2 ){ptemp=2;}; 
         p[i] = ptemp;
     };
     meanCR.push_back(calcMean(CR));
