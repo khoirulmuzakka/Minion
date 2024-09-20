@@ -43,7 +43,7 @@ class LSHADE : public Differential_Evolution {
         LSHADE(
             MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::map<std::string, ConfigValue>& options, 
                     const std::vector<double>& x0 = {}, void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
+                    double tol = 0.0, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
                     size_t populationSize=30
         );
 

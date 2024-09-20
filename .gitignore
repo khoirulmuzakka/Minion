@@ -15,8 +15,11 @@ bin
 external/implementations 
 external/random_generator
 results
+examples/data/
 examples/test.py
 examples/*.txt
 examples/*.csv
+examples/.DS_Store
+.DS_Store
 
 

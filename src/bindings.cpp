@@ -17,6 +17,7 @@
 #include "nlshadersp.h"
 #include "j2020.h"
 #include "lsrtde.h"
+#include "jso.h"
 #include <exception>
 
 namespace py = pybind11;
@@ -121,6 +122,25 @@ PYBIND11_MODULE(pyminioncpp, m) {
         .def_readonly("stdCR", &LSHADE::stdCR)
         .def_readonly("stdF", &LSHADE::stdF)
         .def_readonly("diversity", &LSHADE::diversity);
+
+    py::class_<jSO, Differential_Evolution>(m, "jSO")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),
+            py::arg("func"),  
+            py::arg("options"), 
+            py::arg("x0") = std::vector<double>(), 
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("boundStrategy") = "reflect-random", 
+            py::arg("seed") = -1, 
+            py::arg("populationSize") = 0)
+        .def("optimize", &jSO::optimize)
+        .def_readonly("meanCR", &jSO::meanCR)
+        .def_readonly("meanF", &jSO::meanF)
+        .def_readonly("stdCR", &jSO::stdCR)
+        .def_readonly("stdF", &jSO::stdF)
+        .def_readonly("diversity", &jSO::diversity);
 
     py::class_<JADE, Differential_Evolution>(m, "JADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&, const std::map<std::string, ConfigValue>&, const std::vector<double>&, void*, std::function<void(MinionResult*)>, double, size_t, std::string, int, size_t>(),

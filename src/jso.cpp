@@ -1,71 +1,49 @@
 #include "jso.h" 
 
 jSO::jSO(
-    MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
+    MinionFunction func, const std::vector<std::pair<double, double>>& bounds, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
             double tol, size_t maxevals, std::string boundStrategy,  int seed, 
             size_t populsize
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
     double dimension = double(bounds.size());
-    if (populationSize==0) populationSize=int(25.0*log10(dimension)*sqrt(dimension));
-    settings = LSHADE_Settings(options);
-    mutation_strategy= std::get<std::string>(settings.getSetting("mutation_strategy"));
-    memorySize = std::get<int>(settings.getSetting("memory_size"));
-    archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
+    if (populationSize==0) populationSize=size_t(25.0*log(dimension)*sqrt(dimension));
+    mutation_strategy= "current_to_pbest_AW_1bin" ;
+    memorySize = 5;
+    archive_size_ratio = 1.0;
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
-
-    minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
-    reduction_strategy = std::get<std::string>(settings.getSetting("reduction_strategy"));
-
-    try {
-        popreduce = std::get<bool>(settings.getSetting("population_reduction"));
-    } catch (...) {
-        popreduce = std::get<int>(settings.getSetting("population_reduction"));
-    };
+    minPopSize = 4;
+    useLatin=false;
 };
 
 
 void jSO::adaptParameters() {
     // update population size
-    if ( popreduce) {
-        size_t new_population_size;
-        if (reduction_strategy=="linear"){
-            new_population_size = size_t((double(double(minPopSize) - double(populationSize))*(Nevals/double(maxevals) ) + populationSize));
-        } else if (reduction_strategy=="exponential") {
-            new_population_size = size_t(double(populationSize)* std::pow(double(minPopSize)/double(populationSize), double (Nevals)/ double(maxevals)));
-        } else if (reduction_strategy=="agsk"){
-            double ratio = double(Nevals)/maxevals;
-            new_population_size = size_t(round(populationSize + (minPopSize - double (populationSize)) * std::pow(ratio, 1.0-ratio) ));
-        } else {
-            throw std::logic_error("Uknnown reduction strategy");
-        };
+    size_t new_population_size;
+    new_population_size = size_t((double(double(minPopSize) - double(populationSize))*(Nevals/double(maxevals) ) + populationSize));
+    if (new_population_size<minPopSize) new_population_size=minPopSize;
+    if (population.size() > new_population_size) {
+        std::vector<size_t> sorted_index = argsort(fitness, true);
 
-        if (new_population_size<minPopSize) new_population_size=minPopSize;
-
-        if (population.size() > new_population_size) {
-            std::vector<size_t> sorted_index = argsort(fitness, true);
-
-            std::vector<std::vector<double>> new_population_subset(new_population_size);
-            std::vector<double> new_fitness_subset(new_population_size);
-            for (int i = 0; i < new_population_size; ++i) {
-                new_population_subset[i] = population[ sorted_index [i]];
-                new_fitness_subset[i] = fitness[ sorted_index [i]];
-            }
-
-            population = new_population_subset;
-            fitness = new_fitness_subset;
-        };
-    } 
-
+        std::vector<std::vector<double>> new_population_subset(new_population_size);
+        std::vector<double> new_fitness_subset(new_population_size);
+        for (int i = 0; i < new_population_size; ++i) {
+            new_population_subset[i] = population[ sorted_index [i]];
+            new_fitness_subset[i] = fitness[ sorted_index [i]];
+        }
+        population = new_population_subset;
+        fitness = new_fitness_subset;
+    };
+    
     //update archive size
     size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
     while (archive.size() > archiveSize) {
         size_t random_index = rand_int(archive.size());
         archive.erase(archive.begin() + random_index);
     }
-    
+
     //update  weights and memory
     std::vector<double> S_CR, S_F,  weights, weights_F;
     if (!fitness_before.empty()){
@@ -79,6 +57,7 @@ void jSO::adaptParameters() {
             };
         }
     };
+
     if (!S_CR.empty()) {
         double muCR, sCR, muF, sF;
         weights = normalize_vector(weights); 
@@ -104,19 +83,23 @@ void jSO::adaptParameters() {
 
     std::vector<size_t> allind, selecIndices; 
     for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
-    if (population.size() <= memorySize){
-        selecIndices = random_choice(allind, population.size(), false); //random choice without replacement when pop size is less than memeory size
-    } else {
-        selecIndices = random_choice(allind, population.size(), true); 
-    };
+    selecIndices = random_choice(allind, population.size(), true); 
+
     for (int i = 0; i < population.size(); ++i) {
-        new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
+        do {
+            new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
+        } while (new_CR[i]<=0.0); 
+
+        do {
+            new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
+        } while (new_F[i]<=0.0);
+
         if (Nevals<0.25*maxevals && new_CR[i]<0.7) new_CR[i]=0.7;
         if (Nevals<0.5*maxevals && new_CR[i]<0.6) new_CR[i]=0.6;
         if (Nevals<0.6*maxevals && new_F[i]>0.7 ) new_F[i] =0.7;
     };
 
+ 
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
     std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.01, 1.0); });
 
@@ -131,11 +114,11 @@ void jSO::adaptParameters() {
     for (int i = 0; i < population.size(); ++i) {
         double pmax =0.25; 
         double pmin=pmax/2.0; 
-        ptemp = size_t(pmax- (pmax-pmin)*Nevals/maxevals);
+        double fraction = pmax- (pmax-pmin)*Nevals/maxevals;
+        ptemp = size_t(round(population.size()* fraction));
         if (ptemp<2) ptemp=2;
         p[i] = ptemp;
     };
-
     //update Fw 
     if (Nevals < 0.2*maxevals) Fw=0.7; 
     else if (Nevals < 0.4*maxevals) Fw=0.8; 

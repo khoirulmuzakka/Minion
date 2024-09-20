@@ -47,15 +47,6 @@ double minimize_cec_functions(int function_number, int dimension, int population
         {"c", 0.1},
     };
 
-    std::map<std::string, ConfigValue> options_jso = std::map<std::string, ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_AW_1bin")},
-        {"memory_size", int(4)},
-        {"archive_size_ratio", double(1.0)}, 
-        {"population_reduction" , bool(true)}, 
-        {"reduction_strategy", std::string("linear")}, //linear or exponential
-        {"minimum_population_size", int(4)}, 
-    };  
-
     int popsize=population_size;
 
     if (algo == "j2020") {
@@ -122,10 +113,10 @@ double minimize_cec_functions(int function_number, int dimension, int population
             [&](const std::vector<std::vector<double>> & x, void* data) {
                 return cecfunc->operator()(x); // Call the operator with a single vector
             },
-            bounds, options_lshade, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize
+            bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", -1, popsize
         );
     } else throw std::runtime_error("unknown algorithm!");
-    
+
     // Optimize and get the result
     MinionResult result = optimizer->optimize();
     double ret = result.fun;

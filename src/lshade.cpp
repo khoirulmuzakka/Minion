@@ -107,8 +107,14 @@ void LSHADE::adaptParameters() {
         selecIndices = random_choice(allind, population.size(), true); 
     };
     for (int i = 0; i < population.size(); ++i) {
-        new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
+        do {
+            new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
+        } while (new_CR[i]<=0.0); 
+
+        do {
+            new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
+        } while (new_F[i]<=0.0);
+        
     }
 
     std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
@@ -124,9 +130,8 @@ void LSHADE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction = 0.11;
-        int maxp = std::max(2, static_cast<int>(round(fraction * population.size())));
-        ptemp = random_choice(maxp, 1).front();
-        if (ptemp<2){ptemp=2;}; 
+        ptemp= (round(fraction * population.size()));
+        if (ptemp<2 ) ptemp=2; 
         p[i] = ptemp;
     };
 
