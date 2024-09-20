@@ -282,7 +282,7 @@ void ARRDE::adaptParameters() {
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
         double fraction= 0.3+0.2*Nevals/maxevals; 
-        ptemp= (round(fraction * population.size()));
+        ptemp= size_t(round(fraction * population.size()));
         if (ptemp<2 ) ptemp=2; 
         p[i] = ptemp;
     };
