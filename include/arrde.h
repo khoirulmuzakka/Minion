@@ -40,6 +40,10 @@ class ARRDE : public Differential_Evolution {
         double strartRefine=0.8;
         size_t Nrestart=0;
         std::vector<std::vector<std::pair<double, double>>> locals; 
+        bool update_records = false;
+        double maxRestart =2;
+        size_t maxPopSize_finalRefine;
+        bool init_final_refine=false;
 
     private :
 
@@ -129,8 +133,6 @@ class ARRDE : public Differential_Evolution {
          * This function overrides the adaptParameters function in the Differential_Evolution class.
          */
         void adaptParameters() override;
-
-        bool checkStopping() override;
 };
 
 #endif

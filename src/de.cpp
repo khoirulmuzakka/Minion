@@ -140,7 +140,6 @@ void Differential_Evolution::init (){
 
 bool Differential_Evolution::checkStopping(){
     return false;
-    /*
     double fmax = findMax(fitness); 
     double fmin = findMin(fitness);
     double relRange = (fmax-fmin)/fabs(calcMean(fitness));
@@ -150,7 +149,6 @@ bool Differential_Evolution::checkStopping(){
         stop= true;
     };
     return stop;
-    */
 };
 
 void Differential_Evolution::adaptParameters(){

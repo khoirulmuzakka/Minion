@@ -78,7 +78,7 @@ std::vector<std::vector<double>> latin_hypercube_sampling(const std::vector<std:
     for (int i = 0; i < dimensions; ++i) {
         std::vector<double> quantiles(population_size);
         for (int j = 0; j < population_size; ++j) {
-            quantiles[j] = dis(get_rng());
+            quantiles[j] = (j + dis(get_rng())) / population_size;
         }
         std::shuffle(quantiles.begin(), quantiles.end(), get_rng());
         for (int j = 0; j < population_size; ++j) {
