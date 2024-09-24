@@ -23,7 +23,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         restartRelTol= 0.005;
         reltol = 0.005;
         refineRelTol = restartRelTol;
-        useLatin=false;
+        useLatin=true;
         
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
@@ -89,10 +89,12 @@ void ARRDE::adaptParameters() {
     if (spread <= reltol || init_final_refine) {
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
 
-        for (auto el : CR) MCR_records.push_back(el);
-        for (auto el : F) MF_records.push_back(el);
+        if (first_run || refine || final_refine) {
+            for (auto el : M_CR) MCR_records.push_back(el);
+            for (auto el : M_F) MF_records.push_back(el);
+        };
 
-        //std::cout << "Population converge " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << spread<< " " << reltol << "\n";
+        //std::cout << "\t\tPopulation converge " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << spread<< " " << reltol << "\n";
         for (int i =0; i<population.size(); i++){
             population_records.push_back(population[i]);
             fitness_records.push_back(fitness[i]);
@@ -107,8 +109,8 @@ void ARRDE::adaptParameters() {
         population.clear(); 
         fitness.clear();
         
-
-        if (first_run || (bestOverall<=best_fitness && Nrestart<maxRestart) || final_refine) restart = true; 
+        ///std::cout << first_run << " " <<  refine << " " << restart << "\n";
+        if ( (bestOverall<=best_fitness && Nrestart<maxRestart) || first_run || final_refine || refine ) restart = true; 
         else {
             if (!final_refine ) {
                 restart = false;
@@ -126,6 +128,7 @@ void ARRDE::adaptParameters() {
         if (restart) {
             if (!final_refine) {
                 population = random_sampling(bounds, currSize);
+                //population = latin_hypercube_sampling(bounds, currSize);
                 //std::cout << population.size() << "\n";
                 if (!locals.empty()){
                     for (size_t i=0; i<population.size(); i++) {
@@ -135,7 +138,7 @@ void ARRDE::adaptParameters() {
 
                 fitness = func(population, data);
                 Nevals+=population.size();
-               // std::cout << "restart .... " << population.size() << "\n";
+                //std::cout << "restart .... " << population.size() << "\n";
 
             } else {
                 std::vector<size_t> random_indices;
@@ -161,7 +164,7 @@ void ARRDE::adaptParameters() {
             if (!final_refine){
                 Fw= 0.8+0.4*Nevals/(strartRefine*maxevals);
                 M_CR = rand_gen(0.4, 0.7, memorySize);
-                M_F =  rand_gen(0.1, 0.3, memorySize);
+                M_F =  rand_gen(0.1, 0.2, memorySize);// std::vector<double>(memorySize, 0.1);
             } else {
                 Fw= 1.2;
                 M_CR = random_choice(MCR_records, memorySize, true); 
@@ -209,7 +212,7 @@ void ARRDE::adaptParameters() {
 
             restart = false; 
             refine = true;
-            //std::cout << "refine .... " << population.size() << "\n";
+            //std::cout << "--------- refine .... " << population.size() << "\n";
 
         } else if (final_refine){
             currSize = maxPopSize_finalRefine;
@@ -256,7 +259,7 @@ void ARRDE::adaptParameters() {
             M_CR = random_choice(MCR_records, memorySize, true); 
             M_F = random_choice(MF_records, memorySize, true);  
             maxRestart=size_t(1e+300);
-            //std::cout << "Final Refine .... " << population.size() << "\n";
+            //std::cout << "------ Final Refine .... " << population.size() << "\n";
         }   
 
     };     
@@ -333,7 +336,7 @@ void ARRDE::adaptParameters() {
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.25;
+        double fraction = 0.2+0.2*Nevals/maxevals;
         int maxp = std::max(2, int(round(fraction * population.size())));
         ptemp = random_choice(maxp, 1).front();
         if (ptemp<2 ){ptemp=2;}; 
@@ -344,8 +347,6 @@ void ARRDE::adaptParameters() {
     stdCR.push_back(calcStdDev(CR));
     stdF.push_back(calcStdDev(F));  
 
-    refine=false;
-    restart = false;
 };
 
 
