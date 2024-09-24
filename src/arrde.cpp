@@ -23,7 +23,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         restartRelTol= 0.005;
         reltol = 0.005;
         refineRelTol = restartRelTol;
-        useLatin=true;
+        useLatin=false;
         
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
@@ -128,8 +128,6 @@ void ARRDE::adaptParameters() {
         if (restart) {
             if (!final_refine) {
                 population = random_sampling(bounds, currSize);
-                //population = latin_hypercube_sampling(bounds, currSize);
-                //std::cout << population.size() << "\n";
                 if (!locals.empty()){
                     for (size_t i=0; i<population.size(); i++) {
                         population[i] = applyLocalConstraints(population[i]);
@@ -164,7 +162,7 @@ void ARRDE::adaptParameters() {
             if (!final_refine){
                 Fw= 0.8+0.4*Nevals/(strartRefine*maxevals);
                 M_CR = rand_gen(0.4, 0.7, memorySize);
-                M_F =  rand_gen(0.1, 0.2, memorySize);// std::vector<double>(memorySize, 0.1);
+                M_F =   rand_gen(0.1, 0.2, memorySize);
             } else {
                 Fw= 1.2;
                 M_CR = random_choice(MCR_records, memorySize, true); 
