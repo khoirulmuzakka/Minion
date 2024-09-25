@@ -3,6 +3,9 @@
 
 #include "cec.h"
 
+
+namespace minion {
+
 /**
  * @class CEC2017Functions
  * @brief Class encapsulating CEC2017 test functions.
@@ -85,4 +88,8 @@ namespace CEC2017 {
     void oszfunc (double *, double *, int);
     void cf_cal(double *, double *, int, double *,double *,double *,double *,int);
 }
+
+
+}
+
 #endif

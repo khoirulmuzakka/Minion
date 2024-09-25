@@ -1,5 +1,7 @@
 #include "jso.h" 
 
+namespace minion {
+
 jSO::jSO(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
@@ -125,3 +127,5 @@ void jSO::adaptParameters() {
     else Fw=1.2;
 
 };
+
+}

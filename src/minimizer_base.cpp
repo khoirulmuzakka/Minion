@@ -1,5 +1,8 @@
 #include "minimizer_base.h"
 
+namespace minion {
+
+
 MinimizerBase::MinimizerBase(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0,
                              void* data, std::function<void(MinionResult*)> callback, double tol,
                               size_t maxevals, std::string boundStrategy, int seed)
@@ -13,3 +16,4 @@ MinimizerBase::MinimizerBase(MinionFunction func, const std::vector<std::pair<do
     if (seed != -1) set_global_seed(seed);
 }
 
+}

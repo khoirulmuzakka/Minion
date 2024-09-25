@@ -1,5 +1,7 @@
 #include "arrde.h" 
 
+namespace minion {
+
 ARRDE::ARRDE(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,
             const std::vector<double>& x0, void* data , std::function<void(MinionResult*)> callback,
@@ -482,5 +484,7 @@ void ARRDE::update_locals() {
     }
     */
     
+
+}
 
 }

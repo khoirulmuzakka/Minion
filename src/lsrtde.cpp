@@ -1,5 +1,7 @@
 #include "lsrtde.h"
 
+namespace minion {
+
 void LSRTDE::qSort2int(double* Mass, int* Mass2, int low, int high)
 {
    int i=low;
@@ -303,4 +305,6 @@ void LSRTDE::Clean()
 {
     delete Indices;
     delete Indices2;
+}
+
 }

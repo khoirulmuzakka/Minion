@@ -3,6 +3,8 @@
 
 #include "de.h"
 
+namespace minion {
+
 /**
  * @class JADE 
  * @brief Class implementing the JADE algorithm.
@@ -54,5 +56,7 @@ class JADE : public Differential_Evolution {
          */
         void adaptParameters() override;
 };
+
+}
 
 #endif

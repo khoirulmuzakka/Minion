@@ -31,7 +31,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     else throw std::runtime_error("Invalid year.");
 
 
-    std::map<std::string, ConfigValue> options_lshade= std::map<std::string, ConfigValue> {
+    std::map<std::string, minion::ConfigValue> options_lshade= std::map<std::string, minion::ConfigValue> {
         {"memory_size", int(6)},
         {"archive_size_ratio", double(2.6)}, 
         {"population_reduction" , bool(true)}, 
@@ -39,7 +39,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
         {"minimum_population_size", int(4)}, 
     };  
 
-    std::map<std::string, ConfigValue> options_jade= std::map<std::string, ConfigValue> {
+    std::map<std::string, minion::ConfigValue> options_jade= std::map<std::string, minion::ConfigValue> {
         {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
         {"archive_size_ratio", double(1.0)}, 
         {"population_reduction" , bool(false)}, 
@@ -118,7 +118,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     } else throw std::runtime_error("unknown algorithm!");
 
     // Optimize and get the result
-    MinionResult result = optimizer->optimize();
+    minion::MinionResult result = optimizer->optimize();
     double ret = result.fun;
 
     // Output the results

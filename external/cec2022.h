@@ -3,6 +3,7 @@
 
 #include "cec.h" 
 
+namespace minion {
 /**
  * @class CEC2022Functions
  * @brief Class encapsulating CEC2022 test functions.
@@ -63,6 +64,7 @@ namespace CEC2022 {
     void asyfunc (double *, double *x, int, double);
     void oszfunc (double *, double *, int);
     void cf_cal(double *, double *, int, double *,double *,double *,double *,int);
+}
 }
 
 #endif

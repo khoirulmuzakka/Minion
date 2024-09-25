@@ -1,6 +1,9 @@
 #include "nelder_mead.h"
 #include <algorithm>
 
+
+namespace minion {
+
 NelderMead::NelderMead(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0,
                                        void* data, std::function<void(MinionResult*)> callback, double tol, int maxevals, std::string boundStrategy, int seed)
     : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
@@ -163,3 +166,4 @@ MinionResult NelderMead::optimize() {
     };
 }
 
+}

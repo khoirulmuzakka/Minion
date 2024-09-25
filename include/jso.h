@@ -3,6 +3,8 @@
 
 #include "de.h"
 
+namespace minion {
+
 /**
  * @class jSO 
  * @brief Class implementing the jSO algorithm.
@@ -52,5 +54,7 @@ class jSO : public Differential_Evolution {
          */
         void adaptParameters() override;
 };
+
+}
 
 #endif

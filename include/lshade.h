@@ -3,6 +3,7 @@
 
 #include "de.h"
 
+namespace minion {
 /**
  * @class LSHADE 
  * @brief Class implementing the LSHADE algorithm.
@@ -54,5 +55,7 @@ class LSHADE : public Differential_Evolution {
          */
         void adaptParameters() override;
 };
+
+}
 
 #endif

@@ -3,6 +3,8 @@
 
 #include "cec.h"
 
+namespace minion {
+
 /**
  * @class CEC2019Functions
  * @brief Class encapsulating CEC2019 test functions.
@@ -47,4 +49,6 @@ namespace CEC2019 {
     void oszfunc (double *, double *, int);
     void cec19_test_func(double *, double *,int,int,int);
 }
+}
+
 #endif

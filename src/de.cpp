@@ -1,5 +1,6 @@
 #include "de.h"
 
+namespace minion {
 
 std::vector<double> Differential_Evolution::mutate(size_t idx){
     std::vector<int> available_indices(population.size()), indices;
@@ -220,4 +221,6 @@ MinionResult Differential_Evolution::optimize() {
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     };
+}
+
 }

@@ -10,6 +10,7 @@
 #include "utility.h"
 #include "minimizer_base.h"
 
+namespace minion {
 /**
  * @class GWO_DE
  * @brief Combined Grey Wolf Optimizer with Differential Evolution algorithm.
@@ -103,5 +104,7 @@ public:
      */
     void eliminate();
 };
+
+}
 
 #endif // GWO_DE_H

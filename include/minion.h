@@ -21,27 +21,4 @@
 #include "nelder_mead.h"
 #include "lshade2.h"
 
-namespace minion {
-    using ::MinionFunction;
-    using ::MinionResult;
-    using ::MinimizerBase;
-    using ::Differential_Evolution;
-    using ::LSHADE;
-    using ::ARRDE;
-    using ::GWO_DE;
-    using ::CEC2014Functions;
-    using ::CEC2017Functions;
-    using ::CEC2019Functions;
-    using ::CEC2020Functions;
-    using ::CEC2022Functions;
-    using ::CECBase;
-    using ::NLSHADE_RSP;
-    using ::j2020;
-    using ::JADE;
-    using ::jSO;
-    using ::LSRTDE;
-    using ::NelderMead;
-    using ::LSHADE2;
-}
-
 #endif // MINION_H

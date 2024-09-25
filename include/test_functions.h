@@ -4,6 +4,7 @@
 #include <vector>
 #include <cmath>
 
+namespace minion {
 // Define types for convenience
 using Matrix = std::vector<std::vector<double>>;
 using Vector = std::vector<double>;
@@ -27,5 +28,7 @@ Vector hcf(const Matrix& X);
 Vector grie_rosen(const Matrix& X);
 Vector easom(const Matrix& X);
 Vector drop_wave(const Matrix& X);
+
+}
 
 #endif // OPTIMIZATION_FUNCTIONS_H

@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 
+namespace minion {
 
 #define INF 1.0e99
 #define EPS 1.0e-14
@@ -59,5 +60,7 @@ public:
 
 // Function to get the directory of the current file
 std::string getDirectoryPath(const std::string& filePath);
+
+}
 
 #endif

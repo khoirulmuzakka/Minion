@@ -4,6 +4,8 @@
 #include <numeric>
 #include "test_functions.h"
 
+namespace minion {
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -275,4 +277,5 @@ Vector drop_wave(const Matrix& X) {
         result[i] = -numerator / denominator;
     }
     return result;
+}
 }

@@ -8,6 +8,8 @@
 #include <random>
 #include "minimizer_base.h"
 
+namespace minion {
+
 /**
  * @file j2020.h
  * @brief Header file for the j2020 class.
@@ -98,5 +100,6 @@ public :
 };
 
 
+}
 
 #endif

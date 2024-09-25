@@ -10,6 +10,7 @@
 #include <functional>
 #include <iostream>
 
+namespace minion {
 extern unsigned int global_seed;
 
 /**
@@ -362,5 +363,7 @@ std::vector<double> calculateCenter(const std::vector<std::vector<double>>& part
  * @return The average Euclidean distance from each particle to the center.
  */
 double averageEuclideanDistance(const std::vector<std::vector<double>>& particles);
+
+}
 
 #endif

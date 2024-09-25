@@ -13,6 +13,8 @@
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
 
+namespace minion {
+
 const std::string dirPath = getDirectoryPath(__FILE__);
 
 CEC2020Functions::CEC2020Functions(int function_number, int dimension) 
@@ -1607,4 +1609,6 @@ namespace CEC2020{
 		}
 		free(w);
 	}
+}
+
 }

@@ -1,5 +1,7 @@
 #include "utility.h"
 
+namespace minion {
+
 unsigned int global_seed = std::random_device{}();
 static std::mt19937 rng(global_seed);
 
@@ -249,3 +251,5 @@ double averageEuclideanDistance(const std::vector<std::vector<double>>& particle
     }
     return totalDistance / particles.size();
 } 
+
+}

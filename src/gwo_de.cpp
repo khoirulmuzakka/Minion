@@ -4,6 +4,8 @@
 #include <random>
 #include <cmath>
 
+namespace minion {
+
 GWO_DE::GWO_DE(MinionFunction func,
                const std::vector<std::pair<double, double>>& bounds,
                const std::vector<double>& x0,
@@ -191,4 +193,6 @@ void GWO_DE::eliminate() {
             }
         }
     }
+}
+
 }

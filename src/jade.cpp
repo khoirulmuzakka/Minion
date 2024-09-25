@@ -1,5 +1,7 @@
 #include "jade.h" 
 
+namespace minion {
+
 JADE::JADE(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
@@ -132,3 +134,5 @@ void JADE::adaptParameters() {
     };
 
 };
+
+}

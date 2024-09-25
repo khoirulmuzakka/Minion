@@ -2,6 +2,7 @@
 #define CEC2014_H
 
 #include "cec.h"
+namespace minion {
 
 /**
  * @class CEC2014Functions
@@ -72,5 +73,6 @@ namespace CEC2014 {
     void asyfunc (double *, double *x, int, double);
     void oszfunc (double *, double *, int);
     void cf_cal(double *, double *, int, double *,double *,double *,double *,int);
+}
 }
 #endif

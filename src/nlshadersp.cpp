@@ -1,5 +1,6 @@
 #include "nlshadersp.h"
 
+namespace minion {
 
 std::vector<std::vector<double>> NLSHADE_RSP::convertToVector(double** popul, int rows, int cols) {
     std::vector<std::vector<double>> result(rows, std::vector<double>(cols));
@@ -487,4 +488,6 @@ void NLSHADE_RSP::Clean()
     delete MemoryCr;
     delete MemoryF;
     delete Weights;
+}
+
 }

@@ -13,6 +13,8 @@
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
 
+namespace minion {
+
 double *OShift,*M,*y,*z,*x_bound;
 int ini_flag=0,n_flag,func_flag,*SS;
 
@@ -62,3 +64,5 @@ std::vector<double> CECBase::operator()(const std::vector<std::vector<double>>& 
     Ncalls+=mx;
     return f;
 };
+
+}

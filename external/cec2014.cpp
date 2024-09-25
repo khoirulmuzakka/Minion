@@ -12,6 +12,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 #endif
+namespace minion {
 
 const std::string dirPath = getDirectoryPath(__FILE__);
 
@@ -1283,4 +1284,6 @@ void cf_cal(double *x, double *f, int nx, double *Os,double * delta,double * bia
 
 
 	
+}
+
 }

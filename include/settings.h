@@ -7,6 +7,8 @@
 #include <variant>
 #include <stdexcept>
 
+namespace minion {
+
 /**
  * @brief Alias for the variant type to hold different types of configuration values.
  */
@@ -135,5 +137,5 @@ protected :
 };
 
 
-
+}
 #endif

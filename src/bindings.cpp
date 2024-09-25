@@ -22,6 +22,8 @@
 
 namespace py = pybind11;
 
+using namespace minion; 
+
 // Exception translator
 void translate_exception(const std::exception &e) {
     PyErr_SetString(PyExc_RuntimeError, e.what());

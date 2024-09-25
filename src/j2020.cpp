@@ -1,5 +1,7 @@
 #include "j2020.h"
 
+namespace minion {
+
 double j2020::Dist(const std::vector<double>& A, const std::vector<double>& B) { 
     double dist=0.0;
     for (int j = 0; j<D; j++) 
@@ -247,4 +249,6 @@ MinionResult j2020::optimize () {
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     };
+}
+
 }

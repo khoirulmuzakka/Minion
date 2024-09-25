@@ -3,6 +3,8 @@
 
 #include "de.h"
 
+namespace minion {
+
 /**
  * @class ARR-DE : Adaptive Restart-Refine - Differential Evolution 
  * @brief Class implementing the ARRDE algorithm, which is basically LSHADE with multiple restarts.
@@ -135,4 +137,5 @@ class ARRDE : public Differential_Evolution {
         void adaptParameters() override;
 };
 
+}
 #endif

@@ -8,6 +8,8 @@
 #include <random>
 #include "minimizer_base.h"
 
+namespace minion {
+
 /**
  * @file nlshader_sp.h
  * @brief Header file for the LSRTDE class, which implements a minimization algorithm.
@@ -197,5 +199,7 @@ public :
         return history.back();
     }; 
 };
+
+}
 
 #endif

@@ -1,6 +1,10 @@
 #include "settings.h"
 #include <sstream>
 
+namespace minion {
+
+
+
 void print_variant(const ConfigValue& value) {
     // Use std::visit with a lambda to handle each possible type
     std::visit([](const auto& val) {
@@ -83,4 +87,6 @@ void JADE_Settings::init_default() {
         {"reduction_strategy", std::string("linear")},
     };
     settings_ = default_settings_;
+}
+
 }

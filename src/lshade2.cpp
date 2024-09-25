@@ -1,5 +1,7 @@
 #include "lshade2.h" 
 
+namespace minion {
+
 LSHADE2::LSHADE2(
     MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
             const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
@@ -146,3 +148,5 @@ void LSHADE2::adaptParameters() {
     else Fw=1.5;
 
 };
+
+}

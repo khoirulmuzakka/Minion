@@ -9,6 +9,8 @@
 #include <exception>
 #include "settings.h"
 
+namespace minion {
+
 
 /**
  * @struct MinionResult
@@ -114,4 +116,6 @@ class MinimizerBase {
 
 };
 
+
+}
 #endif // MINIMIZER_BASE_H

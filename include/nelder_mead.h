@@ -3,6 +3,7 @@
 
 #include "minimizer_base.h"
 
+namespace minion {
 /**
  * @class NelderMead
  * @brief Implements the Nelder-Mead optimization algorithm.
@@ -43,5 +44,7 @@ private :
     int no_improve_counter=0;
     size_t bestIndex;
 };
+
+}
 
 #endif // ADAPTIVE_NELDER_MEAD_H

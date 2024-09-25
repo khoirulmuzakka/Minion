@@ -4,6 +4,7 @@
 #include "settings.h"
 
 
+namespace minion {
 /**
  * @class Differential_Evolution
  * @brief A class for performing differential evolution optimization.
@@ -123,6 +124,6 @@ public :
 };
 
 
-
+}
 
 #endif
