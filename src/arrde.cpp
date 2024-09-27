@@ -336,7 +336,7 @@ void ARRDE::adaptParameters() {
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.2*Nevals/maxevals; 
+        double fraction = 0.2*Nevals_eff/Maxevals_eff; 
         if (final_refine) fraction = 0.2;
         ptemp = std::max(2, int(round(fraction * population.size())));
         p[i] = ptemp;
