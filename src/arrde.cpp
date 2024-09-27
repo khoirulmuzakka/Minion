@@ -336,10 +336,9 @@ void ARRDE::adaptParameters() {
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.2+0.2*Nevals/maxevals;
-        int maxp = std::max(2, int(round(fraction * population.size())));
-        ptemp = random_choice(maxp, 1).front();
-        if (ptemp<2 ){ptemp=2;}; 
+        double fraction = 0.2*Nevals/maxevals; 
+        if (final_refine) fraction = 0.2;
+        ptemp = std::max(2, int(round(fraction * population.size())));
         p[i] = ptemp;
     };
     meanCR.push_back(calcMean(CR));
