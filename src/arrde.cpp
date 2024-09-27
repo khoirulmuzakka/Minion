@@ -11,7 +11,7 @@ ARRDE::ARRDE(
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
     try {
         if (populationSize==0) populationSize = size_t(std::min(std::max(10.0, 3.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 500.0)); 
-        maxPopSize_finalRefine= size_t(std::max(10.0, 1.0*double(bounds.size())+2.0*std::pow(log10(maxevals), 2.0)  ));
+        maxPopSize_finalRefine=  size_t(std::min(std::max(10.0, 1.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 250.0)); 
 
         mutation_strategy= "current_to_pbest_AW_1bin";
         archive_size_ratio = 2.0;
