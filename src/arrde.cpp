@@ -10,8 +10,8 @@ ARRDE::ARRDE(
 ) : 
 Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
     try {
-        if (populationSize==0) populationSize = size_t(std::min(std::max(10.0, 3.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 500.0)); 
-        maxPopSize_finalRefine=  size_t(std::min(std::max(10.0, 1.0*bounds.size()+ 2.0*std::pow(log10(maxevals), 2.0) ), 250.0)); 
+        if (populationSize==0) populationSize = size_t(std::min(std::max(10.0, 3.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0) ), 500.0)); 
+        maxPopSize_finalRefine=  size_t(std::min(std::max(10.0, 1.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0) ), 250.0)); 
 
         mutation_strategy= "current_to_pbest_AW_1bin";
         archive_size_ratio = 2.0;
@@ -39,8 +39,8 @@ void ARRDE::adaptParameters() {
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); 
     double maxPopSize_eff = double(populationSize); 
-    if (!final_refine) reduction_strategy="exponential"; 
-    else reduction_strategy="linear"; 
+    if (!final_refine) reduction_strategy="agsk"; 
+    else reduction_strategy="agsk"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
@@ -87,6 +87,7 @@ void ARRDE::adaptParameters() {
         if (Nevals >= strartRefine*maxevals) init_final_refine=true;
     }
     
+    //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
     double spread = calcStdDev(fitness)/fabs(calcMean(fitness));
     if (spread <= reltol || init_final_refine) {
         if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
@@ -96,7 +97,7 @@ void ARRDE::adaptParameters() {
             for (auto el : M_F) MF_records.push_back(el);
         };
 
-        //std::cout << "\t\tPopulation converge " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << spread<< " " << reltol << "\n";
+        //if (final_refine)  std::cout << "\t\tPopulation converge " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol << "\n";
         for (int i =0; i<population.size(); i++){
             population_records.push_back(population[i]);
             fitness_records.push_back(fitness[i]);
@@ -164,7 +165,7 @@ void ARRDE::adaptParameters() {
             if (!final_refine){
                 Fw= 0.8+0.4*Nevals/(strartRefine*maxevals);
                 M_CR = rand_gen(0.4, 0.7, memorySize);
-                M_F =   rand_gen(0.1, 0.2, memorySize);
+                M_F = std::vector<double>(memorySize, 0.1);
             } else {
                 Fw= 1.2;
                 M_CR = random_choice(MCR_records, memorySize, true); 
@@ -176,13 +177,11 @@ void ARRDE::adaptParameters() {
             first_run = false;
 
         } else if (refine){
-            std::vector<size_t> random_indices, random_indices2;
+            std::vector<size_t> random_indices;
             random_indices = random_choice(fitness_records.size(), fitness_records.size(), false);
-            random_indices2 = random_indices;
             for (int i=0;i<currSize; i++){
                 population.push_back(population_records[random_indices[i]]);
                 fitness.push_back(fitness_records[random_indices[i]]);
-                removeElement(random_indices2, random_indices[i]);
             }
 
             refineRelTol = decrease*refineRelTol ; 
@@ -191,15 +190,6 @@ void ARRDE::adaptParameters() {
             memorySize = size_t( memorySizeRatio*population.size());
             memoryIndex=0;
 
-            //update archive
-            if (!random_indices2.empty()) {
-                std::shuffle(random_indices2.begin(), random_indices2.end(), get_rng());
-                random_indices2.resize(currArciveSize);
-                for (auto& i :random_indices2) {
-                    archive.push_back(population_records[i]);
-                };
-            };
-            if (archive.size()>currArciveSize) archive.resize(currArciveSize);
             //update best individual
             size_t best_idx = findArgMin(fitness);
             best_fitness = fitness[best_idx]; 
@@ -215,36 +205,25 @@ void ARRDE::adaptParameters() {
             //std::cout << "--------- refine .... " << population.size() << "\n";
 
         } else if (final_refine){
+            //std::cout << "Final refine " << bestOverall << "\n";
             currSize = maxPopSize_finalRefine;
             currArciveSize = size_t(archive_size_ratio*currSize);
             Neval_stratrefine=Nevals;
 
-            std::vector<size_t> random_indices, random_indices2;
+            std::vector<size_t> random_indices;
             if (fitness_records.size()<currSize) {
                 random_indices = random_choice(fitness_records.size(), currSize, true);
             } else random_indices = argsort(fitness_records, true);
         
-            random_indices2 = random_indices;
             for (int k=0; k<currSize; k++){
                 population.push_back(population_records[random_indices[k]]); 
                 fitness.push_back(fitness_records[random_indices[k]]);
-                removeElement(random_indices2, random_indices[k]);
             }
-            
+
             reltol = 0.0;
 
             memorySize = size_t( memorySizeRatio*population.size());
             memoryIndex=0;
-
-            //update archive
-            if (!random_indices2.empty() && refine || final_refine) {
-                std::shuffle(random_indices2.begin(), random_indices2.end(), get_rng());
-                random_indices2.resize(currArciveSize);
-                for (auto& i :random_indices2) {
-                    archive.push_back(population_records[i]);
-                };
-            };
-            if (archive.size()>currArciveSize) archive.resize(currArciveSize);
 
             //update best individual
             size_t best_idx = findArgMin(fitness);
@@ -335,10 +314,10 @@ void ARRDE::adaptParameters() {
     //update p 
     p = std::vector<size_t>(population.size(), 2);
     size_t ptemp;
+    double sr = S_CR.size()/double(population.size());
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = 0.2*Nevals_eff/Maxevals_eff; 
-        if (final_refine) fraction = 0.2;
-        ptemp = std::max(2, int(round(fraction * population.size())));
+        double fraction = rand_gen(0.05, 0.25);
+        ptemp = std::max(2, static_cast<int>(round(fraction * population.size())));
         p[i] = ptemp;
     };
     meanCR.push_back(calcMean(CR));

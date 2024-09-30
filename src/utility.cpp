@@ -145,9 +145,6 @@ double calcStdDev(const std::vector<double>& vec) {
 
 void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std::vector<std::pair<double, double>>& bounds, const std::string& strategy) {
     int dim = static_cast<int>(bounds.size());
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
     for (int d = 0; d < dim; ++d) {
         double lower_bound = bounds[d].first;
         double upper_bound = bounds[d].second;
@@ -172,7 +169,7 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
             std::uniform_real_distribution<double> dis(lower_bound, upper_bound);
             for (size_t i = 0; i < new_candidates.size(); ++i) {
                 if (new_candidates[i][d] < lower_bound || new_candidates[i][d] > upper_bound) {
-                    new_candidates[i][d] = dis(gen);
+                    new_candidates[i][d] = dis(get_rng());
                 }
             }
         } else if (strategy == "reflect-random") {
@@ -183,13 +180,13 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
                     double low_range = lower_bound;
                     double high_range = lower_bound + std::min(d_lower, e);
                     std::uniform_real_distribution<double> dis(low_range, high_range);
-                    new_candidates[i][d] = dis(gen);
+                    new_candidates[i][d] = dis(get_rng());
                 } else if (new_candidates[i][d] > upper_bound) {
                     double d_upper = fabs(new_candidates[i][d] - upper_bound);
                     double low_range = upper_bound - std::min(d_upper, e);
                     double high_range = upper_bound;
                     std::uniform_real_distribution<double> dis(low_range, high_range);
-                    new_candidates[i][d] = dis(gen);
+                    new_candidates[i][d] = dis(get_rng());
                 }
             }
         } else if (strategy == "none") {}

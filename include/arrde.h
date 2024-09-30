@@ -40,7 +40,7 @@ class ARRDE : public Differential_Evolution {
         double restartRelTol;
         double refineRelTol;
         double strartRefine=0.8;
-        size_t Nrestart=0;
+        size_t Nrestart=1; //nitially set to 1, first run is consederee a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;
         double maxRestart =2;
