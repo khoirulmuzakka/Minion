@@ -25,7 +25,7 @@ Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrat
         restartRelTol= 0.005;
         reltol = 0.005;
         refineRelTol = restartRelTol;
-        useLatin=false;
+        useLatin=true;
         
     } catch (const std::exception& e) {
         std::cout << e.what() << "\n";
@@ -40,12 +40,12 @@ void ARRDE::adaptParameters() {
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); 
     double maxPopSize_eff = double(populationSize); 
     if (!final_refine) reduction_strategy="agsk"; 
-    else reduction_strategy="agsk"; 
+    else reduction_strategy="linear"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
         minPopSize_eff= 4.0; 
-        maxPopSize_eff = maxPopSize_finalRefine;
+        maxPopSize_eff = double(maxPopSize_finalRefine);
     }
     // update population size
     size_t new_population_size;
@@ -165,7 +165,7 @@ void ARRDE::adaptParameters() {
             if (!final_refine){
                 Fw= 0.8+0.4*Nevals/(strartRefine*maxevals);
                 M_CR = rand_gen(0.4, 0.7, memorySize);
-                M_F = std::vector<double>(memorySize, 0.1);
+                M_F =  std::vector<double>(memorySize, 0.1);
             } else {
                 Fw= 1.2;
                 M_CR = random_choice(MCR_records, memorySize, true); 
@@ -237,7 +237,7 @@ void ARRDE::adaptParameters() {
             Fw= 1.2;
             M_CR = random_choice(MCR_records, memorySize, true); 
             M_F = random_choice(MF_records, memorySize, true);  
-            maxRestart=size_t(1e+300);
+            maxRestart=1e+300;
             //std::cout << "------ Final Refine .... " << population.size() << "\n";
         }   
 
