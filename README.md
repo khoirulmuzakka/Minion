@@ -12,16 +12,7 @@ Minion is a library for derivative-free optimization algorithms, implemented in 
 ## Algorithms Included
 - **Nelder-Mead:**
   - Widely-used optimization algorithm.
-- **JADE:**
-  - State-of-the-art variant of Differential Evolution (DE).
-- **SHADE:**
-  - State-of-the-art variant of Differential Evolution (DE).
-- **LSHADE:**
-  - State-of-the-art variant of Differential Evolution (DE).
-- **NLSHADE-RSP:**
-  - State-of-the-art variant of Differential Evolution (DE).
-- **GWO-DE:**
-  - Hybrid Grey Wolf-Deifferential Dvolution.
+- **State-of-the-art variants of differential evolution : JADE, SHADE, LSHADE (1st in CEC2014), NLSHADE-RSP (1st in CEC2021), j2020 (3rd in CEC2020), jSO (1st in CEC2017), and LSRTDE ((1st in CEC2024)**
 - **ARRDE: Adaptive restart-refine DE**
   - State-of-the-art variant of Differential Evolution (DE).
 
