@@ -38,7 +38,112 @@ Minion is a library for derivative-free optimization algorithms, implemented in 
      import pyminion
      ```
 
-## Example: Minimizing CEC benchmark problems
+## Example in Python : Minimizing CEC2022 Benchmark Problems 
+```py
+import sys
+import os
+sys.path.append("./../")
+sys.path.append("./../external")
+import numpy as np
+from pyminion import *
+import concurrent.futures
+import threading
+
+
+# Global results variable
+results = []
+results_lock = threading.Lock()
+
+def test_optimization_threadsafe(func, bounds, dimension, func_name, Nmaxeval):
+    global results
+    result = {}
+    result['Dimensions'] = dimension
+    result['Function'] = func_name
+    bounds_list = [bounds] * dimension
+    
+    
+    #----------------------------------------------------------------#
+    lshade = LSHADE (func, bounds_list, x0=None, population_size=0, 
+                     maxevals=Nmaxeval, tol=0.0, callback=None, boundStrategy="reflect-random", seed=None)
+    res = lshade.optimize()
+    result['LSHADE'] = res.fun
+
+     #----------------------------------------------------------------#
+    lshade_rsp = NLSHADE_RSP (func, bounds_list,  x0=None, population_size=0, 
+                     maxevals=Nmaxeval, callback=None, seed=None, memory_size=20*dimension, archive_size_ratio=2.1)
+    res = lshade_rsp.optimize()
+    result['NLSHADE_RSP'] = res.fun
+
+     #----------------------------------------------------------------#
+    j20 = j2020 (func, bounds_list, x0=None,  
+                     maxevals=Nmaxeval, callback=None, seed=None, populationSize=0)
+    res = j20.optimize()
+    result['j2020'] = res.fun
+
+    #----------------------------------------------------------------#
+    lsrtde =LSRTDE (func, bounds_list,  x0=None,  
+                     maxevals=Nmaxeval, callback=None, seed=None, populationSize=0)
+    res = lsrtde.optimize()
+    result['LSRTDE'] = res.fun
+
+    #----------------------------------------------------------------
+    arrde = ARRDE (func, bounds_list, x0=None, population_size=0, 
+                       maxevals=Nmaxeval, tol=0., callback=None, boundStrategy="reflect-random", seed=None)
+    res = arrde.optimize()
+    result['ARRDE'] = res.fun
+    #----------------------------------------------------------------#
+    with results_lock:
+        results.append(result)
+    print(result)
+
+def run_test_optimization(j, dim, year=2017):
+    if year== 2014 : cec_func = CEC2014Functions(function_number=j, dimension=dim)
+    elif year== 2017 : cec_func = CEC2017Functions(function_number=j, dimension=dim)
+    elif year== 2019 : cec_func = CEC2019Functions(function_number=j, dimension=dim)
+    elif year== 2020 : cec_func = CEC2020Functions(function_number=j, dimension=dim)
+    elif year== 2022 : cec_func = CEC2022Functions(function_number=j, dimension=dim)
+    else : raise Exception("Unknown CEC year.")
+    test_optimization_threadsafe(cec_func, (-100, 100), dim, "func_" + str(j), Nmaxeval)
+
+
+
+##-------------------------------##
+Nmaxeval = 10000
+dimension = 20
+NRuns= 5
+year = 2022
+
+func_numbers = [1,2,3,4,5,6,7, 8, 9,10, 11, 12] #for CEC 2022
+#func_numbers = [1,2,3,4,5,6,7, 8, 9,10] #for CEC 2020
+#func_numbers = [1,2,3,4,5,6,7, 8, 9,10] #for CEC 2019 
+#func_numbers = [1,2,3,4,5,6,7, 8, 9,10, 11, 12, 13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30] #for CEC 2017
+#func_numbers = [1,2,3,4,5,6,7, 8, 9,10, 11, 12, 13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30] #for CEC 2014
+
+
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    futures = []
+    for k in range(NRuns):
+        for j in func_numbers:
+            futures.append(executor.submit(run_test_optimization, j, dimension, year))
+    concurrent.futures.wait(futures)
+    for f in futures: f.result()
+
+for num in func_numbers : 
+    mydict= {}
+    algoRes = {"NLSHADE_RSP" : [],  "ARRDE":[], "j2020":[], "LSHADE": [], "LSRTDE":[] }
+    for res in list(results) : 
+        for algo in algoRes.keys() : 
+            if res['Function'] == "func_"+str(num) :
+                algoRes[algo].append(res[algo])
+
+    full_results= {}
+    for key, val in algoRes.items() : 
+        full_results[key] = (np.min(val), np.mean(val), np.std(val))
+    print("Full results for function "+str(num) +":\n\t", full_results)
+```
+
+## Example in C++: Minimizing CEC benchmark problems
 
 ```cpp
 // example.cpp
@@ -249,3 +354,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+```
