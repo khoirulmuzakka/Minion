@@ -318,18 +318,18 @@ int main(int argc, char* argv[]) {
         dimension = std::atoi(argv[2]); // Convert second argument to integer for dimension
     }
     if (argc > 3) {
-        algo = argv[3]; // Use third argument for algo, no conversion needed
+        algo = argv[3];
     }
     if (argc > 4) {
-        popsize = std::atoi(argv[4]); // Use third argument for algo, no conversion needed
+        popsize = std::atoi(argv[4]); 
     }
 
     if (argc > 5) {
-        year = std::atoi(argv[5]); // Use third argument for algo, no conversion needed
+        year = std::atoi(argv[5]); 
     }
 
     if (argc > 6) {
-        Nmaxevals = std::atoi(argv[6]); // Use third argument for algo, no conversion needed
+        Nmaxevals = std::atoi(argv[6]); 
     }
 
 
