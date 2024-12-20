@@ -1,6 +1,14 @@
 # Minion: Derivative-Free Optimization Library
 
-Minion is a library for derivative-free optimization algorithms, implemented in both C++ and Python. It offers a suite of state-of-the-art optimization techniques, specifically designed to efficiently solve complex optimization problems where gradients are unavailable.
+The Minion library is a toolkit for derivative-free optimization, designed to solve complex optimization problems where gradients are unavailable or unreliable. It includes a collection of state-of-the-art optimization algorithms that have won top positions in the IEEE Congress on Evolutionary Computation (CEC) competitions, which are not commonly available in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
+
+Minion also serves as a testing ground for researchers to develop and evaluate new optimization algorithms. It incorporates recent benchmark functions from the CEC competitions held in 2011, 2014, 2017, 2019, 2020, and 2022, offering a robust environment for algorithm testing and comparison. 
+
+Currently, Minion implements several leading algorithms, including: JADE, L-SHADE (1st place in CEC2014), jSO (1st place in CEC2017),  j2020 (3rd place in CEC2020), NL-SHADE-RSP (1st place in CEC2021), LSRTDE (1st place in CEC2024), ARRDE (Adaptive Restart-Refine Differential Evolution, our own algorithm). These algorithms generally offer superior robustness and faster convergence compared to basic differential evolution algorithms. Additionally, basic optimization methods, such as Nelder-Mead and the original Differential Evolution, are also included in the library.
+
+Most of the algorithms  implemented in Minion are population-based, which makes them inherently parallelizable and well-suited for fast, efficient processing. To further enhance performance, Minion is optimized for vectorized functions, enabling seamless integration with multithreading and multiprocessing capabilities.
+
+Minion is implemented in C++ with a Python wrapper, making it accessible and functional in both languages. The library has been tested on Windows 11, Linux Ubuntu 24.04, and macOS Sequoia 15.
 
 ## Key Features
 
