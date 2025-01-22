@@ -3,35 +3,52 @@
 #include <utility>
 #include "minion.h"
 
+std::vector <double> obbjective_function (const std::vector<std::vector<double>> & x, void* data){
+     minion::CECBase* func = static_cast<minion::CECBase* > (data);
+    return func->operator()(x); // Call the operator with a single vector
+}
+
 
 double minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022, std::string algo="ARRDE", int seed=-1) {
     minion::CECBase* cecfunc;
+    std::vector<std::pair<double, double>> bounds;
+    if (year==2019) { 
+        if (function_number ==1) dimension =9; 
+        else if (function_number==2) dimension =16; 
+        else if (function_number==3) dimension =18;
+        else dimension=10;
+        for (int i=0; i<dimension; i++) {
+            if (function_number ==1) bounds.push_back(std::make_pair(-8192, 8192)); 
+            else if (function_number==2) bounds.push_back(std::make_pair(-16384, 16384)); 
+            else if (function_number==3) bounds.push_back(std::make_pair(-4, 4)); 
+            else bounds.push_back(std::make_pair(-100, 100));
+        }
+    } else bounds = std::vector<std::pair<double, double>>(dimension, std::make_pair(-100.0, 100.0));
+
     if (year==2020) cecfunc = new minion::CEC2020Functions(function_number, dimension);
     else if (year==2022) cecfunc = new minion::CEC2022Functions(function_number, dimension);
     else if (year==2017) cecfunc = new minion::CEC2017Functions(function_number, dimension);
+    else if (year==2019) cecfunc = new minion::CEC2019Functions(function_number, dimension);
+    else if (year==2014) cecfunc = new minion::CEC2014Functions(function_number, dimension);
     else throw std::runtime_error("Invalid year.");
-
-    std::vector<std::pair<double, double>> bounds(dimension, std::make_pair(-100.0, 100.0));
-
 
     int popsize=population_size;
 
     auto settings = minion::algoToSettingsMap[algo];
     settings["population_size"] = size_t (popsize);
-
-    minion::Minimizer optimizer ( [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, algo, 0.0, max_evals,  seed, settings
-    );
+    std::vector<double> x0;
+    if (algo == "NelderMead"){
+        for (auto& el : bounds) x0.push_back(0.5*(el.first+el.second));
+    } else x0={};
+    minion::Minimizer optimizer (obbjective_function,  bounds, x0, cecfunc, nullptr, algo, 0.0, max_evals,  seed, settings);
     // Optimize and get the result
     minion::MinionResult result = optimizer();
-
     double ret = result.fun;
 
     // Output the results
     std::cout << "Optimization Results for Function " << function_number << ":\n";
     std::cout << "\tAlgo : "<< algo << ". Best Value: " << result.fun << "\n";
+    std::cout << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
 
     delete cecfunc;
     return ret;

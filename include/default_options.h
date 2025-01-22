@@ -20,9 +20,9 @@ std::map<std::string, std::any>  default_settings_ARRDE  = {
     {"population_size", size_t(0)},  
     {"archive_size_ratio", 2.0}, 
     {"converge_reltol", 0.005}, 
-    {"refine_decrease_factor" , 0.7}, 
-    {"restart-refine-duration", 0.85}, 
-    {"maximum_consecutive_restarts" , size_t(1)},
+    {"refine_decrease_factor" , 0.9}, 
+    {"restart-refine-duration", 0.8}, 
+    {"maximum_consecutive_restarts" , size_t(2)},
     {"bound_strategy" , std::string("reflect-random")} , 
 };
 

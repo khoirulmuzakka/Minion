@@ -36,11 +36,11 @@ class ARRDE : public Differential_Evolution {
         bool final_refine = false;
         bool first_run = true;
         double bestOverall =  std::numeric_limits<double>::max();
-        double decrease=0.7;
+        double decrease=0.9;
         double reltol;
         double restartRelTol;
         double refineRelTol;
-        double strartRefine=0.85;
+        double strartRefine=0.8;
         size_t Nrestart=1; //nitially set to 1, first run is consederee a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;

@@ -8,10 +8,10 @@ void ARRDE::initialize  (){
             {"population_size", size_t(0)},  
             {"archive_size_ratio", 2.0}, 
             {"converge_reltol", 0.005}, 
-            {"refine_decrease_factor" , 0.7}, 
-            {"restart-refine-duration", 0.85}, 
-            {"maximum_consecutive_restarts" , size_t(1)},
-            {"bound_strategy" , std::string("reflect-random")} , 
+            {"refine_decrease_factor" , 0.9}, 
+            {"restart-refine-duration", 0.8}, 
+            {"maximum_consecutive_restarts" , size_t(2)},
+            {"bound_strategy" , std::string("clip")} , 
         };
         optionMap = settingKeys;
     };
@@ -25,9 +25,9 @@ void ARRDE::initialize  (){
     }
 
     populationSize = options.get<size_t> ("population_size", 0) ; 
-    size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size(), 1000.0), 10.0)); 
+    size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0), 1000.0), 10.0)); 
     if (populationSize==0 || populationSize<bounds.size()) populationSize = defaultPopsize;
-    maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size(), 500.0), 10.0)); 
+    maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size() + 1.0*std::pow(log10(maxevals), 2.0) , 500.0), 10.0)); 
 
     mutation_strategy = "current_to_pbest_AW_1bin";
 
@@ -37,16 +37,16 @@ void ARRDE::initialize  (){
     memorySize= size_t( memorySizeRatio*populationSize);
 
     M_CR = rand_gen(0.5, 0.8, memorySize);
-    M_F =  rand_gen(0.2, 0.6, memorySize);
+    M_F =  rand_gen(0.2, 0.5, memorySize);
 
     Fw=1.2;  
     reltol =options.get<double>("converge_reltol", 0.005);
     restartRelTol = reltol;
     refineRelTol = restartRelTol;
 
-    decrease=options.get<double>("refine_decrease_factor", 0.7);
-    strartRefine= options.get<double>("restart-refine-duration", 0.85);
-    maxRestart =options.get<size_t>("maximum_consecutive_restarts", size_t(1));
+    decrease=options.get<double>("refine_decrease_factor", 0.9);
+    strartRefine= options.get<double>("restart-refine-duration", 0.8);
+    maxRestart =options.get<size_t>("maximum_consecutive_restarts", size_t(2));
 
     useLatin=true;
     hasInitialized=true;
@@ -59,7 +59,7 @@ void ARRDE::adaptParameters() {
     double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
     double minPopSize_eff = std::max(4.0, 1.0*bounds.size()); 
     double maxPopSize_eff = double(populationSize); 
-    if (!final_refine) reduction_strategy="agsk"; 
+    if (!final_refine) reduction_strategy="exponential"; 
     else reduction_strategy="linear"; 
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
@@ -185,7 +185,7 @@ void ARRDE::adaptParameters() {
             if (!final_refine){
                 Fw= 0.8+0.4*Nevals/(strartRefine*maxevals);
                 M_CR =  rand_gen(0.5, 0.8, memorySize);
-                M_F =  rand_gen(0.2, 0.6, memorySize);
+                M_F =  rand_gen(0.2, 0.5, memorySize);
             } else {
                 Fw= 1.2;
                 M_CR = random_choice(MCR_records, memorySize, true); 
@@ -270,7 +270,7 @@ void ARRDE::adaptParameters() {
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = fabs(fitness_before[i] - trial_fitness[i]);
+                double w = fabs( (fitness_before[i] - trial_fitness[i]) /(1.0+fabs(fitness_before[i])));
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
                 weights.push_back(w);
