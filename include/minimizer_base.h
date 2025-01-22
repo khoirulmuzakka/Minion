@@ -7,7 +7,8 @@
 #include <cmath>
 #include "utility.h"
 #include <exception>
-#include "settings.h"
+#include <any>
+#include <map>
 
 namespace minion {
 
@@ -66,6 +67,99 @@ struct MinionResult {
 
 
 /**
+ * @class Options
+ * @brief A flexible configuration class for managing key-value pairs with varying data types.
+ *
+ * The `Options` class allows storing, retrieving, and managing settings using key-value pairs. 
+ * Values can be of any type, making it suitable for dynamic configuration needs.
+ */
+class Options {
+    private :
+        std::map<std::string, std::any> settings;
+
+    public:
+        /**
+         * @brief Default constructor for the Options class.
+         */
+        Options (){}; 
+
+        /**
+         * @brief Parameterized constructor to initialize settings with a predefined map.
+         * @param inputSettings A map of key-value pairs to initialize the configuration.
+         */
+        Options (std::map<std::string, std::any> inputSettings) : settings(inputSettings){};
+
+
+        /**
+         * @brief Destructor for the Options class.
+         */
+        ~Options (){}; 
+
+        /**
+         * @brief Set a value for a given key in the settings.
+         * 
+         * This method allows adding or updating a key-value pair in the settings.
+         * 
+         * @tparam T The type of the value being set.
+         * @param key The key to associate with the value.
+         * @param value The value to store, of type `T`.
+         */
+        template <typename T>
+        void set(const std::string& key, const T& value) {
+            settings[key] = value;
+        }
+
+        /**
+         * @brief Retrieve a value for a given key from the settings.
+         * 
+         * This method retrieves the value associated with the specified key. 
+         * If the key does not exist or the type does not match, an exception is thrown.
+         * 
+         * @tparam T The expected type of the value.
+         * @param key The key whose associated value is to be retrieved.
+         * @return The value associated with the key, cast to the specified type.
+         * @throws std::runtime_error If the key is not found or the type does not match.
+         */
+        template <typename T>
+        T get(const std::string& key) const {
+            auto it = settings.find(key);
+            if (it != settings.end()) {
+                return std::any_cast<T>(it->second);
+            }
+            throw std::runtime_error("Key not found or type mismatch: " + key);
+        }
+
+         /**
+         * @brief Retrieve a value for a given key from the settings.
+         * 
+         * This method retrieves the value associated with the specified key. 
+         * If the key does not exist or the type does not match, an exception is thrown.
+         * 
+         * @tparam T The expected type of the value.
+         * @param key The key whose associated value is to be retrieved.
+         * @param defaultValue default value when there is a problem when accessing the key value.
+         * @return The value associated with the key, cast to the specified type.
+         * @throws std::runtime_error If the key is not found or the type does not match.
+         */
+        template <typename T>
+        T get(const std::string& key, T defaultValue) const {
+            T ret = defaultValue;
+            auto it = settings.find(key);
+            if (it != settings.end()) {
+                try {
+                    ret = std::any_cast<T>(it->second);
+                } catch (const std::exception& e) {
+                    std::cerr << "Problem when accessing value of option key "+key << "\n";
+                }
+            } else {
+                std::cerr << "Key not found or type mismatch: " + key << ". Default value will be returned.\n";
+            }
+            return ret;
+        }
+};
+
+
+/**
  * @class MinimizerBase
  * @brief A base class for optimization algorithms.
  */
@@ -80,17 +174,35 @@ class MinimizerBase {
          * @param callback A callback function to call after each iteration.
          * @param relTol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
-         * @param boundStrategy Strategy when bounds are violated. Available strategy : "random", "reflect", "reflect-random", "clip".
          * @param seed global seed
+         * @param options Option object, which specify further configurational settings for the algorithm.
          */
-        MinimizerBase(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
-                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 0.0001, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1);
+        MinimizerBase(
+            MinionFunction func, 
+            const std::vector<std::pair<double, double>>& bounds, 
+            const std::vector<double>& x0 = {},
+            void* data = nullptr, 
+            std::function<void(MinionResult*)> callback = nullptr,
+            double tol = 0.0001, 
+            size_t maxevals = 100000, 
+            int seed=-1, 
+            std::map<std::string, std::any> options = std::map<std::string, std::any>() ) : 
+               func(func), bounds(bounds), x0(x0), data(data), callback(callback), stoppingTol(tol), maxevals(maxevals), seed(seed)
+        {
+            if (!bounds.empty() && bounds[0].first >= bounds[0].second) {
+                throw std::invalid_argument("Invalid bounds.");
+            }
+            if (!x0.empty() && x0.size() != bounds.size()) {
+                throw std::invalid_argument("x0 must have the same dimension as the length of the bounds.");
+            }
+            if (seed != -1) set_global_seed(seed);
+            optionMap = options;    
+        };
 
         /**
          * @brief destructor
          */
-        ~MinimizerBase(){ }
+        ~MinimizerBase(){};
 
         /**
          * @brief Virtual function to perform the optimization.
@@ -101,19 +213,28 @@ class MinimizerBase {
             throw std::logic_error("This function is not yet implemented.");
         };
 
+        /**
+         * @brief Pure virtual function to process algirithm settings
+         * 
+         */
+        virtual void initialize ()=0;
+
+    protected : 
+        std::map<std::string, std::any> optionMap;
+        bool hasInitialized =false;
+        void* data = nullptr;
+        std::function<void(MinionResult*)> callback;
+
     public:
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
         std::vector<double> x0;
-        void* data = nullptr;
-        std::function<void(MinionResult*)> callback;
         double stoppingTol;
         size_t maxevals;
         MinionResult minionResult;
         std::vector<MinionResult> history;
         std::string boundStrategy;
         int seed;
-
 };
 
 

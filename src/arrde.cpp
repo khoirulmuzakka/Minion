@@ -2,37 +2,56 @@
 
 namespace minion {
 
-ARRDE::ARRDE(
-    MinionFunction func, const std::vector<std::pair<double, double>>& bounds,
-            const std::vector<double>& x0, void* data , std::function<void(MinionResult*)> callback,
-            double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populsize
-) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
-    try {
-        size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size(), 1000.0), 10.0)); 
-        if (populationSize==0 || populationSize<defaultPopsize) populationSize = defaultPopsize;
-        maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size(), 500.0), 10.0)); 
-
-        mutation_strategy= "current_to_pbest_AW_1bin";
-        archive_size_ratio = 2.0;
-        memorySizeRatio = 2.0;
-        memorySize= size_t( memorySizeRatio*populationSize);
-
-        M_CR = rand_gen(0.5, 0.8, memorySize);
-        M_F =  rand_gen(0.2, 0.6, memorySize);
-        
-        Fw=1.2;  
-        restartRelTol= 0.005;
-        reltol = 0.005;
-        refineRelTol = restartRelTol;
-        useLatin=true;
-        
-    } catch (const std::exception& e) {
-        std::cout << e.what() << "\n";
-        throw std::runtime_error(e.what());
+void ARRDE::initialize  (){
+     if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)},  
+            {"archive_size_ratio", 2.0}, 
+            {"converge_reltol", 0.005}, 
+            {"refine_decrease_factor" , 0.7}, 
+            {"restart-refine-duration", 0.85}, 
+            {"maximum_consecutive_restarts" , size_t(1)},
+            {"bound_strategy" , std::string("reflect-random")} , 
+        };
+        optionMap = settingKeys;
+    };
+    
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
     }
-};
+
+    populationSize = options.get<size_t> ("population_size", 0) ; 
+    size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size(), 1000.0), 10.0)); 
+    if (populationSize==0 || populationSize<bounds.size()) populationSize = defaultPopsize;
+    maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size(), 500.0), 10.0)); 
+
+    mutation_strategy = "current_to_pbest_AW_1bin";
+
+    archive_size_ratio =  options.get<double> ("archive_size_ratio", 2.0) ; 
+    if (archive_size_ratio < 0.0) archive_size_ratio=2.0;
+    memorySizeRatio = archive_size_ratio;
+    memorySize= size_t( memorySizeRatio*populationSize);
+
+    M_CR = rand_gen(0.5, 0.8, memorySize);
+    M_F =  rand_gen(0.2, 0.6, memorySize);
+
+    Fw=1.2;  
+    reltol =options.get<double>("converge_reltol", 0.005);
+    restartRelTol = reltol;
+    refineRelTol = restartRelTol;
+
+    decrease=options.get<double>("refine_decrease_factor", 0.7);
+    strartRefine= options.get<double>("restart-refine-duration", 0.85);
+    maxRestart =options.get<size_t>("maximum_consecutive_restarts", size_t(1));
+
+    useLatin=true;
+    hasInitialized=true;
+}
+
 
 void ARRDE::adaptParameters() {
 

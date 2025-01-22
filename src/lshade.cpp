@@ -3,32 +3,56 @@
 
 namespace minion {
 
-LSHADE::LSHADE(
-    MinionFunction func, const std::vector<std::pair<double, double>>& bounds,  const std::map<std::string, ConfigValue>& options, 
-            const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
-            double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populsize
-) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
+void LSHADE::initialize  (){
+     if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)},  
+            {"memory_size", size_t(6)}, 
+            {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
+            {"archive_size_ratio", 2.6}, 
+            {"minimum_population_size", size_t(4)}, 
+            {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+        optionMap = settingKeys;
+    };
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
+    populationSize = options.get<size_t> ("population_size", 0) ; 
     if (populationSize==0) populationSize= 18*bounds.size();
-    settings = LSHADE_Settings(options);
-    mutation_strategy= "current_to_pbest_A_1bin";
-    memorySize = std::get<int>(settings.getSetting("memory_size"));
-    archive_size_ratio = std::get<double>(settings.getSetting("archive_size_ratio"));
+
+    mutation_strategy= options.get<std::string> ("mutation_strategy", "current_to_pbest_A_1bin") ;
+    std::vector<std::string> all_strategy = {"best1bin", "best1exp", "rand1bin", "rand1exp", "current_to_pbest1bin", "current_to_pbest1exp", "current_to_pbest_A_1bin", "current_to_pbest_A_1exp"}; 
+    if (std::find(all_strategy.begin(), all_strategy.end(), mutation_strategy) == all_strategy.end()) {
+        std::cerr << "Mutation strategy : "+mutation_strategy+" is not known or supported. ’best1bin' will be used instead\n";
+        mutation_strategy="best1bin"; 
+    };
+
+    memorySize = options.get<size_t> ("memory_size", 6) ; 
+    archive_size_ratio =  options.get<double> ("archive_size_ratio", 2.6) ; 
+    if (archive_size_ratio < 0.0) archive_size_ratio=2.6;
 
     M_CR = std::vector<double>(memorySize, 0.5) ;
     M_F =  std::vector<double>(memorySize, 0.5) ;
-    F = std::vector<double>(populationSize, 0.5);
-    CR = std::vector<double>(populationSize, 0.5);
-    minPopSize = std::get<int>(settings.getSetting("minimum_population_size"));
-    reduction_strategy = std::get<std::string>(settings.getSetting("reduction_strategy"));
-    try {
-        popreduce = std::get<bool>(settings.getSetting("population_reduction"));
-    } catch (...) {
-        popreduce = std::get<int>(settings.getSetting("population_reduction"));
-    };
-};
 
+    reduction_strategy = options.get<std::string>("reduction_strategy", "linear");
+    std::vector<std::string> all_redStrategy = {"linear", "exponential", "agsk"}; 
+    if (std::find(all_redStrategy.begin(), all_redStrategy.end(), reduction_strategy) == all_redStrategy.end()){
+        std::cerr << "Population reduction strategy : "+reduction_strategy+" is not known or supported. ’linear' will be used instead\n";
+        reduction_strategy="linear";
+    }
+
+    minPopSize = options.get<size_t>("minimum_population_size", 4);
+    if (populationSize == minPopSize) popreduce = true; 
+    else popreduce= false;
+    hasInitialized=true;
+}
 
 void LSHADE::adaptParameters() {
     // update population size

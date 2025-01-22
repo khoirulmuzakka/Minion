@@ -19,6 +19,7 @@
 #include "jso.h"
 #include "lsrtde.h"
 #include "nelder_mead.h"
-#include "lshade2.h"
+#include "default_options.h"
+#include "minimizer.h"
 
 #endif // MINION_H

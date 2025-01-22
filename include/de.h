@@ -1,8 +1,6 @@
 #ifndef DE_H 
 #define DE_H
 #include "minimizer_base.h"
-#include "settings.h"
-
 
 namespace minion {
 /**
@@ -105,22 +103,32 @@ public :
      * @param callback Callback function for intermediate results.
      * @param tol The tolerance for stopping criteria.
      * @param maxevals The maximum number of evaluations.
-     * @param boundStrategy The strategy for handling bounds.
      * @param seed The seed for random number generation.
-     * @param populationSize The size of the population.
+     * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    Differential_Evolution(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
-                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    double tol = 0.0, size_t maxevals = 100000, std::string boundStrategy = "reflect-random",  int seed=-1, 
-                    size_t populationSize=30)  : 
-                    MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed), 
-                    populationSize(populationSize){};
+    Differential_Evolution(
+        MinionFunction func, 
+        const std::vector<std::pair<double, double>>& bounds, 
+        const std::vector<double>& x0 = {},
+        void* data = nullptr, 
+        std::function<void(MinionResult*)> callback = nullptr,
+        double tol = 0.0001, 
+        size_t maxevals = 100000, 
+        int seed=-1, 
+        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+        ) :  
+        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
 
     /**
      * @brief Optimizes the objective function.
      * @return The result of the optimization.
      */
     MinionResult optimize() override; 
+
+    /**
+     * @brief Initialize the algorithm given the input settings.
+     */
+    void initialize  () override;
 };
 
 

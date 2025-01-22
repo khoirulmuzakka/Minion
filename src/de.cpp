@@ -2,6 +2,40 @@
 
 namespace minion {
 
+void Differential_Evolution::initialize  (){
+    if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)}, 
+            {"mutation_rate", 0.5}, 
+            {"crossover_rate", 0.8}, 
+            {"mutation_strategy", std::string("best1bin")}, 
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+        optionMap = settingKeys;
+    }
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
+    populationSize = options.get<size_t> ("population_size", 0); 
+    if (populationSize==0) populationSize= 5*bounds.size();
+
+    F= std::vector<double>(populationSize, options.get<double> ("mutation_rate", 0.5) );
+    CR= std::vector<double>(populationSize,  options.get<double> ("crossover_rate", 0.8) );
+    mutation_strategy = options.get<std::string> ("mutation_strategy", "best1bin");
+    std::vector<std::string> all_strategy = {"best1bin", "best1exp", "rand1bin", "rand1exp", "current_to_pbest1bin", "current_to_pbest1exp"}; 
+    if (std::find(all_strategy.begin(), all_strategy.end(), mutation_strategy) == all_strategy.end()) {
+        std::cerr << "Mutation strategy : "+mutation_strategy+" is not known or supported. ’best1bin' will be used instead\n";
+        mutation_strategy="best1bin"; 
+    };
+    p = std::vector<size_t>(populationSize, 1); 
+    hasInitialized=true;
+}
+
 std::vector<double> Differential_Evolution::mutate(size_t idx){
     std::vector<int> available_indices(population.size()), indices;
     size_t r1, r2, r3;
@@ -152,12 +186,7 @@ bool Differential_Evolution::checkStopping(){
     return stop;
 };
 
-void Differential_Evolution::adaptParameters(){
-    F= std::vector<double>(population.size(), 0.5);
-    CR= std::vector<double>(population.size(), 0.5);
-    p = std::vector<size_t>(population.size(), 1);
-    mutation_strategy="best1bin";
-    
+void Differential_Evolution::adaptParameters(){   
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
@@ -174,6 +203,7 @@ void Differential_Evolution::doDE_operation(std::vector<std::vector<double>>& tr
 };
 
 MinionResult Differential_Evolution::optimize() {
+    if (!hasInitialized) initialize();
     try {
         init();
         size_t iter=1;

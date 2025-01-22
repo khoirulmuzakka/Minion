@@ -51,9 +51,9 @@ private :
     double CRl = 0.0;        // 
     double CRu = 1.0;  //
 
-    const double tao1 = 0.1;   // probability to adjust F 
-    const double tao2 = 0.1;   // probability to adjust CR
-    const double myEqs = 0.25; // for reset populations  CEC2019:0.25
+    double tao1 = 0.1;   // probability to adjust F 
+    double tao2 = 0.1;   // probability to adjust CR
+    double myEqs = 0.25; // for reset populations  CEC2019:0.25
 
 private : 
     double Dist(const std::vector<double>& A, const std::vector<double>& B);
@@ -69,27 +69,31 @@ private :
     void swap(double &a, double &b);
 
 public : 
+
     /**
-     * @brief Constructs a new j2020 object with the given parameters.
-     * 
-     * @param func Objective function to minimize.
-     * @param bounds Vector of pairs defining the lower and upper bounds for each dimension.
-     * @param x0 Initial guess for the solution.
-     * @param data Additional data required by the objective function.
-     * @param callback Callback function to be called after each iteration.
-     * @param tol Tolerance for the stopping criterion.
-     * @param maxevals Maximum number of evaluations allowed.
-     * @param boundStrategy Strategy to handle boundary constraints.
-     * @param seed Random seed for reproducibility.
+     * @brief Constructor for Differential_Evolution.
+     * @param func The objective function to minimize.
+     * @param bounds The bounds for the variables.
+     * @param x0 The initial solution.
+     * @param data Additional data for the objective function.
+     * @param callback Callback function for intermediate results.
+     * @param tol The tolerance for stopping criteria.
+     * @param maxevals The maximum number of evaluations.
+     * @param seed The seed for random number generation.
+     * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    j2020(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
-                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr,
-                    size_t maxevals = 100000, int seed=-1, size_t populationSize=0):
-                     MinimizerBase(func, bounds, x0, data, callback,0.0, maxevals, "random", seed) {
-                     D = int(bounds.size());
-                     populsize = populationSize;
-                     if (populsize==0) populsize = std::min(1000, 8*D); 
-            };
+    j2020(
+        MinionFunction func, 
+        const std::vector<std::pair<double, double>>& bounds, 
+        const std::vector<double>& x0 = {},
+        void* data = nullptr, 
+        std::function<void(MinionResult*)> callback = nullptr,
+        double tol = 0.0001, 
+        size_t maxevals = 100000, 
+        int seed=-1, 
+        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+    ) :  
+        MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, seed, options){};
 
     /**
      * @brief Optimizes the given objective function using the jDE algorithm.
@@ -97,9 +101,15 @@ public :
      * @return MinionResult containing the result of the optimization.
      */
     MinionResult optimize () override; 
+
+
+    /**
+     * @brief Initialize the algorithm given the input settings.
+     */
+    void initialize  () override;
 };
 
 
-}
+};
 
 #endif

@@ -2,6 +2,38 @@
 
 namespace minion {
 
+void j2020::initialize  (){
+     if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)},  
+            {"tau1", 0.1},
+            {"tau2" , 0.1} , 
+            {"myEqs", 0.25},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+        optionMap = settingKeys;
+    };
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
+    size_t populationSize = options.get<size_t> ("population_size", 0) ;
+    D = int(bounds.size());
+    populsize = populationSize;
+    if (populsize==0) populsize = std::min(1000, 8*D); 
+
+    tao1 = options.get<double>("tau1", 0.1);  
+    tao2 =  options.get<double>("tau2", 0.1);  
+    myEqs =  options.get<double>("myEqs", 0.25);  
+
+    hasInitialized=true;
+}
+
+
 double j2020::Dist(const std::vector<double>& A, const std::vector<double>& B) { 
     double dist=0.0;
     for (int j = 0; j<D; j++) 
@@ -52,6 +84,7 @@ void j2020::swap(double &a, double &b) {
 
 MinionResult j2020::optimize () {
     try {
+        if (!hasInitialized) initialize();
         //int D;                // DIMENSION
         std::vector<double> cost;                 // vector of population costs (fitnesses)
         int indBest = 0;                    // index of best individual in current population
@@ -99,6 +132,7 @@ MinionResult j2020::optimize () {
             int r1, r2, r3;
             double F, CR;
             double c;
+
             // reinitialization big population
             if (i==0 && ( prevecEnakih(cost, bNP,cost[indBest]) || age > maxFES/10 ) ) { 
                 nReset++; 
@@ -128,7 +162,7 @@ MinionResult j2020::optimize () {
                     cost[w]=std::numeric_limits<double>::max();
                 }
             }
-
+       
             if (i==bNP && indBest < bNP) {   // copy best solution from the big pop in the small pop
                 cCopy++;
                 cost[bNP]=cost[indBest];
@@ -197,6 +231,7 @@ MinionResult j2020::optimize () {
             else {
                 F = parF[i];
             }
+
             if (rand_gen()<tao2) {                      // CR
                 CR = CRl + rand_gen() * CRu;
             }
@@ -214,7 +249,6 @@ MinionResult j2020::optimize () {
                     U[j] = P[i][j];
                 }
             }
-
             c= func({U}, data)[0];
 
             if(i<bNP) age++;

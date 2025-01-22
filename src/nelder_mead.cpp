@@ -4,15 +4,27 @@
 
 namespace minion {
 
-NelderMead::NelderMead(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0,
-                                       void* data, std::function<void(MinionResult*)> callback, double tol, int maxevals, std::string boundStrategy, int seed)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed) {
-        //printVector(x0);
+void NelderMead::initialize  (){
+    if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"bound_strategy" , std::string("reflect-random")} , 
+        };
+        optionMap = settingKeys;
+    };
+    
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
     }
-
+    hasInitialized = true;
+};
 
 MinionResult NelderMead::optimize() {
     try {
+        if (!hasInitialized) initialize();
         size_t n = x0.size();
         std::vector<std::vector<double>> simplex(n + 1, std::vector<double>(n));
 

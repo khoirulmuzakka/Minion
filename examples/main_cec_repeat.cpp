@@ -1,14 +1,16 @@
 #include <iostream>
 #include <vector>
-#include <utility>
 #include "minion.h"
 #include <chrono>
+#include "utility.h"
 
+std::vector <double> obbjective_function (const std::vector<std::vector<double>> & x, void* data){
+     minion::CECBase* func = static_cast<minion::CECBase* > (data);
+    return func->operator()(x); // Call the operator with a single vector
+}
 
 double minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022, std::string algo="ARRDE", int seed=-1) {
     minion::CECBase* cecfunc;
-    minion::MinimizerBase* optimizer;
-
     std::vector<std::pair<double, double>> bounds;
     if (year==2019) { 
         if (function_number ==1) dimension =9; 
@@ -30,95 +32,14 @@ double minimize_cec_functions(int function_number, int dimension, int population
     else if (year==2014) cecfunc = new minion::CEC2014Functions(function_number, dimension);
     else throw std::runtime_error("Invalid year.");
 
-
-    std::map<std::string, minion::ConfigValue> options_lshade= std::map<std::string, minion::ConfigValue> {
-        {"memory_size", int(6)},
-        {"archive_size_ratio", double(2.6)}, 
-        {"population_reduction" , bool(true)}, 
-        {"reduction_strategy", std::string("linear")}, //linear or exponential
-        {"minimum_population_size", int(4)}, 
-    };  
-
-    std::map<std::string, minion::ConfigValue> options_jade= std::map<std::string, minion::ConfigValue> {
-        {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
-        {"archive_size_ratio", double(1.0)}, 
-        {"population_reduction" , bool(false)}, 
-        {"reduction_strategy", std::string("linear")},
-        {"c", 0.1},
-    };
-
     int popsize=population_size;
 
-    if (algo == "j2020") {
-        optimizer = new minion::j2020 (
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, max_evals, seed,popsize
-        );
-    } else if (algo=="SIMPLEX"){
-        std::vector<double> x0; 
-        for (auto& el : bounds) x0.push_back(0.5*(el.first+el.second));
-        optimizer = new minion::NelderMead(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, x0, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed
-        );
-    }  else if (algo=="ARRDE"){
-        optimizer = new minion::ARRDE(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed, popsize
-        );
-    } else if (algo == "NLSHADE_RSP") {
-        optimizer = new minion::NLSHADE_RSP (
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, max_evals,  seed, popsize , std::min(int(20*dimension), 1000), 2.1 
-        );
-    } else if (algo == "LSRTDE") {
-        optimizer = new minion::LSRTDE (
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, max_evals,  seed, popsize 
-        );
-    } else if (algo == "LSHADE"){ 
-        optimizer = new minion::LSHADE(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, options_lshade, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed, popsize
-        );
-    } else if (algo == "LSHADE2"){ 
-        if (population_size==0) popsize = 10*dimension;
-        optimizer = new minion::LSHADE2(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, options_lshade, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed, popsize
-        );
-    } else if (algo == "JADE"){ 
-        optimizer = new minion::JADE(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, options_jade, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed, popsize
-        );
-    } else if (algo == "jSO"){ 
-        optimizer = new minion::jSO(
-            [&](const std::vector<std::vector<double>> & x, void* data) {
-                return cecfunc->operator()(x); // Call the operator with a single vector
-            },
-            bounds, {}, nullptr, nullptr, 0.0, max_evals, "reflect-random", seed, popsize
-        );
-    } else throw std::runtime_error("unknown algorithm!");
+    auto settings = minion::algoToSettingsMap[algo];
+    settings["population_size"] = size_t (popsize);
 
+    minion::Minimizer optimizer (obbjective_function,  bounds, {}, cecfunc, nullptr, algo, 0.0, max_evals,  seed, settings);
     // Optimize and get the result
-    minion::MinionResult result = optimizer->optimize();
+    minion::MinionResult result = optimizer();
     double ret = result.fun;
 
     // Output the results
@@ -127,7 +48,6 @@ double minimize_cec_functions(int function_number, int dimension, int population
     std::cout << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
 
     delete cecfunc;
-    delete optimizer;
     return ret;
 }
 

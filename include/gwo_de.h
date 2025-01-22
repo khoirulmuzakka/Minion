@@ -18,35 +18,30 @@ namespace minion {
 class GWO_DE : public MinimizerBase {
 public:
 
-    /**
-     * @brief Constructor for the GWO_DE class.
-     * @param func The objective function to be minimized.
-     * @param bounds The bounds for each dimension.
-     * @param x0 Initial guess for the solution (optional).
-     * @param population_size The size of the population.
+   /**
+     * @brief Constructor for Differential_Evolution.
+     * @param func The objective function to minimize.
+     * @param bounds The bounds for the variables.
+     * @param x0 The initial solution.
+     * @param data Additional data for the objective function.
+     * @param callback Callback function for intermediate results.
+     * @param tol The tolerance for stopping criteria.
      * @param maxevals The maximum number of evaluations.
-     * @param F Differential weight.
-     * @param CR Crossover probability.
-     * @param elimination_prob Probability of elimination for diversity.
-     * @param relTol Relative tolerance for convergence.
-     * @param boundStrategy Strategy for handling bounds.
-     * @param seed Random seed for reproducibility.
-     * @param data Additional data passed to the objective function (optional).
-     * @param callback Callback function for intermediate results (optional).
+     * @param seed The seed for random number generation.
+     * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    GWO_DE(MinionFunction func,
-           const std::vector<std::pair<double, double>>& bounds,
-           const std::vector<double>& x0 = {},
-           size_t population_size = 20,
-           int maxevals = 1000,
-           double F = 0.5,
-           double CR = 0.7,
-           double elimination_prob = 0.1,
-           double relTol = 0.0001,
-           std::string boundStrategy = "reflect-random",
-           int seed = -1,
-           void* data = nullptr,
-           std::function<void(MinionResult*)> callback = nullptr);
+    GWO_DE(
+        MinionFunction func, 
+        const std::vector<std::pair<double, double>>& bounds, 
+        const std::vector<double>& x0 = {},
+        void* data = nullptr, 
+        std::function<void(MinionResult*)> callback = nullptr,
+        double tol = 0.0001, 
+        size_t maxevals = 100000, 
+        int seed=-1, 
+        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+        ) :  
+        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
 
     /**
      * @brief Performs the optimization process.
@@ -103,6 +98,11 @@ public:
      * @brief Performs the elimination process to introduce diversity into the population.
      */
     void eliminate();
+
+    /**
+     * @brief Initialize the algorithm given the input settings.
+     */
+    void initialize  () override;
 };
 
 }

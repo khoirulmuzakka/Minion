@@ -88,7 +88,7 @@ private :
      * @param NewMemSize Size of the memory for storing previous successes.
      * @param NewArchSizeParam Parameter for determining the archive size.
      */
-    void Initialize(int newNInds, int newNVars, int NewMemSize, double NewArchSizeParam);
+    void initialize_population(int newNInds, int newNVars, int NewMemSize, double NewArchSizeParam);
 
     /**
      * @brief Clean up allocated memory.
@@ -264,32 +264,29 @@ private :
 public :
 
     /**
-     * @brief Constructor for the NLSHADE_RSP class.
-     * 
-     * This constructor initializes the NLSHADE_RSP algorithm with specified parameters.
-     * 
-     * @param func The function to be minimized.
-     * @param bounds The bounds for the variables in the optimization problem.
-     * @param x0 Initial guess for the solution (optional).
-     * @param data Additional data passed to the function (optional).
-     * @param callback Function called after each iteration (optional).
-     * @param tol Tolerance for stopping the optimization.
-     * @param maxevals Maximum number of function evaluations.
-     * @param boundStrategy Strategy for handling variable bounds.
-     * @param seed Random seed for initialization.
-     * @param populationSize Size of the population.
-     * @param memorySize Size of the memory for previous successes.
-     * @param archiveSizeRatio Ratio for determining the archive size.
+     * @brief Constructor for Differential_Evolution.
+     * @param func The objective function to minimize.
+     * @param bounds The bounds for the variables.
+     * @param x0 The initial solution.
+     * @param data Additional data for the objective function.
+     * @param callback Callback function for intermediate results.
+     * @param tol The tolerance for stopping criteria.
+     * @param maxevals The maximum number of evaluations.
+     * @param seed The seed for random number generation.
+     * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    NLSHADE_RSP(MinionFunction func, const std::vector<std::pair<double, double>>& bounds, const std::vector<double>& x0 = {},
-                    void* data = nullptr, std::function<void(MinionResult*)> callback = nullptr, size_t maxevals = 100000, int seed=-1, 
-                    int populationSize=0, int memorySize=100, double archiveSizeRatio=2.6) :
-             MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, "random", seed) {
-                MaxFEval = int(maxevals);
-                int populsize = populationSize;
-                if (populsize==0) populsize= std::max(int(30*bounds.size()), 10);
-                Initialize(populsize, int(bounds.size()), memorySize, archiveSizeRatio);
-            }
+    NLSHADE_RSP (
+        MinionFunction func, 
+        const std::vector<std::pair<double, double>>& bounds, 
+        const std::vector<double>& x0 = {},
+        void* data = nullptr, 
+        std::function<void(MinionResult*)> callback = nullptr,
+        double tol = 0.0001, 
+        size_t maxevals = 100000, 
+        int seed=-1, 
+        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+    ) :  
+        MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, seed, options){};
 
     /**
      * @brief Destructor for the NLSHADE_RSP class.
@@ -305,9 +302,15 @@ public :
      * @return The result of the optimization.
      */
     MinionResult optimize() override{
+        if (!hasInitialized) initialize();
         MainCycle(); 
         return history.back();
     }; 
+
+    /**
+     * @brief Initialize the algorithm given the input settings.
+     */
+    void initialize  () override;
 };
 
 }

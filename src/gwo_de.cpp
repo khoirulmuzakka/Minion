@@ -6,43 +6,53 @@
 
 namespace minion {
 
-GWO_DE::GWO_DE(MinionFunction func,
-               const std::vector<std::pair<double, double>>& bounds,
-               const std::vector<double>& x0,
-               size_t population_size,
-               int maxevals,
-               double F,
-               double CR,
-               double elimination_prob,
-               double tol,
-               std::string boundStrategy,
-               int seed,
-               void* data,
-               std::function<void(MinionResult*)> callback)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, boundStrategy, seed),
-      dimension(bounds.size()),
-      alpha_score(std::numeric_limits<double>::infinity()),
-      beta_score(std::numeric_limits<double>::infinity()),
-      delta_score(std::numeric_limits<double>::infinity()),
-      eval_count(0),
-      alpha_pos(bounds.size(), 0.0),
-      beta_pos(bounds.size(), 0.0),
-      delta_pos(bounds.size(), 0.0),
-      population(population_size, std::vector<double>(bounds.size(), 0.0)),
-      fitness(population_size, 0.0),
-      CR(CR), 
-      F(F),
-      elimination_prob(elimination_prob) {
+void GWO_DE::initialize  (){
+    if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)}, 
+            {"mutation_rate", 0.5}, 
+            {"crossover_rate", 0.7}, 
+            {"elimination_prob", 0.1},
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+        optionMap = settingKeys;
+    }
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
+    size_t population_size = options.get<size_t> ("population_size", 0); 
+    if (population_size==0) population_size= 2*bounds.size();
+
+    dimension = bounds.size(),
+    alpha_score = std::numeric_limits<double>::infinity();
+    beta_score = std::numeric_limits<double>::infinity();
+    delta_score = std::numeric_limits<double>::infinity();
+    eval_count = 0;
+    alpha_pos = std::vector<double> (bounds.size(), 0.0);
+    beta_pos= std::vector<double> (bounds.size(), 0.0);
+    delta_pos = std::vector<double> (bounds.size(), 0.0);
+    population = std::vector<std::vector<double>>(population_size, std::vector<double>(bounds.size(), 0.0));
+    fitness = std::vector<double> (population_size, 0.0);
+    CR = options.get<double>("crossover_rate", 0.7); 
+    F= options.get<double>("mutation_rate", 0.5); 
+    elimination_prob = options.get<double>("elimination_prob", 0.7); 
     // Initialize population
     initialize_population();
     // Evaluate initial population
     evaluate_population();
     // Update leaders
     update_leaders();
+    hasInitialized=true;
 }
 
 MinionResult GWO_DE::optimize() {
     try {
+        if (!hasInitialized) initialize();
         while (eval_count < maxevals) {
             double a = 2.0 - eval_count * (2.0 / maxevals);
             std::vector<std::vector<double>> A(population.size(), std::vector<double>(dimension));

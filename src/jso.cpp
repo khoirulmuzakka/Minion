@@ -2,24 +2,51 @@
 
 namespace minion {
 
-jSO::jSO(
-    MinionFunction func, const std::vector<std::pair<double, double>>& bounds, 
-            const std::vector<double>& x0,  void* data, std::function<void(MinionResult*)> callback,
-            double tol, size_t maxevals, std::string boundStrategy,  int seed, 
-            size_t populsize
-) : 
-Differential_Evolution(func, bounds,x0,data, callback, tol, maxevals, boundStrategy, seed, populsize){
+void jSO::initialize  (){
+    if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)},  
+            {"memory_size", size_t(5)}, 
+            {"archive_size_ratio", 1.0}, 
+            {"minimum_population_size", size_t(4)}, 
+            {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+        optionMap = settingKeys;
+    };
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
     double dimension = double(bounds.size());
-    if (populationSize==0) populationSize=size_t(25.0*log(dimension)*sqrt(dimension));
-    mutation_strategy= "current_to_pbest_AW_1bin" ;
-    memorySize = 5;
-    archive_size_ratio = 1.0;
+    populationSize = options.get<size_t> ("population_size", 0) ; 
+    if (populationSize==0) populationSize= size_t(25.0*log(dimension)*sqrt(dimension));
+
+    mutation_strategy= "current_to_pbest_AW_1bin";
+
+    memorySize = options.get<size_t> ("memory_size", 5) ; 
+    archive_size_ratio =  options.get<double> ("archive_size_ratio", 1.0) ; 
+    if (archive_size_ratio < 0.0) archive_size_ratio=1.0;
+
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
-    minPopSize = 4;
-    useLatin=false;
-};
 
+    reduction_strategy = options.get<std::string>("reduction_strategy", "linear");
+    std::vector<std::string> all_redStrategy = {"linear", "exponential", "agsk"}; 
+    if (std::find(all_redStrategy.begin(), all_redStrategy.end(), reduction_strategy) == all_redStrategy.end()){
+        std::cerr << "Population reduction strategy : "+reduction_strategy+" is not known or supported. ’linear' will be used instead\n";
+        reduction_strategy="linear";
+    }
+
+    minPopSize = options.get<size_t>("minimum_population_size", 4);
+    if (populationSize == minPopSize) popreduce = true; 
+    else popreduce= false;
+    hasInitialized=true;
+}
 
 void jSO::adaptParameters() {
     // update population size

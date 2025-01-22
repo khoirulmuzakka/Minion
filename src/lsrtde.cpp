@@ -2,6 +2,36 @@
 
 namespace minion {
 
+void LSRTDE::initialize  (){
+     if (optionMap.empty()) {
+        std::map<std::string, std::any> settingKeys = {
+            {"population_size", size_t(0)},  
+            {"memory_size", size_t(5)},
+            {"success_rate" , 0.5} , 
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+        optionMap = settingKeys;
+    };
+    Options options(optionMap);
+    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        boundStrategy = "reflect-random";
+    }
+
+    size_t populationSize = options.get<size_t> ("population_size", 0) ;
+    PopulSize=populationSize;
+    if (PopulSize==0) PopulSize=  int(20*bounds.size());
+    MaxFEval = int(maxevals); 
+
+    MemorySize= options.get<size_t> ("memory_size", 6) ; 
+    SuccessRate =  options.get<double> ("success_rate", 0.5);
+    initialize_population(PopulSize, int(bounds.size()));
+    hasInitialized=true;
+}
+
+
 void LSRTDE::qSort2int(double* Mass, int* Mass2, int low, int high)
 {
    int i=low;
@@ -26,7 +56,7 @@ void LSRTDE::qSort2int(double* Mass, int* Mass2, int low, int high)
     if(i<high)  qSort2int(Mass,Mass2,i,high);
 }
 
-void LSRTDE::Initialize(int _newNInds, int _newNVars)
+void LSRTDE::initialize_population(int _newNInds, int _newNVars)
 {
     NVars = _newNVars;
     NIndsCurrent = _newNInds;
@@ -35,10 +65,8 @@ void LSRTDE::Initialize(int _newNInds, int _newNVars)
     PopulSize = _newNInds*2;
     Generation = 0;
     TheChosenOne = 0;
-    MemorySize = 5;
     MemoryIter = 0;
     SuccessFilled = 0;
-    SuccessRate = 0.5;
     Popul = std::vector<std::vector<double>>(PopulSize);
     for(int i=0;i!=PopulSize;i++)
         Popul[i] = std::vector<double>(NVars);
