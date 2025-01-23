@@ -130,9 +130,9 @@ class ARRDE : public Differential_Evolution {
             void* data = nullptr, 
             std::function<void(MinionResult*)> callback = nullptr,
             double tol = 0.0001, 
-            size_t maxevals = 10000, 
+            size_t maxevals = 100000, 
             int seed=-1, 
-            std::map<std::string, std::any> options = std::map<std::string, std::any>()
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
         ) :  
             Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
 

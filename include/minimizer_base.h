@@ -7,11 +7,16 @@
 #include <cmath>
 #include "utility.h"
 #include <exception>
-#include <any>
+#include <variant>
 #include <map>
 
 namespace minion {
 
+
+/**
+ * @brief Alias for the variant type to hold different types of configuration values.
+ */
+using ConfigValue = std::variant<int, double, std::string, bool>;
 
 /**
  * @struct MinionResult
@@ -75,7 +80,7 @@ struct MinionResult {
  */
 class Options {
     private :
-        std::map<std::string, std::any> settings;
+        std::map<std::string, ConfigValue> settings;
 
     public:
         /**
@@ -87,7 +92,7 @@ class Options {
          * @brief Parameterized constructor to initialize settings with a predefined map.
          * @param inputSettings A map of key-value pairs to initialize the configuration.
          */
-        Options (std::map<std::string, std::any> inputSettings) : settings(inputSettings){};
+        Options (std::map<std::string, ConfigValue> inputSettings) : settings(inputSettings){};
 
 
         /**
@@ -124,7 +129,7 @@ class Options {
         T get(const std::string& key) const {
             auto it = settings.find(key);
             if (it != settings.end()) {
-                return std::any_cast<T>(it->second);
+                return std::get<T>(it->second);
             }
             throw std::runtime_error("Key not found or type mismatch: " + key);
         }
@@ -147,7 +152,7 @@ class Options {
             auto it = settings.find(key);
             if (it != settings.end()) {
                 try {
-                    ret = std::any_cast<T>(it->second);
+                    ret = std::get<T>(it->second);
                 } catch (const std::exception& e) {
                     std::cerr << "Problem when accessing value of option key "+key << "\n";
                 }
@@ -186,7 +191,7 @@ class MinimizerBase {
             double tol = 0.0001, 
             size_t maxevals = 100000, 
             int seed=-1, 
-            std::map<std::string, std::any> options = std::map<std::string, std::any>() ) : 
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
                func(func), bounds(bounds), x0(x0), data(data), callback(callback), stoppingTol(tol), maxevals(maxevals), seed(seed)
         {
             if (!bounds.empty() && bounds[0].first >= bounds[0].second) {
@@ -217,13 +222,14 @@ class MinimizerBase {
          * @brief Pure virtual function to process algirithm settings
          * 
          */
-        virtual void initialize ()=0;
+        virtual void initialize (){
+             throw std::logic_error("This function is not yet implemented.");
+        };
 
     protected : 
-        std::map<std::string, std::any> optionMap;
+        std::map<std::string, ConfigValue> optionMap;
         bool hasInitialized =false;
         void* data = nullptr;
-        std::function<void(MinionResult*)> callback;
 
     public:
         MinionFunction func;
@@ -235,8 +241,10 @@ class MinimizerBase {
         std::vector<MinionResult> history;
         std::string boundStrategy;
         int seed;
+         std::function<void(MinionResult*)> callback;
 };
 
 
-}
+};
+
 #endif // MINIMIZER_BASE_H

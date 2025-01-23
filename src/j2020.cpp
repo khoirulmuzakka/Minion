@@ -1,19 +1,13 @@
 #include "j2020.h"
+#include "default_options.h"
 
 namespace minion {
 
 void j2020::initialize  (){
-     if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"tau1", 0.1},
-            {"tau2" , 0.1} , 
-            {"myEqs", 0.25},
-            {"bound_strategy" , std::string("reflect-random")}
-        };
-        optionMap = settingKeys;
-    };
-    Options options(optionMap);
+    auto defaultKey = default_settings_j2020;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -21,7 +15,7 @@ void j2020::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    size_t populationSize = options.get<size_t> ("population_size", 0) ;
+    size_t populationSize = options.get<int> ("population_size", 0) ;
     D = int(bounds.size());
     populsize = populationSize;
     if (populsize==0) populsize = std::min(1000, 8*D); 

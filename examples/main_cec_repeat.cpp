@@ -35,7 +35,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     int popsize=population_size;
 
     auto settings = minion::algoToSettingsMap[algo];
-    settings["population_size"] = size_t (popsize);
+    settings["population_size"] = popsize;
     std::vector<double> x0;
     if (algo == "NelderMead"){
         for (auto& el : bounds) x0.push_back(0.5*(el.first+el.second));

@@ -3,20 +3,10 @@
 namespace minion {
 
 void ARRDE::initialize  (){
-     if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"archive_size_ratio", 2.0}, 
-            {"converge_reltol", 0.005}, 
-            {"refine_decrease_factor" , 0.9}, 
-            {"restart-refine-duration", 0.8}, 
-            {"maximum_consecutive_restarts" , size_t(2)},
-            {"bound_strategy" , std::string("clip")} , 
-        };
-        optionMap = settingKeys;
-    };
-    
-    Options options(optionMap);
+    auto defaultKey = default_settings_ARRDE;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -24,7 +14,7 @@ void ARRDE::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<size_t> ("population_size", 0) ; 
+    populationSize = options.get<int> ("population_size", 0) ; 
     size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0), 1000.0), 10.0)); 
     if (populationSize==0 || populationSize<bounds.size()) populationSize = defaultPopsize;
     maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size() + 1.0*std::pow(log10(maxevals), 2.0) , 500.0), 10.0)); 
@@ -46,7 +36,7 @@ void ARRDE::initialize  (){
 
     decrease=options.get<double>("refine_decrease_factor", 0.9);
     strartRefine= options.get<double>("restart-refine-duration", 0.8);
-    maxRestart =options.get<size_t>("maximum_consecutive_restarts", size_t(2));
+    maxRestart =options.get<int>("maximum_consecutive_restarts", 2);
 
     useLatin=true;
     hasInitialized=true;

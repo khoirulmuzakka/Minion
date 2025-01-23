@@ -1,18 +1,13 @@
 #include "nlshadersp.h"
+#include "default_options.h"
 
 namespace minion {
 
 void NLSHADE_RSP::initialize  (){
-     if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"memory_size", size_t(100)},
-            {"archive_size_ratio" , 2.6} , 
-            {"bound_strategy" , std::string("reflect-random")}
-        };
-        optionMap = settingKeys;
-    };
-    Options options(optionMap);
+     auto defaultKey = default_settings_NLSHADE_RSP;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -20,13 +15,13 @@ void NLSHADE_RSP::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    size_t populationSize = options.get<size_t> ("population_size", 0) ;
+    size_t populationSize = options.get<int> ("population_size", 0) ;
     int populsize = populationSize;
     if (populsize==0) populsize= std::max(int(30*bounds.size()), 10);
 
     MaxFEval = int(maxevals); 
 
-    int memorySize = int (options.get<size_t>("memory_size", size_t(100))); 
+    int memorySize = options.get<int>("memory_size",100); 
     double archiveSizeRatio = options.get<double>("archive_size_ratio", 2.6);
     initialize_population(populsize, int(bounds.size()), memorySize, archiveSizeRatio);
     hasInitialized=true;

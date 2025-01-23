@@ -35,7 +35,7 @@ public:
         double tol = 0.0001, 
         size_t maxevals = 100000, 
         int seed=-1, 
-        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+        std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
         ) :  
         MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
 

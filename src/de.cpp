@@ -3,17 +3,10 @@
 namespace minion {
 
 void Differential_Evolution::initialize  (){
-    if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)}, 
-            {"mutation_rate", 0.5}, 
-            {"crossover_rate", 0.8}, 
-            {"mutation_strategy", std::string("best1bin")}, 
-            {"bound_strategy" , std::string("reflect-random")} 
-        };
-        optionMap = settingKeys;
-    }
-    Options options(optionMap);
+    auto defaultKey = default_settings_DE;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -21,7 +14,7 @@ void Differential_Evolution::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<size_t> ("population_size", 0); 
+    populationSize = options.get<int> ("population_size", 0); 
     if (populationSize==0) populationSize= 5*bounds.size();
 
     F= std::vector<double>(populationSize, options.get<double> ("mutation_rate", 0.5) );

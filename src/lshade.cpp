@@ -4,19 +4,10 @@
 namespace minion {
 
 void LSHADE::initialize  (){
-     if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"memory_size", size_t(6)}, 
-            {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
-            {"archive_size_ratio", 2.6}, 
-            {"minimum_population_size", size_t(4)}, 
-            {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("reflect-random")} 
-        };
-        optionMap = settingKeys;
-    };
-    Options options(optionMap);
+     auto defaultKey = default_settings_LSHADE;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -24,7 +15,7 @@ void LSHADE::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<size_t> ("population_size", 0) ; 
+    populationSize = options.get<int> ("population_size", 0) ; 
     if (populationSize==0) populationSize= 18*bounds.size();
 
     mutation_strategy= options.get<std::string> ("mutation_strategy", "current_to_pbest_A_1bin") ;
@@ -34,7 +25,7 @@ void LSHADE::initialize  (){
         mutation_strategy="best1bin"; 
     };
 
-    memorySize = options.get<size_t> ("memory_size", 6) ; 
+    memorySize = options.get<int> ("memory_size", 6) ; 
     archive_size_ratio =  options.get<double> ("archive_size_ratio", 2.6) ; 
     if (archive_size_ratio < 0.0) archive_size_ratio=2.6;
 
@@ -48,7 +39,7 @@ void LSHADE::initialize  (){
         reduction_strategy="linear";
     }
 
-    minPopSize = options.get<size_t>("minimum_population_size", 4);
+    minPopSize = options.get<int>("minimum_population_size", 4);
     if (populationSize == minPopSize) popreduce = true; 
     else popreduce= false;
     hasInitialized=true;

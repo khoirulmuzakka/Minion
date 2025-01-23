@@ -1,18 +1,15 @@
 #include "nelder_mead.h"
 #include <algorithm>
+#include "default_options.h"
 
 
 namespace minion {
 
 void NelderMead::initialize  (){
-    if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"bound_strategy" , std::string("reflect-random")} , 
-        };
-        optionMap = settingKeys;
-    };
-    
-    Options options(optionMap);
+    auto defaultKey = default_settings_NelderMead;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {

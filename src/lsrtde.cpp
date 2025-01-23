@@ -1,18 +1,13 @@
 #include "lsrtde.h"
+#include "default_options.h"
 
 namespace minion {
 
 void LSRTDE::initialize  (){
-     if (optionMap.empty()) {
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"memory_size", size_t(5)},
-            {"success_rate" , 0.5} , 
-            {"bound_strategy" , std::string("reflect-random")}
-        };
-        optionMap = settingKeys;
-    };
-    Options options(optionMap);
+    auto defaultKey = default_settings_LSRTDE;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
+
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -20,12 +15,12 @@ void LSRTDE::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    size_t populationSize = options.get<size_t> ("population_size", 0) ;
+    size_t populationSize = options.get<int> ("population_size", 0) ;
     PopulSize=populationSize;
     if (PopulSize==0) PopulSize=  int(20*bounds.size());
     MaxFEval = int(maxevals); 
 
-    MemorySize= options.get<size_t> ("memory_size", 6) ; 
+    MemorySize= options.get<int> ("memory_size", 6) ; 
     SuccessRate =  options.get<double> ("success_rate", 0.5);
     initialize_population(PopulSize, int(bounds.size()));
     hasInitialized=true;

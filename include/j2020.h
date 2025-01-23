@@ -83,15 +83,15 @@ public :
      * @param options Option map that specifies further configurational settings for the algorithm.
      */
     j2020(
-        MinionFunction func, 
-        const std::vector<std::pair<double, double>>& bounds, 
-        const std::vector<double>& x0 = {},
-        void* data = nullptr, 
-        std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001, 
-        size_t maxevals = 100000, 
-        int seed=-1, 
-        std::map<std::string, std::any> options = std::map<std::string, std::any>()
+            MinionFunction func, 
+            const std::vector<std::pair<double, double>>& bounds, 
+            const std::vector<double>& x0 = {},
+            void* data = nullptr, 
+            std::function<void(MinionResult*)> callback = nullptr,
+            double tol = 0.0001, 
+            size_t maxevals = 100000, 
+            int seed=-1, 
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :  
         MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, seed, options){};
 

@@ -4,20 +4,10 @@ namespace minion {
 
 
 void JADE::initialize  (){
-    if (optionMap.empty()){
-        std::map<std::string, std::any> settingKeys = {
-            {"population_size", size_t(0)},  
-            {"c", 0.1}, 
-            {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
-            {"archive_size_ratio", 1.0}, 
-            {"minimum_population_size", size_t(4)}, 
-            {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("reflect-random")} 
-        };
-        optionMap = settingKeys;
-    };
+    auto defaultKey = default_settings_JADE;
+    for (auto el : optionMap) defaultKey[el.first] = el.second;
+    Options options(defaultKey);
 
-    Options options(optionMap);
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
     std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
@@ -25,7 +15,7 @@ void JADE::initialize  (){
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<size_t> ("population_size", 0) ; 
+    populationSize = options.get<int> ("population_size", 0) ; 
     if (populationSize==0){
          size_t dimension = bounds.size();
          if (dimension <=10) populationSize = 30; 
@@ -55,7 +45,7 @@ void JADE::initialize  (){
         reduction_strategy="linear";
     }
 
-    minPopSize = options.get<size_t>("minimum_population_size", 4);
+    minPopSize = options.get<int>("minimum_population_size", 4);
     if (populationSize == minPopSize) popreduce = true; 
     else popreduce= false;
     hasInitialized=true;

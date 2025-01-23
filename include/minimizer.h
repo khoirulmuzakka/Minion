@@ -48,7 +48,7 @@ class Minimizer {
             double tol = 0.0001, 
             size_t maxevals = 100000, 
             int seed=-1, 
-            std::map<std::string, std::any> options = std::map<std::string, std::any>() ) 
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
         {
             if (algo == "DE") optimizer = new Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "LSHADE") optimizer = new LSHADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
@@ -71,13 +71,30 @@ class Minimizer {
         };
 
         /**
-         * @brief Virtual function to perform the optimization.
+         * @brief function to perform the optimization.
          * @return A MinionResult object containing the result of the optimization.
          * @throws std::logic_error if the function is not implemented in a derived class.
          */ 
         MinionResult operator () () {
-            return optimizer->optimize();
+            auto ret = optimizer->optimize();
+            history = optimizer->history;
+            return ret;
         };
+
+
+        /**
+         * @brief function to perform the optimization.
+         * @return A MinionResult object containing the result of the optimization.
+         * @throws std::logic_error if the function is not implemented in a derived class.
+         */ 
+        MinionResult optimize () {
+            auto ret = optimizer->optimize();
+            history = optimizer->history;
+            return ret;
+        };
+
+    public : 
+        std::vector<MinionResult> history;
 
 };
 
