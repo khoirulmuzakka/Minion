@@ -152,7 +152,8 @@ void LSRTDE::RemoveWorst(int _NIndsFront, int _newNIndsFront)
 }
 
 void LSRTDE::MainCycle()
-{
+{   
+    history.clear();
     std::vector<double> FitTemp2;
 
     std::vector<std::vector<double>> pop; 
@@ -318,7 +319,9 @@ void LSRTDE::MainCycle()
         }
         size_t best_index = findArgMin(FitArrFront);
         std::vector<double> bestInd = Popul[best_index ];
-        history.push_back(MinionResult( bestInd, FitArrFront[best_index], Generation, NFEval, false, ""));
+        minionResult = MinionResult(bestInd, FitArrFront[best_index], Generation, NFEval, false, "");
+        history.push_back(minionResult);
+        if (callback != nullptr) callback(&minionResult);
 
 
     }

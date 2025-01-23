@@ -306,7 +306,7 @@ void NLSHADE_RSP::MainCycle()
     double NoArchSuccess;
     double NArchUsages;
     double ArchProbs = 0.5;
-
+    history.clear();
 
     std::vector<std::vector<double>> popul_vec= convertToVector(Popul, NInds, NVars);
     auto funcRes = func(popul_vec, data);
@@ -431,7 +431,8 @@ void NLSHADE_RSP::MainCycle()
             FindNSaveBest(false,TheChosenOne);
         }
 
-        history.push_back(MinionResult( std::vector<double>(BestInd, BestInd + NVars), globalbest, Generation, NFEval, false, ""));
+        minionResult = MinionResult( std::vector<double>(BestInd, BestInd + NVars), globalbest, Generation, NFEval, false, "");
+        history.push_back(minionResult);
 
         ArchSuccess = 0;
         NoArchSuccess = 0;
@@ -480,6 +481,7 @@ void NLSHADE_RSP::MainCycle()
         UpdateMemoryCrF();
         SuccessFilled = 0;
         Generation ++;
+        if (callback != nullptr) callback(&minionResult);
         
     } while(NFEval < MaxFEval);
 }

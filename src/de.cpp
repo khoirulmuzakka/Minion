@@ -198,6 +198,7 @@ void Differential_Evolution::doDE_operation(std::vector<std::vector<double>>& tr
 MinionResult Differential_Evolution::optimize() {
     if (!hasInitialized) initialize();
     try {
+        history.clear();
         init();
         size_t iter=1;
         do {
@@ -221,9 +222,10 @@ MinionResult Differential_Evolution::optimize() {
             if (fitness[best_idx] >= best_fitness) {no_improve_counter++;} else {no_improve_counter =0;};
             best = population[best_idx];
             best_fitness = fitness[best_idx];
-
-            history.push_back(MinionResult(best, best_fitness, iter, Nevals, false, ""));
+            minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
+            history.push_back(minionResult);
             iter++;
+            if (callback != nullptr) callback(&minionResult);
             if (checkStopping()) break;
         } while(Nevals < maxevals); 
 

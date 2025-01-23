@@ -46,7 +46,9 @@ void GWO_DE::initialize  (){
 
 MinionResult GWO_DE::optimize() {
     try {
+        history.clear();
         if (!hasInitialized) initialize();
+        int iter =0;
         while (eval_count < maxevals) {
             double a = 2.0 - eval_count * (2.0 / maxevals);
             std::vector<std::vector<double>> A(population.size(), std::vector<double>(dimension));
@@ -99,6 +101,11 @@ MinionResult GWO_DE::optimize() {
             // Evaluate population after elimination
             //evaluate_population();
             update_leaders();
+
+            minionResult = MinionResult(population[0], fitness[0], iter, eval_count,  false, "");
+            history.push_back(minionResult);
+            if (callback != nullptr) callback(&minionResult);
+            iter++;
         }
 
         MinionResult result;
