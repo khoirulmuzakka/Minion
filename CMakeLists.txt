@@ -63,11 +63,6 @@ set_target_properties(pyminioncpp PROPERTIES
 )
 
 # --------------------- main files ---------------------------------------------#
-add_executable(main_repeat examples/main_cec_repeat.cpp)
-target_link_libraries(main_repeat PRIVATE minion)
-set_target_properties(main_repeat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-
-add_executable(main_repeat2 examples/main_cec_repeat2.cpp)
-target_link_libraries(main_repeat2 PRIVATE minion)
-set_target_properties(main_repeat2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-
+add_executable(main_cec examples/main_cec.cpp)
+target_link_libraries(main_cec PRIVATE minion)
+set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)

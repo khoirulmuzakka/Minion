@@ -4,10 +4,14 @@
 #include <chrono>
 #include "utility.h"
 
-std::vector <double> obbjective_function (const std::vector<std::vector<double>> & x, void* data){
+std::vector <double> objective_function (const std::vector<std::vector<double>> & x, void* data){
      minion::CECBase* func = static_cast<minion::CECBase* > (data);
     return func->operator()(x); // Call the operator with a single vector
 }
+
+void callBack(minion::MinionResult* res) {
+    //std::cout << "Best fitness " << res->fun << "\n";
+};
 
 double minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022, std::string algo="ARRDE", int seed=-1) {
     minion::CECBase* cecfunc;
@@ -40,7 +44,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
     if (algo == "NelderMead"){
         for (auto& el : bounds) x0.push_back(0.5*(el.first+el.second));
     } else x0={};
-    minion::Minimizer optimizer (obbjective_function,  bounds, x0, cecfunc, nullptr, algo, 0.0, max_evals,  seed, settings);
+    minion::Minimizer optimizer (objective_function,  bounds, x0, cecfunc, callBack, algo, 0.0, max_evals,  seed, settings);
     // Optimize and get the result
     minion::MinionResult result = optimizer();
     double ret = result.fun;

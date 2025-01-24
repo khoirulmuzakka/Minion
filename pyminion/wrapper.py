@@ -2,8 +2,7 @@ import sys
 import os 
 
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
-custom_path = os.path.join(current_file_directory, '../lib/Release/')
-custom_path = os.path.join(current_file_directory, '../lib/')
+custom_path = os.path.join(current_file_directory, 'lib')
 sys.path.append(custom_path)
 
 import numpy as np
