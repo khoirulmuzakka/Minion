@@ -6,23 +6,23 @@ custom_path = os.path.join(current_file_directory, 'lib')
 sys.path.append(custom_path)
 
 import numpy as np
-from pyminioncpp import LSHADE as cppLSHADE
-from pyminioncpp import LSHADE as cppJADE
-from pyminioncpp import ARRDE as cppARRDE
-from pyminioncpp import NLSHADE_RSP as cppNLSHADE_RSP
-from pyminioncpp import j2020 as cppj2020
-from pyminioncpp import jSO as cppjSO
-from pyminioncpp import LSRTDE as cppLSRTDE
-from pyminioncpp import Differential_Evolution as cppDifferential_Evolution
-from pyminioncpp import MinionResult as cppMinionResult
-from pyminioncpp import GWO_DE as cppGWO_DE
-from pyminioncpp import Minimizer as cppMinimizer
-from pyminioncpp import NelderMead as cppNelderMead 
-from pyminioncpp import CEC2017Functions as cppCEC2017Functions
-from pyminioncpp import CEC2014Functions as cppCEC2014Functions
-from pyminioncpp import CEC2019Functions as cppCEC2019Functions
-from pyminioncpp import CEC2020Functions as cppCEC2020Functions
-from pyminioncpp import CEC2022Functions as cppCEC2022Functions
+from minionpycpp import LSHADE as cppLSHADE
+from minionpycpp import LSHADE as cppJADE
+from minionpycpp import ARRDE as cppARRDE
+from minionpycpp import NLSHADE_RSP as cppNLSHADE_RSP
+from minionpycpp import j2020 as cppj2020
+from minionpycpp import jSO as cppjSO
+from minionpycpp import LSRTDE as cppLSRTDE
+from minionpycpp import Differential_Evolution as cppDifferential_Evolution
+from minionpycpp import MinionResult as cppMinionResult
+from minionpycpp import GWO_DE as cppGWO_DE
+from minionpycpp import Minimizer as cppMinimizer
+from minionpycpp import NelderMead as cppNelderMead 
+from minionpycpp import CEC2017Functions as cppCEC2017Functions
+from minionpycpp import CEC2014Functions as cppCEC2014Functions
+from minionpycpp import CEC2019Functions as cppCEC2019Functions
+from minionpycpp import CEC2020Functions as cppCEC2020Functions
+from minionpycpp import CEC2022Functions as cppCEC2022Functions
 import pybind11
 
 

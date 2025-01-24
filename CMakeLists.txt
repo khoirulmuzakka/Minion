@@ -56,10 +56,10 @@ set_target_properties(minion PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
 
-# --------------------- pyminion library ---------------------------------------#
-file(GLOB PYMINION_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
-pybind11_add_module(pyminioncpp ${PYMINION_SOURCE_FILES})
-set_target_properties(pyminioncpp PROPERTIES
+# --------------------- minionpy library ---------------------------------------#
+file(GLOB minionpy_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
+pybind11_add_module(minionpycpp ${minionpy_SOURCE_FILES})
+set_target_properties(minionpycpp PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )

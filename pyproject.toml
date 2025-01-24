@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minionpy"
+version = "0.1"
+description = "Minionpy is a python wrapper of Minion, a library for derivative-free optimization algorithms implemented in C++."
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+authors = [
+    { name = "Khoirul Faiq Muzakka", email = "khoirul.muzakka@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development"
+]
+requires-python = ">=3.6"
+dependencies = [
+    "numpy>=1.21.0",
+    "scipy>=1.13.1"
+]
+
+[tool.setuptools.packages.find]
+include = ["minionpy"]
+
+[tool.setuptools.package-data]
+"minionpy" = ["lib/*", "cec_input_data/*"]
+
+[tool.setuptools]
+license-files = []
+
+[project.urls]
+homepage = "https://github.com/khoirulmuzakka/Minion"
+documentation = "https://github.com/khoirulmuzakka/Minion"
+source = "https://github.com/khoirulmuzakka/Minion"

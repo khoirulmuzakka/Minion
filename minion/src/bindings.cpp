@@ -38,7 +38,7 @@ void translate_exception(const std::exception &e) {
 }
 
 
-PYBIND11_MODULE(pyminioncpp, m) {
+PYBIND11_MODULE(minionpycpp, m) {
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);

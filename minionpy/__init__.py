@@ -6,4 +6,4 @@ from .test import *
 __version__ = "0.1"
 
 # Optionally, define the package name
-__name__ = "pyminion"
+__name__ = "minionpy"

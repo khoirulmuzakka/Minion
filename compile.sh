@@ -3,6 +3,9 @@
 # Navigate to the project directory
 cd "$(dirname "$0")"
 
+
+rm -rf dist build *.egg-info
+
 #source ./python_env/bin/activate
 
 # Delete existing build directory (if it exists)
@@ -25,14 +28,14 @@ cmake --build . --clean-first --config Release -- -j8
 
 cd ..
 echo "copying resources..."
-mkdir -p pyminion/lib
-mv lib/pyminioncpp* pyminion/lib/
-cp -r cec_input_data pyminion/
+mkdir -p minionpy/lib
+mv lib/minionpycpp* minionpy/lib/
+cp -r cec_input_data minionpy/
 
 echo "building pip package..."
 python -m build
 
-echo "installing pyminion ... "
-pip uninstall pyminion
-pip install dist/pyminion-0.1-py3-none-any.whl
+echo "installing minionpy ... "
+pip uninstall minionpy
+pip install dist/minionpy-0.1-py3-none-any.whl
 echo "done"

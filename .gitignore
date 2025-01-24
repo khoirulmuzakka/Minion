@@ -21,7 +21,7 @@ examples/*.txt
 examples/*.csv
 examples/.DS_Store
 .DS_Store
-pyminion/lib
-pyminion.egg-info
+minionpy/lib
+minionpy.egg-info
 examples/test.py
 

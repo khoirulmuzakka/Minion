@@ -8,12 +8,12 @@ import numpy as np
 import time
 from scipy.optimize import differential_evolution, minimize
 import matplotlib.pyplot as plt
-from pyminion import *
+from minionpy import *
 import concurrent.futures
 import threading
 from cec_2011 import * #commmet out this line if you do not have matlab installed
 import pandas as pd
-from pyminion.test import MWUT
+from minionpy.test import MWUT
 import gc
 
 
