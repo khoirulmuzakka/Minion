@@ -10,13 +10,31 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/khoirulmuzakka/Minion",  # Replace with your GitHub repo
     packages=find_packages(),  # Automatically find and include packages
+    include_package_data=True,
     package_data={
-        "pyminion": ["lib/*"],
+        "pyminion": ["lib/*", "cec_input_data/*"],
     },
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "Environment :: Console",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development",
     ],
     python_requires=">=3.6",  # Minimum Python version
     install_requires=[

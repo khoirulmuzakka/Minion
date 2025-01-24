@@ -23,4 +23,5 @@ examples/.DS_Store
 .DS_Store
 pyminion/lib
 pyminion.egg-info
+examples/test.py
 
