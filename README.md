@@ -1,5 +1,8 @@
 # Minion: Derivative-Free Optimization Library
 
+![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/<WORKFLOW_FILE_NAME>/badge.svg)
+
+
 The Minion library is a toolkit for derivative-free optimization, designed to solve complex optimization problems where gradients are unavailable or unreliable. It includes a collection of state-of-the-art optimization algorithms that have won top positions in the IEEE Congress on Evolutionary Computation (CEC) competitions, which are not commonly available in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
 
 Minion also serves as a testing ground for researchers to develop and evaluate new optimization algorithms. It incorporates recent benchmark functions from the CEC competitions held in 2011, 2014, 2017, 2019, 2020, and 2022, offering a robust environment for algorithm testing and comparison. 
