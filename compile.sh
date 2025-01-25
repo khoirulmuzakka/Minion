@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 
 rm -rf dist build *.egg-info
+rm -rf minionpy/lib/ lib/
 
 #source ./python_env/bin/activate
 
@@ -27,15 +28,10 @@ echo "compiling minion ..."
 cmake --build . --clean-first --config Release -- -j8
 
 cd ..
-echo "copying resources..."
-mkdir -p minionpy/lib
-mv lib/minionpycpp* minionpy/lib/
-cp -r cec_input_data minionpy/
+#echo "building pip package..."
+#python -m build
 
-echo "building pip package..."
-python -m build
-
-echo "installing minionpy ... "
-pip uninstall minionpy
-pip install dist/minionpy-0.1-py3-none-any.whl
-echo "done"
+#echo "installing minionpy ... "
+#pip uninstall minionpy
+#pip install dist/minionpy-0.1-py3-none-any.whl
+#echo "done"
