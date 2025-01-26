@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "scikit-build"]
+requires = ["setuptools>=40.8.0", "wheel", "scikit-build", "cmake>=3.14", "ninja", "pybind11"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -47,6 +47,17 @@ include = ["minionpy"]
 
 [tool.setuptools]
 license-files = []
+
+[tool.scikit-build]
+# Specify CMake configuration
+cmake_minimum_required = "3.14"
+cmake_args = [
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DCMAKE_CXX_STANDARD=17"
+]
+
+[tool.scikit-build.find]
+include = ["minionpy"]
 
 [project.urls]
 homepage = "https://github.com/khoirulmuzakka/Minion"

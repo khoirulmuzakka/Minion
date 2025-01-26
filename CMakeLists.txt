@@ -87,3 +87,13 @@ else()
     set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 endif()
 
+
+install(TARGETS minion
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+# Install the Python module
+install(TARGETS minionpycpp
+    LIBRARY DESTINATION minionpy/lib
+)
