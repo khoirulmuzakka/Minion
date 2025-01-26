@@ -44,6 +44,7 @@ std::string getLibraryPath() {
     dladdr(reinterpret_cast<void*>(&getLibraryPath), &dl_info);
     snprintf(path, sizeof(path), "%s", dl_info.dli_fname);
 #endif
+    //std ::cout << "Resource : " <<std::string(path)<< "\n";
     return std::string(path);
 }
 

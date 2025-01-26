@@ -9,6 +9,8 @@ rd /s /q build
 rd /s /q *.egg-info
 rd /s /q minionpy\lib
 rd /s /q lib
+rd /s /q bin
+
 
 rem Create a new build directory
 if not exist build mkdir build

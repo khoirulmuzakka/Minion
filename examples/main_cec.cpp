@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include "minion.h"
 #include <chrono>
+#include "minion.h"
 #include "utility.h"
 
 std::vector <double> objective_function (const std::vector<std::vector<double>> & x, void* data){
