@@ -4,7 +4,7 @@
 namespace minion {
 
 void j2020::initialize  (){
-    auto defaultKey = default_settings_j2020;
+    auto defaultKey = DefaultSettings().getDefaultSettings("j2020");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

@@ -4,7 +4,7 @@
 namespace minion {
 
 void LSHADE::initialize  (){
-     auto defaultKey = default_settings_LSHADE;
+     auto defaultKey = DefaultSettings().getDefaultSettings("LSHADE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

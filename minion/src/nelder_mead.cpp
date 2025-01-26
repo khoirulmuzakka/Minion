@@ -6,7 +6,7 @@
 namespace minion {
 
 void NelderMead::initialize  (){
-    auto defaultKey = default_settings_NelderMead;
+    auto defaultKey = DefaultSettings().getDefaultSettings("NelderMead");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

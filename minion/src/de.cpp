@@ -3,7 +3,7 @@
 namespace minion {
 
 void Differential_Evolution::initialize  (){
-    auto defaultKey = default_settings_DE;
+    auto defaultKey = DefaultSettings().getDefaultSettings("DE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

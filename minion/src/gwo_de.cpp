@@ -8,7 +8,7 @@
 namespace minion {
 
 void GWO_DE::initialize  (){
-    auto defaultKey = default_settings_GWO_DE;
+    auto defaultKey = DefaultSettings().getDefaultSettings("GWO_DE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

@@ -3,7 +3,7 @@
 namespace minion {
 
 void jSO::initialize  (){
-    auto defaultKey = default_settings_jSO;
+    auto defaultKey = DefaultSettings().getDefaultSettings("jSO");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

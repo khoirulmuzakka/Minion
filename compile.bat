@@ -3,8 +3,12 @@
 rem Navigate to the project directory
 cd /d "%~dp0"
 
-rem Delete existing build directory (if it exists)
-if exist build rmdir /s /q build
+rem Remove the existing directories and files
+rd /s /q dist
+rd /s /q build
+rd /s /q *.egg-info
+rd /s /q minionpy\lib
+rd /s /q lib
 
 rem Create a new build directory
 if not exist build mkdir build

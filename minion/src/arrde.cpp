@@ -3,7 +3,7 @@
 namespace minion {
 
 void ARRDE::initialize  (){
-    auto defaultKey = default_settings_ARRDE;
+    auto defaultKey = DefaultSettings().getDefaultSettings("ARRDE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

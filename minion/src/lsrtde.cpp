@@ -4,7 +4,7 @@
 namespace minion {
 
 void LSRTDE::initialize  (){
-    auto defaultKey = default_settings_LSRTDE;
+    auto defaultKey = DefaultSettings().getDefaultSettings("LSRTDE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 
@@ -14,9 +14,7 @@ void LSRTDE::initialize  (){
         std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
-
-    size_t populationSize = options.get<int> ("population_size", 0) ;
-    PopulSize=populationSize;
+    PopulSize= options.get<int> ("population_size", 0) ;
     if (PopulSize==0) PopulSize=  int(20*bounds.size());
     MaxFEval = int(maxevals); 
 

@@ -1,5 +1,9 @@
 # Minion: Derivative-Free Optimization Library
 
+<div align="center">
+  <img src="docs/minion_logo.png" alt="Logo" width="200" />
+</div>
+
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)
 
 

@@ -57,6 +57,7 @@ std::string getResourcePath() {
     std::string libraryDir = getLibraryDirectory();
     std::filesystem::path resourcePath = std::filesystem::path(libraryDir) / "../cec_input_data/";
     resourcePath = std::filesystem::canonical(resourcePath);
+    std::cout << "Resource path : " << resourcePath.string()<< "\n";
     return resourcePath.string();
 }
 

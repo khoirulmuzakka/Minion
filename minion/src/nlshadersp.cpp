@@ -4,7 +4,7 @@
 namespace minion {
 
 void NLSHADE_RSP::initialize  (){
-     auto defaultKey = default_settings_NLSHADE_RSP;
+     auto defaultKey = DefaultSettings().getDefaultSettings("NLSHADE_RSP");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 
@@ -14,9 +14,7 @@ void NLSHADE_RSP::initialize  (){
         std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
-
-    size_t populationSize = options.get<int> ("population_size", 0) ;
-    int populsize = populationSize;
+    int populsize = options.get<int> ("population_size", 0) ;
     if (populsize==0) populsize= std::max(int(30*bounds.size()), 10);
 
     MaxFEval = int(maxevals); 

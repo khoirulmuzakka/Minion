@@ -41,12 +41,21 @@ file(GLOB MINION_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
 list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
 
 # Define the shared library
-add_library(minion SHARED ${MINION_SOURCE_FILES})
+add_library(minion STATIC ${MINION_SOURCE_FILES})
 target_link_libraries(minion)
-set_target_properties(minion PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-)
+if (MSVC)
+    set_target_properties(minion PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+    )
+else()
+    set_target_properties(minion PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    )
+endif()
 
 # --------------------- minionpy library ---------------------------------------#
 # Collect source files for the Python bindings
@@ -54,10 +63,23 @@ file(GLOB minionpy_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
 
 # Define the Python module
 pybind11_add_module(minionpycpp ${minionpy_SOURCE_FILES})
-set_target_properties(minionpycpp PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
-)
+if (MSVC)
+    set_target_properties(minionpycpp PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib/$<0:>
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib/$<0:>
+    )
+else()
+    set_target_properties(minionpycpp PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
+    )
+endif()
 
 # Set up custom output directories for builds
 message(STATUS "Configuration complete for Minion and MinionPy.")
+
+
+####### Compile examples ##############
+add_executable(main_cec examples/main_cec.cpp)
+target_link_libraries(main_cec PRIVATE minion)
+set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)

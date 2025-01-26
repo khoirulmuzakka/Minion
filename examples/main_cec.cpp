@@ -38,7 +38,7 @@ double minimize_cec_functions(int function_number, int dimension, int population
 
     int popsize=population_size;
 
-    auto settings = minion::algoToSettingsMap[algo];
+    auto settings = minion::DefaultSettings().getDefaultSettings(algo);
     settings["population_size"] = popsize;
     std::vector<double> x0;
     if (algo == "NelderMead"){
@@ -82,6 +82,15 @@ void dumpResultsToFile(const std::vector<std::vector<double>>& results, const st
 
 
 int main(int argc, char* argv[]) {
+
+    std::cout << "argc: " << argc << "\n";
+    for (int i = 0; i < argc; ++i) {
+        std::cout << "argv[" << i << "]: " << argv[i] << "\n";
+    }
+
+    
+    std::cout << "Kakakaak\n";
+    return 0;
     int numRuns= 1;
     int dimension = 10;
     std::string algo="ARRDE";

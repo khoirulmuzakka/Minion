@@ -4,7 +4,7 @@ namespace minion {
 
 
 void JADE::initialize  (){
-    auto defaultKey = default_settings_JADE;
+    auto defaultKey = DefaultSettings().getDefaultSettings("JADE");
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 

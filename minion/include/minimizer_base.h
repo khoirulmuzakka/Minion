@@ -153,7 +153,7 @@ class Options {
             if (it != settings.end()) {
                 try {
                     ret = std::get<T>(it->second);
-                } catch (const std::exception& e) {
+                } catch (const std::exception& ) {
                     std::cerr << "Problem when accessing value of option key "+key << "\n";
                 }
             } else {
