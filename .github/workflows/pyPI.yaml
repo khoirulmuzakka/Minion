@@ -2,11 +2,8 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'v*'  
 
 jobs:
   build:
@@ -14,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.7", "3.12"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         
     steps:
     # Checkout the repository
@@ -31,15 +28,16 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install numpy scipy build pybind11[global]
+        pip install numpy scipy build pybind11[global] cibuildwheel
 
-    # Build the library
-    - name: Build the library
+    # Build the wheel
+    - name: Build the wheel
       run: |
-        cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --target minionpycpp
-        cmake --build build --target minion
+        python -m cibuildwheel --output-dir dist
 
-    # Verify build and run Python build
-    - name: Python build
-      run: python -m build
+    # Upload to PyPI
+    - name: Upload to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.8.2
+      with:
+        user: ${{ secrets.PYPI_USERNAME }}
+        password: ${{ secrets.PYPI_TOKEN }}

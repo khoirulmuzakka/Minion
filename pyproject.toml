@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "minionpy"
-version = "0.1.1"
+version = "0.1.2"
 description = "MinionPy is the Python implementation of the Minion C++ library, designed for derivative-free optimization."
 readme = "minionpy.md"
 license = { file = "LICENSE.txt" }
@@ -25,15 +25,17 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development"
 ]
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 dependencies = [
     "numpy>=1.21.0",
     "scipy>=1.13.1"

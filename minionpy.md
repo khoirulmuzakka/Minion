@@ -1,8 +1,13 @@
 # MinionPy
 
 <div align="center">
-  <img src="docs/minion_logo.png" alt="Logo" width="200" />
+  <img src="https://github.com/khoirulmuzakka/Minion/raw/main/docs/minion_logo.png" alt="Logo" width="200" />
 </div>
+
+
+![PyPI version](https://img.shields.io/pypi/v/minionpy.svg)
+![PyPI downloads](https://img.shields.io/pypi/dm/minionpy.svg)
+![PyPI License](https://img.shields.io/pypi/l/minionpy.svg)
 
 MinionPy is the Python implementation of the Minion C++ library, designed for derivative-free optimization. It provides tools for solving optimization problems where gradients are unavailable or unreliable, incorporating state-of-the-art algorithms recognized in IEEE Congress on Evolutionary Computation (CEC) competitions. The library offers researchers and practitioners access to advanced optimization techniques and benchmarks for testing and evaluation.
 
