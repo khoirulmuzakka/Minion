@@ -82,15 +82,6 @@ void dumpResultsToFile(const std::vector<std::vector<double>>& results, const st
 
 
 int main(int argc, char* argv[]) {
-
-    std::cout << "argc: " << argc << "\n";
-    for (int i = 0; i < argc; ++i) {
-        std::cout << "argv[" << i << "]: " << argv[i] << "\n";
-    }
-
-    
-    std::cout << "Kakakaak\n";
-    return 0;
     int numRuns= 1;
     int dimension = 10;
     std::string algo="ARRDE";
