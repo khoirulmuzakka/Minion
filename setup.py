@@ -7,5 +7,5 @@ setup(
     author="Khoirul Faiq Muzakka",
     license="MIT",
     packages=["minionpy"],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
 )
