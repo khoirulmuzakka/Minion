@@ -26,8 +26,7 @@ else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
-
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
+find_package(python)
 execute_process(
     COMMAND python -m pybind11 --cmakedir
     OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
