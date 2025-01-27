@@ -32,6 +32,8 @@ jobs:
 
     # Build the wheel
     - name: Build the wheel
+      env:
+        CIBW_BEFORE_BUILD: ${{ matrix.os == 'ubuntu-latest' && 'apt-get update && apt-get install -y python3-dev' || '' }}
       run: |
         python -m cibuildwheel --output-dir dist
 
