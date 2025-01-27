@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install numpy scipy build pybind11 cibuildwheel scikit-build cmake 
+        pip install numpy scipy build pybind11 cibuildwheel scikit-build cmake ninja
 
     # Build the wheel
     - name: Build the wheel
