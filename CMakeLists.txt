@@ -26,6 +26,7 @@ else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
+
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 execute_process(
     COMMAND python -m pybind11 --cmakedir
@@ -33,7 +34,6 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
-message(STATUS "pybind11_DIR is set to: ${pybind11_DIR}")
 find_package(pybind11 REQUIRED CONFIG)
 
 # Include directories
