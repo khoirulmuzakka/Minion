@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         
     steps:
     # Checkout the repository
@@ -24,17 +25,17 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     # Install dependencies on Linux
-    - name: Install python3 dev on linux
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-dev
+    #- name: Install python3 dev on linux
+    #  if: runner.os == 'Linux'
+    #  run: |
+    #    sudo apt-get update
+    #    sudo apt-get install -y python3-dev
 
     # Install dependencies
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install numpy scipy build pybind11 cibuildwheel scikit-build cmake ninja
+        pip install pybind11 cibuildwheel scikit-build 
 
     # Build the wheel
     - name: Build the wheel

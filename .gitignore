@@ -27,3 +27,4 @@ examples/test.py
 _skbuild
 venv
 minionpy-*
+env

@@ -60,9 +60,10 @@ include-package-data = true
 [tool.scikit-build.find]
 include = ["minionpy"]
 
-[tool.cibuildwheel]
+#[tool.cibuildwheel]
 # Specify build configuration
-build = [ "cp38-*", "cp39-*", "cp310-*", "cp311-*","cp312-*","cp313-*"] 
+#build = [ "cp38-*", "cp39-*", "cp310-*", "cp311-*","cp312-*","cp313-*"] 
+#platforms = ["linux", "macos", "windows"]  # Explicitly mention the platforms
 
 [project.urls]
 homepage = "https://github.com/khoirulmuzakka/Minion"
