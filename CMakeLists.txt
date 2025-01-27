@@ -26,7 +26,14 @@ else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
-
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+execute_process(
+    COMMAND python -m pybind11 --cmakedir
+    OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
+message(STATUS "pybind11_DIR is set to: ${pybind11_DIR}")
 find_package(pybind11 REQUIRED CONFIG)
 
 # Include directories
@@ -87,11 +94,6 @@ else()
     set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 endif()
 
-
-install(TARGETS minion
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-)
 
 # Install the Python module
 install(TARGETS minionpycpp

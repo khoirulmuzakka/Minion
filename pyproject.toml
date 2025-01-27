@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "scikit-build", "cmake>=3.14", "ninja", "pybind11"]
+requires = ["setuptools>=40.8.0", "wheel", "scikit-build", "cmake>=3.14",  "pybind11"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,7 +20,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -30,10 +29,11 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering",
-    "Topic :: Software Development"
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Optimization",
+    "Topic :: Algorithm"
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.21.0",
     "scipy>=1.13.1"
@@ -43,7 +43,7 @@ dependencies = [
 include = ["minionpy"]
 
 [tool.setuptools.package-data]
-"minionpy" = ["lib/*", "cec_input_data/*"]
+"minionpy" = ["lib/*", "cec_input_data/**/*"]
 
 [tool.setuptools]
 license-files = []
@@ -55,9 +55,14 @@ cmake_args = [
     "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_CXX_STANDARD=17"
 ]
+include-package-data = true
 
 [tool.scikit-build.find]
 include = ["minionpy"]
+
+[tool.cibuildwheel]
+# Specify build configuration
+build = [ "cp38-*", "cp39-*", "cp310-*", "cp311-*","cp312-*","cp313-*"] 
 
 [project.urls]
 homepage = "https://github.com/khoirulmuzakka/Minion"

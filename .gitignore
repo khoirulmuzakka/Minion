@@ -24,4 +24,6 @@ examples/.DS_Store
 minionpy/lib
 minionpy.egg-info
 examples/test.py
-
+_skbuild
+venv
+minionpy-*
