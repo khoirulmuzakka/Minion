@@ -26,15 +26,14 @@ else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
-if (WIN32 OR (UNIX AND CMAKE_COMPILER_IS_GNUCXX) )
-    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-    execute_process(
-        COMMAND python -m pybind11 --cmakedir
-        OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
-endif()
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+execute_process(
+    COMMAND python -m pybind11 --cmakedir
+    OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
 find_package(pybind11 REQUIRED CONFIG)
 
 
