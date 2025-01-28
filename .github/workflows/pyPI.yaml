@@ -24,12 +24,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install python3-dev on linux
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-dev
-
     # Install dependencies
     - name: Install dependencies
       run: |
@@ -39,7 +33,7 @@ jobs:
     # Build the wheel
     - name: Build the wheel
       run: |
-        python -m cibuildwheel --output-dir dist
+        python -m cibuildwheel --output-dir dist --arch x86_64
 
     # Upload to PyPI
     - name: Upload to PyPI

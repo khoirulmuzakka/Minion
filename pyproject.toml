@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "scikit-build", "cmake>=3.14",  "pybind11"]
+requires = ["setuptools>=40.8.0", "wheel", "scikit-build", "cmake>=3.14",  "pybind11", "auditwheel-symbols"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -55,15 +55,20 @@ cmake_args = [
     "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_CXX_STANDARD=17"
 ]
+cmake-options = [
+    "-DPython3_EXECUTABLE=${PYTHON_EXECUTABLE}",
+    "-DPython3_INCLUDE_DIRS=${Python3_INCLUDE_DIR}",
+    "-DPython3_LIBRARIES=${Python3_LIBRARY}"
+]
+cmake-verbose-makefile = "ON"
 include-package-data = true
 
 [tool.scikit-build.find]
 include = ["minionpy"]
 
-#[tool.cibuildwheel]
-# Specify build configuration
+#[tool.cibuildwheel] #for test purpose
 #build = [ "cp38-*", "cp39-*", "cp310-*", "cp311-*","cp312-*","cp313-*"] 
-#platforms = ["linux", "macos", "windows"]  # Explicitly mention the platforms
+#build = [ "cp312-*"] 
 
 [project.urls]
 homepage = "https://github.com/khoirulmuzakka/Minion"

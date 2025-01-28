@@ -12,22 +12,27 @@ endif()
 
 # Compiler settings based on platform
 if (APPLE)
-    set(CMAKE_C_COMPILER /usr/bin/clang)
-    set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+    #set(CMAKE_C_COMPILER /usr/bin/clang)
+    #set(CMAKE_CXX_COMPILER /usr/bin/clang++)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result")
 elseif (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 elseif (UNIX AND CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_C_COMPILER /usr/bin/gcc)
-    set(CMAKE_CXX_COMPILER /usr/bin/g++)
+    #set(CMAKE_C_COMPILER /usr/bin/gcc)
+    #set(CMAKE_CXX_COMPILER /usr/bin/g++)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result")
 else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
+if(SKBUILD)
+  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
+  set(Python_LIBRARY "${PYTHON_LIBRARY}")
+endif()
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 execute_process(
     COMMAND python -m pybind11 --cmakedir
     OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
@@ -65,6 +70,18 @@ else()
     )
 endif()
 
+####### Compile examples ##############
+#add_executable(main_cec examples/main_cec.cpp)
+#target_link_libraries(main_cec PRIVATE minion)
+#if (MSVC)
+#    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
+#else()
+#    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+#endif()
+
+
+
+
 # --------------------- minionpy library ---------------------------------------#
 # Collect source files for the Python bindings
 file(GLOB minionpy_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
@@ -86,14 +103,7 @@ endif()
 # Set up custom output directories for builds
 message(STATUS "Configuration complete for Minion and MinionPy.")
 
-####### Compile examples ##############
-add_executable(main_cec examples/main_cec.cpp)
-target_link_libraries(main_cec PRIVATE minion)
-if (MSVC)
-    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
-else()
-    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-endif()
+
 
 
 # Install the Python module
