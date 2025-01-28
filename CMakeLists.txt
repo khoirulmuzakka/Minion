@@ -48,6 +48,9 @@ include_directories(
     minion/cec
 )
 
+file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
+    
 # --------------------- dynamic minion library -----------------------------------------#
 # Collect source files for the core library
 file(GLOB MINION_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
