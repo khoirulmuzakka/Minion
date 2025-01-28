@@ -33,7 +33,7 @@ jobs:
     # Build the wheel
     - name: Build the wheel
       run: |
-        python -m cibuildwheel --output-dir dist --arch x86_64
+        python -m cibuildwheel --output-dir dist 
 
     # Upload to PyPI
     - name: Upload to PyPI
