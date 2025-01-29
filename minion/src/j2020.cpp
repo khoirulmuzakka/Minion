@@ -18,7 +18,7 @@ void j2020::initialize  (){
     size_t populationSize = options.get<int> ("population_size", 0) ;
     D = int(bounds.size());
     populsize = populationSize;
-    if (populsize==0) populsize = std::min(1000, 8*D); 
+    if (populsize==0 || populsize<32) populsize = std::max(std::min(1000, 8*D), 32); 
 
     tao1 = options.get<double>("tau1", 0.1);  
     tao2 =  options.get<double>("tau2", 0.1);  
@@ -90,7 +90,7 @@ MinionResult j2020::optimize () {
         long long cCopy; // counter for copy
 
         int bNP= int(0.875*double(populsize));    
-        int sNP=int(0.125*double(populsize)); 
+        int sNP=populsize-bNP; 
      
         int NP=bNP+sNP;   // both population size together
         double bestCOST = std::numeric_limits<double>::max(); // cost of globalBEST

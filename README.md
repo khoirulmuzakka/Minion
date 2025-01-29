@@ -4,9 +4,11 @@
   <img src="docs/minion_logo.png" alt="Logo" width="200" />
 </div>
 
+
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)
 ![PyPI version](https://img.shields.io/pypi/v/minionpy.svg)
-![PyPI downloads](https://img.shields.io/pypi/dm/minionpy.svg)
+![PyPI Python Version](https://img.shields.io/pypi/pyversions/minionpy)
+![PyPI pip downloads](https://img.shields.io/pypi/dm/minionpy.svg)
 ![PyPI License](https://img.shields.io/pypi/l/minionpy.svg)
 
 

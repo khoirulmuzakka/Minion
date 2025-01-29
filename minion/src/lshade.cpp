@@ -16,7 +16,7 @@ void LSHADE::initialize  (){
     }
 
     populationSize = options.get<int> ("population_size", 0) ; 
-    if (populationSize==0) populationSize= 18*bounds.size();
+    if (populationSize==0) populationSize= std::max(5*bounds.size(), size_t(10));
 
     mutation_strategy= options.get<std::string> ("mutation_strategy", "current_to_pbest_A_1bin") ;
     std::vector<std::string> all_strategy = {"best1bin", "best1exp", "rand1bin", "rand1exp", "current_to_pbest1bin", "current_to_pbest1exp", "current_to_pbest_A_1bin", "current_to_pbest_A_1exp"}; 
