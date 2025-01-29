@@ -49,8 +49,7 @@ include = ["minionpy"]
 license-files = []
 
 [tool.scikit-build]
-# Specify CMake configuration
-cmake_minimum_required = "3.14"
+cmake_minimum_required = "3.18"
 cmake_args = [
     "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_CXX_STANDARD=17"

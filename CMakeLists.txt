@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.18)
 project(Minion)
 
 # Set C++ standard
@@ -26,11 +26,6 @@ else()
     message(WARNING "Unknown platform. Please check compiler settings.")
 endif()
 
-if(SKBUILD)
-  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
-  set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
-  set(Python_LIBRARY "${PYTHON_LIBRARY}")
-endif()
 
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 execute_process(
@@ -50,42 +45,57 @@ include_directories(
 
 file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
-    
-# --------------------- dynamic minion library -----------------------------------------#
-# Collect source files for the core library
-file(GLOB MINION_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
-list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
 
-# Define the shared library
-add_library(minion SHARED ${MINION_SOURCE_FILES})
-target_link_libraries(minion)
-if (MSVC)
-    set_target_properties(minion PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
-    )
-else()
-    set_target_properties(minion PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    )
+#scikit-build is used to generate python wheels. During wheel generation using cibuildwheel, this c++ binaries are not needed.
+if(NOT SKBUILD) 
+    # --------------------- compile minion library -----------------------------------------#
+    # Collect source files for the core library
+    file(GLOB MINION_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
+    list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
+
+    # Define the shared library
+    add_library(minion SHARED ${MINION_SOURCE_FILES})
+    target_link_libraries(minion)
+    if (MSVC)
+        set_target_properties(minion PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
+            WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+        )
+    else()
+        set_target_properties(minion PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
+        )
+    endif()
+
+    # --------------------- compile examples ---------------------------------------#
+
+    # 1. example/main_cec.cpp
+    #------------------------
+    add_executable(main_cec examples/main_cec.cpp)
+    target_link_libraries(main_cec PRIVATE minion)
+    if (MSVC)
+        set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
+    else()
+        set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+    endif()
+
+    # 2. example/main_minimizer.cpp
+    #------------------------
+    add_executable(main_mini examples/main_minimizer.cpp)
+    target_link_libraries(main_mini PRIVATE minion)
+    if (MSVC)
+        set_target_properties(main_mini PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
+    else()
+        set_target_properties(main_mini PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+    endif()
+
 endif()
 
-####### Compile examples ##############
-#add_executable(main_cec examples/main_cec.cpp)
-#target_link_libraries(main_cec PRIVATE minion)
-#if (MSVC)
-#    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
-#else()
-#    set_target_properties(main_cec PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-#endif()
 
-
-
-
-# --------------------- minionpy library ---------------------------------------#
+# --------------------- compile minionpy library ---------------------------------------#
 # Collect source files for the Python bindings
 file(GLOB minionpy_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
 
@@ -103,13 +113,11 @@ else()
     )
 endif()
 
-# Set up custom output directories for builds
-message(STATUS "Configuration complete for Minion and MinionPy.")
-
-
-
-
 # Install the Python module
 install(TARGETS minionpycpp
     LIBRARY DESTINATION minionpy/lib
 )
+
+
+
+
