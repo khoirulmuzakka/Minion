@@ -8,8 +8,8 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
-
-  image: "ubuntu:24.04"  # Use the Ubuntu 24.04 Docker image
+    cmake: "3.28"    # Specify version of cmake
+    doxygen: "1.9"   # Specify version of doxygen
 
   commands:
     - apt-get update && apt-get install -y doxygen cmake
