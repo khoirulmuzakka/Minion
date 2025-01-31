@@ -11,7 +11,7 @@ build:
 
   commands:
     - pip install pybind11 sphinx breathe
-    #- sudo apt update && sudo apt install -y doxygen
+    - apt update && sudo apt install -y doxygen
     - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
 sphinx:
