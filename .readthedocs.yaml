@@ -13,9 +13,11 @@ build:
     - doxygen
     - cmake
 
-  commands:
-    - pip install pybind11 sphinx breathe
-    - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
+  jobs:
+  
+    install:
+      - pip install pybind11 sphinx breathe
+      - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
 sphinx:
   configuration: docs/source/conf.py
