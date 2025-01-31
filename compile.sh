@@ -1,40 +1,51 @@
 #!/bin/bash
 
+# Stop the script on the first error
+set -e
+
 # Navigate to the project directory
 cd "$(dirname "$0")"
 
-
+# Cleanup previous builds
+echo "Cleaning up old builds..."
 rm -rf dist build *.egg-info
 rm -rf minionpy/lib/ lib/
 
-#source ./python_env/bin/activate
+# Create and enter the build directory
+mkdir -p build && cd build
 
-# Delete existing build directory (if it exists)
-if [ -d "build" ]; then
-    rm -rf build
-fi
-
-# Create a new build directory
-mkdir -p build
-
-# Navigate to the build directory
-cd build
-
-# Run CMake to configure the project with Unix Makefiles
+# Configure with CMake
+echo "Configuring with CMake..."
 cmake -G "Unix Makefiles" ..
 
-echo "compiling minion ..."
-# Build the project using the default build tool
-cmake --build . --clean-first --config Release -- -j8
+# Compile with optimal parallelization
+echo "Compiling Minion..."
+cmake --build . --clean-first --config Release -- -j$(nproc)
 
+# Move back to root
 cd ..           
 
-doxygen Doxyfile
-cd docs 
-make clean 
-make html
+# Run Doxygen if installed
+if command -v doxygen &> /dev/null; then
+    echo "Generating documentation with Doxygen..."
+    doxygen Doxyfile
+else
+    echo "Warning: Doxygen not found. Skipping documentation generation."
+fi
 
-cd ..
+# Build HTML documentation
+if [ -d "docs" ]; then
+    echo "Building HTML documentation..."
+    cd docs 
+    make clean 
+    make html
+    cd ..
+else
+    echo "Warning: 'docs' folder not found. Skipping HTML documentation."
+fi
+
+echo "Build complete!"
+
 
 #echo "building pip package..."
 #python -m build

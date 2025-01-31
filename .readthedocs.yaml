@@ -1,0 +1,18 @@
+version: 2
+
+formats: 
+  - htmlzip
+  - pdf
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+
+  commands:
+    - pip install pybind11 sphinx breathe
+    - sudo apt update && sudo apt install -y doxygen
+    - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
+
+sphinx:
+  configuration: docs/source/conf.py
