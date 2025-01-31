@@ -23,9 +23,9 @@ build:
       - pwd; ls -lt 
       - cmake --version
       - git --version
-      
+
     install:
-      - pip install pybind11 sphinx breathe
+      - pip install pybind11 sphinx breathe numpy scipy
       - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
 sphinx:
