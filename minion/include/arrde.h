@@ -7,11 +7,9 @@
 namespace minion {
 
 /**
- * @class ARR-DE : Adaptive Restart-Refine - Differential Evolution 
- * @brief Class implementing the ARRDE algorithm, which is basically LSHADE with multiple restarts.
+ * @class ARRDE : Adaptive Restart-Refine - Differential Evolution 
+ * @brief Class implementing the ARRDE algorithm.
  * 
- * The ARRDE class is an extension of the Differential Evolution algorithm 
- * with mechanisms for self-adaptation of control parameters.
  */
 class ARRDE : public Differential_Evolution {
     public:
@@ -110,7 +108,7 @@ class ARRDE : public Differential_Evolution {
     public :
 
          /**
-         * @brief Constructor for LSHADE.
+         * @brief Constructor 
          * 
          * @param func The objective function to minimize.
          * @param bounds The bounds for the variables.
@@ -137,7 +135,7 @@ class ARRDE : public Differential_Evolution {
             Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
 
         /**
-         * @brief Adapts parameters of the LSHADE algorithm.
+         * @brief Adapts parameters of the algorithm.
          * 
          * This function overrides the adaptParameters function in the Differential_Evolution class.
          */

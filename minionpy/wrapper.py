@@ -14,7 +14,6 @@ from minionpycpp import j2020 as cppj2020
 from minionpycpp import jSO as cppjSO
 from minionpycpp import LSRTDE as cppLSRTDE
 from minionpycpp import Differential_Evolution as cppDifferential_Evolution
-from minionpycpp import MinionResult as cppMinionResult
 from minionpycpp import GWO_DE as cppGWO_DE
 from minionpycpp import Minimizer as cppMinimizer
 from minionpycpp import NelderMead as cppNelderMead 
@@ -23,25 +22,37 @@ from minionpycpp import CEC2014Functions as cppCEC2014Functions
 from minionpycpp import CEC2019Functions as cppCEC2019Functions
 from minionpycpp import CEC2020Functions as cppCEC2020Functions
 from minionpycpp import CEC2022Functions as cppCEC2022Functions
-import pybind11
 
 
-from typing import Callable, Dict, Union, List, Optional, Any
+from typing import Callable, Dict, List, Optional, Any
   
 class MinionResult:
     """
-    @class MinionResult
-    @brief A class to encapsulate the results of an optimization process.
+    Stores the results of an optimization process.
 
-    Stores the optimization result including solution vector, function value,
-    number of iterations, number of function evaluations, success status, and a message.
+    This class encapsulates key optimization metrics, including:
+
+    - **x** (*list*): Best solution found.
+    - **fun** (*float*): Objective function value at `x`.
+    - **nit** (*int*): Number of iterations performed.
+    - **nfev** (*int*): Number of function evaluations.
+    - **success** (*bool*): Whether the optimization was successful.
+    - **message** (*str*): Descriptive message about the optimization outcome.
+
+    Notes
+    -----
+    The structure of `MinionResult` closely resembles `scipy.optimize.OptimizeResult`,
+    making it easy to use in similar contexts.
     """
 
     def __init__(self, minRes):
         """
-        @brief Constructor for MinionResult class.
+        Initialize a `MinionResult` instance from a C++ optimization result.
 
-        @param minRes The C++ MinionResult object to initialize from.
+        Parameters
+        ----------
+        minRes : C++ MinionResult object
+            The optimization result returned by the C++ optimization engine.
         """
         self.x = minRes.x
         self.fun = minRes.fun
@@ -53,27 +64,38 @@ class MinionResult:
 
     def __repr__(self):
         """
-        @brief Get a string representation of the MinionResult object.
+        Return a string representation of the `MinionResult` object.
 
-        @return String representation containing key attributes.
+        Returns
+        -------
+        str
+            A formatted string displaying key optimization results.
         """
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
                 f"nfev={self.nfev}, success={self.success}, message={self.message})")
 
 class CEC2014Functions:
     """
-    @class CEC2014Functions
-    @brief A class to encapsulate CEC2014 test functions.
+    Provides access to the CEC2014 benchmark test functions.
 
-    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    This class implements 30 benchmark optimization problems from CEC 2014
+    at various dimensions.
+
+    Available dimensions: **2, 10, 20, 30, 50, 100**  
+    Available functions: **1–30**
     """
 
     def __init__(self, function_number, dimension):
         """
-        @brief Constructor for CEC2014Functions class.
+        Initialize a CEC2014Functions instance.
 
-        @param function_number Function number (1-30).
-        @param dimension Dimension of the problem.
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–30).
+        dimension : int
+            The problem dimensionality (must be one of {2, 10, 20, 30, 50, 100}).
+
         """
         if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
         if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
@@ -81,55 +103,91 @@ class CEC2014Functions:
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2014 test function.
+        Evaluate the selected CEC2014 test function.
 
-        @param X Input vectors to evaluate.
-        @return Vector of function values corresponding to each input vector.
+        Parameters
+        ----------
+        X : list[list[float]] or np.ndarray
+            Input vectors to evaluate. Must be either:
+
+            - A list of lists of floats (`list[list[float]]`).
+            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
+              of points to evaluate and `d` is the problem dimension.
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
     
 class CEC2017Functions:
     """
-    @class CEC2017Functions
-    @brief A class to encapsulate CEC2017 test functions.
+    Provides access to the CEC2014 benchmark test functions.
 
-    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    This class implements 30 benchmark optimization problems from CEC 2017
+    at various dimensions.
+
+    Available dimensions: **2, 10, 20, 30, 50, 100**  
+    Available functions: **1–30**
     """
 
     def __init__(self, function_number, dimension):
         """
-        @brief Constructor for CEC2017Functions class.
+        Initialize a `CEC2017Functions` instance.
 
-        @param function_number Function number (1-30).
-        @param dimension Dimension of the problem.
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–30).  
+            **Note:** Functions 11–19 are not available for dimensions 2 and 20.
+        dimension : int
+            The problem dimensionality (must be one of {2, 10, 20, 30, 50, 100}).
         """
         if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
         if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
+        if int(dimension)==20 and function_number in range (11, 20) : raise Exception ("At dimension 20, function number 11-19 are not available")
+        if int(dimension)==2 and function_number in range (11, 20) : raise Exception ("At dimension 2, function number 11-19 are not available")
         self.cpp_func = cppCEC2017Functions(function_number, int(dimension))
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2017 test function.
+        Evaluate the selected CEC2014 test function.
 
-        @param X Input vectors to evaluate.
-        @return Vector of function values corresponding to each input vector.
+        Parameters
+        ----------
+        X : list[list[float]] or np.ndarray
+            Input vectors to evaluate. Must be either:
+
+            - A list of lists of floats (`list[list[float]]`).
+            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
+              of points to evaluate and `d` is the problem dimension.
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
     
 class CEC2019Functions:
     """
-    @class CEC2019Functions
-    @brief A class to encapsulate CEC2019 test functions.
+    Provides access to the CEC2019 benchmark test functions.
 
-    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    This class implements 10 benchmark optimization problems from CEC 2019
+    at various dimensions.
+
+    Available functions: **1–10**
     """
 
     def __init__(self, function_number):
         """
-        @brief Constructor for CEC2019Functions class.
+        Initialize a CEC2019Functions instance.
 
-        @param function_number Function number (1-10).
-        @param dimension Dimension of the problem.
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–10). 
         """
         if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
         if function_number==1 : dimension=9
@@ -140,27 +198,45 @@ class CEC2019Functions:
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2019 test function.
+        Evaluate the selected CEC2014 test function.
 
-        @param X Input vectors to evaluate.
-        @return Vector of function values corresponding to each input vector.
+        Parameters
+        ----------
+        X : list[list[float]] or np.ndarray
+            Input vectors to evaluate. Must be either:
+
+            - A list of lists of floats (`list[list[float]]`).
+            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
+              of points to evaluate and `d` is the problem dimension.
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
        
 class CEC2020Functions:
     """
-    @class CEC2020Functions
-    @brief A class to encapsulate CEC2020 test functions.
+    Provides access to the CEC2020 benchmark test functions.
 
-    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    This class implements 30 benchmark optimization problems from CEC 2020
+    at various dimensions.
+
+    Available dimensions: **5, 10, 15, 20**  
+    Available functions: **1–10**
     """
 
     def __init__(self, function_number, dimension):
         """
-        @brief Constructor for CEC2020Functions class.
+        Initialize a CEC2020Functions instance.
 
-        @param function_number Function number (1-10).
-        @param dimension Dimension of the problem.
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–10). 
+        dimension : int
+            The problem dimensionality (must be one of {5, 10, 15, 20}).
         """
         if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
         if int(dimension) not in [2, 5, 10, 15, 20] : raise Exception("Dimension must be 2, 10, or 20.")
@@ -168,27 +244,45 @@ class CEC2020Functions:
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2020 test function.
+        Evaluate the selected CEC2014 test function.
 
-        @param X Input vectors to evaluate.
-        @return Vector of function values corresponding to each input vector.
+        Parameters
+        ----------
+        X : list[list[float]] or np.ndarray
+            Input vectors to evaluate. Must be either:
+
+            - A list of lists of floats (`list[list[float]]`).
+            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
+              of points to evaluate and `d` is the problem dimension.
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
 
 class CEC2022Functions:
     """
-    @class CEC2022Functions
-    @brief A class to encapsulate CEC2022 test functions.
+    Provides access to the CEC2022 benchmark test functions.
 
-    Allows the loading of shift and rotation matrices and the evaluation of test functions.
+    This class implements 12 benchmark optimization problems from CEC 2022
+    at various dimensions.
+
+    Available dimensions: **10, 20**  
+    Available functions: **1–12**
     """
 
     def __init__(self, function_number, dimension):
         """
-        @brief Constructor for CEC2020Functions class.
+        Initialize a CEC2022Functions instance.
 
-        @param function_number Function number (1-10).
-        @param dimension Dimension of the problem.
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–12). 
+        dimension : int
+            The problem dimensionality (must be one of {10, 20).
         """
         if function_number not in range(1, 13) : raise Exception("Function number must be between 1-12.")
         if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
@@ -196,35 +290,49 @@ class CEC2022Functions:
 
     def __call__(self, X):
         """
-        @brief Evaluate the CEC2022 test function.
+        Evaluate the selected CEC2014 test function.
 
-        @param X Input vectors to evaluate.
-        @return Vector of function values corresponding to each input vector.
+        Parameters
+        ----------
+        X : list[list[float]] or np.ndarray
+            Input vectors to evaluate. Must be either:
+
+            - A list of lists of floats (`list[list[float]]`).
+            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
+              of points to evaluate and `d` is the problem dimension.
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
     
 class CalllbackWrapper: 
     """
-    @class CalllbackWrapper
-    @brief Wrap a Python function that takes cppMinionResult as an argument to work with MinionResult.
-
-    Convert a callback function from working with cppMinionResult to MinionResult.
+    Wraps a Python function that takes cppMinionResult as an argument to work with MinionResult.
+    
+    Converts a callback function from working with cppMinionResult to MinionResult.
     """
 
     def __init__(self, callback):
         """
-        @brief Constructor for CalllbackWrapper.
+        Initialize CallbackWrapper.
 
-        @param callback Callback function that takes cppMinionResult as argument.
+        Parameters:
+        - callback: A function that takes cppMinionResult as an argument.
         """
         self.callback = callback
 
     def __call__(self, minRes):
         """
-        @brief Call operator to invoke the callback function.
+        Invoke the callback function with a MinionResult object.
 
-        @param minRes MinionResult object to pass to callback function.
-        @return Result of the callback function.
+        Parameters:
+        - minRes: MinionResult object to pass to the callback function.
+
+        Returns:
+        - Result of the callback function.
         """
         minionResult = MinionResult(minRes)
         return self.callback(minionResult)
@@ -232,10 +340,10 @@ class CalllbackWrapper:
 
 class MinimizerBase:
     """
-    @class MinimizerBase
-    @brief Base class for minimization algorithms.
+    Base class for minimization algorithms.
 
-    Provides common functionality for optimization algorithms.
+    This class performs initial validation and preprocessing of input parameters
+    before passing them to the chosen optimization algorithm.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -245,20 +353,39 @@ class MinimizerBase:
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}) : 
+                 options: Dict[str, Any] = None) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the `MinimizerBase` class.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            Objective function to be minimized. Must accept list[list[float]] or a NumPy array of shape `(n_samples, n_variables)` 
+            and return a list of function values. If the function operates on a single sample, it should be vectorized.
+        bounds : list of tuple
+            List of `(lower, upper)` bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If `None` (default), the algorithm will generate an initial population.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops when the relative improvement falls below this value. 
+            Default is `1e-4`.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is `100000`.
+        callback : callable, optional
+            A function that is called at each iteration. It must accept the current optimization state as an argument.
+        seed : int, optional
+            Random seed for reproducibility. If `None`, a random seed is used.
+        options : dict, optional
+            Additional algorithm-specific parameters. If `None`, default settings are used.
+
+        Raises
+        ------
+        TypeError
+            If any of the input parameters are of an incorrect type.
+        ValueError
+            If `x0` has a different length than `bounds`, or if bounds are not properly formatted.
         """
+
         if not callable(func):
             raise TypeError("func must be callable")
         if not isinstance(bounds, list) or not all(isinstance(b, tuple) and len(b) == 2 for b in bounds):
@@ -273,8 +400,8 @@ class MinimizerBase:
             raise TypeError("callback must be callable or None")
         if seed is not None and not isinstance(seed, int):
             raise TypeError("seed must be an int or None")
-        if not isinstance(options, dict):
-            raise TypeError("options must be a dictionary")
+        if options is not None :
+            if not isinstance(options, dict): raise TypeError("options must be None or a dictionary")
 
         self.pyfunc = func 
         self.bounds = self._validate_bounds(bounds)
@@ -292,23 +419,45 @@ class MinimizerBase:
         self.seed = seed if seed is not None else -1
         self.history = []
         self.minionResult = None
-        self.options= options
+        self.options= options if options is not None else {}
 
     def func(self, xmat, data) : 
         """
-        @brief the minion library accept function with signature func(matrix, data. This basically function basically decorate the original pyfunc into an acceptable form.
+        Transform the user-defined objective function into a compatible form for Minion.
+
+        Parameters
+        ----------
+        xmat : list[list[float]] or np.ndarray
+            Input matrix where each row is a decision variable vector.
+        data : object
+            Additional data (unused in this implementation).
+
+        Returns
+        -------
+        list
+            Function evaluation results for each row in `xmat`.
         """
         return self.pyfunc(xmat) 
 
     def _validate_bounds(self, bounds):
         """
-        @brief Validate the bounds format.
+        Validate the format of the decision variable bounds.
 
-        @param bounds Bounds for the decision variables.
-        @return Validated bounds in the required format.
-        @throws ValueError if bounds are invalid.
+        Parameters
+        ----------
+        bounds : list of tuple
+            List of `(lower_bound, upper_bound)` tuples.
+
+        Returns
+        -------
+        list of tuple
+            Validated bounds as a list of `(lower, upper)` pairs.
+
+        Raises
+        ------
+        ValueError
+            If bounds are improperly formatted or contain invalid values.
         """
-
         try:
             bounds = np.array(bounds)
         except:
@@ -320,10 +469,9 @@ class MinimizerBase:
 
 class GWO_DE(MinimizerBase):
     """
-    @class GWO_DE
-    @brief Implementation of the Grey Wolf Optimizer with Differential Evolution (GWO-DE) algorithm.
+    Implementation of the Grey Wolf Optimizer with Differential Evolution (GWO-DE) algorithm.
 
-    Inherits from MinimizerBase and implements the optimization algorithm.
+    This class inherits from `MinimizerBase` and implements the GWO-DE optimization algorithm.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -333,30 +481,91 @@ class GWO_DE(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the Grey Wolf Optimizer with Differential Evolution (GWO-DE).
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for the algorithm. If None (default), the following 
+            settings are used::
+
+                options = {
+                    "population_size": 0,        # Determines population size dynamically
+                    "mutation_rate": 0.5,        # Probability of mutation
+                    "crossover_rate": 0.7,       # Probability of crossover
+                    "elimination_prob": 0.1,     # Probability of elimination
+                    "bound_strategy": "reflect-random"  # Boundary handling strategy
+                }
+
+            The available options are:
+
+            - **population_size** (int):  Initial population size. If set to `0`, it will be automatically determined.
+            - **mutation_rate** (float):  Mutation rate variable (F).
+            - **crossover_rate** (float):  Crossover probability/rate (CR).
+            - **elimination_prob** (float):  Elimination probability.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppGWO_DE`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
-
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppGWO_DE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
-        @brief Optimize the objective function using GWO-DE.
+        Run the GWO-DE optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs Nelder-Mead optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -364,10 +573,9 @@ class GWO_DE(MinimizerBase):
 
 class NelderMead(MinimizerBase):
     """
-    @class AdaptiveNelderMead
-    @brief Implementation of the Adaptive Nelder-Mead algorithm.
+    Implementation of the Nelder-Mead algorithm.
 
-    Inherits from MinimizerBase and implements the Adaptive Nelder-Mead optimization algorithm.
+    This class inherits from `MinimizerBase`.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -377,20 +585,65 @@ class NelderMead(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the Nelder-Mead algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "bound_strategy"          : "reflect-random"
+                }
+
+            The available options are:
+
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppNelderMead`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -398,9 +651,18 @@ class NelderMead(MinimizerBase):
 
     def optimize(self):
         """
-        @brief Optimize the objective function using Adaptive Nelder-Mead.
+        Run the Nelder-Mead optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs Nelder-Mead optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -410,10 +672,11 @@ class NelderMead(MinimizerBase):
 
 class LSHADE(MinimizerBase):
     """
-    @class LSHADE
-    @brief Implementation of the LSHADE algorithm.
+    Implementation of the Linear Population Reduction - Success History Adaptive Differential Evolution (LSHADE) algorithm.
 
-    Inherits from MinimizerBase and implements the optimization algorithm.
+    Reference : R. Tanabe and A. S. Fukunaga, "Improving the search performance of SHADE using linear population size reduction," 2014 IEEE Congress on Evolutionary Computation (CEC), Beijing, China, 2014, pp. 1658-1665, doi: 10.1109/CEC.2014.6900380.
+
+    This class inherits from `MinimizerBase`.
     """
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -423,20 +686,86 @@ class LSHADE(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the LSHADE algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"         :  0,  
+                    "memory_size"             :  6, 
+                    "mutation_strategy"       : "current_to_pbest_A_1bin",
+                    "archive_size_ratio"      :  2.6, 
+                    "minimum_population_size" :  4, 
+                    "reduction_strategy"      : "linear",
+                    "bound_strategy"          : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
+                .. math::
+
+                        N = 5 \cdot D
+
+                where *D* is the dimensionality of the problem.
+            - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
+            - **mutation_strategy** (str):  Mutation strategy used in the optimization process. Available strategies:  
+                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
+                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,  
+                    ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``.
+            - **archive_size_ratio** (float): Ratio of the archive size to the current population size.
+            - **minimum_population_size** (int): Final population size after reduction.
+            - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
+                    ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppLSHADE`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -444,9 +773,18 @@ class LSHADE(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using LSHADE.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -459,10 +797,11 @@ class LSHADE(MinimizerBase):
 
 class jSO(MinimizerBase):
     """
-    @class jSO
-    @brief Implementation of the jSO algorithm.
+    mplementation of the jSO algorithm.
 
-    Inherits from MinimizerBase and implements the optimization algorithm.
+    Reference : J. Brest, M. S. Maučec and B. Bošković, "Single objective real-parameter optimization: Algorithm jSO," 2017 IEEE Congress on Evolutionary Computation (CEC), Donostia, Spain, 2017, pp. 1311-1318, doi: 10.1109/CEC.2017.7969456.
+
+    Inherits from MinimizerBase.
     """
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -472,20 +811,83 @@ class jSO(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"           : 0,  
+                    "memory_size"               :  5, 
+                    "archive_size_ratio"        : 1.0, 
+                    "minimum_population_size"   :  4, 
+                    "reduction_strategy"        : "linear",
+                    "bound_strategy"            : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int): Initial population size (N). If set to `0`, it will be automatically determined as:
+
+                .. math::
+
+                    N = 25 \cdot \log(D) \cdot \sqrt{D}
+
+                where *D* is the dimensionality of the problem.
+            - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
+            - **archive_size_ratio** (float): Ratio of the archive size to the current population size.
+            - **minimum_population_size** (int): Final population size after reduction.
+            - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
+                    ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppjSO`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -493,9 +895,18 @@ class jSO(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using LSHADE.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -509,8 +920,9 @@ class jSO(MinimizerBase):
 
 class JADE(MinimizerBase):
     """
-    @class JADE
-    @brief Implementation of the JADE algorithm.
+    Implementation of the JADE algorithm.
+
+    Reference : Reference : J. Zhang and A. C. Sanderson, "JADE: Adaptive Differential Evolution With Optional External Archive," in IEEE Transactions on Evolutionary Computation, vol. 13, no. 5, pp. 945-958, Oct. 2009, doi: 10.1109/TEVC.2009.2014613.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -522,20 +934,89 @@ class JADE(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"               :  0,  
+                    "c"                             : 0.1, 
+                    "mutation_strategy"             :  "current_to_pbest_A_1bin",
+                    "archive_size_ratio"            :  1.0, 
+                    "minimum_population_size"       :  4, 
+                    "reduction_strategy"            : "linear",
+                    "bound_strategy"                : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
+
+                - If the dimensionality :math:`D` of the problem is :math:`D < 10`, then :math:`N = 30`.
+                - If :math:`10 \leq D \leq 30`, then :math:`N = 100`.
+                - If :math:`30 < D \leq 50`, then :math:`N = 200`.
+                - If :math:`50 < D \leq 70`, then :math:`N = 300`.
+                - Else, :math:`N = 400`.
+
+            - **c** (float) : The value of *c* variable. The value must be between 0 and 1. 
+            - **mutation_strategy** (str):  Mutation strategy used in the optimization process. Available strategies:  
+                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
+                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,  
+                    ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``.
+            - **archive_size_ratio** (float): Ratio of the archive size to the current population size.
+            - **minimum_population_size** (int): Final population size after reduction.
+            - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
+                    ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppJADE`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -543,9 +1024,18 @@ class JADE(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using JADE.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -559,8 +1049,9 @@ class JADE(MinimizerBase):
     
 class NLSHADE_RSP(MinimizerBase):
     """
-    @class LSHAD_RSP
-    @brief Implementation of the LSHADE_RSP algorithm.
+    Implementation of the LSHADE_RSP algorithm.
+
+    Reference : V. Stanovov, S. Akhmedova and E. Semenkin, "NL-SHADE-RSP Algorithm with Adaptive Archive and Selective Pressure for CEC 2021 Numerical Optimization," 2021 IEEE Congress on Evolutionary Computation (CEC), Kraków, Poland, 2021, pp. 809-816, doi: 10.1109/CEC45853.2021.9504959.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -572,20 +1063,76 @@ class NLSHADE_RSP(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"       :  0,  
+                    "memory_size"           : 100,
+                    "archive_size_ratio"    : 2.6 , 
+                    "bound_strategy"        : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
+                .. math::
+
+                        N = 30 \cdot D
+
+                where *D* is the dimensionality of the problem.
+            - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
+            - **archive_size_ratio** (float): Ratio of the archive size to the current population size.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppNLSHADE_RSP`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -593,9 +1140,18 @@ class NLSHADE_RSP(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using LSHADE.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -603,8 +1159,9 @@ class NLSHADE_RSP(MinimizerBase):
     
 class j2020(MinimizerBase):
     """
-    @class j2020
-    @brief Implementation of the j2020 algorithm.
+    Implementation of the j2020 algorithm.
+
+    Reference : J. Brest, M. S. Maučec and B. Bošković, "Differential Evolution Algorithm for Single Objective Bound-Constrained Optimization: Algorithm j2020," 2020 IEEE Congress on Evolutionary Computation (CEC), Glasgow, UK, 2020, pp. 1-8, doi: 10.1109/CEC48606.2020.9185551.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -616,38 +1173,107 @@ class j2020(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size" : 0,  
+                    "tau1"            : 0.1,
+                    "tau2"            : 0.1 , 
+                    "myEqs"           : 0.25,
+                    "bound_strategy"  : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
+
+                .. math::
+
+                        N = 8 \cdot D
+
+                where *D* is the dimensionality of the problem.
+            - **tau1** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **tau2** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **myEqs** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppj2020`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
+
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppj2020(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
-        @brief Optimize the objective function using j2020.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         return self.minionResult
     
 class LSRTDE(MinimizerBase):
     """
-    @class j2020
-    @brief Implementation of the LSRTDE algorithm.
+    Implementation of the LSRTDE algorithm.
+
+    Reference : V. Stanovov and E. Semenkin, "Success Rate-based Adaptive Differential Evolution L-SRTDE for CEC 2024 Competition," 2024 IEEE Congress on Evolutionary Computation (CEC), Yokohama, Japan, 2024, pp. 1-8, doi: 10.1109/CEC60901.2024.10611907.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -659,30 +1285,98 @@ class LSRTDE(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"       : 0,  
+                    "memory_size"           :  5,
+                    "success_rate"          : 0.5 , 
+                    "bound_strategy"        :"reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
+
+                .. math::
+
+                        N = 20 \cdot D
+
+                where *D* is the dimensionality of the problem.
+
+            - **tau1** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **tau2** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **myEqs** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppLSRTDE`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
+
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppLSRTDE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
-        @brief Optimize the objective function using j2020.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         return self.minionResult
@@ -690,8 +1384,7 @@ class LSRTDE(MinimizerBase):
 
 class ARRDE(MinimizerBase):
     """
-    @class ARRDE
-    @brief Implementation of the ARRDE algorithm.
+    Implementation of the Adaptive Restart Refine Differential Evolution (ARRDE) algorithm.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -703,20 +1396,83 @@ class ARRDE(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param data Additional data to pass to the objective function.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"           :  0,  
+                    "archive_size_ratio"        :  2.0, 
+                    "converge_reltol"           :  0.005,
+                    "refine_decrease_factor"    : 0.9, 
+                    "restart-refine-duration"   : 0.8, 
+                    "maximum_consecutive_restarts" : 2,
+                    "bound_strategy"            : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
+
+                .. math::
+
+                    N = 2 \cdot D + \log(N_{maxevals})^2
+
+                where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
+            - **archive_size_ratio** (float) : the ratio of archive size to the current population size .
+            - **converge_relTol** (float) : The value of std(f)/mean(f) below which a population is said to be converged.
+            - **refine_decrease_factor** (float) : The decrease factor of *converge_relTol* in the refinement phase. 
+            - **restart-refine-duration** (float) : a fraction of evaluation budget during which restart-refine phase occurs. The remaining fraction is dedicated to final refinement. 
+            - **maximum_consecutive_restarts** (int) : maximum number of consecutive restarts during restart-refine phase.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppARRDE`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
@@ -724,9 +1480,18 @@ class ARRDE(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using ARRDE.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -740,8 +1505,7 @@ class ARRDE(MinimizerBase):
 
 class Differential_Evolution(MinimizerBase):
     """
-    @class Differential_Evolution
-    @brief Implementation of the Differential Evolution algorithm.
+    Implementation of the vanilla (original) Differential Evolution algorithm.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -753,29 +1517,100 @@ class Differential_Evolution(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param x0 Initial guess for the solution.
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"         :  0,  
+                    "mutation_strategy"       : "best1bin",
+                    "mutation_rate"           : 0.5, 
+                    "crossover_rate"          : 0.8,
+                    "bound_strategy"          : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
+                .. math::
+
+                        N = 5 \cdot D
+
+                where *D* is the dimensionality of the problem.
+            - **mutation_strategy** (str):  Mutation strategy used in the optimization process. Available strategies:  
+                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
+                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``.
+            - **mutation_rate** (float): the value of the mutation rate (F).
+            - **crossover_rate** (float): the value of the crossover rate (F).
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppDifferential_Evolution`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
         """
+
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppDifferential_Evolution(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
-        @brief Optimize the objective function using Differential Evolution.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
@@ -788,10 +1623,12 @@ class Differential_Evolution(MinimizerBase):
     
 class Minimizer(MinimizerBase):
     """
-    @class Differential_Evolution
-    @brief Implementation of the Differential Evolution algorithm.
+    A general-purpose optimization class that encapsulates all optimization algorithms 
+    implemented in Minion/py.
 
-    Inherits from MinimizerBase and implements the optimization algorithm.
+    This class provides an interface for various optimization algorithms, inheriting 
+    from `MinimizerBase`. It allows users to minimize a given objective function using 
+    different evolutionary and classical optimization techniques.
     """
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -802,20 +1639,72 @@ class Minimizer(MinimizerBase):
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
-                 options: Dict[str, Any] = {}
+                 options: Dict[str, Any] = None
         ) : 
         """
-        @brief Constructor for MinimizerBase class.
+        Initialize the algorithm.
 
-        @param func Objective function to minimize.
-        @param bounds Bounds for the decision variables.
-        @param x0 Initial guess for the solution.
-        @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"
-        @param relTol Relative tolerance for convergence.
-        @param maxevals Maximum number of function evaluations.
-        @param callback Callback function called after each iteration.
-        @param seed Seed for the random number generator.
-        @param options (dict) further options for the algorithm
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+
+                func(X) -> list[float]
+
+            where `X` is either:
+            
+            - A list of lists of floats (``list[list[float]]``)
+            - A 2D NumPy array (matrix) of shape `(n, d)`, where `n` is the number of evaluations and `d` is the number of decision variables.
+
+            The function `func` is assumed to be vectorized. If it only supports a single 
+            input (`list[float]` or `1D np.ndarray`), it can be vectorized as follows:
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+        bounds : list of tuple
+            List of `(min, max)` pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        algo : str, optional
+            The optimization algorithm to use. Default is `"ARRDE"`.  
+            Available algorithms include:
+
+            - `"LSHADE"`
+            - `"DE"`
+            - `"JADE"`
+            - `"jSO"`
+            - `"NelderMead"`
+            - `"LSRTDE"`
+            - `"NLSHADE_RSP"`
+            - `"j2020"`
+            - `"GWO_DE"`
+            - `"ARRDE"`
+
+        relTol : float, optional
+            Relative tolerance for convergence. The optimization stops if the relative 
+            improvement in the objective function is below this threshold. Default is `1e-4`.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is `100000`.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            settings are taken from the default configuration of the chosen algorithm.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppMinimizer`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
         """
         all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE"]
         if not (algo in all_algo) : 
@@ -826,9 +1715,18 @@ class Minimizer(MinimizerBase):
     
     def optimize(self):
         """
-        @brief Optimize the objective function using Differential Evolution.
+        Run the optimization algorithm.
 
-        @return MinionResult object containing the optimization results.
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]

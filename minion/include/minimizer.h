@@ -17,8 +17,8 @@
 namespace minion {
 
 /**
- * @class MinimizerBase
- * @brief A base class for optimization algorithms.
+ * @class Minimizer
+ * @brief A generic form optimization algorithms.
  */
 class Minimizer {
     private : 
@@ -26,7 +26,7 @@ class Minimizer {
 
     public:
         /**
-         * @brief Constructor for MinimizerBase.
+         * @brief Constructor 
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
          * @param x0 The initial guess for the solution.
@@ -100,4 +100,4 @@ class Minimizer {
 
 
 }
-#endif // MINIMIZER_BASE_H
+#endif 

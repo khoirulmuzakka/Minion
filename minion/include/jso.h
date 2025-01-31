@@ -9,6 +9,8 @@ namespace minion {
  * @class jSO 
  * @brief Class implementing the jSO algorithm.
  * 
+ * Reference : J. Brest, M. S. Maučec and B. Bošković, "Single objective real-parameter optimization: Algorithm jSO," 2017 IEEE Congress on Evolutionary Computation (CEC), Donostia, Spain, 2017, pp. 1311-1318, doi: 10.1109/CEC.2017.7969456.
+ * 
  * The jSO class is an extension of the Differential Evolution algorithm 
  * with mechanisms for self-adaptation of control parameters.
  */

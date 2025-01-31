@@ -27,7 +27,15 @@ echo "compiling minion ..."
 # Build the project using the default build tool
 cmake --build . --clean-first --config Release -- -j8
 
+cd ..           
+
+doxygen Doxyfile
+cd docs 
+make clean 
+make html
+
 cd ..
+
 #echo "building pip package..."
 #python -m build
 
