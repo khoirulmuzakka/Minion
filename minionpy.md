@@ -27,7 +27,7 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
   These algorithms are robust and converge efficiently in complex optimization tasks. Additionally, classical methods like Nelder-Mead and the original Differential Evolution are included for reference.
 
 - **Benchmark Support**  
-  The library includes benchmark functions from the CEC competitions (2011–2022), providing a standardized environment for algorithm development, testing, and comparison.
+  The library includes benchmark functions from the CEC competitions (2011, 2014, 2017, 2019, 2020, 2022), providing a standardized environment for algorithm development, testing, and comparison.
 
 - **Performance**  
   Most implemented algorithms are population-based, making them suitable for parallelization. MinionPy is optimized for vectorized functions, enabling efficient use of multithreading and multiprocessing capabilities.
@@ -41,3 +41,11 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
 ## Applications
 
 MinionPy is applicable in scenarios where derivative-free optimization is required, including engineering, physics, and machine learning. Its standardized benchmarks and high-performance algorithms make it suitable for developing and evaluating new optimization techniques as well as solving real-world optimization problems.
+
+
+## Documentation
+
+For comprehensive usage instructions, API references, and detailed examples, please refer to the official documentation:
+
+- **[Minion Documentation](#)**  
+  *Explore detailed guides, installation instructions, and examples at [ReadTheDocs](https://minion-py.readthedocs.io/).*
