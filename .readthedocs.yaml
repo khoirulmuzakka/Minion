@@ -14,7 +14,6 @@ build:
     - cmake
 
   commands:
-    - apt-get update && apt-get install -y doxygen cmake
     - pip install pybind11 sphinx breathe
     - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
