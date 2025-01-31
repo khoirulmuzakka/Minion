@@ -12,9 +12,18 @@ build:
   apt_packages:
     - doxygen
     - cmake
+    - gcc
+    - g++
+    - git
 
   jobs:
-  
+    pre_create_environment:
+      - echo "Command run at 'pre_create_environment' step"
+      - echo "READTHEDOCS_OUTPUT=$READTHEDOCS_OUTPUT "
+      - pwd; ls -lt 
+      - cmake --version
+      - git --version
+      
     install:
       - pip install pybind11 sphinx breathe
       - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
