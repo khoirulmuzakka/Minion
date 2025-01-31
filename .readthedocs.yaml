@@ -9,9 +9,11 @@ build:
   tools:
     python: "3.12"
 
+  image: "ubuntu:24.04"  # Use the Ubuntu 24.04 Docker image
+
   commands:
+    - apt-get update && apt-get install -y doxygen cmake
     - pip install pybind11 sphinx breathe
-    - apt update && sudo apt install -y doxygen
     - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
 sphinx:
