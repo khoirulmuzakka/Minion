@@ -647,6 +647,8 @@ class NelderMead(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        if x0 is None : 
+            raise Exception("x0 must not be none nor empty for Nelder-Mead to work!")
         self.optimizer = cppNelderMead(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
 
     def optimize(self):
@@ -745,7 +747,7 @@ class LSHADE(MinimizerBase):
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
 
-                        N = 5 \cdot D
+                        N = 5 \\cdot D
 
                 where *D* is the dimensionality of the problem.
             - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
@@ -871,7 +873,7 @@ class jSO(MinimizerBase):
 
                 .. math::
 
-                    N = 25 \cdot \log(D) \cdot \sqrt{D}
+                    N = 25 \\cdot \\log(D) \\cdot \\sqrt{D}
 
                 where *D* is the dimensionality of the problem.
             - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
@@ -994,9 +996,9 @@ class JADE(MinimizerBase):
             - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
 
                 - If the dimensionality :math:`D` of the problem is :math:`D < 10`, then :math:`N = 30`.
-                - If :math:`10 \leq D \leq 30`, then :math:`N = 100`.
-                - If :math:`30 < D \leq 50`, then :math:`N = 200`.
-                - If :math:`50 < D \leq 70`, then :math:`N = 300`.
+                - If :math:`10 \\leq D \\leq 30`, then :math:`N = 100`.
+                - If :math:`30 < D \\leq 50`, then :math:`N = 200`.
+                - If :math:`50 < D \\leq 70`, then :math:`N = 300`.
                 - Else, :math:`N = 400`.
 
             - **c** (float) : The value of *c* variable. The value must be between 0 and 1. 
@@ -1119,7 +1121,7 @@ class NLSHADE_RSP(MinimizerBase):
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
 
-                        N = 30 \cdot D
+                        N = 30 \\cdot D
 
                 where *D* is the dimensionality of the problem.
             - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
@@ -1231,7 +1233,7 @@ class j2020(MinimizerBase):
 
                 .. math::
 
-                        N = 8 \cdot D
+                        N = 8 \\cdot D
 
                 where *D* is the dimensionality of the problem.
             - **tau1** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
@@ -1342,7 +1344,7 @@ class LSRTDE(MinimizerBase):
 
                 .. math::
 
-                        N = 20 \cdot D
+                        N = 20 \\cdot D
 
                 where *D* is the dimensionality of the problem.
 
@@ -1456,7 +1458,7 @@ class ARRDE(MinimizerBase):
 
                 .. math::
 
-                    N = 2 \cdot D + \log(N_{maxevals})^2
+                    N = 2 \\cdot D + \\log(N_{maxevals})^2
 
                 where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
             - **archive_size_ratio** (float) : the ratio of archive size to the current population size .
@@ -1574,7 +1576,7 @@ class Differential_Evolution(MinimizerBase):
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
 
-                        N = 5 \cdot D
+                        N = 5 \\cdot D
 
                 where *D* is the dimensionality of the problem.
             - **mutation_strategy** (str):  Mutation strategy used in the optimization process. Available strategies:  
@@ -1709,6 +1711,9 @@ class Minimizer(MinimizerBase):
         all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE"]
         if not (algo in all_algo) : 
             raise Exception("Uknownn algorithm. The algorithm must be one of these : ", all_algo)
+        
+        if algo == "NelderMead" and x0 is None : 
+            raise Exception("x0 must not be none nor empty for Nelder-Mead to work!")
         
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppMinimizer(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, algo,relTol, maxevals, self.seed, self.options)
