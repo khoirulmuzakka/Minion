@@ -9,6 +9,7 @@
 ![PyPI Python Version](https://img.shields.io/pypi/pyversions/minionpy)
 ![PyPI pip downloads](https://img.shields.io/pypi/dm/minionpy.svg)
 ![PyPI License](https://img.shields.io/pypi/l/minionpy.svg)
+[![Documentation Status](https://readthedocs.org/projects/minion-py/badge/?version=latest)](https://minion-py.readthedocs.io/en/latest/)
 
 **Minion** is a high-performance **derivative-free optimization** library designed for solving complex optimization problems where gradients are unavailable or unreliable. It features **state-of-the-art evolutionary algorithms**, including top-performing methods from IEEE CEC competitions, which are not commonly available in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
 
