@@ -40,3 +40,4 @@ jobs:
         name: wheels
         path: dist/*
         overwrite: true
+        retention-days: 7  
