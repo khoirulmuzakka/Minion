@@ -17,11 +17,7 @@ from minionpycpp import Differential_Evolution as cppDifferential_Evolution
 from minionpycpp import GWO_DE as cppGWO_DE
 from minionpycpp import Minimizer as cppMinimizer
 from minionpycpp import NelderMead as cppNelderMead 
-from minionpycpp import CEC2017Functions as cppCEC2017Functions
-from minionpycpp import CEC2014Functions as cppCEC2014Functions
-from minionpycpp import CEC2019Functions as cppCEC2019Functions
-from minionpycpp import CEC2020Functions as cppCEC2020Functions
-from minionpycpp import CEC2022Functions as cppCEC2022Functions
+from minionpycpp import ABC as cppABC
 
 
 from typing import Callable, Dict, List, Optional, Any
@@ -74,239 +70,6 @@ class MinionResult:
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
                 f"nfev={self.nfev}, success={self.success}, message={self.message})")
 
-class CEC2014Functions:
-    """
-    Provides access to the CEC2014 benchmark test functions.
-
-    This class implements 30 benchmark optimization problems from CEC 2014
-    at various dimensions.
-
-    Available dimensions: **2, 10, 20, 30, 50, 100**  
-    Available functions: **1–30**
-    """
-
-    def __init__(self, function_number, dimension):
-        """
-        Initialize a CEC2014Functions instance.
-
-        Parameters
-        ----------
-        function_number : int
-            The function index (must be in the range 1–30).
-        dimension : int
-            The problem dimensionality (must be one of {2, 10, 20, 30, 50, 100}).
-
-        """
-        if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
-        if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
-        self.cpp_func = cppCEC2014Functions(function_number, int(dimension))
-
-    def __call__(self, X):
-        """
-        Evaluate the selected CEC2014 test function.
-
-        Parameters
-        ----------
-        X : list[list[float]] or np.ndarray
-            Input vectors to evaluate. Must be either:
-
-            - A list of lists of floats (`list[list[float]]`).
-            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
-              of points to evaluate and `d` is the problem dimension.
-
-        Returns
-        -------
-        list
-            A vector of function values corresponding to each input vector.
-        """
-        return self.cpp_func(X)
-    
-class CEC2017Functions:
-    """
-    Provides access to the CEC2014 benchmark test functions.
-
-    This class implements 30 benchmark optimization problems from CEC 2017
-    at various dimensions.
-
-    Available dimensions: **2, 10, 20, 30, 50, 100**  
-    Available functions: **1–30**
-    """
-
-    def __init__(self, function_number, dimension):
-        """
-        Initialize a `CEC2017Functions` instance.
-
-        Parameters
-        ----------
-        function_number : int
-            The function index (must be in the range 1–30).  
-            **Note:** Functions 11–19 are not available for dimensions 2 and 20.
-        dimension : int
-            The problem dimensionality (must be one of {2, 10, 20, 30, 50, 100}).
-        """
-        if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
-        if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
-        if int(dimension)==20 and function_number in range (11, 20) : raise Exception ("At dimension 20, function number 11-19 are not available")
-        if int(dimension)==2 and function_number in range (11, 20) : raise Exception ("At dimension 2, function number 11-19 are not available")
-        self.cpp_func = cppCEC2017Functions(function_number, int(dimension))
-
-    def __call__(self, X):
-        """
-        Evaluate the selected CEC2014 test function.
-
-        Parameters
-        ----------
-        X : list[list[float]] or np.ndarray
-            Input vectors to evaluate. Must be either:
-
-            - A list of lists of floats (`list[list[float]]`).
-            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
-              of points to evaluate and `d` is the problem dimension.
-
-        Returns
-        -------
-        list
-            A vector of function values corresponding to each input vector.
-        """
-        return self.cpp_func(X)
-    
-class CEC2019Functions:
-    """
-    Provides access to the CEC2019 benchmark test functions.
-
-    This class implements 10 benchmark optimization problems from CEC 2019
-    at various dimensions.
-
-    Available functions: **1–10**
-    """
-
-    def __init__(self, function_number):
-        """
-        Initialize a CEC2019Functions instance.
-
-        Parameters
-        ----------
-        function_number : int
-            The function index (must be in the range 1–10). 
-        """
-        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
-        if function_number==1 : dimension=9
-        elif function_number==2:  dimension = 16
-        elif function_number==3 : dimension=18
-        else: dimension =10
-        self.cpp_func = cppCEC2019Functions(function_number, int(dimension))
-
-    def __call__(self, X):
-        """
-        Evaluate the selected CEC2014 test function.
-
-        Parameters
-        ----------
-        X : list[list[float]] or np.ndarray
-            Input vectors to evaluate. Must be either:
-
-            - A list of lists of floats (`list[list[float]]`).
-            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
-              of points to evaluate and `d` is the problem dimension.
-
-        Returns
-        -------
-        list
-            A vector of function values corresponding to each input vector.
-        """
-        return self.cpp_func(X)
-       
-class CEC2020Functions:
-    """
-    Provides access to the CEC2020 benchmark test functions.
-
-    This class implements 30 benchmark optimization problems from CEC 2020
-    at various dimensions.
-
-    Available dimensions: **5, 10, 15, 20**  
-    Available functions: **1–10**
-    """
-
-    def __init__(self, function_number, dimension):
-        """
-        Initialize a CEC2020Functions instance.
-
-        Parameters
-        ----------
-        function_number : int
-            The function index (must be in the range 1–10). 
-        dimension : int
-            The problem dimensionality (must be one of {5, 10, 15, 20}).
-        """
-        if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
-        if int(dimension) not in [2, 5, 10, 15, 20] : raise Exception("Dimension must be 2, 10, or 20.")
-        self.cpp_func = cppCEC2020Functions(function_number, int(dimension))
-
-    def __call__(self, X):
-        """
-        Evaluate the selected CEC2014 test function.
-
-        Parameters
-        ----------
-        X : list[list[float]] or np.ndarray
-            Input vectors to evaluate. Must be either:
-
-            - A list of lists of floats (`list[list[float]]`).
-            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
-              of points to evaluate and `d` is the problem dimension.
-
-        Returns
-        -------
-        list
-            A vector of function values corresponding to each input vector.
-        """
-        return self.cpp_func(X)
-
-class CEC2022Functions:
-    """
-    Provides access to the CEC2022 benchmark test functions.
-
-    This class implements 12 benchmark optimization problems from CEC 2022
-    at various dimensions.
-
-    Available dimensions: **10, 20**  
-    Available functions: **1–12**
-    """
-
-    def __init__(self, function_number, dimension):
-        """
-        Initialize a CEC2022Functions instance.
-
-        Parameters
-        ----------
-        function_number : int
-            The function index (must be in the range 1–12). 
-        dimension : int
-            The problem dimensionality (must be one of {10, 20).
-        """
-        if function_number not in range(1, 13) : raise Exception("Function number must be between 1-12.")
-        if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
-        self.cpp_func = cppCEC2022Functions(function_number, int(dimension))
-
-    def __call__(self, X):
-        """
-        Evaluate the selected CEC2014 test function.
-
-        Parameters
-        ----------
-        X : list[list[float]] or np.ndarray
-            Input vectors to evaluate. Must be either:
-
-            - A list of lists of floats (`list[list[float]]`).
-            - A 2D NumPy array (`np.ndarray`) of shape `(n, d)`, where `n` is the number 
-              of points to evaluate and `d` is the problem dimension.
-
-        Returns
-        -------
-        list
-            A vector of function values corresponding to each input vector.
-        """
-        return self.cpp_func(X)
     
 class CalllbackWrapper: 
     """
@@ -360,8 +123,7 @@ class MinimizerBase:
         Parameters
         ----------
         func : callable
-            Objective function to be minimized. Must accept list[list[float]] or a NumPy array of shape `(n_samples, n_variables)` 
-            and return a list of function values. If the function operates on a single sample, it should be vectorized.
+            Objective function to be minimized. Must accept list[list[float]]. If the function operates on a single sample, it should be vectorized.
         bounds : list of tuple
             List of `(lower, upper)` bounds for each decision variable.
         x0 : list, optional
@@ -427,7 +189,7 @@ class MinimizerBase:
 
         Parameters
         ----------
-        xmat : list[list[float]] or np.ndarray
+        xmat : list[list[float]] 
             Input matrix where each row is a decision variable vector.
         data : object
             Additional data (unused in this implementation).
@@ -495,9 +257,8 @@ class GWO_DE(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
-            Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            where `X` is a list of lists of floats. Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -599,9 +360,9 @@ class NelderMead(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -702,9 +463,9 @@ class LSHADE(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -828,9 +589,9 @@ class jSO(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -951,9 +712,9 @@ class JADE(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1079,9 +840,9 @@ class NLSHADE_RSP(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1159,6 +920,112 @@ class NLSHADE_RSP(MinimizerBase):
         self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
     
+class ABC(MinimizerBase):
+    """
+    Implementation of the artifical bee colony optimization algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[float]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None
+        ) : 
+        """
+        Initialize the algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats.  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "population_size"       :  0,  
+                    "mutation_strategy"     : "rand1,
+                    "bound_strategy"        : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
+                .. math::
+
+                        N = 5 \\cdot D
+
+                where *D* is the dimensionality of the problem.
+            - **mutation_strategy** (str):  Mutation strategy, default is "rand1", available : "rand1", "best1"
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppNLSHADE_RSP`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
+        """
+
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppABC(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+    
+    def optimize(self):
+        """
+        Run the optimization algorithm.
+
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+    
 class j2020(MinimizerBase):
     """
     Implementation of the j2020 algorithm.
@@ -1189,9 +1056,9 @@ class j2020(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1301,9 +1168,9 @@ class LSRTDE(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1412,9 +1279,9 @@ class ARRDE(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1533,9 +1400,9 @@ class Differential_Evolution(MinimizerBase):
         
                 func(X) -> list[float]
 
-            where `X` is a list of lists of floats or a 2D NumPy array (matrix).  
+            where `X` is a list of lists of floats.  
             Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats (or a 1D NumPy array) and returns a float,  
+            takes a single list of floats and returns a float,  
             it can be vectorized as follows (see examples in the documentation):
 
             .. code-block:: python 
@@ -1658,8 +1525,7 @@ class Minimizer(MinimizerBase):
             where `X` is either:
             
             - A list of lists of floats (``list[list[float]]``)
-            - A 2D NumPy array (matrix) of shape `(n, d)`, where `n` is the number of evaluations and `d` is the number of decision variables.
-
+    
             The function `func` is assumed to be vectorized. If it only supports a single 
             input (`list[float]` or `1D np.ndarray`), it can be vectorized as follows:
 
@@ -1708,7 +1574,7 @@ class Minimizer(MinimizerBase):
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
-        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE"]
+        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC"]
         if not (algo in all_algo) : 
             raise Exception("Uknownn algorithm. The algorithm must be one of these : ", all_algo)
         

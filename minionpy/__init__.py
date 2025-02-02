@@ -1,6 +1,7 @@
-from .wrapper import *
+from .algorithms import *
 from .test_functions import *
 from .test import *
+from .cec import *
 
 try : from .cec_2011 import CEC2011
 except : pass

@@ -21,5 +21,6 @@
 #include "nelder_mead.h"
 #include "default_options.h"
 #include "minimizer.h"
+#include "abc.h"
 
 #endif // MINION_H

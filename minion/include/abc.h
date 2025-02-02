@@ -1,0 +1,77 @@
+#ifndef ABC_H
+#define ABC_H
+
+#include "minimizer_base.h"
+#include "default_options.h"
+
+namespace minion {
+/**
+ * @class ABC
+ * @brief A class for performing Artificial Bee Colony (ABC) optimization.
+ * 
+ * This class implements the ABC algorithm for optimization. It inherits from the MinimizerBase class.
+ */
+class ABC : public MinimizerBase {
+public:
+    std::vector<std::vector<double>> population;
+    std::vector<double> fitness;
+    std::vector<double> best;
+    double best_fitness;
+    size_t populationSize;
+    size_t Nevals = 0;
+    std::string mutation_strategy; 
+
+protected:
+    /**
+     * @brief Initializes the population and other parameters.
+     */
+    virtual void init();
+
+    /**
+     * @brief Mutates a given individual.
+     * @param idx Index of the individual to mutate.
+     * @return A mutated individual.
+     */
+    std::vector<double> mutate(size_t idx);
+
+public:
+    /**
+     * @brief Constructor for ABC.
+     * @param func The objective function to minimize.
+     * @param bounds The bounds for the variables.
+     * @param x0 The initial solution.
+     * @param data Additional data for the objective function.
+     * @param callback Callback function for intermediate results.
+     * @param tol The tolerance for stopping criteria.
+     * @param maxevals The maximum number of evaluations.
+     * @param seed The seed for random number generation.
+     * @param options Option map that specifies further configurational settings for the algorithm.
+     */
+    ABC(
+        MinionFunction func,
+        const std::vector<std::pair<double, double>>& bounds,
+        const std::vector<double>& x0 = {},
+        void* data = nullptr,
+        std::function<void(MinionResult*)> callback = nullptr,
+        double tol = 0.0001,
+        size_t maxevals = 100000,
+        int seed = -1,
+        std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
+    ) :
+        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+
+    /**
+     * @brief Optimizes the objective function.
+     * @return The result of the optimization.
+     */
+    MinionResult optimize() override;
+
+    /**
+     * @brief Initialize the algorithm given the input settings.
+     */
+    void initialize() override;
+};
+
+}
+
+#endif

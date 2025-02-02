@@ -82,7 +82,7 @@ def grie_rosen(X):
     result = 1 + np.sum(100 * (X[:, 1:] - X[:, :-1]**2)**2 + (1 - X[:, :-1])**2, axis=1)
     return result
 
-def escaffer6(X):
+def scaffer6(X):
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         for j in range(X.shape[1] - 1):

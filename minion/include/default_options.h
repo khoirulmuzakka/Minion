@@ -88,6 +88,12 @@ class DefaultSettings{
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
+        std::map<std::string, ConfigValue>  default_settings_ABC= {
+            {"population_size", 0},  
+            {"mutation_strategy", std::string("rand1")},
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
             {"bound_strategy" , std::string("reflect-random")} 
         };
@@ -102,7 +108,8 @@ class DefaultSettings{
                 {"ARRDE", default_settings_ARRDE}, 
                 {"jSO", default_settings_jSO}, 
                 {"GWO_DE", default_settings_GWO_DE}, 
-                {"NelderMead", default_settings_NelderMead}
+                {"NelderMead", default_settings_NelderMead}, 
+                {"ABC", default_settings_ABC}
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){

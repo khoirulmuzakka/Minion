@@ -20,6 +20,7 @@
 #include "j2020.h"
 #include "lsrtde.h"
 #include "jso.h"
+#include "abc.h"
 #include "minimizer.h"
 #include <exception>
 #include <pybind11/stl_bind.h>
@@ -194,10 +195,25 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def_readwrite("callback", &MinimizerBase::callback)
         .def_readwrite("history", &MinimizerBase::history)
         .def("optimize", &MinimizerBase::optimize);
 
+    py::class_<ABC, MinimizerBase>(m, "ABC")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<double>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("x0") = std::vector<double>(), 
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+
+        .def_readwrite("history", &MinimizerBase::history)
+        .def("optimize", &ABC::optimize);
 
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

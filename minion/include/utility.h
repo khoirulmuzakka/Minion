@@ -58,6 +58,61 @@ std::vector<T> random_choice(const std::vector<T>& v, size_t n, bool replace = f
     return result;
 }
 
+
+/**
+ * @brief Selects `n` random elements from the input vector `v` based on given probabilities.
+ * 
+ * This function samples elements with replacement, meaning the same element can be selected multiple times.
+ * 
+ * @tparam T Type of elements in the input vector.
+ * @param v The input vector from which elements are sampled.
+ * @param n The number of elements to select.
+ * @param probability A vector of probabilities corresponding to each element in `v`.
+ * @return std::vector<T> A vector containing `n` randomly chosen elements from `v`.
+ * 
+ * @throws std::invalid_argument If the size of `probability` does not match `v.size()`.
+ * 
+ * @note The function uses `std::discrete_distribution` for weighted sampling.
+ * 
+ * @example
+ * @code
+ * std::vector<char> items = {'A', 'B', 'C', 'D'};
+ * std::vector<double> probs = {0.1, 0.3, 0.4, 0.2};
+ * auto chosen = random_choice(items, 5, probs);
+ * for (char c : chosen) {
+ *     std::cout << c << " ";
+ * }
+ * @endcode
+ */
+template <typename T>
+std::vector<T> random_choice(const std::vector<T>& v, size_t n, const std::vector<double>& probability) {
+    if (v.size() != probability.size()) {
+        throw std::invalid_argument("Size of probability vector must match size of input vector.");
+    }
+    
+    if (v.empty() || n == 0) {
+        return {};  // Return empty vector if input is empty or n is 0
+    }
+
+    std::mt19937 rng = get_rng();
+
+    // Normalize probabilities to sum to 1
+    double sum = std::accumulate(probability.begin(), probability.end(), 0.0);
+    std::vector<double> normalized_prob(probability.size());
+    std::transform(probability.begin(), probability.end(), normalized_prob.begin(),
+                   [sum](double p) { return p / sum; });
+
+    std::vector<T> result;
+    result.reserve(n);
+
+    std::discrete_distribution<size_t> dist(normalized_prob.begin(), normalized_prob.end());
+
+    for (size_t i = 0; i < n; ++i) {
+        result.push_back(v[dist(rng)]);
+    }
+
+    return result;
+}
 /**
  * @brief Template function to find the minimum value in a vector.
  * 
