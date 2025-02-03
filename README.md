@@ -10,6 +10,8 @@
 ![PyPI pip downloads](https://img.shields.io/pypi/dm/minionpy.svg)
 ![PyPI License](https://img.shields.io/pypi/l/minionpy.svg)
 [![Documentation Status](https://readthedocs.org/projects/minion-py/badge/?version=latest)](https://minion-py.readthedocs.io/en/latest/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14794240.svg)](https://doi.org/10.5281/zenodo.14794240)
+
 
 **Minion** is a high-performance **derivative-free optimization** library designed for solving complex optimization problems where gradients are unavailable or unreliable. It features **state-of-the-art evolutionary algorithms**, including top-performing methods from IEEE CEC competitions, which are not commonly available in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
 
@@ -40,5 +42,14 @@ For comprehensive instructions on usage, API reference, and detailed examples, p
 
 - **[Minion Documentation](#)**  
   *Explore detailed guides, tutorials, and examples on [ReadTheDocs](https://minion-py.readthedocs.io/).*
+
+## 📜 Citing Minion
+
+If you use **Minion** or **MinionPy** in your research or projects, please cite the following publication:
+
+> Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
+> *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*.  
+> Zenodo. [https://doi.org/10.5281/zenodo.14794240](https://doi.org/10.5281/zenodo.14794240)  
+
 
 
