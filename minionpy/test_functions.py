@@ -1,36 +1,44 @@
 import numpy as np
 
 def sphere(X):
+    X = np.array(X)
     result = np.sum(X**2, axis=1)
     return result
 
 def rosenbrock(X):
+    X = np.array(X)
     result = np.sum(100.0 * (X[:, 1:] - X[:, :-1]**2.0)**2.0 + (1 - X[:, :-1])**2.0, axis=1)
     return result
 
 def rastrigin(X):
+    X = np.array(X)
     result = np.sum(X**2 - 10.0 * np.cos(2.0 * np.pi * X) + 10, axis=1)
     return result
 
 def griewank(X):
+    X = np.array(X)
     result = np.sum(X**2, axis=1) / 4000.0 - np.prod(np.cos(X / np.sqrt(np.arange(1, X.shape[1] + 1))), axis=1) + 1
     return result
 
 def ackley(X):
+    X = np.array(X)
     result = -20.0 * np.exp(-0.2 * np.sqrt(np.sum(X**2, axis=1) / X.shape[1])) - \
              np.exp(np.sum(np.cos(2.0 * np.pi * X), axis=1) / X.shape[1]) + 20 + np.e
     return result
 
 def zakharov(X):
+    X = np.array(X)
     result = np.sum(X**2, axis=1) + np.sum(0.5 * np.arange(1, X.shape[1] + 1) * X, axis=1)**2 + \
              np.sum(0.5 * np.arange(1, X.shape[1] + 1) * X, axis=1)**4
     return result
 
 def michalewicz(X):
+    X = np.array(X)
     result = -np.sum(np.sin(X) * (np.sin(np.arange(1, X.shape[1] + 1) * X**2 / np.pi))**(2 * 10), axis=1)
     return result
 
 def levy(X):
+    X = np.array(X)
     w = 1 + (X - 1) / 4
     term1 = (np.sin(np.pi * w[:, 0]))**2
     term2 = np.sum((w[:, :-1] - 1)**2 * (1 + 10 * (np.sin(np.pi * w[:, :-1] + 1))**2), axis=1)
@@ -39,20 +47,24 @@ def levy(X):
     return result
 
 def dixon_price(X):
+    X = np.array(X)
     result = (X[:, 0] - 1)**2 + np.sum(np.arange(2, X.shape[1] + 1) * (2 * X[:, 1:]**2 - X[:, :-1])**2, axis=1)
     return result
 
 # Additional test functions
 
 def bent_cigar(X):
+    X = np.array(X)
     result = X[:, 0]**2 + 1e6 * np.sum(X[:, 1:]**2, axis=1)
     return result
 
 def discus(X):
+    X = np.array(X)
     result = 1e6 * X[:, 0]**2 + np.sum(X[:, 1:]**2, axis=1)
     return result
 
 def weierstrass(X):
+    X = np.array(X)
     a = 0.5
     b = 3
     k_max = 20
@@ -67,22 +79,27 @@ def weierstrass(X):
     return result
 
 def happy_cat(X):
+    X = np.array(X)
     result = ((np.sum(X**2, axis=1) - X.shape[1])**2)**0.25 + (0.5 * np.sum(X**2, axis=1) + np.sum(X, axis=1)) / X.shape[1] + 0.5
     return result
 
 def hgbat(X):
+    X = np.array(X)
     result = ((np.sum(X**2, axis=1)**2)**0.25 + (0.5 * np.sum(X**2, axis=1) + np.sum(X, axis=1)) / X.shape[1] + 0.5)
     return result
 
 def hcf(X):
+    X = np.array(X)
     result = np.sum(np.abs(X), axis=1) * np.exp(np.sum(np.abs(X), axis=1) / X.shape[1])
     return result
 
 def grie_rosen(X):
+    X = np.array(X)
     result = 1 + np.sum(100 * (X[:, 1:] - X[:, :-1]**2)**2 + (1 - X[:, :-1])**2, axis=1)
     return result
 
 def scaffer6(X):
+    X = np.array(X)
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         for j in range(X.shape[1] - 1):
@@ -105,14 +122,17 @@ def hybrid_composition3(X):
     return result
 
 def step(X):
+    X = np.array(X)
     result = np.sum(np.floor(X + 0.5)**2, axis=1)
     return result
 
 def quartic(X):
+    X = np.array(X)
     result = np.sum(np.arange(1, X.shape[1] + 1) * X**4, axis=1) + np.random.uniform(0, 1)
     return result
 
 def schaffer2(X):
+    X = np.array(X)
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         for j in range(X.shape[1] - 1):
@@ -123,22 +143,27 @@ def schaffer2(X):
     return result
 
 def brown(X):
+    X = np.array(X)
     result = np.sum((X[:, :-1]**2)**(X[:, 1:]**2 + 1) + (X[:, 1:]**2)**(X[:, :-1]**2 + 1), axis=1)
     return result
 
 def exponential(X):
+    X = np.array(X)
     result = -np.exp(-0.5 * np.sum(X**2, axis=1))
     return result
 
 def styblinski_tang(X):
+    X = np.array(X)
     result = 0.5 * np.sum(X**4 - 16*X**2 + 5*X, axis=1)
     return result
 
 def sum_squares(X):
+    X = np.array(X)
     result = np.sum(np.arange(1, X.shape[1] + 1) * X**2, axis=1)
     return result
 
 def goldstein_price(X):
+    X = np.array(X)
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         x = X[i, 0]
@@ -149,6 +174,7 @@ def goldstein_price(X):
     return result
 
 def easom(X):
+    X = np.array(X)
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         x = X[i, 0]
@@ -160,6 +186,7 @@ def easom(X):
     return result
 
 def drop_wave(X):
+    X = np.array(X)
     result = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         x = X[i, 0]
