@@ -215,7 +215,6 @@ std::size_t findArgMax(const std::vector<T>& vec) {
 
 /**
  * @brief Create a vector of length N with elements selected randomly from 0 to Ninput - 1.
- * @tparam T The type of the elements in the vector.
  * @param Ninput The length of the initial vector (0 to Ninput - 1).
  * @param N The number of elements to select.
  * @param replace If true, selection is done with replacement.
@@ -387,6 +386,14 @@ double calcStdDev(const std::vector<double>& vec);
  * @param strategy The strategy for enforcing the bounds.
  */
 void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std::vector<std::pair<double, double>>& bounds, const std::string& strategy);
+
+/**
+ * @brief Enforce bounds on a a candidate solution.
+ * @param new_candidates The candidate solutions to enforce bounds on.
+ * @param bounds The bounds for each dimension.
+ * @param strategy The strategy for enforcing the bounds.
+ */
+void enforce_bounds(std::vector<double>& new_candidate, const std::vector<std::pair<double, double>>& bounds, const std::string& strategy);
 
 /**
  * @brief Print a vector of vectors to standard error.

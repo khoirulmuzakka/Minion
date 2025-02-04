@@ -22,5 +22,6 @@
 #include "default_options.h"
 #include "minimizer.h"
 #include "abc.h"
+#include "dual_annealing.h"
 
 #endif // MINION_H

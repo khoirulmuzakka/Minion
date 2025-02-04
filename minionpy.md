@@ -18,16 +18,22 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
 ## Features
 
 - **Optimization Algorithms**  
-  MinionPy implements several high-performing algorithms, including:
-  - JADE
-  - L-SHADE (1st place, CEC2014)
-  - jSO (1st place, CEC2017)
-  - j2020 (3rd place, CEC2020)
-  - NL-SHADE-RSP (1st place, CEC2021)
-  - LSRTDE (1st place, CEC2024)
-  - ARRDE (Adaptive Restart-Refine Differential Evolution)  
-
-  These algorithms are robust and converge efficiently in complex optimization tasks. Additionally, classical methods like Nelder-Mead and the original Differential Evolution are included for reference.
+  Implemented algorithms:
+    - **Differential Evolution-based algorithms:**
+      - Basic Differential Evolution (DE)
+      - JADE  
+      - L-SHADE 
+      - jSO
+      - j2020 
+      - NL-SHADE-RSP 
+      - LSRTDE 
+      - ARRDE (our novel Adaptive Restart-Refine DE algorithm)  
+    - **Other population-based algorithms:**
+      - Artificial Bee Colony (ABC)
+      - Grey Wolf DE Optimization  
+    - **Classical optimization algorithms:**
+      - Nelder-Mead  
+      - Generalized Simulated Annealing (Dual Annealing)  
 
 - **Benchmark Support**  
   The library includes benchmark functions from the CEC competitions (2011, 2014, 2017, 2019, 2020, 2022), providing a standardized environment for algorithm development, testing, and comparison.
@@ -46,16 +52,14 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
 MinionPy is applicable in scenarios where derivative-free optimization is required, including engineering, physics, and machine learning. Its standardized benchmarks and high-performance algorithms make it suitable for developing and evaluating new optimization techniques as well as solving real-world optimization problems.
 
 
-## Documentation
+## 📖 Documentation
+For full usage instructions, API reference, and examples, visit the official documentation:
 
-For comprehensive usage instructions, API references, and detailed examples, please refer to the official documentation:
-
-- **[Minion Documentation](#)**  
-  *Explore detailed guides, installation instructions, and examples at [ReadTheDocs](https://minion-py.readthedocs.io/).*
+- **[Minion Documentation](https://minion-py.readthedocs.io/)**
 
 ## Citing Minion
 
-If you use **MinionPy** in your research or projects, please cite the following publication:
+If you use **MinionPy** in your research or projects, we would be grateful if you could cite the following publication:
 
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
 > *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*.  

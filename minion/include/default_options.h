@@ -94,6 +94,14 @@ class DefaultSettings{
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
+        std::map<std::string, ConfigValue>  default_settings_DA= {
+            {"acceptance_par", -5.0},  
+            {"visit_par", 2.67},  
+            {"initial_temp", 5230.0}, 
+            {"restart_temp_ratio" , 2e-05},
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
             {"bound_strategy" , std::string("reflect-random")} 
         };
@@ -109,7 +117,8 @@ class DefaultSettings{
                 {"jSO", default_settings_jSO}, 
                 {"GWO_DE", default_settings_GWO_DE}, 
                 {"NelderMead", default_settings_NelderMead}, 
-                {"ABC", default_settings_ABC}
+                {"ABC", default_settings_ABC}, 
+                {"DA", default_settings_DA}
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){

@@ -2,8 +2,12 @@ name: CI
 
 on:
   push:
-    tags:
-      - 'v*'  
+    branches:
+      - main  # or any branch you want
+      - 'feature/*'  # Optional: trigger on feature branches
+  pull_request:
+    branches:
+      - main  # Optional: trigger on PRs
 
 jobs:
   build:

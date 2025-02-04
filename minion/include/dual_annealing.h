@@ -1,42 +1,47 @@
-#ifndef ABC_H
-#define ABC_H
+#ifndef DUAL_ANNEALING_H
+#define DUAL_ANNEALING_H
 
 #include "minimizer_base.h"
 #include "default_options.h"
+#include <cmath>  
+#include <algorithm>
 
 namespace minion {
+
 /**
- * @class ABC
- * @brief A class for performing Artificial Bee Colony (ABC) optimization.
+ * @class Dual Annealing
+ * @brief A class for performing dual annealing algorithm. 
  * 
- * This class implements the ABC algorithm for optimization. It inherits from the MinimizerBase class.
+ * Reference : Tsallis C, Stariolo DA. Generalized Simulated Annealing. Physica A, 233, 395-406 (1996).
+ * This class inherits from the MinimizerBase class.
  */
-class ABC : public MinimizerBase {
+class Dual_Annealing : public MinimizerBase {
 public:
-    std::vector<std::vector<double>> population;
-    std::vector<double> fitness;
-    std::vector<double> best;
-    double best_fitness;
-    size_t populationSize;
     size_t Nevals = 0;
-    std::string mutation_strategy; 
+    double acceptance_par;
+    double visit_par;
+    double initial_temp;
+    double restart_temp_ratio;
 
-protected:
-    /**
-     * @brief Initializes the population and other parameters.
-     */
-    virtual void init();
+private : 
+    std::vector<double> best_cand, current_cand; 
+    double best_E, current_E; 
+    double temp_step;
 
-    /**
-     * @brief Mutates a given individual.
-     * @param idx Index of the individual to mutate.
-     * @return A mutated individual.
-     */
-    std::vector<double> mutate(size_t idx);
+    double factor2, factor3, factor4p, factor5, d1, factor6;
+    double tail_limit = 1e+8;
+    double min_visit_bound = 1.e-10;
+    double pi = 3.14159265358979323846;
+
+    void init(bool useX0=true);
+    std::vector<double> visit_fn(double temperature, int dim);
+    std::vector<double> generate_candidate(std::vector<double> cand, int j, double temp);
+    void accept_reject (const std::vector<double>& cand, const double& Energy);
+    void step (int iter, double temp);
 
 public:
     /**
-     * @brief Constructor for ABC.
+     * @brief Constructor for DA.
      * @param func The objective function to minimize.
      * @param bounds The bounds for the variables.
      * @param x0 The initial solution.
@@ -47,7 +52,7 @@ public:
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    ABC(
+    Dual_Annealing(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<double>& x0 = {},
@@ -58,7 +63,7 @@ public:
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {};
 
     /**
      * @brief Optimizes the objective function.

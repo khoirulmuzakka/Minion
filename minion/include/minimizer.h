@@ -14,6 +14,7 @@
 #include "gwo_de.h"
 #include "nlshadersp.h"
 #include "abc.h"
+#include "dual_annealing.h"
 
 namespace minion {
 
@@ -62,6 +63,7 @@ class Minimizer {
             else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else throw std::runtime_error("Unknwon algorithm : "+ algo);
         };
 

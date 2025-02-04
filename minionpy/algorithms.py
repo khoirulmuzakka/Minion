@@ -18,6 +18,7 @@ from minionpycpp import GWO_DE as cppGWO_DE
 from minionpycpp import Minimizer as cppMinimizer
 from minionpycpp import NelderMead as cppNelderMead 
 from minionpycpp import ABC as cppABC
+from minionpycpp import Dual_Annealing as cppDual_Annealing
 
 
 from typing import Callable, Dict, List, Optional, Any
@@ -998,7 +999,7 @@ class ABC(MinimizerBase):
 
         Notes
         -----
-        - The optimizer is implemented in C++ and accessed via `cppNLSHADE_RSP`.
+        - The optimizer is implemented in C++ and accessed via `cppABC`.
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
@@ -1025,6 +1026,115 @@ class ABC(MinimizerBase):
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
+    
+
+class Dual_Annealing(MinimizerBase):
+    """
+    Implementation of dual annealing algorithm.
+
+    Reference : Tsallis C, Stariolo DA. Generalized Simulated Annealing. Physica A, 233, 395-406 (1996).
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[float]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None
+        ) : 
+        """
+        Initialize the algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats.  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list, optional
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "acceptance_par" : -5.0,  
+                    "visit_par" :  2.67,  
+                    "initial_temp"     :  5230.0, 
+                    "restart_temp_ratio" : 2e-05,
+                    "bound_strategy"        : "reflect-random"
+                }
+
+            The available options are:
+
+            - **acceptance_par** (double) : acceptance parameter. The value must be between -1.0e+4 and -5.
+            - **visit_par** (double) : visiting distribution parameter. The value must be between 1.0 and 3.0.
+            - **initial_temp** (double) : initial temperature. The value must be between 0.01 and 5.0e+4.
+            - **restart_temp_ratio** (double) : restart temperature ratio. The value must be between 0 and 1.
+            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
+                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppDual_Annealing`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
+        """
+
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppDual_Annealing(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+    
+    def optimize(self):
+        """
+        Run the optimization algorithm.
+
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
     
 class j2020(MinimizerBase):
     """
@@ -1552,7 +1662,9 @@ class Minimizer(MinimizerBase):
             - `"NLSHADE_RSP"`
             - `"j2020"`
             - `"GWO_DE"`
-            - `"ARRDE"`
+            - `"ARRDE"` 
+            - `"ABC"` (artificial bee colony)
+            - `"DA"` (dual annealing)
 
         relTol : float, optional
             Relative tolerance for convergence. The optimization stops if the relative 
@@ -1574,7 +1686,7 @@ class Minimizer(MinimizerBase):
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
-        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC"]
+        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC", "DA"]
         if not (algo in all_algo) : 
             raise Exception("Uknownn algorithm. The algorithm must be one of these : ", all_algo)
         

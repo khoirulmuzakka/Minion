@@ -196,6 +196,12 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
     }
 }
 
+void enforce_bounds(std::vector<double>& new_candidate, const std::vector<std::pair<double, double>>& bounds, const std::string& strategy) {
+    std::vector<std::vector<double> > temp = {new_candidate};
+    enforce_bounds(temp, bounds, strategy); 
+    new_candidate = temp[0];
+};
+
 void printVectorOfVectors(const std::vector<std::vector<double>>& vec) {
     for (const auto& innerVec : vec) {
         for (const auto& value : innerVec) {
