@@ -62,6 +62,6 @@ For full usage instructions, API reference, and examples, visit the official doc
 If you use **MinionPy** in your research or projects, we would be grateful if you could cite the following publication:
 
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
-> *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*.  
+> *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
 > Zenodo. [https://doi.org/10.5281/zenodo.14794240](https://doi.org/10.5281/zenodo.14794240)  
 
