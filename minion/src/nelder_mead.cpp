@@ -16,6 +16,9 @@ void NelderMead::initialize  (){
         std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
+    
+    locality = options.get<double> ("locality_factor", 1.0);
+    if (locality<0.0 || locality >1.0) locality = 0.5;
     hasInitialized = true;
 };
 
@@ -25,17 +28,16 @@ MinionResult NelderMead::optimize() {
         size_t n = x0.size();
         std::vector<std::vector<double>> simplex(n + 1, std::vector<double>(n));
 
-        // Initialize simplex around the initial point x0
-        for (size_t i = 0; i < n; ++i) {
-            simplex[i] = x0;
-            if (x0[i] != 0) {
-                simplex[i][i] += 0.5 * (bounds[i].second - bounds[i].first);
-            } else {
-                simplex[i][i] += 0.5;
+        std::vector<std::pair<double, double>> new_bounds = bounds; 
+        if (!x0.empty()) {
+            for (int i =0; i<bounds.size(); i++) {
+                double dis_up = locality * fabs(bounds[i].second-x0[i]);
+                double dis_down = locality * fabs(x0[i]-bounds[i].first);
+                new_bounds[i] = { x0[i]-dis_down, x0[i]+dis_up };
             }
         }
-
-        simplex= latin_hypercube_sampling(bounds, bounds.size()+1); 
+        
+        simplex= latin_hypercube_sampling(new_bounds, bounds.size()+1); 
         simplex[0] = x0;
 
         // Evaluate function values at the initial simplex points

@@ -18,12 +18,14 @@ void Dual_Annealing::initialize() {
     restart_temp_ratio =  options.get<double> ("restart_temp_ratio", 2e-05);
     acceptance_par =  options.get<double> ("acceptance_par", -5.0);
     visit_par = options.get<double> ("visit_par", 2.67);
+    local_search_start = options.get<double> ("local_search_start", 0.8);
 
     if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temprature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
     if ( restart_temp_ratio <= 0.0 || restart_temp_ratio > 1.0) throw std::runtime_error("restart_temp_ratio must be between 0.0 and 1.0. Found : "+ std::to_string(restart_temp_ratio));
     if ( visit_par <= 1.0 || visit_par > 3.0) throw std::runtime_error("Visiting parameter must be between 1 and 3. Found : "+ std::to_string(visit_par));
     if ( acceptance_par <= -10000.0 || acceptance_par > -5.0) throw std::runtime_error("Acceptance parameter must be between -10000 and -5. Found : "+ std::to_string(acceptance_par));
-   
+    if ( local_search_start < 0.0 || local_search_start > 1.0) throw std::runtime_error("local_search_start must be between 0 and 1. Found : "+ std::to_string(local_search_start));
+
     factor2 = std::exp((4.0 - visit_par) * std::log(visit_par - 1.0));
     factor3 = std::exp((2.0 - visit_par) * std::log(2.0) / (visit_par - 1.0));
     factor4p = std::sqrt(pi) * factor2 / (factor3 * (3.0 - visit_par));
@@ -38,8 +40,10 @@ void Dual_Annealing::init(bool useX0){
     if (!x0.empty() && useX0) current_cand = x0;
     enforce_bounds(current_cand, bounds, boundStrategy);
     current_E = func({current_cand}, data)[0];
-    best_E = current_E; 
-    best_cand = current_cand;
+    if (current_E<best_E) {
+        best_E = current_E; 
+        best_cand = current_cand;
+    };
     Nevals++;
 };
 
@@ -147,7 +151,7 @@ MinionResult Dual_Annealing::optimize() {
         double temperature_restart = initial_temp * restart_temp_ratio;
         double t1 = std::exp((visit_par - 1) * std::log(2.0)) - 1.0;
         init();
-        
+        size_t maxevals_da = size_t(local_search_start*maxevals);
         do {
             size_t iter=0;
             do {
@@ -160,8 +164,15 @@ MinionResult Dual_Annealing::optimize() {
                     break;
                 };
                 iter ++;
-            } while(Nevals < maxevals); ;
-        } while(Nevals < maxevals); 
+            } while(Nevals < maxevals_da); ;
+        } while(Nevals < maxevals_da); 
+
+        if (local_search_start<1.0) {
+            auto settings = DefaultSettings().getDefaultSettings("NelderMead");
+            settings["locality_factor"] = 0.5;
+            auto nm_res = NelderMead(func, bounds, best_cand, data, callback, stoppingTol, maxevals-maxevals_da, seed, settings).optimize();
+            history.push_back(nm_res);
+        };
 
         auto minElementIter = std::min_element(history.begin(), history.end(), 
                                                     [](const MinionResult& a, const MinionResult& b) {

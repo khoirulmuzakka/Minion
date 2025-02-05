@@ -98,12 +98,14 @@ class DefaultSettings{
             {"acceptance_par", -5.0},  
             {"visit_par", 2.67},  
             {"initial_temp", 5230.0}, 
-            {"restart_temp_ratio" , 2e-05},
+            {"restart_temp_ratio" , 2e-5},
+            {"local_search_start", 1.0},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
-            {"bound_strategy" , std::string("reflect-random")} 
+                {"locality_factor", 1.0},
+                {"bound_strategy" , std::string("reflect-random")}, 
         };
 
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {

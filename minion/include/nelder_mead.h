@@ -57,6 +57,7 @@ private :
     double fbest; 
     int no_improve_counter=0;
     size_t bestIndex;
+    double locality;
 };
 
 }

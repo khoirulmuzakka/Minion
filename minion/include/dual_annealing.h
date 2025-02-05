@@ -5,6 +5,7 @@
 #include "default_options.h"
 #include <cmath>  
 #include <algorithm>
+#include "nelder_mead.h"
 
 namespace minion {
 
@@ -22,15 +23,15 @@ public:
     double visit_par;
     double initial_temp;
     double restart_temp_ratio;
+    double local_search_start;
 
 private : 
     std::vector<double> best_cand, current_cand; 
-    double best_E, current_E; 
+    double best_E=std::numeric_limits<double>::max(), current_E; 
     double temp_step;
 
     double factor2, factor3, factor4p, factor5, d1, factor6;
     double tail_limit = 1e+8;
-    double min_visit_bound = 1.e-10;
     double pi = 3.14159265358979323846;
 
     void init(bool useX0=true);
