@@ -11,8 +11,8 @@ namespace minion {
 #endif
 
 // Function to compute the sum of squares of each row in X (Sphere function)
-Vector sphere(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>sphere(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_squares = 0.0;
         for (size_t j = 0; j < X[i].size(); ++j) {
@@ -24,8 +24,8 @@ Vector sphere(const Matrix& X) {
 }
 
 // Function to compute the Rosenbrock function
-Vector rosenbrock(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>rosenbrock(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum = 0.0;
         for (size_t j = 0; j < X[i].size() - 1; ++j) {
@@ -39,8 +39,8 @@ Vector rosenbrock(const Matrix& X) {
 }
 
 // Function to compute the Rastrigin function
-Vector rastrigin(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>rastrigin(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum = 0.0;
         for (size_t j = 0; j < X[i].size(); ++j) {
@@ -52,8 +52,8 @@ Vector rastrigin(const Matrix& X) {
 }
 
 // Function to compute the Griewank function
-Vector griewank(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>griewank(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum1 = 0.0;
         double prod = 1.0;
@@ -67,8 +67,8 @@ Vector griewank(const Matrix& X) {
 }
 
 // Function to compute the Ackley function
-Vector ackley(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>ackley(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum1 = 0.0;
         double sum2 = 0.0;
@@ -82,8 +82,8 @@ Vector ackley(const Matrix& X) {
 }
 
 // Function to compute the Zakharov function
-Vector zakharov(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>zakharov(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum1 = 0.0;
         double sum2 = 0.0;
@@ -97,8 +97,8 @@ Vector zakharov(const Matrix& X) {
 }
 
 // Function to compute the Michalewicz function
-Vector michalewicz(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>michalewicz(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum = 0.0;
         for (size_t j = 0; j < X[i].size(); ++j) {
@@ -110,8 +110,8 @@ Vector michalewicz(const Matrix& X) {
 }
 
 // Function to compute the Levy function
-Vector levy(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>levy(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double term1 = pow(sin(M_PI * (1 + (X[i][0] - 1) / 4)), 2);
         double term2 = 0.0;
@@ -128,8 +128,8 @@ Vector levy(const Matrix& X) {
 }
 
 // Function to compute the Dixon-Price function
-Vector dixon_price(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>dixon_price(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double term1 = pow(X[i][0] - 1, 2);
         double sum = 0.0;
@@ -142,8 +142,8 @@ Vector dixon_price(const Matrix& X) {
 }
 
 // Function to compute the Bent Cigar function
-Vector bent_cigar(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>bent_cigar(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_squares = 0.0;
         for (size_t j = 1; j < X[i].size(); ++j) {
@@ -155,8 +155,8 @@ Vector bent_cigar(const Matrix& X) {
 }
 
 // Function to compute the Discus function
-Vector discus(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>discus(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_squares = 0.0;
         for (size_t j = 1; j < X[i].size(); ++j) {
@@ -168,14 +168,14 @@ Vector discus(const Matrix& X) {
 }
 
 // Function to compute the Weierstrass function
-Vector weierstrass(const Matrix& X) {
+std::vector<double>weierstrass(const std::vector<std::vector<double>>& X) {
     const double a = 0.5;
     const int b = 3;
     const size_t k_max = 20;
     const size_t n = X[0].size();
 
-    Vector result(X.size(), 0.0);
-    Vector inner_sum(X.size(), 0.0);
+    std::vector<double>result(X.size(), 0.0);
+    std::vector<double>inner_sum(X.size(), 0.0);
 
     for (size_t i = 0; i < X.size(); ++i) {
         for (int k = 0; k < k_max; ++k) {
@@ -193,8 +193,8 @@ Vector weierstrass(const Matrix& X) {
 }
 
 // Function to compute the HappyCat function
-Vector happy_cat(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>happy_cat(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_squares = 0.0;
         double sum_x = 0.0;
@@ -208,8 +208,8 @@ Vector happy_cat(const Matrix& X) {
 }
 
 // Function to compute the HGBat function
-Vector hgbat(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>hgbat(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_squares = 0.0;
         double sum_x = 0.0;
@@ -223,8 +223,8 @@ Vector hgbat(const Matrix& X) {
 }
 
 // Function to compute the HCF function
-Vector hcf(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>hcf(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum_abs = 0.0;
         double exp_term = 1.0;
@@ -238,8 +238,8 @@ Vector hcf(const Matrix& X) {
 }
 
 // Function to compute the Griewank-Rosenbrock function
-Vector grie_rosen(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>grie_rosen(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double sum = 1.0;
         for (size_t j = 0; j < X[i].size() - 1; ++j) {
@@ -253,8 +253,8 @@ Vector grie_rosen(const Matrix& X) {
 }
 
 // Function to compute the Easom function
-Vector easom(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>easom(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double x = X[i][0];
         double y = X[i][1];
@@ -267,8 +267,8 @@ Vector easom(const Matrix& X) {
 }
 
 // Function to compute the Drop-Wave function
-Vector drop_wave(const Matrix& X) {
-    Vector result(X.size());
+std::vector<double>drop_wave(const std::vector<std::vector<double>>& X) {
+    std::vector<double>result(X.size());
     for (size_t i = 0; i < X.size(); ++i) {
         double x = X[i][0];
         double y = X[i][1];

@@ -5,29 +5,26 @@
 #include <cmath>
 
 namespace minion {
-// Define types for convenience
-using Matrix = std::vector<std::vector<double>>;
-using Vector = std::vector<double>;
 
 // Function prototypes
-Vector sphere(const Matrix& X);
-Vector rosenbrock(const Matrix& X);
-Vector rastrigin(const Matrix& X);
-Vector griewank(const Matrix& X);
-Vector ackley(const Matrix& X);
-Vector zakharov(const Matrix& X);
-Vector michalewicz(const Matrix& X);
-Vector levy(const Matrix& X);
-Vector dixon_price(const Matrix& X);
-Vector bent_cigar(const Matrix& X);
-Vector discus(const Matrix& X);
-Vector weierstrass(const Matrix& X);
-Vector happy_cat(const Matrix& X);
-Vector hgbat(const Matrix& X);
-Vector hcf(const Matrix& X);
-Vector grie_rosen(const Matrix& X);
-Vector easom(const Matrix& X);
-Vector drop_wave(const Matrix& X);
+std::vector<double> sphere(const std::vector<std::vector<double>>& X);
+std::vector<double> rosenbrock(const std::vector<std::vector<double>>& X);
+std::vector<double>rastrigin(const std::vector<std::vector<double>>& X);
+std::vector<double>griewank(const std::vector<std::vector<double>>& X);
+std::vector<double>ackley(const std::vector<std::vector<double>>& X);
+std::vector<double>zakharov(const std::vector<std::vector<double>>& X);
+std::vector<double>michalewicz(const std::vector<std::vector<double>>& X);
+std::vector<double>levy(const std::vector<std::vector<double>>& X);
+std::vector<double>dixon_price(const std::vector<std::vector<double>>& X);
+std::vector<double>bent_cigar(const std::vector<std::vector<double>>& X);
+std::vector<double>discus(const std::vector<std::vector<double>>& X);
+std::vector<double>weierstrass(const std::vector<std::vector<double>>& X);
+std::vector<double>happy_cat(const std::vector<std::vector<double>>& X);
+std::vector<double>hgbat(const std::vector<std::vector<double>>& X);
+std::vector<double>hcf(const std::vector<std::vector<double>>& X);
+std::vector<double>grie_rosen(const std::vector<std::vector<double>>& X);
+std::vector<double>easom(const std::vector<std::vector<double>>& X);
+std::vector<double>drop_wave(const std::vector<std::vector<double>>& X);
 
 }
 
