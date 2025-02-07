@@ -83,7 +83,6 @@ MinionResult NelderMead::optimize() {
             // Check convergence
             double frange =calcStdDev(fvals)/ calcMean(fvals);
             if (frange < stoppingTol) {
-                std::cout << "Simplex converged";
                 success = true;
                 message = "Optimization converged.";
                 break;

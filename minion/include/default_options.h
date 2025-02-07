@@ -99,8 +99,8 @@ class DefaultSettings{
             {"visit_par", 2.67},  
             {"initial_temp", 5230.0}, 
             {"restart_temp_ratio" , 2e-5},
-            {"local_search_start", 1.0},
-            {"bound_strategy" , std::string("reflect-random")} 
+            {"local_search_start", 0.8},
+            {"bound_strategy" , std::string("clip")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
