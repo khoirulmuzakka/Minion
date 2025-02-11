@@ -687,7 +687,7 @@ class JADE(MinimizerBase):
     """
     Implementation of the JADE algorithm.
 
-    Reference : Reference : J. Zhang and A. C. Sanderson, "JADE: Adaptive Differential Evolution With Optional External Archive," in IEEE Transactions on Evolutionary Computation, vol. 13, no. 5, pp. 945-958, Oct. 2009, doi: 10.1109/TEVC.2009.2014613.
+    Reference : J. Zhang and A. C. Sanderson, "JADE: Adaptive Differential Evolution With Optional External Archive," in IEEE Transactions on Evolutionary Computation, vol. 13, no. 5, pp. 945-958, Oct. 2009, doi: 10.1109/TEVC.2009.2014613.
 
     Inherits from MinimizerBase and implements the optimization algorithm.
     """
@@ -1094,7 +1094,10 @@ class Dual_Annealing(MinimizerBase):
                     "visit_par" :  2.67,  
                     "initial_temp"     :  5230.0, 
                     "restart_temp_ratio" : 2e-05,
-                    "bound_strategy"        : "reflect-random"
+                    "use_local_search": True,
+                    "local_search_algo" : "L_BFGS_B",
+                    "finite_diff_rel_step", 0.0,
+                    "bound_strategy"        : "clip"
                 }
 
             The available options are:
@@ -1103,6 +1106,9 @@ class Dual_Annealing(MinimizerBase):
             - **visit_par** (double) : visiting distribution parameter. The value must be between 1.0 and 3.0.
             - **initial_temp** (double) : initial temperature. The value must be between 0.01 and 5.0e+4.
             - **restart_temp_ratio** (double) : restart temperature ratio. The value must be between 0 and 1.
+            - **use_local_search** (bool) : a flag to whether or not to use local search. 
+            - **local_search_algo** (str) : Algorithm name for local search. Available : "NelderMead" or "L_BFGS_B".
+            - **finite_diff_rel_step** (double) : The relative step size for finite difference computations for L_BFGS_B. The default value 0.0 means that the relative step is given by the square root of machine epsilon. 
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1327,7 +1333,7 @@ class j2020(MinimizerBase):
                 where *D* is the dimensionality of the problem.
             - **tau1** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
             - **tau2** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
-            - **myEqs** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **myEqs** (float) : The value of *myEqs* variable. The value must be between 0 and 1. 
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1437,9 +1443,8 @@ class LSRTDE(MinimizerBase):
 
                 where *D* is the dimensionality of the problem.
 
-            - **tau1** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
-            - **tau2** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
-            - **myEqs** (float) : The value of *tau1* variable. The value must be between 0 and 1. 
+            - **memory_size** (float) : memory size for storing the values of ``CR`` and ``F`` 
+            - **success_rate** (float) : The success rate value.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 

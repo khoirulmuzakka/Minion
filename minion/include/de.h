@@ -28,6 +28,7 @@ public :
     std::string mutation_strategy;
     bool useLatin = false;
     double pA=0.5;
+    bool support_tol = true;
     
 protected : 
     /**

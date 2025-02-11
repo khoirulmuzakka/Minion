@@ -132,7 +132,7 @@ class ARRDE : public Differential_Evolution {
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
         ) :  
-            Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options){};
+            Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options){support_tol=false;};
 
         /**
          * @brief Adapts parameters of the algorithm.

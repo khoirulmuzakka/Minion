@@ -167,7 +167,6 @@ void Differential_Evolution::init (){
 };
 
 bool Differential_Evolution::checkStopping(){
-    return false;
     double fmax = findMax(fitness); 
     double fmin = findMin(fitness);
     double relRange = (fmax-fmin)/fabs(calcMean(fitness));
@@ -226,7 +225,7 @@ MinionResult Differential_Evolution::optimize() {
             history.push_back(minionResult);
             iter++;
             if (callback != nullptr) callback(&minionResult);
-            if (checkStopping()) break;
+            if ( support_tol && checkStopping()) break;
         } while(Nevals < maxevals); 
 
         auto minElementIter = std::min_element(history.begin(), history.end(), 
