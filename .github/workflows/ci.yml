@@ -34,10 +34,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install numpy scipy build pybind11
 
+    # Install Eigen
+    - name: Install Eigen (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p eigen_install
+        curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz | tar xz --strip-components=1 -C eigen_install
+        echo "EIGEN3_INCLUDE_DIR=$PWD/eigen_install" >> $GITHUB_ENV
+
+    - name: Install Eigen (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        Invoke-WebRequest -Uri "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip" -OutFile "eigen.zip"
+        Expand-Archive -Path "eigen.zip" -DestinationPath "eigen_install"
+        echo "EIGEN3_INCLUDE_DIR=$pwd\eigen_install\eigen-3.4.0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
     # Build the library
     - name: Build the library
       run: |
-        cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+        cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DEIGEN3_INCLUDE_DIR=$EIGEN3_INCLUDE_DIR
         cmake --build build --target minionpycpp
         cmake --build build --target minion
 

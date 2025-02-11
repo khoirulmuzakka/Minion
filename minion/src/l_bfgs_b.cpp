@@ -51,10 +51,10 @@ MinionResult L_BFGS_B::optimize() {
         param.m              = options.get<int> ("m", 10); 
         param.epsilon        = options.get<double> ("g_epsilon", 1e-10); 
         param.epsilon_rel    = options.get<double> ("g_epsilon_rel", 1e-10); 
-        param.past           = 1;
+        param.past           = 3;
         param.delta          = options.get<double> ("f_reltol", 1e-20); 
         param.max_iterations = options.get<int> ("max_iterations", 0); 
-        param.max_submin     = 0;
+        param.max_submin     = 10;
         param.max_linesearch = options.get<int> ("max_linesearch", 20); 
         param.min_step       = 1e-20;
         param.max_step       = 1e+20;
