@@ -15,6 +15,7 @@
 #include "nlshadersp.h"
 #include "abc.h"
 #include "dual_annealing.h"
+#include "l_bfgs_b.h"
 
 namespace minion {
 
@@ -64,6 +65,7 @@ class Minimizer {
             else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else throw std::runtime_error("Unknwon algorithm : "+ algo);
         };
 

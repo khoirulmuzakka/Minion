@@ -96,16 +96,30 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_DA= {
             {"acceptance_par", -5.0},  
-            {"visit_par", 2.67},  
-            {"initial_temp", 5230.0}, 
+            {"visit_par", 2.5},  
+            {"initial_temp", 1000.0  }, // 5230.0}, 
             {"restart_temp_ratio" , 2e-5},
-            {"local_search_start", 0.8},
+            {"use_local_search", true},
+            {"local_search_algo", "L_BFGS_B"},
+            {"finite_diff_rel_step", 0.0},
             {"bound_strategy" , std::string("clip")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
                 {"locality_factor", 1.0},
                 {"bound_strategy" , std::string("reflect-random")}, 
+        };
+
+        std::map<std::string, ConfigValue>   default_settings_LBFGSB = {
+            {"max_iterations", 15000},
+            {"m" , 10}, 
+            {"g_epsilon", 1e-5},
+            {"g_epsilon_rel", 0.0},
+            {"f_reltol", 1e-10},
+            {"max_linesearch", 20},
+            {"c_1",1e-3},
+            {"c_2", 0.9}, 
+            {"finite_diff_rel_step", 0.0}
         };
 
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {
@@ -120,7 +134,8 @@ class DefaultSettings{
                 {"GWO_DE", default_settings_GWO_DE}, 
                 {"NelderMead", default_settings_NelderMead}, 
                 {"ABC", default_settings_ABC}, 
-                {"DA", default_settings_DA}
+                {"DA", default_settings_DA}, 
+                {"L_BFGS_B", default_settings_LBFGSB}
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){

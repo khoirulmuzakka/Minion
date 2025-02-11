@@ -18,13 +18,15 @@ void Dual_Annealing::initialize() {
     restart_temp_ratio =  options.get<double> ("restart_temp_ratio", 2e-05);
     acceptance_par =  options.get<double> ("acceptance_par", -5.0);
     visit_par = options.get<double> ("visit_par", 2.67);
-    local_search_start = options.get<double> ("local_search_start", 0.8);
-
-    if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temprature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
+    useLocalSearch = options.get<bool> ("use_local_search", true);
+    local_min_algo = options.get<std::string> ("local_search_algo", "L_BFGS_B");
+    fin_diff_rel_step = options.get<double>("finite_diff_rel_step", 0.0);
+    
+    if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temperature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
     if ( restart_temp_ratio <= 0.0 || restart_temp_ratio > 1.0) throw std::runtime_error("restart_temp_ratio must be between 0.0 and 1.0. Found : "+ std::to_string(restart_temp_ratio));
     if ( visit_par <= 1.0 || visit_par > 3.0) throw std::runtime_error("Visiting parameter must be between 1 and 3. Found : "+ std::to_string(visit_par));
     if ( acceptance_par <= -10000.0 || acceptance_par > -5.0) throw std::runtime_error("Acceptance parameter must be between -10000 and -5. Found : "+ std::to_string(acceptance_par));
-    if ( local_search_start < 0.0 || local_search_start > 1.0) throw std::runtime_error("local_search_start must be between 0 and 1. Found : "+ std::to_string(local_search_start));
+    if (local_min_algo != "L_BFGS_B" && local_min_algo != "NelderMead" ) throw std::runtime_error("local_search_algo must either be 'L_BFGS_B' or 'NelderMead'");
 
     factor2 = std::exp((4.0 - visit_par) * std::log(visit_par - 1.0));
     factor3 = std::exp((2.0 - visit_par) * std::log(2.0) / (visit_par - 1.0));
@@ -32,6 +34,8 @@ void Dual_Annealing::initialize() {
     factor5 = 1.0 / (visit_par - 1.0) - 0.5;
     d1 = 2.0 - factor5;
     factor6 = pi * (1.0 - factor5) / std::sin(pi * (1.0 - factor5)) / std::exp(std::lgamma(d1));
+
+    max_no_improve=5*bounds.size();
     hasInitialized=true;
 }; 
 
@@ -116,6 +120,7 @@ void Dual_Annealing::accept_reject (const std::vector<double>& cand, const doubl
 };
 
 void Dual_Annealing::step (int iter, double temp){
+    double best_E_save = best_E;
     temp_step = temp/double(iter+1);
     for (int j=0; j<2*bounds.size(); j++){
         //generate candidate from the visiting distribution
@@ -126,6 +131,7 @@ void Dual_Annealing::step (int iter, double temp){
         if (E < best_E) {
             best_cand = cand; 
             best_E = E;
+            N_no_improve=0;
         };
         
         if (E<current_E){ //found an improvement. Always accept
@@ -135,10 +141,39 @@ void Dual_Annealing::step (int iter, double temp){
             accept_reject(cand, E);
         };
         
-    };
+    }; 
+
+    if (best_E == best_E_save) N_no_improve++;
 
     minionResult = MinionResult(best_cand, best_E, iter, Nevals, false, "");
     history.push_back(minionResult);
+
+    if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
+        size_t maxevals_ls = 300*bounds.size();
+        if (local_min_algo == "NelderMead"){
+            auto settings = DefaultSettings().getDefaultSettings("NelderMead");
+            settings["locality_factor"] = 0.5;
+            minionResult = NelderMead(func, bounds, best_cand, data, callback, stoppingTol, 0.25*maxevals_ls, seed, settings).optimize();
+        } else if (local_min_algo == "L_BFGS_B"){
+            auto defaultSettings = DefaultSettings().getDefaultSettings("L_BFGS_B");
+            defaultSettings["max_iterations"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
+            defaultSettings["finite_diff_rel_step"] = fin_diff_rel_step;
+            minionResult = L_BFGS_B(func, bounds, best_cand, data, callback, stoppingTol, maxevals_ls, seed, defaultSettings).optimize();
+        } else {
+            throw std::runtime_error("Unknown local search algorithm.");
+        };
+        Nevals += minionResult.nfev;
+        history.push_back(minionResult);
+
+        //std::cout << "DA : LS : " << best_E << " " << minionResult.fun << " " << Nevals << " " << minionResult.nfev << " "<< N_no_improve<<"\n";
+        if (minionResult.fun<best_E){
+            best_cand = minionResult.x; 
+            best_E = minionResult.fun; 
+            current_cand= best_cand;
+            current_E = best_E;
+            N_no_improve=0;
+        }
+    }
 
 };
 
@@ -151,7 +186,6 @@ MinionResult Dual_Annealing::optimize() {
         double temperature_restart = initial_temp * restart_temp_ratio;
         double t1 = std::exp((visit_par - 1) * std::log(2.0)) - 1.0;
         init();
-        size_t maxevals_da = size_t(local_search_start*maxevals);
         do {
             size_t iter=0;
             do {
@@ -164,15 +198,8 @@ MinionResult Dual_Annealing::optimize() {
                     break;
                 };
                 iter ++;
-            } while(Nevals < maxevals_da); ;
-        } while(Nevals < maxevals_da); 
-
-        if (local_search_start<1.0) {
-            auto settings = DefaultSettings().getDefaultSettings("NelderMead");
-            settings["locality_factor"] = 0.5;
-            auto nm_res = NelderMead(func, bounds, best_cand, data, callback, stoppingTol, maxevals-maxevals_da, seed, settings).optimize();
-            history.push_back(nm_res);
-        };
+            } while(Nevals < maxevals); ;
+        } while(Nevals < maxevals); 
 
         auto minElementIter = std::min_element(history.begin(), history.end(), 
                                                     [](const MinionResult& a, const MinionResult& b) {

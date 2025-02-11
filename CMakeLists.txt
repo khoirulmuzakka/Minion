@@ -27,6 +27,9 @@ else()
 endif()
 
 
+# + ---------------------------------------------- +
+# | Find pybind11 and Eigen|
+# + ---------------------------------------------- +
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 execute_process(
     COMMAND python -m pybind11 --cmakedir
@@ -35,17 +38,33 @@ execute_process(
 )
 set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
 find_package(pybind11 REQUIRED CONFIG)
+find_package(Eigen3 3.0 REQUIRED)
 
 
-# Include directories
-include_directories(
-    minion/include
-    minion/cec
-)
+# + --------------- +
+# | LBFGSpp LIBRARY |
+# + --------------- +
+add_library(lbfgspp INTERFACE)
+target_include_directories(lbfgspp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include)
+target_link_libraries(lbfgspp INTERFACE Eigen3::Eigen)
 
+
+# + -------------------------- +
+# | Remove old compiled libs |
+# + --------------------------- +
 file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 
+include_directories(
+    /usr/include/eigen3/
+    external/lbfgspp/include
+    minion/include
+    minion/cec 
+)
+
+# + -------------------------------------------+
+# | Compile minion library and some main files |
+# + ------------------------------------------ +
 #scikit-build is used to generate python wheels. During wheel generation using cibuildwheel, this c++ binaries are not needed.
 if(NOT SKBUILD) 
     # --------------------- compile minion library -----------------------------------------#
@@ -94,8 +113,9 @@ if(NOT SKBUILD)
 
 endif()
 
-
-# --------------------- compile minionpy library ---------------------------------------#
+# + ---------------------------------------------- +
+# | Compile Minionpycpp library for python binding|
+# + ---------------------------------------------- +
 # Collect source files for the Python bindings
 file(GLOB minionpy_SOURCE_FILES minion/src/*.cpp minion/cec/*.cpp)
 
@@ -113,7 +133,10 @@ else()
     )
 endif()
 
-# Install the Python module
+
+# + ---------------------------------------------- +
+# | Set install directory                          |
+# + ---------------------------------------------- +
 install(TARGETS minionpycpp
     LIBRARY DESTINATION minionpy/lib
 )

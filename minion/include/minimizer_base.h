@@ -94,7 +94,17 @@ class Options {
          */
         Options (std::map<std::string, ConfigValue> inputSettings) : settings(inputSettings){};
 
-
+        /**
+         * @brief Prints the configuration settings.
+         */
+        void print() const {
+            std::cout << "Configuration:\n";
+            for (const auto& [key, value] : settings) {
+                std::cout << "\t" << key << " : ";
+                std::visit([](const auto& v) { std::cout << v; }, value);
+                std::cout << "\n";
+            }
+        }
         /**
          * @brief Destructor for the Options class.
          */
@@ -153,8 +163,9 @@ class Options {
             if (it != settings.end()) {
                 try {
                     ret = std::get<T>(it->second);
-                } catch (const std::exception& ) {
+                } catch (const std::exception& e) {
                     std::cerr << "Problem when accessing value of option key "+key << "\n";
+                    std::cerr << e.what() << "\n";
                 }
             } else {
                 std::cerr << "Key not found or type mismatch: " + key << ". Default value will be returned.\n";

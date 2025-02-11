@@ -6,6 +6,7 @@
 #include <cmath>  
 #include <algorithm>
 #include "nelder_mead.h"
+#include "l_bfgs_b.h"
 
 namespace minion {
 
@@ -24,8 +25,13 @@ public:
     double initial_temp;
     double restart_temp_ratio;
     double local_search_start;
+    std::string local_min_algo;
+    bool useLocalSearch = true;
+    size_t max_no_improve;
+    double fin_diff_rel_step=0.0;
 
 private : 
+    size_t N_no_improve=0;
     std::vector<double> best_cand, current_cand; 
     double best_E=std::numeric_limits<double>::max(), current_E; 
     double temp_step;

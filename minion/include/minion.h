@@ -23,5 +23,6 @@
 #include "minimizer.h"
 #include "abc.h"
 #include "dual_annealing.h"
+#include "l_bfgs_b.h"
 
 #endif // MINION_H
