@@ -39,12 +39,6 @@ execute_process(
 set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
 find_package(pybind11 REQUIRED CONFIG)
 
-if(DEFINED ENV{EIGEN3_INCLUDE_DIR})
-    set(EIGEN3_INCLUDE_DIR $ENV{EIGEN3_INCLUDE_DIR})
-else()
-    find_package(Eigen3 3.0 REQUIRED)
-endif()
-
 
 # + --------------- +
 # | LBFGSpp LIBRARY |
@@ -61,11 +55,10 @@ file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 
 include_directories(
-    /usr/include/eigen3/
     external/lbfgspp/include
     minion/include
     minion/cec 
-    ${EIGEN3_INCLUDE_DIR}
+    eigen
 )
 
 # + -------------------------------------------+

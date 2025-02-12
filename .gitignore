@@ -49,5 +49,6 @@ desktop.ini
 
 docs/source/_static/*.tmp
 docs/source/_templates/*.tmp
+eigen
 
 
