@@ -149,6 +149,8 @@ Differential Evolution (DE)
 ---------------------------
 Differential Evolution (DE) is a population-based stochastic optimization algorithm that applies mutation, crossover, and selection to evolve a population of candidate solutions.
 
+*Reference : Storn, R and Price, K, Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces, Journal of Global Optimization, 1997, 11, 341 - 359.*
+
 Algorithm name : ``"DE"``
 
 Parameters : 
@@ -447,6 +449,8 @@ LSHADE Algorithm
 ----------------
 Linear Population Reduction - Success History Adaptive Differential Evolution (LSHADE) algorithm. Originally designed to solve CEC2014.
 
+*Reference : R. Tanabe and A. S. Fukunaga, "Improving the search performance of SHADE using linear population size reduction," 2014 IEEE Congress on Evolutionary Computation (CEC), Beijing, China, 2014, pp. 1658-1665, doi: 10.1109/CEC.2014.6900380.*
+
 Algorithm name : ``"LSHADE"``
 
 Parameters : 
@@ -560,6 +564,8 @@ Nelder-Mead Algorithm
 ---------------------
 The Nelder-Mead algorithm is a derivative-free optimization method that relies on reflection, expansion, contraction, and shrinkage to search for an optimum.
 
+*Reference : Nelder, John A.; R. Mead (1965). "A simplex method for function minimization". Computer Journal. 7 (4): 308–313. doi:10.1093/comjnl/7.4.308.*
+
 Algorithm name : ``"NelderMead"``
 
 Parameters : 
@@ -575,6 +581,8 @@ Parameters :
 L-BFGS-B Algorithm
 ------------------
 L-BFGS-B is a quasi-Newton method that approximates the Hessian matrix and can handle bound constraints. The L-BFGS-B algorithm implemented here is basically a wrapper of lbfgspp library (https://github.com/yixuan/LBFGSpp).
+
+*Reference : Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995). "A Limited Memory Algorithm for Bound Constrained Optimization". SIAM J. Sci. Comput. 16 (5): 1190–1208.*
 
 Algorithm name : ``"L_BFGS_B"``
 

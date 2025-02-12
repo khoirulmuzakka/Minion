@@ -8,7 +8,7 @@ MinionPy can be installed directly via PIP:
 
 .. code-block:: shell
 
-   pip install minionpy
+   pip install --upgrade minionpy
 
 To verify the installation, run:
 

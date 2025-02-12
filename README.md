@@ -17,23 +17,23 @@
 Minion also serves as a **research platform** for developing and testing new optimization algorithms. It includes benchmark functions from **CEC competitions (2011, 2014, 2017, 2019, 2020, and 2022)**, providing a robust framework for algorithm evaluation and comparison.
 
 ## 🔥 Why Choose Minion?
-- **State-of-the-art optimization algorithms**
-  - Implemented algorithms:
-    - **Differential Evolution-based algorithms:**
-      - Basic Differential Evolution (DE)
-      - JADE  
-      - L-SHADE 
-      - jSO
-      - j2020 
-      - NL-SHADE-RSP 
-      - LSRTDE 
-      - ARRDE (our novel Adaptive Restart-Refine DE algorithm)  
-    - **Other population-based algorithms:**
-      - Artificial Bee Colony (ABC)
-      - Grey Wolf DE Optimization  
-    - **Classical optimization algorithms:**
-      - Nelder-Mead  
-      - Generalized Simulated Annealing (Dual Annealing)  
+- **State-of-the-art optimization algorithms** :
+  - **Differential Evolution-based algorithms:**
+    - Basic Differential Evolution (DE)
+    - JADE  
+    - L-SHADE 
+    - jSO
+    - j2020 
+    - NL-SHADE-RSP 
+    - LSRTDE 
+    - ARRDE (our novel Adaptive Restart-Refine DE algorithm)  
+  - **Other population-based algorithms:**
+    - Artificial Bee Colony (ABC)
+    - Grey Wolf DE Optimization  
+  - **Classical optimization algorithms:**
+    - Nelder-Mead  
+    - Generalized Simulated Annealing (Dual Annealing) 
+    - L-BFGS-B (vectorized) 
 - **Highly parallelized**
   - Designed for **vectorized function evaluations**, supporting **multithreading and multiprocessing** to speed up optimization.
 - **Optimized C++ backend with Python API**
@@ -45,7 +45,7 @@ Minion also serves as a **research platform** for developing and testing new opt
 The Python wrapper (**minionpy**) is available on PyPI:
 
 ```sh
-pip install minionpy
+pip install --upgrade minionpy
 ```
 
 For compiling the C++ version, please refer to the official Minion documentation.
