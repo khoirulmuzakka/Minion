@@ -44,11 +44,10 @@ jobs:
           curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz | tar xz --strip-components=1 -C eigen_install
           echo "EIGEN3_INCLUDE_DIR=$PWD/eigen_install" >> $GITHUB_ENV
 
-        CIBW_BEFORE_ALL_WINDOWS: |
-          Invoke-WebRequest -Uri "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip" -OutFile "eigen.zip"
-          Expand-Archive -Path "eigen.zip" -DestinationPath "eigen_install"
+        CIBW_BEFORE_BUILD_WINDOWS: |
+          curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -o eigen.zip
+          Expand-Archive -Path eigen.zip -DestinationPath eigen_install
           echo "EIGEN3_INCLUDE_DIR=$pwd\\eigen_install\\eigen-3.4.0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
 
     - name: Upload wheels as artifacts
       uses: actions/upload-artifact@v4
