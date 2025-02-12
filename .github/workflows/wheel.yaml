@@ -44,7 +44,7 @@ jobs:
 
         CIBW_BEFORE_BUILD_WINDOWS: |
           mkdir eigen
-          curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -o eigen.zip
+          Invoke-WebRequest -Uri "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip" -OutFile "eigen.zip"
           Expand-Archive -Path "eigen.zip" -DestinationPath "eigen"
           ls
 
