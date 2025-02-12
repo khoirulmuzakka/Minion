@@ -34,20 +34,27 @@ jobs:
       run: |
         python -m cibuildwheel --output-dir dist 
       env:
-        CIBW_BEFORE_ALL_LINUX: |
+        CIBW_BEFORE_BUILD_MACOS: |
           mkdir -p eigen_install
           curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz | tar xz --strip-components=1 -C eigen_install
-          echo "EIGEN3_INCLUDE_DIR=$PWD/eigen_install" >> $GITHUB_ENV
+          export EIGEN3_INCLUDE_DIR=$PWD/eigen_install
+          echo "EIGEN3_INCLUDE_DIR=$EIGEN3_INCLUDE_DIR"  # This just verifies that the env variable is set
+          # Continue with your build commands
 
-        CIBW_BEFORE_ALL_MACOS: |
+        CIBW_BEFORE_BUILD_LINUX: |
           mkdir -p eigen_install
           curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz | tar xz --strip-components=1 -C eigen_install
-          echo "EIGEN3_INCLUDE_DIR=$PWD/eigen_install" >> $GITHUB_ENV
+          export EIGEN3_INCLUDE_DIR=$PWD/eigen_install
+          echo "EIGEN3_INCLUDE_DIR=$EIGEN3_INCLUDE_DIR"  # This just verifies that the env variable is set
+          # Continue with your build commands
 
         CIBW_BEFORE_BUILD_WINDOWS: |
+          mkdir eigen_install
           curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip -o eigen.zip
-          Expand-Archive -Path eigen.zip -DestinationPath eigen_install
-          echo "EIGEN3_INCLUDE_DIR=$pwd\\eigen_install\\eigen-3.4.0" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          powershell -Command "Expand-Archive -Path eigen.zip -DestinationPath eigen_install"
+          set EIGEN3_INCLUDE_DIR=%cd%\eigen_install\eigen-3.4.0
+          echo "EIGEN3_INCLUDE_DIR=%EIGEN3_INCLUDE_DIR%"  # This just verifies that the env variable is set
+          # Continue with your build commands
 
     - name: Upload wheels as artifacts
       uses: actions/upload-artifact@v4
