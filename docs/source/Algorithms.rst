@@ -354,7 +354,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random`` 
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 JADE Algorithm
 --------------
@@ -401,7 +401,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random``  
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 jSO Algorithm
 -------------
@@ -441,7 +441,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random``  
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 LSHADE Algorithm
 ----------------
@@ -486,7 +486,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random``  
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 Artificial Bee Colony (ABC)
 ---------------------------
@@ -512,7 +512,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random``  
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 Dual Annealing (DA)
 ----------------------------
@@ -528,11 +528,11 @@ Parameters :
 
   .. note:: The acceptance parameter controlling the probability of accepting worse solutions. The value must be between -1.0e+4 and -5.
 
-- ``visit_par``: 2.5  
+- ``visit_par``: 2.67  
 
   .. note:: The parameter controlling the annealing rate during the search. The value must be between 1.0 and 3.0.
 
-- ``initial_temp``: 1000.0  
+- ``initial_temp``: 5230.0  
 
   .. note:: The initial temperature for the annealing process. The value must be between 0.01 and 5.0e+4.
 
@@ -548,13 +548,13 @@ Parameters :
 
   .. note:: The local search algorithm to be used. Available : ``"NelderMead"`` and ``"L_BFGS_B"``
 
-- ``finite_diff_rel_step``: 0.0 
+- ``finite_diff_rel_step``: 1e-10 
 
   .. note:: The relative step size for finite difference computations. The default value 0.0 means that the relative step is given by the square root of machine epsilon.
 
-- ``bound_strategy``: ``clip``  
+- ``bound_strategy``: ``periodic``  
 
-  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 Nelder-Mead Algorithm
 ---------------------
@@ -570,7 +570,7 @@ Parameters :
 
 - ``bound_strategy``: ``reflect-random``  
 
-  .. note:: Method for handling boundary violations. Available strategies:   ``"random"``, ``"reflect-random"``, ``"clip"``.
+  .. note:: Method for handling boundary violations. Available strategies:   ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
 L-BFGS-B Algorithm
 ------------------
@@ -612,7 +612,7 @@ Parameters :
 
   .. note:: The second constant for the Wolfe condition during line search.
 
-- ``finite_diff_rel_step``: 0.0  
+- ``finite_diff_rel_step``: 1e-10 
 
   .. note:: The relative step size for finite difference computations. The default value 0.0 means that the relative step is given by the square root of machine epsilon.
 

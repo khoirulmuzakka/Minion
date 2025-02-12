@@ -38,7 +38,12 @@ execute_process(
 )
 set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
 find_package(pybind11 REQUIRED CONFIG)
-find_package(Eigen3 3.0 REQUIRED)
+
+if(DEFINED ENV{EIGEN3_INCLUDE_DIR})
+    set(EIGEN3_INCLUDE_DIR $ENV{EIGEN3_INCLUDE_DIR})
+else()
+    find_package(Eigen3 3.0 REQUIRED)
+endif()
 
 
 # + --------------- +
@@ -60,6 +65,7 @@ include_directories(
     external/lbfgspp/include
     minion/include
     minion/cec 
+    ${EIGEN3_INCLUDE_DIR}
 )
 
 # + -------------------------------------------+

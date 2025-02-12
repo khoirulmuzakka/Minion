@@ -1096,8 +1096,8 @@ class Dual_Annealing(MinimizerBase):
                     "restart_temp_ratio" : 2e-05,
                     "use_local_search": True,
                     "local_search_algo" : "L_BFGS_B",
-                    "finite_diff_rel_step", 0.0,
-                    "bound_strategy"        : "clip"
+                    "finite_diff_rel_step", 1e-10,
+                    "bound_strategy"        : "periodic"
                 }
 
             The available options are:
@@ -1209,7 +1209,7 @@ class L_BFGS_B(MinimizerBase):
                     "max_linesearch": 20,
                     "c_1":1e-4,
                     "c_2": 0.9, 
-                    "finite_diff_rel_step", 0.0
+                    "finite_diff_rel_step", 1e-10
                 }
 
             The available options are:

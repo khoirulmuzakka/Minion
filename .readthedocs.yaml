@@ -15,6 +15,7 @@ build:
     - gcc
     - g++
     - git
+    - libeigen3-dev
 
   jobs:
     pre_create_environment:

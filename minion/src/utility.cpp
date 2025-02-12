@@ -189,6 +189,11 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
                     new_candidates[i][d] = dis(get_rng());
                 }
             }
+        } else if (strategy == "periodic") {
+            for (size_t i = 0; i < new_candidates.size(); ++i) {
+                if (new_candidates[i][d] < lower_bound) new_candidates[i][d] = std::fmod(new_candidates[i][d]-lower_bound, e)+upper_bound;
+                else if (new_candidates[i][d] > upper_bound)new_candidates[i][d] = std::fmod(new_candidates[i][d]-lower_bound, e)+ lower_bound;
+            }
         } else if (strategy == "none") {}
         else {
             throw std::invalid_argument("Invalid strategy. Choose from 'clip', 'reflect', 'random', or 'random-leftover'.");

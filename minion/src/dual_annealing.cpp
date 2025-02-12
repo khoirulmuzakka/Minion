@@ -7,10 +7,10 @@ void Dual_Annealing::initialize() {
     for (auto el : optionMap) defaultKey[el.first] = el.second;
     Options options(defaultKey);
 
-    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
-    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip"};
+    boundStrategy = options.get<std::string> ("bound_strategy", "periodic");
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
-        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'periodic' will be used.\n";
         boundStrategy = "reflect-random";
     };
 
@@ -149,7 +149,7 @@ void Dual_Annealing::step (int iter, double temp){
     history.push_back(minionResult);
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
-        size_t maxevals_ls = 300*bounds.size();
+        size_t maxevals_ls = maxevals-Nevals;
         if (local_min_algo == "NelderMead"){
             auto settings = DefaultSettings().getDefaultSettings("NelderMead");
             settings["locality_factor"] = 0.5;
@@ -193,8 +193,11 @@ MinionResult Dual_Annealing::optimize() {
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
-                if (temperature < temperature_restart) {
+                if ( temperature < temperature_restart) {
                     init(false); 
+                    iter=0; 
+                    N_no_improve=0;
+                    //initial_temp= 0.5*initial_temp;
                     break;
                 };
                 iter ++;

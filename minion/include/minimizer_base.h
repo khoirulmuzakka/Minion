@@ -16,7 +16,7 @@ namespace minion {
 /**
  * @brief Alias for the variant type to hold different types of configuration values.
  */
-using ConfigValue = std::variant<int, double, std::string, bool>;
+using ConfigValue = std::variant<bool, int, double, std::string>;
 
 /**
  * @struct MinionResult

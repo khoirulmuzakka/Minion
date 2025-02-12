@@ -96,13 +96,13 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_DA= {
             {"acceptance_par", -5.0},  
-            {"visit_par", 2.5},  
-            {"initial_temp", 1000.0  }, // 5230.0}, 
+            {"visit_par", 2.67},  
+            {"initial_temp", 5230.0  },
             {"restart_temp_ratio" , 2e-5},
             {"use_local_search", true},
             {"local_search_algo", "L_BFGS_B"},
-            {"finite_diff_rel_step", 0.0},
-            {"bound_strategy" , std::string("clip")} 
+            {"finite_diff_rel_step", 1e-10},
+            {"bound_strategy" , std::string("periodic")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
