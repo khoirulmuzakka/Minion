@@ -3,6 +3,10 @@
 #include <chrono>
 #include "minion.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 // Define the Rastrigin function (scalar version)
 double rastrigin(const std::vector<double>& x) {
     double A = 10.0;

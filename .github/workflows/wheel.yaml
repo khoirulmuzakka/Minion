@@ -43,10 +43,12 @@ jobs:
           curl -L https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz | tar xz --strip-components=1 -C eigen
 
         CIBW_BEFORE_BUILD_WINDOWS: |
-          mkdir eigen
-          Invoke-WebRequest -Uri "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip" -OutFile "eigen.zip"
-          Expand-Archive -Path "eigen.zip" -DestinationPath "eigen"
-          ls
+          powershell -Command "
+          if (-Not (Test-Path 'eigen')) { mkdir eigen }; 
+          Invoke-WebRequest -Uri 'https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip' -OutFile 'eigen.zip' -UseBasicParsing; 
+          if (-Not (Test-Path 'eigen.zip')) { throw 'Download failed: eigen.zip not found' }; 
+          Expand-Archive -Path 'eigen.zip' -DestinationPath 'eigen'; 
+          "
 
     - name: Upload wheels as artifacts
       uses: actions/upload-artifact@v4
