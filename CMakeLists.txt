@@ -60,6 +60,7 @@ include_directories(
     minion/cec 
     eigen
     eigen/eigen-3.4.0
+    /usr/include/eigen3/
 )
 
 # + -------------------------------------------+
