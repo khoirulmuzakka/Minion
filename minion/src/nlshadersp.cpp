@@ -418,6 +418,11 @@ void NLSHADE_RSP::MainCycle()
         popul_vec= convertToVector(PopulTemp, NInds, NVars);
         funcRes = func(popul_vec, data);
         NFEval += int(popul_vec.size());
+        
+        size_t best_index = findArgMin(funcRes);
+        std::vector<double> bestIndividual = popul_vec[best_index ];
+        minionResult = MinionResult( bestIndividual, funcRes[best_index], Generation, NFEval, false, "");
+        history.push_back(minionResult);
 
         for (int TheChosenOne=0;TheChosenOne!=NInds;TheChosenOne++){
             FitMassTemp[TheChosenOne] = funcRes[TheChosenOne];
@@ -429,8 +434,7 @@ void NLSHADE_RSP::MainCycle()
             FindNSaveBest(false,TheChosenOne);
         }
 
-        minionResult = MinionResult( std::vector<double>(BestInd, BestInd + NVars), globalbest, Generation, NFEval, false, "");
-        history.push_back(minionResult);
+        
 
         ArchSuccess = 0;
         NoArchSuccess = 0;

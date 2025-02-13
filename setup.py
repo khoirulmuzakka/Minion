@@ -2,7 +2,7 @@ from skbuild import setup
 
 setup(
     name="minionpy",
-    version="0.1.6",
+    version="0.1.7",
     description="MinionPy is the Python implementation of the Minion C++ library, designed for derivative-free optimization.",
     author="Khoirul Faiq Muzakka",
     license="MIT",

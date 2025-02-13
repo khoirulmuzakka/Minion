@@ -228,19 +228,7 @@ MinionResult Differential_Evolution::optimize() {
             if ( support_tol && checkStopping()) break;
         } while(Nevals < maxevals); 
 
-        auto minElementIter = std::min_element(history.begin(), history.end(), 
-                                                    [](const MinionResult& a, const MinionResult& b) {
-                                                        return a.fun < b.fun;
-                                                    });
-
-
-        if (minElementIter != history.end()) {
-            int minIndex = int(std::distance(history.begin(), minElementIter));
-            return history[minIndex];
-        } else {
-            std::cout << "Can not find the minimum in history."; 
-            return history.back();
-        };
+        return getBestFromHistory();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

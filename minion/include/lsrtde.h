@@ -194,7 +194,7 @@ public :
     MinionResult optimize() override{
         if (!hasInitialized) initialize();
         MainCycle(); 
-        return history.back();
+        return getBestFromHistory();
     }; 
 
     /**

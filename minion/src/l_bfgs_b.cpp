@@ -91,22 +91,7 @@ MinionResult L_BFGS_B::optimize() {
 
         minionResult = MinionResult(best, f_best, niter, Nevals, false, "");
         history.push_back(minionResult);
-
-        auto minElementIter = std::min_element(history.begin(), history.end(), 
-                                                    [](const MinionResult& a, const MinionResult& b) {
-                                                        return a.fun < b.fun;
-                                                    });
-
-
-        if (minElementIter != history.end()) {
-            int minIndex = int(std::distance(history.begin(), minElementIter));
-            auto ret = history[minIndex];
-            ret.nfev= Nevals;
-            return ret;
-        } else {
-            std::cout << "Can not find the minimum in history."; 
-            return history.back();
-        };
+        return getBestFromHistory();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

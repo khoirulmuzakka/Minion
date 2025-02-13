@@ -267,6 +267,12 @@ void LSRTDE::MainCycle()
         }; 
         fun_pop= func(pop, data); 
         NFEval+=int(pop.size());
+
+        size_t best_index = findArgMin(fun_pop);
+        std::vector<double> bestInd = pop[best_index ];
+        minionResult = MinionResult(bestInd, fun_pop[best_index], Generation, NFEval, false, "");
+        history.push_back(minionResult);
+
         for(int IndIter=0;IndIter<NIndsFront;IndIter++){
             double TempFit = fun_pop[IndIter];
             TheChosenOne = tco[IndIter];
@@ -315,10 +321,6 @@ void LSRTDE::MainCycle()
                 for(int j=0;j!=NVars;j++)
                     Popul[i][j] = PopulTemp[i][j];
         }
-        size_t best_index = findArgMin(FitArrFront);
-        std::vector<double> bestInd = Popul[best_index ];
-        minionResult = MinionResult(bestInd, FitArrFront[best_index], Generation, NFEval, false, "");
-        history.push_back(minionResult);
         if (callback != nullptr) callback(&minionResult);
 
 

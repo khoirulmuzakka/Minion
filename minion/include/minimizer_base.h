@@ -242,6 +242,21 @@ class MinimizerBase {
         bool hasInitialized =false;
         void* data = nullptr;
 
+        MinionResult getBestFromHistory(){
+            if (history.empty()) throw std::runtime_error("Result history is empty");
+            auto minElementIter = std::min_element(history.begin(), history.end(), 
+                                                    [](const MinionResult& a, const MinionResult& b) {
+                                                        return a.fun < b.fun;
+                                                    });
+            if (minElementIter != history.end()) {
+                int minIndex = int(std::distance(history.begin(), minElementIter));
+                return history[minIndex];
+            } else {
+                std::cout << "Can not find the minimum in history."; 
+                return history.back();
+            };
+        };
+
     public:
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
