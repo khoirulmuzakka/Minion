@@ -101,7 +101,8 @@ class DefaultSettings{
             {"restart_temp_ratio" , 2e-5},
             {"use_local_search", true},
             {"local_search_algo", "L_BFGS_B"},
-            {"finite_diff_rel_step", 1e-10},
+            {"func_noise_ratio", 1e-10},
+            {"N_points_derivative", 1},
             {"bound_strategy" , std::string("periodic")} 
         };
 
@@ -110,16 +111,17 @@ class DefaultSettings{
                 {"bound_strategy" , std::string("reflect-random")}, 
         };
 
-        std::map<std::string, ConfigValue>   default_settings_LBFGSB = {
+        std::map<std::string, ConfigValue> default_settings_LBFGSB = {
             {"max_iterations", 100000},
             {"m" , 15}, 
             {"g_epsilon", 1e-5},
             {"g_epsilon_rel", 0.0},
-            {"f_reltol", 1e-10},
+            {"f_reltol", 1e-5},
             {"max_linesearch", 20},
             {"c_1",1e-3},
             {"c_2", 0.9}, 
-            {"finite_diff_rel_step", 1e-10}
+            {"func_noise_ratio", 1e-10}, 
+            {"N_points_derivative", 3}
         };
 
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {

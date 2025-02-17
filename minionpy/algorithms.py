@@ -1203,13 +1203,13 @@ class L_BFGS_B(MinimizerBase):
                 options = {
                     "max_iterations": 0,
                     "m" : 10, 
-                    "g_epsilon": 1e-10,
-                    "g_epsilon_rel": 1e-10,
-                    "f_reltol": 1e-20,
+                    "g_epsilon": 1e-8,
+                    "g_epsilon_rel": 0.0,
+                    "f_reltol": 1e-10,
                     "max_linesearch": 20,
                     "c_1":1e-4,
                     "c_2": 0.9, 
-                    "finite_diff_rel_step", 1e-10
+                    "func_noise_ratio", 1e-10
                 }
 
             The available options are:

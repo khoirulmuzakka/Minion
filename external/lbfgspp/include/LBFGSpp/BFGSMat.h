@@ -7,6 +7,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include "BKLDLT.h"
+#include <iostream>
 
 /// \cond
 
@@ -48,6 +49,7 @@ private:
     //========== The following members are only used in L-BFGS-B algorithm ==========//
     Matrix m_permMinv;             // Permutated M inverse
     BKLDLT<Scalar> m_permMsolver;  // Represents the permutated M matrix
+    int dim;
 
 public:
     // Constructor
@@ -73,6 +75,7 @@ public:
             m_permMinv.setZero();
             m_permMinv.diagonal().setOnes();
         }
+        dim = n;
     }
 
     // Add correction vectors to the BFGS matrix
@@ -174,6 +177,23 @@ public:
             j = (j + 1) % m_m;
         }
     }
+
+    // Now for computing diagonal elements of H
+    inline std::vector<double> compute_hessian_diagonal() {
+        size_t size = dim;
+        std::vector<double> diagonal(size); 
+        Vector res(size);    
+        for (size_t i = 0; i < size; ++i) {
+            Vector e_i = Vector::Zero(size);
+            e_i[i] = 1.0;  // Set the i-th element to 1
+            double a = 1.0;
+            apply_Hv(e_i, a, res);  
+            diagonal[i] = res[i];   
+        }
+        return diagonal;
+    };
+
+    
 
     //========== The following functions are only used in L-BFGS-B algorithm ==========//
 

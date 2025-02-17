@@ -49,9 +49,12 @@ public:
     size_t Nevals = 0;
     std::vector<double> best; 
     double f_best = std::numeric_limits<double>::max();
+    int N_points= 1;
+    double func_noise_ratio =1e-10;
 
 private : 
     LBFGSpp::LBFGSBSolver<double>* solver=nullptr;
+    double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
 
      /**

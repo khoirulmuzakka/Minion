@@ -28,7 +28,8 @@ public:
     std::string local_min_algo;
     bool useLocalSearch = true;
     size_t max_no_improve;
-    double fin_diff_rel_step=0.0;
+    double func_noise_ratio = 1e-10;
+    int der_N_points =3;
 
 private : 
     size_t N_no_improve=0;

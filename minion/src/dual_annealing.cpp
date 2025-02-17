@@ -20,7 +20,8 @@ void Dual_Annealing::initialize() {
     visit_par = options.get<double> ("visit_par", 2.67);
     useLocalSearch = options.get<bool> ("use_local_search", true);
     local_min_algo = options.get<std::string> ("local_search_algo", "L_BFGS_B");
-    fin_diff_rel_step = options.get<double>("finite_diff_rel_step", 0.0);
+    func_noise_ratio = options.get<double>("func_noise_ratio", 1e-10);
+    der_N_points = options.get<int>("N_points_derivative", 3);
     
     if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temperature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
     if ( restart_temp_ratio <= 0.0 || restart_temp_ratio > 1.0) throw std::runtime_error("restart_temp_ratio must be between 0.0 and 1.0. Found : "+ std::to_string(restart_temp_ratio));
@@ -157,7 +158,8 @@ void Dual_Annealing::step (int iter, double temp){
         } else if (local_min_algo == "L_BFGS_B"){
             auto defaultSettings = DefaultSettings().getDefaultSettings("L_BFGS_B");
             defaultSettings["max_iterations"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
-            defaultSettings["finite_diff_rel_step"] = fin_diff_rel_step;
+            defaultSettings["func_noise_ratio"] = func_noise_ratio;
+            defaultSettings["N_points_derivative"] = der_N_points;
             minionResult = L_BFGS_B(func, bounds, best_cand, data, callback, stoppingTol, maxevals_ls, seed, defaultSettings).optimize();
         } else {
             throw std::runtime_error("Unknown local search algorithm.");

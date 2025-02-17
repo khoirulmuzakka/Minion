@@ -27,9 +27,10 @@ private:
     using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
     using MapVec = Eigen::Map<Vector>;
     using IndexSet = std::vector<int>;
+    BFGSMat<Scalar, true> m_bfgs;        // Approximation to the Hessian matrix
 
     const LBFGSBParam<Scalar>& m_param;  // Parameters to control the LBFGS algorithm
-    BFGSMat<Scalar, true> m_bfgs;        // Approximation to the Hessian matrix
+    
     Vector m_fx;                         // History of the objective function values
     Vector m_xp;                         // Old x
     Vector m_grad;                       // New gradient
@@ -279,6 +280,9 @@ public:
     /// upper bound vector \f$u\f$.
     ///
     Scalar final_grad_norm() const { return m_projgnorm; }
+
+    BFGSMat<Scalar, true>  getBFGS_mat() { return m_bfgs;} 
+
 };
 
 }  // namespace LBFGSpp
