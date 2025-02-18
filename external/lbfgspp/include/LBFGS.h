@@ -122,8 +122,10 @@ public:
             m_gradp.noalias() = m_grad;
             Scalar dg = m_grad.dot(m_drt);
             const Scalar step_max = m_param.max_step;
+            if (step <m_param.min_step) step = m_param.min_step;
 
             // Line search to update x, fx and gradient
+            //std::cout << step << "\n";
             LineSearch<Scalar>::LineSearch(f, m_param, m_xp, m_drt, step_max, step, fx, m_grad, dg, x);
 
             // New gradient norm
@@ -185,6 +187,8 @@ public:
     /// Returning the Euclidean norm of the final gradient.
     ///
     Scalar final_grad_norm() const { return m_gnorm; }
+
+    BFGSMat<Scalar>  getBFGS_mat() { return m_bfgs;} 
 };
 
 }  // namespace LBFGSpp

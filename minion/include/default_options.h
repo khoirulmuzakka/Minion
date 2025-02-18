@@ -124,6 +124,19 @@ class DefaultSettings{
             {"N_points_derivative", 3}
         };
 
+        std::map<std::string, ConfigValue> default_settings_LBFGS = {
+            {"max_iterations", 100000},
+            {"m" , 15}, 
+            {"g_epsilon", 1e-5},
+            {"g_epsilon_rel", 0.0},
+            {"f_reltol", 1e-5},
+            {"max_linesearch", 20},
+            {"c_1",1e-3},
+            {"c_2", 0.9}, 
+            {"func_noise_ratio", 1e-10}, 
+            {"N_points_derivative", 3}
+        };
+
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {
                 {"DE", default_settings_DE}, 
                 {"LSHADE", default_settings_LSHADE}, 
@@ -137,7 +150,8 @@ class DefaultSettings{
                 {"NelderMead", default_settings_NelderMead}, 
                 {"ABC", default_settings_ABC}, 
                 {"DA", default_settings_DA}, 
-                {"L_BFGS_B", default_settings_LBFGSB}
+                {"L_BFGS_B", default_settings_LBFGSB}, 
+                {"L_BFGS", default_settings_LBFGS}
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){

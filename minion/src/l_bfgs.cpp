@@ -1,12 +1,12 @@
-#include "l_bfgs_b.h"
+#include "l_bfgs.h"
 
 namespace minion {
 
-void L_BFGS_B::initialize() {
+void L_BFGS::initialize() {
     hasInitialized=true;
 }; 
 
-double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
+double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (Nevals >maxevals) throw MaxevalExceedError("Maxevals has been exceeded.");
     int m = std::ceil ((double (N_points)-1.0)/2.0);
     std::vector<double> x_vec(x.data(), x.data() + x.size());
@@ -29,7 +29,6 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
         for (int i=0; i<x.size(); i++){
             std::vector<double> xp = x_vec;
             double h= hvec[i];
-            if (xp[i]+h > bounds[i].second ) h=-h; 
             xp[i] += h; 
             X.push_back(xp);
         };
@@ -81,11 +80,11 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
     return f;
 };
 
-MinionResult L_BFGS_B::optimize() {
+MinionResult L_BFGS::optimize() {
     try {
         history.clear();
-        LBFGSpp::LBFGSBParam<double> param;
-        auto defaultKey = DefaultSettings().getDefaultSettings("L_BFGS_B");
+        LBFGSpp::LBFGSParam<double> param;
+        auto defaultKey = DefaultSettings().getDefaultSettings("L_BFGS");
         for (auto el : optionMap) defaultKey[el.first] = el.second;
         Options options(defaultKey);
 
@@ -95,29 +94,16 @@ MinionResult L_BFGS_B::optimize() {
         param.past           = 3;
         param.delta          = options.get<double> ("f_reltol", 1e-20); 
         param.max_iterations = options.get<int> ("max_iterations", 0); 
-        param.max_submin     = 10;
         param.max_linesearch = options.get<int> ("max_linesearch", 20); 
         param.min_step       = 1e-20;
         param.max_step       = 1e+20;
         param.ftol           = options.get<double> ("c_1", 1e-4); 
         param.wolfe          = options.get<double> ("c_2", 0.9); 
+        solver = new LBFGSpp::LBFGSSolver<double>(param);
+
         N_points             = options.get<int> ("N_points_derivative", 1); 
-        solver = new LBFGSpp::LBFGSBSolver<double>(param);
         func_noise_ratio = options.get<double> ("func_noise_ratio", 1e-10);
         Nevals=0;
-
-        // Variable bounds
-        VectorXd lb = Vector::Constant(bounds.size(), -10.0);
-        VectorXd ub = Vector::Constant(bounds.size(), 10.0);
-
-        for (int i =0; i<bounds.size(); i++){
-            lb[i] = bounds[i].first;
-            ub[i] = bounds[i].second;
-        }; 
-
-        if (x0.empty()){
-            auto x0 = latin_hypercube_sampling(bounds, 1)[0]; 
-        };
 
         Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0.data(), x0.size());
         double final_f;
@@ -126,7 +112,7 @@ MinionResult L_BFGS_B::optimize() {
             return  fun_and_grad(x, grad);
         };
         try {
-            niter = solver->minimize ( fun, x, final_f, lb, ub);
+            niter = solver->minimize ( fun, x, final_f);
         } catch (const MaxevalExceedError& e) {};
 
         minionResult = MinionResult(best, f_best, niter, Nevals, false, "");

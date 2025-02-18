@@ -24,6 +24,7 @@
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "minimizer.h"
+#include "l_bfgs.h"
 #include <exception>
 #include <pybind11/stl_bind.h>
 #include <any>
@@ -250,6 +251,21 @@ PYBIND11_MODULE(minionpycpp, m) {
 
         .def_readwrite("history", &MinimizerBase::history)
         .def("optimize", &L_BFGS_B::optimize);
+
+    py::class_<L_BFGS, MinimizerBase>(m, "L_BFGS")
+        .def(py::init<MinionFunction, const std::vector<double>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("x0") = std::vector<double>(), 
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+
+        .def_readwrite("history", &MinimizerBase::history)
+        .def("optimize", &L_BFGS::optimize);
 
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

@@ -1,12 +1,12 @@
-#ifndef L_BFGS_B_H
-#define L_BFGS_B_H
+#ifndef L_BFGS_H
+#define L_BFGS_H
 
 #include "minimizer_base.h"
 #include "default_options.h"
 #include <cmath>  
 #include <algorithm>
 #include "nelder_mead.h"
-#include "LBFGSB.h"
+#include "LBFGS.h"
 #include "exception.h"
 #include "types.h"
 
@@ -15,14 +15,16 @@ using Eigen::MatrixXd;
 
 namespace minion {
 
+
+
 /**
- * @class L_BFGS_B
- * @brief A class for the L-BFGS-B optimization algorithm.
+ * @class L_BFGS
+ * @brief A class for the L-BFGS optimization algorithm.
  * 
- * This class implements the Limited-memory BFGS with Box constraints (L-BFGS-B) algorithm.
+ * This class implements the Limited-memory BFGS unconstrained (L-BFGS) algorithm.
  * It inherits from the MinimizerBase class and provides methods for constrained optimization.
  */
-class L_BFGS_B : public MinimizerBase {
+class L_BFGS : public MinimizerBase {
 public:
     size_t Nevals = 0;
     std::vector<double> best; 
@@ -31,7 +33,7 @@ public:
     double func_noise_ratio =1e-10;
 
 private : 
-    LBFGSpp::LBFGSBSolver<double>* solver=nullptr;
+    LBFGSpp::LBFGSSolver<double>* solver=nullptr;
     double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
 
@@ -45,7 +47,7 @@ private :
 
 public:
     /**
-     * @brief Constructor for L-BFGS-B.
+     * @brief Constructor for L-BFGS.
      * @param func The objective function to minimize.
      * @param bounds The bounds for the variables.
      * @param x0 The initial solution.
@@ -56,9 +58,8 @@ public:
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
      */
-    L_BFGS_B(
+    L_BFGS(
         MinionFunction func,
-        const std::vector<std::pair<double, double>>& bounds,
         const std::vector<double>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
@@ -67,13 +68,13 @@ public:
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) { };
+        MinimizerBase(func, x0, data, callback, tol, maxevals, seed, options) { };
     
     /**
      * @brief Destructor
      * 
      */
-    ~L_BFGS_B(){  
+    ~L_BFGS(){  
         if (solver!=nullptr) delete solver;
     }
 

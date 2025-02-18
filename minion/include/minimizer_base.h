@@ -216,6 +216,35 @@ class MinimizerBase {
         };
 
         /**
+         * @brief Constructor for MinimizerBase for unconstrained optimization.
+         * @param func The objective function to minimize.
+         * @param x0 The initial guess for the solution.
+         * @param data Additional data to pass to the objective function.
+         * @param callback A callback function to call after each iteration.
+         * @param relTol The relative tolerance for convergence.
+         * @param maxevals The maximum number of function evaluations.
+         * @param seed global seed
+         * @param options Option object, which specify further configurational settings for the algorithm.
+         */
+        MinimizerBase(
+            MinionFunction func, 
+            const std::vector<double>& x0 = {},
+            void* data = nullptr, 
+            std::function<void(MinionResult*)> callback = nullptr,
+            double tol = 0.0001, 
+            size_t maxevals = 100000, 
+            int seed=-1, 
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
+               func(func), x0(x0), data(data), callback(callback), stoppingTol(tol), maxevals(maxevals), seed(seed)
+        {
+            if (x0.empty()) {
+                throw std::invalid_argument("x0 must not be empty");
+            }
+            if (seed != -1) set_global_seed(seed);
+            optionMap = options;    
+        };
+
+        /**
          * @brief destructor
          */
         ~MinimizerBase(){};

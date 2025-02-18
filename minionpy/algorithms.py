@@ -20,6 +20,7 @@ from minionpycpp import NelderMead as cppNelderMead
 from minionpycpp import ABC as cppABC
 from minionpycpp import Dual_Annealing as cppDual_Annealing
 from minionpycpp import L_BFGS_B as cppL_BFGS_B
+from minionpycpp import L_BFGS as cppL_BFGS
 
 
 from typing import Callable, Dict, List, Optional, Any
@@ -1203,13 +1204,14 @@ class L_BFGS_B(MinimizerBase):
                 options = {
                     "max_iterations": 0,
                     "m" : 10, 
-                    "g_epsilon": 1e-8,
+                    "g_epsilon": 1e-5,
                     "g_epsilon_rel": 0.0,
-                    "f_reltol": 1e-10,
+                    "f_reltol": 1e-5,
                     "max_linesearch": 20,
                     "c_1":1e-4,
                     "c_2": 0.9, 
-                    "func_noise_ratio", 1e-10
+                    "func_noise_ratio": 1e-10, 
+                    "N_points_derivative": 3
                 }
 
             The available options are:
@@ -1222,6 +1224,7 @@ class L_BFGS_B(MinimizerBase):
             - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-4.
             - **c_2** (double): Parameter for Wolfe condition (curvature condition). Default is 0.9.
             - **finite_diff_rel_step** (double): relative step for finite difference derivative calculation. Default is 0.0, which means that the actual value is the square root of machine epsilon.
+            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative.
 
 
         Notes
@@ -1234,6 +1237,117 @@ class L_BFGS_B(MinimizerBase):
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppL_BFGS_B(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+    
+    def optimize(self):
+        """
+        Run the optimization algorithm.
+
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+
+        Notes
+        -----
+        This method runs the optimization algorithm and stores the result 
+        in `self.minionResult`. The optimization history is also stored in 
+        `self.history`, containing intermediate results at each iteration.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+    
+class L_BFGS(MinimizerBase):
+    """
+    Implementation of L_BFGS algorithm for unconstrained optimization problem.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+    
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 x0: Optional[List[float]],
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None
+        ) : 
+        """
+        Initialize the algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+        
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats.  
+            Note that `func` is assumed to be vectorized. If the function instead  
+            takes a single list of floats and returns a float,  
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python 
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+            
+        x0 : list
+            Initial guess for the solution. If None (default), a random initialization 
+            within the given bounds is used.
+        relTol : float, optional
+            Relative tolerance for convergence. The algorithm stops if the relative 
+            improvement in the objective function is below this value. Default is 1e-4.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single 
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the 
+            following settings are used::
+
+                options = {
+                    "max_iterations": 0,
+                    "m" : 10, 
+                    "g_epsilon": 1e-5,
+                    "g_epsilon_rel": 0.0,
+                    "f_reltol": 1e-5,
+                    "max_linesearch": 20,
+                    "c_1":1e-4,
+                    "c_2": 0.9, 
+                    "func_noise_ratio": 1e-10, 
+                    "N_points_derivative": 3
+                }
+
+            The available options are:
+            - **max_iterations** (int): Maximum number of iterations. Default is 0 (no limit).
+            - **m** (int): The number of corrections used in the limited memory matrix. Default is 10.
+            - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-10.
+            - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 1e-10.
+            - **f_reltol** (double): Relative function tolerance for stopping criteria. Default is 1e-20.
+            - **max_linesearch** (int): Maximum number of line search steps per iteration. Default is 20.
+            - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-4.
+            - **c_2** (double): Parameter for Wolfe condition (curvature condition). Default is 0.9.
+            - **finite_diff_rel_step** (double): relative step for finite difference derivative calculation. Default is 0.0, which means that the actual value is the square root of machine epsilon.
+            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative.
+
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppL_BFGS_B`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+
+        """
+        bounds = [(-10,10)]*len(x0)
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppL_BFGS(self.func, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """

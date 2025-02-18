@@ -220,8 +220,8 @@ public:
             // Test the sufficient decrease condition
             if (fx - fx_init > step * test_decr || fx >= fx_lo)
             {
-                if (step == step_hi)
-                    throw std::runtime_error("the line search routine failed, possibly due to insufficient numeric precision");
+                if (step == step_hi) iter = param.max_linesearch;
+                //    throw std::runtime_error("the line search routine failed, possibly due to insufficient numeric precision");
 
                 step_hi = step;
                 fx_hi = fx;
@@ -240,8 +240,8 @@ public:
                     // dg_hi = dg_lo;
                 }
 
-                if (step == step_lo)
-                    throw std::runtime_error("the line search routine failed, possibly due to insufficient numeric precision");
+                if (step == step_lo) iter = param.max_linesearch;
+                //    throw std::runtime_error("the line search routine failed, possibly due to insufficient numeric precision");
 
                 // If reaching here, then the current step satisfies sufficient decrease condition
                 step_lo = step;
@@ -260,8 +260,8 @@ public:
             if (iter >= param.max_linesearch)
             {
                 // throw std::runtime_error("the line search routine reached the maximum number of iterations");
-                if (step_lo <= Scalar(0))
-                    throw std::runtime_error("the line search routine failed, unable to sufficiently decrease the function value");
+                //if (step_lo <= Scalar(0))
+                //    throw std::runtime_error("the line search routine failed, unable to sufficiently decrease the function value");
 
                 // Return everything with _lo
                 step = step_lo;
