@@ -26,7 +26,7 @@ build:
       - git --version
 
     install:
-      - pip install --upgrade pybind11 sphinx breathe numpy nbsphinx sphinx_rtd_theme
+      - pip install --upgrade pybind11 sphinx==7.0.0 breathe numpy nbsphinx sphinx_rtd_theme
       - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
 
 sphinx:
