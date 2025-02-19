@@ -33,8 +33,9 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
     - **Classical optimization algorithms:**
       - Nelder-Mead  
       - Generalized Simulated Annealing (Dual Annealing)  
-      - L-BFGS-B (vectorized)
-
+      - L-BFGS-B (vectorized & noise-robust) 
+      - L-BFGS (vectorized & noise-robust) 
+      
 - **Benchmark Support**  
   The library includes benchmark functions from the CEC competitions (2011, 2014, 2017, 2019, 2020, 2022), providing a standardized environment for algorithm development, testing, and comparison.
 

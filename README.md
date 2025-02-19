@@ -33,7 +33,8 @@ Minion also serves as a **research platform** for developing and testing new opt
   - **Classical optimization algorithms:**
     - Nelder-Mead  
     - Generalized Simulated Annealing (Dual Annealing) 
-    - L-BFGS-B (vectorized) 
+    - L-BFGS-B (vectorized & noise-robust) 
+    - L-BFGS (vectorized & noise-robust) 
 - **Highly parallelized**
   - Designed for **vectorized function evaluations**, supporting **multithreading and multiprocessing** to speed up optimization.
 - **Optimized C++ backend with Python API**

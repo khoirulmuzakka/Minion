@@ -625,47 +625,99 @@ Parameters :
 
 L-BFGS-B Algorithm
 ------------------
-L-BFGS-B is a quasi-Newton method that approximates the Hessian matrix and can handle bound constraints. The L-BFGS-B algorithm implemented here is basically a wrapper of lbfgspp library (https://github.com/yixuan/LBFGSpp).
 
-*Reference : Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995). "A Limited Memory Algorithm for Bound Constrained Optimization". SIAM J. Sci. Comput. 16 (5): 1190–1208.*
+L-BFGS-B is a quasi-Newton method that approximates the Hessian matrix while handling bound constraints. The implementation here utilizes the back-end code from the `LBFGSpp` library (`https://github.com/yixuan/LBFGSpp`), which provides L-BFGS-B updates and Hessian approximation functionality.
 
-Algorithm name : ``"L_BFGS_B"``
+Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed. 
 
-Parameters : 
+Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
 
-- ``max_iterations``: 15000  
+Reference : *Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995).  "A Limited Memory Algorithm for Bound Constrained Optimization", SIAM J. Sci. Comput. **16** (5): 1190–1208.*
 
-  .. note:: The maximum number of iterations for the algorithm.
+Algorithm Name : ``"L_BFGS_B"``
 
-- ``m``: 10  
+Parameters
 
-  .. note:: The number of previous iterations to be used for approximating the Hessian matrix.
+- **``max_iterations``**: *15000*  
+  .. note:: The maximum number of iterations allowed for the algorithm.
 
-- ``g_epsilon``: 1e-5  
+- **``m``**: *15*  
+  .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
-  .. note:: The gradient convergence tolerance.
+- **``g_epsilon``**: *1e-8*  
+  .. note:: The absolute gradient convergence tolerance.
 
-- ``g_epsilon_rel``: 0.0  
-
+- **``g_epsilon_rel``**: *0.0*  
   .. note:: The relative gradient convergence tolerance.
 
-- ``f_reltol``: 1e-10  
-
+- **``f_reltol``**: *1e-8*  
   .. note:: The function value convergence tolerance.
 
-- ``max_linesearch``: 20 
+- **``max_linesearch``**: *20*  
+  .. note:: The maximum number of iterations allowed during line search.
 
-  .. note:: The maximum number of line search iterations.
+- **``c_1``**: *1e-3*  
+  .. note:: The first Wolfe condition parameter for line search.
 
-- ``c_1``: 1e-3  
+- **``c_2``**: *0.9*  
+  .. note:: The second Wolfe condition parameter for line search.
 
-  .. note:: The constant for the Wolfe condition during line search.
+- **``func_noise_ratio``**: *1e-16*  
+  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value.  
+            If the function is smooth, set this to zero.
 
-- ``c_2``: 0.9  
+- **``N_points_derivative``**: *3*  
+  .. note:: The number of sample points used for derivative calculations.  
+            If set to an even number, it is automatically increased by 1 to make it odd.  
+            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
+            **1 + D * (N - 1)**, where ``D`` is the dimensionality of the problem.
 
-  .. note:: The second constant for the Wolfe condition during line search.
 
-- ``finite_diff_rel_step``: 1e-10 
+L-BFGS Algorithm
+------------------
 
-  .. note:: The relative step size for finite difference computations. The default value 0.0 means that the relative step is given by the square root of machine epsilon.
+L-BFGS is a quasi-Newton method that approximates the Hessian matrix for *unconstrained* optimization rpoblem. The implementation here utilizes the back-end code from the `LBFGSpp` library (`https://github.com/yixuan/LBFGSpp`), which provides L-BFGS updates and Hessian approximation functionality.
 
+Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed. 
+
+Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
+
+Reference : *Liu, D. C.; Nocedal, J. (1989). "On the Limited Memory Method for Large Scale Optimization". Mathematical Programming B. 45 (3): 503–528. *
+
+Algorithm Name : ``"L_BFGS"``
+
+Parameters
+
+- **``max_iterations``**: *15000*  
+  .. note:: The maximum number of iterations allowed for the algorithm.
+
+- **``m``**: *15*  
+  .. note:: The number of previous iterations used to approximate the Hessian matrix.
+
+- **``g_epsilon``**: *1e-8*  
+  .. note:: The absolute gradient convergence tolerance.
+
+- **``g_epsilon_rel``**: *0.0*  
+  .. note:: The relative gradient convergence tolerance.
+
+- **``f_reltol``**: *1e-8*  
+  .. note:: The function value convergence tolerance.
+
+- **``max_linesearch``**: *20*  
+  .. note:: The maximum number of iterations allowed during line search.
+
+- **``c_1``**: *1e-3*  
+  .. note:: The first Wolfe condition parameter for line search.
+
+- **``c_2``**: *0.9*  
+  .. note:: The second Wolfe condition parameter for line search.
+
+- **``func_noise_ratio``**: *1e-16*  
+  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value.  
+            If the function is smooth, set this to zero.
+
+- **``N_points_derivative``**: *3*  
+  .. note:: The number of sample points used for derivative calculations.  
+            If set to an even number, it is automatically increased by 1 to make it odd.  
+            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
+            **1 + D * (N - 1)**, where ``D`` is the dimensionality of the problem.

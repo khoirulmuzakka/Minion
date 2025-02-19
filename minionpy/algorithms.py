@@ -1203,28 +1203,28 @@ class L_BFGS_B(MinimizerBase):
 
                 options = {
                     "max_iterations": 0,
-                    "m" : 10, 
-                    "g_epsilon": 1e-5,
+                    "m" : 15, 
+                    "g_epsilon": 1e-8,
                     "g_epsilon_rel": 0.0,
-                    "f_reltol": 1e-5,
+                    "f_reltol": 1e-8,
                     "max_linesearch": 20,
-                    "c_1":1e-4,
+                    "c_1": 1e-3,
                     "c_2": 0.9, 
-                    "func_noise_ratio": 1e-10, 
+                    "func_noise_ratio": 1e-16, 
                     "N_points_derivative": 3
                 }
 
             The available options are:
             - **max_iterations** (int): Maximum number of iterations. Default is 0 (no limit).
-            - **m** (int): The number of corrections used in the limited memory matrix. Default is 10.
-            - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-10.
-            - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 1e-10.
-            - **f_reltol** (double): Relative function tolerance for stopping criteria. Default is 1e-20.
+            - **m** (int): The number of corrections used in the limited memory matrix. Default is 15.
+            - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-8.
+            - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 0.0.
+            - **f_reltol** (double): Relative function tolerance for stopping criteria. Default is 1e-8.
             - **max_linesearch** (int): Maximum number of line search steps per iteration. Default is 20.
-            - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-4.
+            - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-3.
             - **c_2** (double): Parameter for Wolfe condition (curvature condition). Default is 0.9.
-            - **finite_diff_rel_step** (double): relative step for finite difference derivative calculation. Default is 0.0, which means that the actual value is the square root of machine epsilon.
-            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative.
+            - **func_noise_ratio** (double): noise level ratio, defined by the ratio of noise/f. For smooth function, set to 0.0. 
+            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative. For smooth function, N=1 works well and use less function calls.
 
 
         Notes
@@ -1314,28 +1314,28 @@ class L_BFGS(MinimizerBase):
 
                 options = {
                     "max_iterations": 0,
-                    "m" : 10, 
-                    "g_epsilon": 1e-5,
+                    "m" : 15, 
+                    "g_epsilon": 1e-8,
                     "g_epsilon_rel": 0.0,
-                    "f_reltol": 1e-5,
+                    "f_reltol": 1e-8,
                     "max_linesearch": 20,
-                    "c_1":1e-4,
+                    "c_1": 1e-3,
                     "c_2": 0.9, 
-                    "func_noise_ratio": 1e-10, 
+                    "func_noise_ratio": 1e-16, 
                     "N_points_derivative": 3
                 }
 
             The available options are:
             - **max_iterations** (int): Maximum number of iterations. Default is 0 (no limit).
-            - **m** (int): The number of corrections used in the limited memory matrix. Default is 10.
-            - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-10.
-            - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 1e-10.
-            - **f_reltol** (double): Relative function tolerance for stopping criteria. Default is 1e-20.
+            - **m** (int): The number of corrections used in the limited memory matrix. Default is 15.
+            - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-8.
+            - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 0.0.
+            - **f_reltol** (double): Relative function tolerance for stopping criteria. Default is 1e-8.
             - **max_linesearch** (int): Maximum number of line search steps per iteration. Default is 20.
-            - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-4.
+            - **c_1** (double): Parameter for Armijo condition (sufficient decrease). Default is 1e-3.
             - **c_2** (double): Parameter for Wolfe condition (curvature condition). Default is 0.9.
-            - **finite_diff_rel_step** (double): relative step for finite difference derivative calculation. Default is 0.0, which means that the actual value is the square root of machine epsilon.
-            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative.
+            - **func_noise_ratio** (double): noise level ratio, defined by the ratio of noise/f. For smooth function, set to 0.0. 
+            - **N_points_derivative** (int) : Number of points to calculate the numerical derivative. N=1 means forward difference, N>=2 use Lanczos noise-robust derivative. For smooth function, N=1 works well and use less function calls.
 
 
         Notes
