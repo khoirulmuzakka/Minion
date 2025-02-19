@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.9] - 2025-02-19
+### Fixed
+- Fixed L-BFGS-B violate bounds when calculating derivatives.
+
 ## [0.1.8] - 2025-02-19
 ### Added
 - Implemented L-BFGS
