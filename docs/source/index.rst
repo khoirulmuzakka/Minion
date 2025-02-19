@@ -22,7 +22,9 @@ This documentation covers the installation, usage, and details of both the C++ a
    minionpy/index
    Algorithms
    contribute
+   changelog
    license
+
 
 
 

@@ -8,7 +8,7 @@ Robustness in Noisy Optimization Problems
 
 In real-world problems, objective functions are rarely smooth. Generally, quasi-Newton methods such as L-BFGS-B and L-BFGS are not recommended for noisy functions, as gradient calculations can become inaccurate. However, the Minuit optimization library, which implements the quasi-Newton algorithm Migrad, has been reliably used in high-energy physics for decades despite handling noisy objective functions. Inspired by this, Minion aims to achieve a similar level of robustness in its L-BFGS-B and L-BFGS implementations.
 
-To enhance robustness under noisy conditions, the derivative must be computed as accurately as possible. For a smooth function using forward differences, the optimal step size for derivative estimation is given by:
+To enhance robustness under noisy conditions, the derivative must be computed as accurately as possible. For a noisy function using forward differences, the optimal step size for derivative estimation is given by:
 
 .. math::
    h = 2\sqrt{\frac{\epsilon_f}{|f^{(2)}|}}
@@ -32,7 +32,7 @@ The following notebook presents a comparison of Minion's L-BFGS-B and L-BFGS alg
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Comparison Notebook:
 
    l_bfgs_b
 
@@ -632,41 +632,50 @@ Minion implements a customized **derivative calculation** method that ensures bo
 
 Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
 
-Reference : *Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995).  "A Limited Memory Algorithm for Bound Constrained Optimization", SIAM J. Sci. Comput. **16** (5): 1190–1208.*
+*Reference : Byrd, R. H.; Lu, P.; Nocedal, J.; Zhu, C. (1995).  "A Limited Memory Algorithm for Bound Constrained Optimization", SIAM J. Sci. Comput. 16 (5): 1190–1208.*
 
 Algorithm Name : ``"L_BFGS_B"``
 
 Parameters
 
 - **``max_iterations``**: *15000*  
+
   .. note:: The maximum number of iterations allowed for the algorithm.
 
 - **``m``**: *15*  
+
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
 - **``g_epsilon``**: *1e-8*  
+
   .. note:: The absolute gradient convergence tolerance.
 
 - **``g_epsilon_rel``**: *0.0*  
+
   .. note:: The relative gradient convergence tolerance.
 
 - **``f_reltol``**: *1e-8*  
+
   .. note:: The function value convergence tolerance.
 
 - **``max_linesearch``**: *20*  
+
   .. note:: The maximum number of iterations allowed during line search.
 
 - **``c_1``**: *1e-3*  
+
   .. note:: The first Wolfe condition parameter for line search.
 
 - **``c_2``**: *0.9*  
+
   .. note:: The second Wolfe condition parameter for line search.
 
 - **``func_noise_ratio``**: *1e-16*  
-  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value.  
-            If the function is smooth, set this to zero.
+
+  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
 - **``N_points_derivative``**: *3*  
+
   .. note:: The number of sample points used for derivative calculations.  
             If set to an even number, it is automatically increased by 1 to make it odd.  
             Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
@@ -682,41 +691,50 @@ Minion implements a customized **derivative calculation** method that ensures bo
 
 Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
 
-Reference : *Liu, D. C.; Nocedal, J. (1989). "On the Limited Memory Method for Large Scale Optimization". Mathematical Programming B. 45 (3): 503–528. *
+*Reference: Liu, D. C.; Nocedal, J. (1989). "On the Limited Memory Method for Large Scale Optimization". *Mathematical Programming B*, 45(3): 503-528.*
 
 Algorithm Name : ``"L_BFGS"``
 
 Parameters
 
 - **``max_iterations``**: *15000*  
+
   .. note:: The maximum number of iterations allowed for the algorithm.
 
 - **``m``**: *15*  
+
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
 - **``g_epsilon``**: *1e-8*  
+
   .. note:: The absolute gradient convergence tolerance.
 
-- **``g_epsilon_rel``**: *0.0*  
+- **``g_epsilon_rel``**: *0.0* 
+
   .. note:: The relative gradient convergence tolerance.
 
 - **``f_reltol``**: *1e-8*  
+
   .. note:: The function value convergence tolerance.
 
-- **``max_linesearch``**: *20*  
+- **``max_linesearch``**: *20* 
+
   .. note:: The maximum number of iterations allowed during line search.
 
 - **``c_1``**: *1e-3*  
+
   .. note:: The first Wolfe condition parameter for line search.
 
 - **``c_2``**: *0.9*  
+
   .. note:: The second Wolfe condition parameter for line search.
 
 - **``func_noise_ratio``**: *1e-16*  
-  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value.  
-            If the function is smooth, set this to zero.
+
+  .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
 - **``N_points_derivative``**: *3*  
+
   .. note:: The number of sample points used for derivative calculations.  
             If set to an even number, it is automatically increased by 1 to make it odd.  
             Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
