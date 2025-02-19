@@ -9,6 +9,7 @@ void L_BFGS_B::initialize() {
 double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (Nevals >maxevals) throw MaxevalExceedError("Maxevals has been exceeded.");
     int m = std::ceil ((double (N_points)-1.0)/2.0);
+    if (m>8) m=8; 
     std::vector<double> x_vec(x.data(), x.data() + x.size());
     std::vector<std::vector<double>> X ;
     X.push_back(x_vec);
@@ -17,10 +18,19 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
     std::vector<double> sec_der = solver->getBFGS_mat().compute_hessian_diagonal(); 
     double ferr = last_f*func_noise_ratio;
     for (int i=0; i<x.size(); i++) {
-        double h_min =  std::pow(epsilon, 0.5)*std::max(1.0, fabs(x[i])) ; 
-        double h_max = 0.01*std::max(1.0, fabs(x[i])) ;
-        double h_est = 2.0*sqrt(ferr/ fabs(sec_der[i]) );
-        double h = std::min (h_max, std::max( h_min, h_est ) );
+        double d_low = x[i]-actual_bounds[i].first; //distance from lower bound
+        double d_high = actual_bounds[i].second-x[i]; //distance from upper bound
+
+        double h_low_corrected = std::max(0.0, d_low/m - 1e-16); //maximum allowed h from lower bound consideration
+        double h_high_corrected = std::max(0.0, d_high/m - 1e-16); //maximum allowed h from upper bound consideration
+        double h_max_from_bound = std::min(h_low_corrected, h_high_corrected); //maximum allowed h from upper and lower bound consideration
+
+        double h_min =  std::pow(epsilon, 0.5)*std::max(1.0, fabs(x[i])) ; //Minimum h from rounding error consideration
+        double h_max = 0.01*std::max(1.0, fabs(x[i])) ; //maximum h from common sense
+        double h_est = 2.0*sqrt(ferr/ fabs(sec_der[i]) ); // h value from function noise consideraton
+        double h = std::min (h_max, std::max( h_min, h_est ) ); //h value that satisfy h_min < h> h_max 
+        // now h must not be larger than h_max_from_bound
+        h = std::min(h, h_max_from_bound);
         hvec.push_back(h);
        // std::cout << h_est  << " ";
     }
@@ -28,7 +38,7 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (N_points == 1) {
         for (int i=0; i<x.size(); i++){
             std::vector<double> xp = x_vec;
-            double h= hvec[i];
+            double h = hvec[i];
             if (xp[i]+h > bounds[i].second ) h=-h; 
             xp[i] += h; 
             X.push_back(xp);

@@ -35,6 +35,8 @@ private :
     double epsilon =  std::numeric_limits<double>::epsilon();
     double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
+    double dist_min=1e-7;
+    std::vector<std::pair<double, double>> actual_bounds;
 
      /**
      * @brief Evaluates the function and its gradient.
@@ -59,7 +61,7 @@ public:
      */
     L_BFGS_B(
         MinionFunction func,
-        const std::vector<std::pair<double, double>>& bounds,
+        const std::vector<std::pair<double, double>>& bounds_,
         const std::vector<double>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
@@ -68,7 +70,10 @@ public:
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) { };
+        MinimizerBase(func, bounds_, x0, data, callback, tol, maxevals, seed, options) { 
+            actual_bounds = bounds;
+            for (int i=0; i<bounds.size(); i++) bounds[i] = { bounds[i].first + dist_min, bounds[i].second - dist_min };
+        };
     
     /**
      * @brief Destructor
