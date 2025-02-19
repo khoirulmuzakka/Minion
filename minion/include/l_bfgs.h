@@ -34,6 +34,7 @@ public:
 
 private : 
     LBFGSpp::LBFGSSolver<double>* solver=nullptr;
+    double epsilon =  std::numeric_limits<double>::epsilon();
     double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
 

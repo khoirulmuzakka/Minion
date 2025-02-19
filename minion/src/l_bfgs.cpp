@@ -17,7 +17,7 @@ double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
     std::vector<double> sec_der = solver->getBFGS_mat().compute_hessian_diagonal(); 
     double ferr = last_f*func_noise_ratio;
     for (int i=0; i<x.size(); i++) {
-        double h_min =  1e-10*std::max(1.0, fabs(x[i])) ; 
+        double h_min =  std::pow(epsilon, 0.5)*std::max(1.0, fabs(x[i])) ; 
         double h_max = 0.01*std::max(1.0, fabs(x[i])) ;
         double h_est = 2.0*sqrt(ferr/ fabs(sec_der[i]) );
         double h = std::min (h_max, std::max( h_min, h_est ) );

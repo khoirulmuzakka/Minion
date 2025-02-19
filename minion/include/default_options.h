@@ -101,7 +101,7 @@ class DefaultSettings{
             {"restart_temp_ratio" , 2e-5},
             {"use_local_search", true},
             {"local_search_algo", "L_BFGS_B"},
-            {"func_noise_ratio", 1e-10},
+            {"func_noise_ratio", 1e-16},
             {"N_points_derivative", 1},
             {"bound_strategy" , std::string("periodic")} 
         };
@@ -114,26 +114,26 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_LBFGSB = {
             {"max_iterations", 100000},
             {"m" , 15}, 
-            {"g_epsilon", 1e-5},
+            {"g_epsilon", 1e-8},
             {"g_epsilon_rel", 0.0},
-            {"f_reltol", 1e-5},
+            {"f_reltol", 1e-8},
             {"max_linesearch", 20},
             {"c_1",1e-3},
             {"c_2", 0.9}, 
-            {"func_noise_ratio", 1e-10}, 
+            {"func_noise_ratio", 1e-16}, 
             {"N_points_derivative", 3}
         };
 
         std::map<std::string, ConfigValue> default_settings_LBFGS = {
             {"max_iterations", 100000},
             {"m" , 15}, 
-            {"g_epsilon", 1e-5},
+            {"g_epsilon", 1e-8},
             {"g_epsilon_rel", 0.0},
-            {"f_reltol", 1e-5},
+            {"f_reltol", 1e-8},
             {"max_linesearch", 20},
             {"c_1",1e-3},
             {"c_2", 0.9}, 
-            {"func_noise_ratio", 1e-10}, 
+            {"func_noise_ratio", 1e-16}, 
             {"N_points_derivative", 3}
         };
 
