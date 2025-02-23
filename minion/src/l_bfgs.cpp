@@ -8,7 +8,7 @@ void L_BFGS::initialize() {
 
 double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (Nevals >maxevals) throw MaxevalExceedError("Maxevals has been exceeded.");
-    int m = std::ceil ((double (N_points)-1.0)/2.0);
+    int m = std::max(std::ceil ((double (N_points)-1.0)/2.0), 1.0);
     std::vector<double> x_vec(x.data(), x.data() + x.size());
     std::vector<std::vector<double>> X ;
     X.push_back(x_vec);
