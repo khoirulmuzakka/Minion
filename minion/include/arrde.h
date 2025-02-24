@@ -19,13 +19,12 @@ class ARRDE : public Differential_Evolution {
         std::vector<double> fitness_records;
         std::vector<double> MCR_records, MF_records;
         double memorySizeRatio=2.0;
+        int minPopSize= 4;
 
     private : 
         double archive_size_ratio;
         size_t memoryIndex=0;
         size_t Neval_stratrefine=0;
-
-        size_t minPopSize;
         std::string reduction_strategy;
         bool popreduce;
 

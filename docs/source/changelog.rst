@@ -5,6 +5,14 @@ Changelog
    :local:
    :depth: 2
 
+
+Version 0.2.0 - 2025-02-24
+--------------------------
+
+**Added**
+
+- Added "minimum_population_size" option for ARRDE
+
 Version 0.1.9 - 2025-02-19
 --------------------------
 

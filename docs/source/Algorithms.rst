@@ -248,6 +248,10 @@ Parameters :
 
                 where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
 
+- ``minimum_population_size``: 4
+
+  .. note:: final (minimum) population size during linear population size reduction.
+
 - ``archive_size_ratio``: 2.0  
 
   .. note:: The ratio of archive size to the current population size .

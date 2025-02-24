@@ -1652,6 +1652,7 @@ class ARRDE(MinimizerBase):
 
                 options = {
                     "population_size"           :  0,  
+                    "minimum_population_size"   : 4,
                     "archive_size_ratio"        :  2.0, 
                     "converge_reltol"           :  0.005,
                     "refine_decrease_factor"    : 0.9, 
@@ -1669,6 +1670,7 @@ class ARRDE(MinimizerBase):
                     N = 2 \\cdot D + \\log(N_{maxevals})^2
 
                 where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
+            - **minimum_population_size** (int) : final (minimum) population size during linear population size reduction.
             - **archive_size_ratio** (float) : the ratio of archive size to the current population size .
             - **converge_relTol** (float) : The value of std(f)/mean(f) below which a population is said to be converged.
             - **refine_decrease_factor** (float) : The decrease factor of *converge_relTol* in the refinement phase. 

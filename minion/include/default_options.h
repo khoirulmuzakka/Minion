@@ -20,6 +20,7 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
             {"population_size", 0},  
+            {"minimum_population_size", 4}, 
             {"archive_size_ratio", 2.0}, 
             {"converge_reltol", 0.005}, 
             {"refine_decrease_factor" , 0.9}, 

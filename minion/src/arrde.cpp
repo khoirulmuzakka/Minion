@@ -16,8 +16,11 @@ void ARRDE::initialize  (){
 
     populationSize = options.get<int> ("population_size", 0) ; 
     size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0), 1000.0), 10.0)); 
-    if (populationSize==0 || populationSize<bounds.size()) populationSize = defaultPopsize;
+    if (populationSize==0 ) populationSize = defaultPopsize;
+    if (populationSize<bounds.size()) populationSize = std::max(bounds.size(), size_t(10));
+
     maxPopSize_finalRefine= size_t( std::max( std::min(1.0*bounds.size() + 1.0*std::pow(log10(maxevals), 2.0) , 500.0), 10.0)); 
+    minPopSize = std::min(std::max(options.get<int> ("minimum_population_size", 4), 4), int(maxPopSize_finalRefine)) ; 
 
     mutation_strategy = "current_to_pbest_AW_1bin";
 
@@ -54,7 +57,7 @@ void ARRDE::adaptParameters() {
     if (final_refine){
         Nevals_eff = double(Nevals)-double(Neval_stratrefine);
         Maxevals_eff =  maxevals-double(Neval_stratrefine);
-        minPopSize_eff=  4.0; 
+        minPopSize_eff=  double(minPopSize); 
         maxPopSize_eff = double(maxPopSize_finalRefine);
     }
     // update population size
