@@ -8,7 +8,7 @@ void jSO::initialize  (){
     Options options(defaultKey);
 
     boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
-    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic"};
+    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
     if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
         std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
