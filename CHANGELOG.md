@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.1] - 2025-03-01
+### Added
+- Fixed "none" unrecognized as bound_stratehy
+
 ## [0.2.0] - 2025-02-24
 ### Added
 - Added "minimum_population_size" option for ARRDE

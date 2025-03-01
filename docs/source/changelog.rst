@@ -6,6 +6,13 @@ Changelog
    :depth: 2
 
 
+Version 0.2.1 - 2025-03-01
+--------------------------
+
+**Added**
+
+- Fixed "none" unrecognized as bound_strategy
+
 Version 0.2.0 - 2025-02-24
 --------------------------
 
