@@ -9,14 +9,13 @@ tags:
 authors:
   - name: Khoirul Faiq Muzakka
     orcid: 0000-0002-3888-1697
-    equal-contrib: true
-    affiliation: "1" # (Multiple affiliations must be quoted)
+    affiliation: "1"
   - name: Sören Möller
     orcid: 0000-0002-7948-4305
-    affiliation: "1" # (Multiple affiliations must be quoted)
+    affiliation: "1"
   - name: Martin Finsterbusch
     orcid: 0000-0001-7027-7636
-    affiliation: "1" # (Multiple affiliations must be quoted)
+    affiliation: "1"
 affiliations:
  - name: Institute of Energy Materials and Devices (IMD-2), Forschungszentrum Jülich GmbH, Germany
    index: 1
