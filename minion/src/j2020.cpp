@@ -106,7 +106,11 @@ MinionResult j2020::optimize () {
         indBest = 0;
 
         P = random_sampling(bounds, size_t(NP));
-        if (!x0.empty()) P[0] = x0;
+        if (!x0.empty()) {
+            for (int i=0; i<x0.size(); i++) {
+                if ( i < P.size() ) P[i] = x0[i];
+            };
+        }
 
         for (int i=0; i<NP; i++) { 
             parF[i] = Finit;     // init

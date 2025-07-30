@@ -81,7 +81,11 @@ void LSRTDE::initialize_population(int _newNInds, int _newNVars)
     Indices2 = new int[PopulSize];
 
     Popul = random_sampling(bounds, PopulSize);
-    if (!x0.empty()) Popul[0] =x0;
+    if (!x0.empty()) {
+        for (int i=0; i<x0.size(); i++) {
+            if ( i < Popul.size() ) Popul[i] = x0[i];
+        };
+    }
     for(int i=0;i!=PopulSize;i++)
         tempSuccessCr[i] = 0;
     for(int i=0;i!=MemorySize;i++)

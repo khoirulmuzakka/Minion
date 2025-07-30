@@ -114,7 +114,7 @@ class MinimizerBase:
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -155,8 +155,8 @@ class MinimizerBase:
             raise TypeError("func must be callable")
         if not isinstance(bounds, list) or not all(isinstance(b, tuple) and len(b) == 2 for b in bounds):
             raise TypeError("bounds must be a list of tuples (float, float)")
-        if x0 is not None and not all(isinstance(x, float) for x in x0):
-            raise TypeError("x0 must be a list of floats or None")
+        #if x0 is not None and not all(isinstance(x, list) for x in x0):
+        #    raise TypeError("x0 must be a list of list of floats or None")
         if not isinstance(relTol, float):
             raise TypeError("relTol must be a float")
         if not isinstance(maxevals, int):
@@ -172,7 +172,8 @@ class MinimizerBase:
         self.bounds = self._validate_bounds(bounds)
         self.x0 = x0 
         if self.x0 is not None : 
-            if len(self.x0) != len(self.bounds) : raise ValueError("x0 must have the same dimension as the length of the bounds.")   
+            for x in x0 :
+                if len(x) != len(self.bounds) : raise ValueError("Initial guesses must have the same dimension as the length of the bounds.")   
         self.x0cpp = self.x0 if self.x0 is not None else []
         self.data = None
 
@@ -241,7 +242,7 @@ class GWO_DE(MinimizerBase):
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -344,7 +345,7 @@ class NelderMead(MinimizerBase):
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -447,7 +448,7 @@ class LSHADE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -572,7 +573,7 @@ class jSO(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -695,7 +696,7 @@ class JADE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -824,7 +825,7 @@ class NLSHADE_RSP(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -932,7 +933,7 @@ class ABC(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1041,7 +1042,7 @@ class Dual_Annealing(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1152,7 +1153,7 @@ class L_BFGS_B(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1265,7 +1266,7 @@ class L_BFGS(MinimizerBase):
     """
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
-                 x0: Optional[List[float]],
+                 x0: List[List[float]],
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1379,7 +1380,7 @@ class j2020(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1491,7 +1492,7 @@ class LSRTDE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1601,7 +1602,7 @@ class ARRDE(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1724,7 +1725,7 @@ class Differential_Evolution(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
@@ -1845,7 +1846,7 @@ class Minimizer(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
-                 x0: Optional[List[float]] = None,
+                 x0: Optional[List[List[float]]] = None,
                  algo : str = "ARRDE",
                  relTol: float = 0.0001,
                  maxevals: int = 100000,

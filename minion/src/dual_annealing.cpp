@@ -42,7 +42,7 @@ void Dual_Annealing::initialize() {
 
 void Dual_Annealing::init(bool useX0){
     current_cand = latin_hypercube_sampling(bounds, 1)[0];
-    if (!x0.empty() && useX0) current_cand = x0;
+    if (!x0.empty() && useX0) current_cand = x0[0];
     enforce_bounds(current_cand, bounds, boundStrategy);
     current_E = func({current_cand}, data)[0];
     if (current_E<best_E) {
@@ -154,13 +154,13 @@ void Dual_Annealing::step (int iter, double temp){
         if (local_min_algo == "NelderMead"){
             auto settings = DefaultSettings().getDefaultSettings("NelderMead");
             settings["locality_factor"] = 0.5;
-            minionResult = NelderMead(func, bounds, best_cand, data, callback, stoppingTol, 0.25*maxevals_ls, seed, settings).optimize();
+            minionResult = NelderMead(func, bounds, {best_cand}, data, callback, stoppingTol, 0.25*maxevals_ls, seed, settings).optimize();
         } else if (local_min_algo == "L_BFGS_B"){
             auto defaultSettings = DefaultSettings().getDefaultSettings("L_BFGS_B");
             defaultSettings["max_iterations"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
             defaultSettings["func_noise_ratio"] = func_noise_ratio;
             defaultSettings["N_points_derivative"] = der_N_points;
-            minionResult = L_BFGS_B(func, bounds, best_cand, data, callback, stoppingTol, maxevals_ls, seed, defaultSettings).optimize();
+            minionResult = L_BFGS_B(func, bounds, {best_cand}, data, callback, stoppingTol, maxevals_ls, seed, defaultSettings).optimize();
         } else {
             throw std::runtime_error("Unknown local search algorithm.");
         };

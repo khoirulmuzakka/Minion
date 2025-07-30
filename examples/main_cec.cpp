@@ -40,10 +40,13 @@ double minimize_cec_functions(int function_number, int dimension, int population
 
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
     settings["population_size"] = popsize;
-    std::vector<double> x0;
+    std::vector<std::vector<double>> x0={};
     if (algo == "NelderMead" || algo == "L_BFGS_B" || algo == "DA"){
-        for (auto& el : bounds) x0.push_back(0.5*(el.first+el.second));
-    } else x0={};
+        std::vector<double> x00;
+        for (auto& el : bounds) x00.push_back(0.5*(el.first+el.second));
+        x0 = {x00};
+    };
+
     minion::Minimizer optimizer (objective_function,  bounds, x0, cecfunc, callBack, algo, 0.0, max_evals,  seed, settings);
     // Optimize and get the result
     minion::MinionResult result = optimizer();

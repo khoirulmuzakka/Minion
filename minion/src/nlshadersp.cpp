@@ -171,7 +171,11 @@ void NLSHADE_RSP::initialize_population(int newNInds, int newNVars, int NewMemSi
 		for (int j = 0; j<NVars; j++)
 			Popul[i][j] = rand_gen(bounds[j].first, bounds[j].second);
     if (!x0.empty()) {
-        for (int j = 0; j<NVars; j++) Popul[0][j] =x0[j]; 
+        for (int i=0; i<x0.size(); i++) {
+            if ( i < NIndsMax ) {
+                for (int j = 0; j<NVars; j++) Popul[i][j] =x0[i][j]; 
+            } 
+        };
     };
     Donor = new double[NVars];
     Trial = new double[NVars];

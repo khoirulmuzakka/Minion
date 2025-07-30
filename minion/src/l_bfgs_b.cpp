@@ -126,10 +126,10 @@ MinionResult L_BFGS_B::optimize() {
         }; 
 
         if (x0.empty()){
-            auto x0 = latin_hypercube_sampling(bounds, 1)[0]; 
+            auto x0 = latin_hypercube_sampling(bounds, 1); 
         };
 
-        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0.data(), x0.size());
+        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0[0].data(), x0[0].size());
         double final_f;
         int niter=0;
         auto fun = [&] (const Eigen::VectorXd& x, Eigen::VectorXd& grad) -> double {

@@ -50,7 +50,7 @@ public:
     ABC(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,
-        const std::vector<double>& x0 = {},
+        const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
         double tol = 0.0001,

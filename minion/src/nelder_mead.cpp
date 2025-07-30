@@ -25,21 +25,22 @@ void NelderMead::initialize  (){
 MinionResult NelderMead::optimize() {
     try {
         if (!hasInitialized) initialize();
-        size_t n = x0.size();
+        size_t n = x0[0].size();
         std::vector<std::vector<double>> simplex(n + 1, std::vector<double>(n));
 
         std::vector<std::pair<double, double>> new_bounds = bounds; 
         if (!x0.empty()) {
             for (int i =0; i<bounds.size(); i++) {
-                double dis_up = locality * fabs(bounds[i].second-x0[i]);
-                double dis_down = locality * fabs(x0[i]-bounds[i].first);
-                new_bounds[i] = { x0[i]-dis_down, x0[i]+dis_up };
+                double dis_up = locality * fabs(bounds[i].second-x0[0][i]);
+                double dis_down = locality * fabs(x0[0][i]-bounds[i].first);
+                new_bounds[i] = { x0[0][i]-dis_down, x0[0][i]+dis_up };
             }
         }
         
         simplex= latin_hypercube_sampling(new_bounds, bounds.size()+1); 
-        simplex[0] = x0;
-
+        for (int i=0; i<x0.size(); i++) {
+            if ( i < simplex.size() ) simplex[i] = x0[i];
+        };
         // Evaluate function values at the initial simplex points
         std::vector<double> fvals(n + 1);
         enforce_bounds(simplex, bounds, boundStrategy);

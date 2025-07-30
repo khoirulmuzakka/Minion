@@ -105,7 +105,7 @@ MinionResult L_BFGS::optimize() {
         func_noise_ratio = options.get<double> ("func_noise_ratio", 1e-10);
         Nevals=0;
 
-        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0.data(), x0.size());
+        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0[0].data(), x0[0].size());
         double final_f;
         int niter=0;
         auto fun = [&] (const Eigen::VectorXd& x, Eigen::VectorXd& grad) -> double {

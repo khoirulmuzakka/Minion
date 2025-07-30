@@ -67,7 +67,7 @@ void callBack(minion::MinionResult* res) {
 
 int main(int argc, char* argv[]) {
     // List of optimization algorithms to test
-    std::vector<std::string> algoList = {"ARRDE", "LSHADE", "LSRTDE", "NLSHADE_RSP", "j2020", "jSO", "JADE"};
+    std::vector<std::string> algoList = { "ARRDE", "LSHADE", "LSRTDE", "NLSHADE_RSP", "j2020", "jSO", "JADE"};
 
     // Define the dimensionality of the optimization problem
     size_t dimension = 50;
@@ -76,10 +76,10 @@ int main(int argc, char* argv[]) {
     std::vector<std::pair<double, double>> bounds = std::vector<std::pair<double, double>>(dimension, std::make_pair(-100.0, 100.0));
     
     // Initial guess (empty in this case, meaning random initialization is used)
-    std::vector<double> x0 = {};
+    std::vector<std::vector<double>> x0 = {};
     
     // Maximum number of function evaluations
-    size_t max_evals = 100000;
+    size_t max_evals = dimension*1000;
 
     // Minimizing Rosenbrock function
     std::cout << "Minimizing Rosenbrock function: \n";

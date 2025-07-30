@@ -185,7 +185,7 @@ class MinimizerBase {
          * @brief Constructor for MinimizerBase.
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
-         * @param x0 The initial guess for the solution.
+         * @param x0 The initial guesses for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
          * @param relTol The relative tolerance for convergence.
@@ -196,7 +196,7 @@ class MinimizerBase {
         MinimizerBase(
             MinionFunction func, 
             const std::vector<std::pair<double, double>>& bounds, 
-            const std::vector<double>& x0 = {},
+            const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
             std::function<void(MinionResult*)> callback = nullptr,
             double tol = 0.0001, 
@@ -208,8 +208,10 @@ class MinimizerBase {
             if (!bounds.empty() && bounds[0].first >= bounds[0].second) {
                 throw std::invalid_argument("Invalid bounds.");
             }
-            if (!x0.empty() && x0.size() != bounds.size()) {
-                throw std::invalid_argument("x0 must have the same dimension as the length of the bounds.");
+            if (!x0.empty()) {
+                for (auto& x : x0) {
+                    if (x.size() != bounds.size()) throw std::invalid_argument("Initial guesses must have the same dimension as the length of the bounds.");
+                };
             }
             if (seed != -1) set_global_seed(seed);
             optionMap = options;    
@@ -228,7 +230,7 @@ class MinimizerBase {
          */
         MinimizerBase(
             MinionFunction func, 
-            const std::vector<double>& x0 = {},
+            const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
             std::function<void(MinionResult*)> callback = nullptr,
             double tol = 0.0001, 
@@ -289,7 +291,7 @@ class MinimizerBase {
     public:
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
-        std::vector<double> x0;
+        std::vector<std::vector<double>> x0;
         double stoppingTol;
         size_t maxevals;
         MinionResult minionResult;

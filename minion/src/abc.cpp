@@ -29,7 +29,9 @@ void ABC::initialize() {
 void ABC::init(){
     population = latin_hypercube_sampling(bounds, populationSize);
     if (!x0.empty()) {
-        population[0] = x0;
+        for (int i=0; i<x0.size(); i++) {
+            if ( i < population.size() ) population[i] = x0[i];
+        };
     };
     fitness = func(population, data);
     size_t best_idx = findArgMin(fitness);

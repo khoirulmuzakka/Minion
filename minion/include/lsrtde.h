@@ -157,7 +157,7 @@ public :
      * @brief Constructor for Differential_Evolution.
      * @param func The objective function to minimize.
      * @param bounds The bounds for the variables.
-     * @param x0 The initial solution.
+     * @param x0 The initial guesses for the solution. NOte : LSRTDE does not support initial guesses. This argument is added for consistency purpose. 
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
      * @param tol The tolerance for stopping criteria.
@@ -168,7 +168,7 @@ public :
     LSRTDE(
         MinionFunction func, 
         const std::vector<std::pair<double, double>>& bounds, 
-        const std::vector<double>& x0 = {},
+        const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr, 
         std::function<void(MinionResult*)> callback = nullptr,
         double tol = 0.0001, 

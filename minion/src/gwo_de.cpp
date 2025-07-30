@@ -123,6 +123,11 @@ MinionResult GWO_DE::optimize() {
 
 void GWO_DE::initialize_population() {
     population = latin_hypercube_sampling(bounds, population.size());
+    if (!x0.empty()) {
+        for (int i=0; i<x0.size(); i++) {
+            if ( i < population.size() ) population[i] = x0[i];
+        };
+    };
 }
 
 void GWO_DE::evaluate_population() {
