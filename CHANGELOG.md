@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.2] - 2025-07-31
+### Changed
+- Initial guess x0 is now a list of guesses. Thus, it is possible now to have more than one initial guesses. 
+
 ## [0.2.1] - 2025-03-01
 ### Added
 - Fixed "none" unrecognized as bound_stratehy

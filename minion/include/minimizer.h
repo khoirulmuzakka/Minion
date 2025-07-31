@@ -33,7 +33,7 @@ class Minimizer {
          * @brief Constructor 
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
-         * @param x0 The initial guess for the solution.
+         * @param x0 The initial guesses for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
          * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"
@@ -68,6 +68,49 @@ class Minimizer {
             else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS") optimizer = new L_BFGS(func, x0, data, callback, tol, maxevals, seed, options);
+            else throw std::runtime_error("Unknwon algorithm : "+ algo);
+        };
+
+
+        /**
+         * @brief Constructor 
+         * @param func The objective function to minimize.
+         * @param bounds The bounds for the decision variables.
+         * @param x0 The initial guess for the solution.
+         * @param data Additional data to pass to the objective function.
+         * @param callback A callback function to call after each iteration.
+         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"
+         * @param relTol The relative tolerance for convergence.
+         * @param maxevals The maximum number of function evaluations.
+         * @param seed global seed
+         * @param options Option object, which specify further configurational settings for the algorithm.
+         */
+        Minimizer (
+            MinionFunction func, 
+            const std::vector<std::pair<double, double>>& bounds, 
+            const std::vector<double>& x0 = {},
+            void* data = nullptr, 
+            std::function<void(MinionResult*)> callback = nullptr,
+            std::string algo ="ARRDE",
+            double tol = 0.0001, 
+            size_t maxevals = 100000, 
+            int seed=-1, 
+            std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
+        {
+            if (algo == "DE") optimizer = new Differential_Evolution(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "LSHADE") optimizer = new LSHADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "JADE") optimizer = new JADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "j2020") optimizer = new j2020(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "LSRTDE") optimizer = new LSRTDE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "jSO") optimizer = new jSO (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "ARRDE") optimizer = new ARRDE (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "L_BFGS") optimizer = new L_BFGS(func, {x0}, data, callback, tol, maxevals, seed, options);
             else throw std::runtime_error("Unknwon algorithm : "+ algo);
         };
 
