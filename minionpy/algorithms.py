@@ -130,7 +130,7 @@ class MinimizerBase:
         bounds : list of tuple
             List of `(lower, upper)` bounds for each decision variable.
         x0 : list[list[float]], optional
-            Initial guesses for the solution. 
+            Initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is a list[list[float]] object. These guesses will be used for population initialization.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops when the relative improvement falls below this value. 
             Default is `1e-4`.
@@ -172,8 +172,13 @@ class MinimizerBase:
         self.bounds = self._validate_bounds(bounds)
         self.x0 = x0 
         if self.x0 is not None : 
-            for x in x0 :
-                if len(x) != len(self.bounds) : raise ValueError("Initial guesses must have the same dimension as the length of the bounds.")   
+            if isinstance(self.x0, list) :
+                for x in x0 :
+                    if len(x) != len(self.bounds) : 
+                        raise ValueError("Initial guesses must have the same dimension as the length of the bounds.")
+            else : 
+                raise TypeError("Initial guesses x0 must have type list[list[float]]")   
+            
         self.x0cpp = self.x0 if self.x0 is not None else []
         self.data = None
 
@@ -1345,7 +1350,7 @@ class L_BFGS(MinimizerBase):
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
-        bounds = [(-10,10)]*len(x0)
+        bounds = [(-10,10)]*len(x0[0])
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
         self.optimizer = cppL_BFGS(self.func, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)

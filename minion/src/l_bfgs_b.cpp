@@ -141,7 +141,14 @@ MinionResult L_BFGS_B::optimize() {
         };
         try {
             niter = solver->minimize ( fun, x, final_f, lb, ub);
-        } catch (const MaxevalExceedError& e) {};
+        } catch (const MaxevalExceedError& e) {
+            //
+        }
+        catch (const std::exception& e) {
+            std::cerr << "[Warning] " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "[Warning] Unknown error." << std::endl;
+        }
 
         minionResult = MinionResult(best, f_best, niter, Nevals, false, "");
         history.push_back(minionResult);

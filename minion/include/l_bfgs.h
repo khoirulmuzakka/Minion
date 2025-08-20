@@ -51,7 +51,7 @@ public:
      * @brief Constructor for L-BFGS.
      * @param func The objective function to minimize.
      * @param bounds The bounds for the variables.
-     * @param x0 The initial solution.
+     * @param x0 The initial solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. Minion will pick the best guess from x0 as the the actual initialization.
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
      * @param tol The tolerance for stopping criteria.

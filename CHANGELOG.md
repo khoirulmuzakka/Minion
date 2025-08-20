@@ -1,4 +1,8 @@
 # Changelog
+## [0.2.3] - 2025-08-21
+### Changed
+- Classical algorithms such as L-BFGS pick the best guess from the given guesses during initialization. 
+- Stability improvements. 
 
 ## [0.2.2] - 2025-07-31
 ### Changed

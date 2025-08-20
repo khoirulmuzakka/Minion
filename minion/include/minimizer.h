@@ -33,7 +33,7 @@ class Minimizer {
          * @brief Constructor 
          * @param func The objective function to minimize.
          * @param bounds The bounds for the decision variables.
-         * @param x0 The initial guesses for the solution.
+         * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization in the population-population based algorithms, or minion will pick teh best one in L-BFGS or NelderMead.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
          * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"

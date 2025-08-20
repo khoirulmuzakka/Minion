@@ -15,7 +15,7 @@ import minionpy
 project = 'Minion'
 copyright = '2025, Khoirul Faiq Muzakka'
 author = 'Khoirul Faiq Muzakka'
-release = '0.2.1'
+release = '0.2.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

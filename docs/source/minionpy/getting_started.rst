@@ -26,9 +26,8 @@ In **minionpy**, the objective function should have the following signature:
 
     func(X) -> list[float]
 
-where `X` is either:
-- A list of lists (`list[list[float]]`), or  
-- A 2D NumPy array (`np.ndarray`).  
+where `X` is :
+- A list of lists (`list[list[float]]`)
 
 Since **minionpy** expects vectorized functions, if your function takes a single input and returns a scalar, you can vectorize it as follows:
 
@@ -85,7 +84,7 @@ Alternatively, you can use a **generic interface**:
 These two approaches are **equivalent**.  
 
 Parameter Explanation:
-- `x0`: Initial guess (list or 1D NumPy array).
+- `x0`: Initial guesses (list[list[float]]). Minion supports multiple initial guesses. If DE-based algorithm is used, these guesses will be used to initialize the population. 
 - `bounds`: Search space boundaries (list of tuples).
 - `relTol`: Relative tolerance for convergence.
 - `maxevals`: Maximum number of function evaluations.
