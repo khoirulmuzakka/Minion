@@ -126,10 +126,14 @@ MinionResult L_BFGS_B::optimize() {
         }; 
 
         if (x0.empty()){
-            auto x0 = latin_hypercube_sampling(bounds, 1); 
+            x0 = latin_hypercube_sampling(bounds, 1); 
         };
+        
+        std::vector<double> xinit = {};
+        if (x0.size() == 1) xinit = x0[0]; 
+        else xinit = findBestPoint(x0);
+        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (xinit.data(), xinit.size());
 
-        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0[0].data(), x0[0].size());
         double final_f;
         int niter=0;
         auto fun = [&] (const Eigen::VectorXd& x, Eigen::VectorXd& grad) -> double {

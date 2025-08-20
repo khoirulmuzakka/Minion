@@ -129,8 +129,8 @@ class MinimizerBase:
             Objective function to be minimized. Must accept list[list[float]]. If the function operates on a single sample, it should be vectorized.
         bounds : list of tuple
             List of `(lower, upper)` bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If `None` (default), the algorithm will generate an initial population.
+        x0 : list[list[float]], optional
+            Initial guesses for the solution. 
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops when the relative improvement falls below this value. 
             Default is `1e-4`.
@@ -273,9 +273,9 @@ class GWO_DE(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -377,9 +377,9 @@ class NelderMead(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -413,7 +413,7 @@ class NelderMead(MinimizerBase):
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : 
-            raise Exception("x0 must not be none nor empty for Nelder-Mead to work!")
+            raise Exception("Initial guesses x0 must not be none nor empty for Nelder-Mead to work!")
         self.optimizer = cppNelderMead(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
 
     def optimize(self):
@@ -480,9 +480,9 @@ class LSHADE(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -606,9 +606,9 @@ class jSO(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -729,9 +729,9 @@ class JADE(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -857,9 +857,9 @@ class NLSHADE_RSP(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -965,9 +965,9 @@ class ABC(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1074,9 +1074,8 @@ class Dual_Annealing(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 : list[list[float]]
+            Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1123,6 +1122,7 @@ class Dual_Annealing(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        if x0 is None : raise RuntimeError("x0 can not be none or empty.")
         self.optimizer = cppDual_Annealing(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
@@ -1185,9 +1185,8 @@ class L_BFGS_B(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 : list[list[float]]
+            Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1237,6 +1236,7 @@ class L_BFGS_B(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        if x0 is None : raise RuntimeError("x0 can not be none or empty.")
         self.optimizer = cppL_BFGS_B(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
@@ -1296,9 +1296,8 @@ class L_BFGS(MinimizerBase):
                     return [fun(x) for x in X]
 
             
-        x0 : list
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 : list[list[float]]
+            Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1348,6 +1347,7 @@ class L_BFGS(MinimizerBase):
         """
         bounds = [(-10,10)]*len(x0)
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        if x0 is None : raise RuntimeError("x0 can not be none or empty.")
         self.optimizer = cppL_BFGS(self.func, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
@@ -1412,9 +1412,9 @@ class j2020(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1524,9 +1524,9 @@ class LSRTDE(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1634,9 +1634,9 @@ class ARRDE(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1757,9 +1757,9 @@ class Differential_Evolution(MinimizerBase):
             
         bounds : list of tuple
             List of (min, max) pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 :  list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize the population. 
+            If None (default), a random initialization within the given bounds is used.
         relTol : float, optional
             Relative tolerance for convergence. The algorithm stops if the relative 
             improvement in the objective function is below this value. Default is 1e-4.
@@ -1880,9 +1880,8 @@ class Minimizer(MinimizerBase):
 
         bounds : list of tuple
             List of `(min, max)` pairs defining the bounds for each decision variable.
-        x0 : list, optional
-            Initial guess for the solution. If None (default), a random initialization 
-            within the given bounds is used.
+        x0 : list[list[float]], optional
+            Initial guesses for the solution. 
         algo : str, optional
             The optimization algorithm to use. Default is `"ARRDE"`.  
             Available algorithms include:
@@ -1899,6 +1898,8 @@ class Minimizer(MinimizerBase):
             - `"ARRDE"` 
             - `"ABC"` (artificial bee colony)
             - `"DA"` (dual annealing)
+            - `"L_BFGS_B"` 
+            - `"L_BFGS"` 
 
         relTol : float, optional
             Relative tolerance for convergence. The optimization stops if the relative 
@@ -1920,12 +1921,12 @@ class Minimizer(MinimizerBase):
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
-        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC", "DA", "L_BFGS_B"]
+        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC", "DA", "L_BFGS_B", "L_BFGS"]
         if not (algo in all_algo) : 
             raise Exception("Uknownn algorithm. The algorithm must be one of these : ", all_algo)
         
-        if algo == "NelderMead" and x0 is None : 
-            raise Exception("x0 must not be none nor empty for Nelder-Mead to work!")
+        if (algo in ["NelderMead", "DA", "L_BFGS", "L_BFGS_B"])  and (x0 is None) : 
+            raise RuntimeError("x0 must not be none nor empty for Nelder-Mead to work!")
         
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppMinimizer(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, algo,relTol, maxevals, self.seed, self.options)

@@ -104,8 +104,9 @@ MinionResult L_BFGS::optimize() {
         N_points             = options.get<int> ("N_points_derivative", 1); 
         func_noise_ratio = options.get<double> ("func_noise_ratio", 1e-10);
         Nevals=0;
-
-        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (x0[0].data(), x0[0].size());
+        
+        auto bestx = findBestPoint(x0);
+        Eigen::VectorXd x=  Eigen::Map<Eigen::VectorXd> (bestx.data(), bestx.size());
         double final_f;
         int niter=0;
         auto fun = [&] (const Eigen::VectorXd& x, Eigen::VectorXd& grad) -> double {

@@ -71,6 +71,7 @@ public:
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
         MinimizerBase(func, bounds_, x0, data, callback, tol, maxevals, seed, options) { 
+            if (x0.empty()) throw std::runtime_error("Initial guesses x0 can not be empty!");
             actual_bounds = bounds;
             for (int i=0; i<bounds.size(); i++) bounds[i] = { bounds[i].first + dist_min, bounds[i].second - dist_min };
         };

@@ -71,7 +71,9 @@ public:
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {};
+        MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {
+            if (x0.empty()) throw std::runtime_error("Initial guesses x0 can not be empty!");
+        };
 
     /**
      * @brief Optimizes the objective function.

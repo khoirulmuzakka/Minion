@@ -42,7 +42,9 @@ void Dual_Annealing::initialize() {
 
 void Dual_Annealing::init(bool useX0){
     current_cand = latin_hypercube_sampling(bounds, 1)[0];
-    if (!x0.empty() && useX0) current_cand = x0[0];
+    if (!x0.empty() && useX0) {
+        current_cand = findBestPoint(x0);
+    };
     enforce_bounds(current_cand, bounds, boundStrategy);
     current_E = func({current_cand}, data)[0];
     if (current_E<best_E) {

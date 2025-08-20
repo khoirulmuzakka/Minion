@@ -58,6 +58,7 @@ private :
     int no_improve_counter=0;
     size_t bestIndex;
     double locality;
+    std::vector<double> xinit;
 };
 
 }

@@ -67,16 +67,20 @@ void callBack(minion::MinionResult* res) {
 
 int main(int argc, char* argv[]) {
     // List of optimization algorithms to test
-    std::vector<std::string> algoList = { "ARRDE", "LSHADE", "LSRTDE", "NLSHADE_RSP", "j2020", "jSO", "JADE"};
+    std::vector<std::string> algoList = { "ARRDE", "LSHADE", "LSRTDE", "NLSHADE_RSP", "j2020", "jSO",
+                                     "JADE", "L_BFGS_B", "L_BFGS", "DA", "ABC", "NelderMead"};
 
     // Define the dimensionality of the optimization problem
-    size_t dimension = 50;
+    size_t dimension = 20;
     
     // Define the search bounds for all dimensions
     std::vector<std::pair<double, double>> bounds = std::vector<std::pair<double, double>>(dimension, std::make_pair(-100.0, 100.0));
     
     // Initial guess (empty in this case, meaning random initialization is used)
-    std::vector<std::vector<double>> x0 = {};
+    std::vector<std::vector<double>> x0 = {}; //note that some algorithms such as NelderMead, DA, L_BFGS, L_BFGS_B require non-empty initial guess
+
+    //alternatively, you can add initial guesses into the x0 
+    x0 = minion::latin_hypercube_sampling(bounds, 2); //here, two initial guesses.
     
     // Maximum number of function evaluations
     size_t max_evals = dimension*1000;

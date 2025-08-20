@@ -288,6 +288,12 @@ class MinimizerBase {
             };
         };
 
+        std::vector<double> findBestPoint (const std::vector<std::vector<double>>& Xvec){
+            auto fvec = func(Xvec, data); 
+            auto bestInd = findArgMin(fvec); 
+            return Xvec[bestInd];
+        } 
+
     public:
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
