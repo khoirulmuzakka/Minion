@@ -67,7 +67,8 @@ PYBIND11_MODULE(minionpycpp, m) {
                       double, size_t, int, std::map<std::string, ConfigValue> >())
         .def_readwrite("callback", &MinimizerBase::callback)
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &MinimizerBase::optimize);
+        // Release the GIL while the long-running C++ optimize routine executes; pybind11 reacquires it for Python callbacks.
+        .def("optimize", &MinimizerBase::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<Differential_Evolution, MinimizerBase>(m, "Differential_Evolution")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -82,7 +83,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
-        .def("optimize", &Differential_Evolution::optimize)
+        .def("optimize", &Differential_Evolution::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readonly("meanCR", &Differential_Evolution::meanCR)
         .def_readonly("meanF", &Differential_Evolution::meanF)
         .def_readonly("stdCR", &Differential_Evolution::stdCR)
@@ -103,7 +104,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &j2020::optimize);
+        .def("optimize", &j2020::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<LSRTDE, MinimizerBase>(m, "LSRTDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -119,7 +120,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &LSRTDE::optimize);
+        .def("optimize", &LSRTDE::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<LSHADE, Differential_Evolution>(m, "LSHADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -135,7 +136,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &LSHADE::optimize)
+        .def("optimize", &LSHADE::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readonly("meanCR", &LSHADE::meanCR)
         .def_readonly("meanF", &LSHADE::meanF)
         .def_readonly("stdCR", &LSHADE::stdCR)
@@ -156,7 +157,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &jSO::optimize)
+        .def("optimize", &jSO::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readonly("meanCR", &jSO::meanCR)
         .def_readonly("meanF", &jSO::meanF)
         .def_readonly("stdCR", &jSO::stdCR)
@@ -177,7 +178,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &JADE::optimize)
+        .def("optimize", &JADE::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readonly("meanCR", &JADE::meanCR)
         .def_readonly("meanF", &JADE::meanF)
         .def_readonly("stdCR", &JADE::stdCR)
@@ -199,7 +200,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &MinimizerBase::optimize);
+        .def("optimize", &MinimizerBase::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<ABC, MinimizerBase>(m, "ABC")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -216,7 +217,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &ABC::optimize);
+        .def("optimize", &ABC::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<Dual_Annealing, MinimizerBase>(m, "Dual_Annealing")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -233,7 +234,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &Dual_Annealing::optimize);
+        .def("optimize", &Dual_Annealing::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<L_BFGS_B, MinimizerBase>(m, "L_BFGS_B")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -250,7 +251,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &L_BFGS_B::optimize);
+        .def("optimize", &L_BFGS_B::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<L_BFGS, MinimizerBase>(m, "L_BFGS")
         .def(py::init<MinionFunction, const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
@@ -265,7 +266,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &MinimizerBase::history)
-        .def("optimize", &L_BFGS::optimize);
+        .def("optimize", &L_BFGS::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -281,7 +282,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &ARRDE::optimize)
+        .def("optimize", &ARRDE::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readonly("meanCR", &ARRDE::meanCR)
         .def_readonly("meanF", &ARRDE::meanF)
         .def_readonly("stdCR", &ARRDE::stdCR)
@@ -302,7 +303,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
             
-        .def("optimize", &GWO_DE::optimize)
+        .def("optimize", &GWO_DE::optimize, py::call_guard<py::gil_scoped_release>())
         .def_readwrite("alpha_score", &GWO_DE::alpha_score)
         .def_readwrite("beta_score", &GWO_DE::beta_score)
         .def_readwrite("delta_score", &GWO_DE::delta_score)
@@ -326,7 +327,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
-        .def("optimize", &NelderMead::optimize);
+        .def("optimize", &NelderMead::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<Minimizer>(m, "Minimizer")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -344,7 +345,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("options") = std::map<std::string, ConfigValue>())
 
         .def_readwrite("history", &Minimizer::history)
-        .def("optimize", &Minimizer::optimize);
+        .def("optimize", &Minimizer::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2014Functions>(m, "CEC2014Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))

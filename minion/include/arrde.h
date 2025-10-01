@@ -6,8 +6,12 @@
 
 namespace minion {
 
+#include <cmath>
+#include <algorithm>
+#include <iostream>
+
 /**
- * @class ARRDE : Adaptive Restart-Refine - Differential Evolution 
+ * @class ARRDE : Adaptive Restart-Refine - Differential Evolution
  * @brief Class implementing the ARRDE algorithm.
  * 
  */
@@ -38,7 +42,7 @@ class ARRDE : public Differential_Evolution {
         double restartRelTol;
         double refineRelTol;
         double strartRefine=0.8;
-        size_t Nrestart=1; //nitially set to 1, first run is consederee a restart
+        size_t Nrestart=1; //nitially set to 1, first run is consedered a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;
         double maxRestart =1;
@@ -103,6 +107,21 @@ class ARRDE : public Differential_Evolution {
          * @brief Remove element from a avector
          */
         void removeElement(std::vector<size_t>& vec, size_t x);
+
+        double restart_prob(double x, double y, double alpha_ = 500, double m_=2.0) const {
+            // s(x) = max(0, 0.001 - x)
+            double s = std::max(0.0, 0.005 - x);
+            if (s == 0.0) return 0.0;
+
+            // x-dependence
+            double x_part = 1.0 - std::exp(-alpha_ * s);
+
+            // y-dependence
+            double h = (y < 0.5) ? 1.0 : std::max(0.0, 1.0 - m_ * (y - 0.5));
+
+            return x_part * h;
+        }
+
 
     public :
 

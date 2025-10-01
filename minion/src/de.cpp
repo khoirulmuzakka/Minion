@@ -93,7 +93,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
             }
         }
 
-    }  else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
+    }   else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
         auto sorted_indices = argsort(fitness, true);
         std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
         auto pbestind = random_choice(top_p_indices, 1).front();

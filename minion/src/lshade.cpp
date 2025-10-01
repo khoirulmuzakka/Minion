@@ -117,12 +117,11 @@ void LSHADE::adaptParameters() {
     std::vector<double> new_CR(population.size());
     std::vector<double> new_F(population.size());
 
-    std::vector<size_t> allind, selecIndices; 
-    for (int i=0; i<memorySize; ++i){ allind.push_back(i);};
+    std::vector<size_t> selecIndices;
     if (population.size() <= memorySize){
-        selecIndices = random_choice(allind, population.size(), false); //random choice without replacement when pop size is less than memeory size
+        selecIndices = random_choice(memorySize, population.size(), false); 
     } else {
-        selecIndices = random_choice(allind, population.size(), true); 
+        selecIndices = random_choice(memorySize, population.size(), true); 
     };
     for (int i = 0; i < population.size(); ++i) {
         do {

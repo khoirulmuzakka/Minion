@@ -1,5 +1,7 @@
 import sys
 import os 
+import ctypes
+from functools import wraps
 
 current_file_directory = os.path.dirname(os.path.abspath(__file__))
 custom_path = os.path.join(current_file_directory, 'lib')
@@ -21,6 +23,31 @@ from minionpycpp import ABC as cppABC
 from minionpycpp import Dual_Annealing as cppDual_Annealing
 from minionpycpp import L_BFGS_B as cppL_BFGS_B
 from minionpycpp import L_BFGS as cppL_BFGS
+
+
+_PyGILState_Ensure = ctypes.pythonapi.PyGILState_Ensure
+_PyGILState_Ensure.restype = ctypes.c_void_p
+_PyGILState_Ensure.argtypes = []
+
+_PyGILState_Release = ctypes.pythonapi.PyGILState_Release
+_PyGILState_Release.restype = None
+_PyGILState_Release.argtypes = [ctypes.c_void_p]
+
+
+def _gil_protected(func):
+    """Wrap a callable so it always executes with the Python GIL held."""
+    if func is None:
+        return None
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        state = _PyGILState_Ensure()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _PyGILState_Release(state)
+
+    return wrapper
 
 
 from typing import Callable, Dict, List, Optional, Any
@@ -185,6 +212,11 @@ class MinimizerBase:
         self.callback = callback  
         self.cppCallback = CalllbackWrapper(self.callback) if callback is not None else None
 
+        # The C++ backend now releases the GIL around the main optimization loop.
+        # Wrap the objective and callback so they always reacquire the GIL when invoked.
+        self._func_for_cpp = _gil_protected(self.func)
+        self._callback_for_cpp = _gil_protected(self.cppCallback) if self.cppCallback is not None else None
+
         self.relTol = relTol
         self.maxevals = maxevals
         self.seed = seed if seed is not None else -1
@@ -320,7 +352,7 @@ class GWO_DE(MinimizerBase):
 
         """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppGWO_DE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppGWO_DE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -419,7 +451,7 @@ class NelderMead(MinimizerBase):
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : 
             raise Exception("Initial guesses x0 must not be none nor empty for Nelder-Mead to work!")
-        self.optimizer = cppNelderMead(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppNelderMead(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
 
     def optimize(self):
         """
@@ -541,7 +573,7 @@ class LSHADE(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppLSHADE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppLSHADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -663,7 +695,7 @@ class jSO(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppjSO(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppjSO(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -792,7 +824,7 @@ class JADE(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppJADE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppJADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -908,7 +940,7 @@ class NLSHADE_RSP(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppNLSHADE_RSP(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppNLSHADE_RSP(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1014,7 +1046,7 @@ class ABC(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppABC(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppABC(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1128,7 +1160,7 @@ class Dual_Annealing(MinimizerBase):
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppDual_Annealing(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppDual_Annealing(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1242,7 +1274,7 @@ class L_BFGS_B(MinimizerBase):
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppL_BFGS_B(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppL_BFGS_B(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1353,7 +1385,7 @@ class L_BFGS(MinimizerBase):
         bounds = [(-10,10)]*len(x0[0])
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppL_BFGS(self.func, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppL_BFGS(self._func_for_cpp, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1467,7 +1499,7 @@ class j2020(MinimizerBase):
 
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppj2020(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppj2020(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1578,7 +1610,7 @@ class LSRTDE(MinimizerBase):
 
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppLSRTDE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppLSRTDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1694,7 +1726,7 @@ class ARRDE(MinimizerBase):
         """
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppARRDE(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppARRDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1813,7 +1845,7 @@ class Differential_Evolution(MinimizerBase):
 
 
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppDifferential_Evolution(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppDifferential_Evolution(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
@@ -1934,7 +1966,7 @@ class Minimizer(MinimizerBase):
             raise RuntimeError("x0 must not be none nor empty for Nelder-Mead to work!")
         
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppMinimizer(self.func, self.bounds, self.x0cpp, self.data,  self.cppCallback, algo,relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
