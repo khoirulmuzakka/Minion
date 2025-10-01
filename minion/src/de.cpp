@@ -37,7 +37,19 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
     double Find = F[idx];
     size_t pind = p[idx];
     std::vector<double> mutant;
-    auto best = population[findArgMin(fitness)];
+    if (sorted_indices.empty() && !fitness.empty()) {
+        sorted_indices = argsort(fitness, true);
+    }
+    size_t best_idx = sorted_indices.empty() ? findArgMin(fitness) : sorted_indices.front();
+    auto best = population[best_idx];
+    auto select_pbest_index = [&](size_t top_limit) {
+        if (sorted_indices.empty()) {
+            throw std::runtime_error("Sorted indices not available for p-best selection.");
+        }
+        size_t top_count = top_limit == 0 ? 1 : std::min(top_limit, sorted_indices.size());
+        std::vector<size_t> top(sorted_indices.begin(), sorted_indices.begin() + top_count);
+        return random_choice(top, 1).front();
+    };
 
     if (mutation_strategy == "best1bin" || mutation_strategy == "best1exp") {
         auto indices = random_choice<int>(available_indices, 2);
@@ -65,9 +77,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
             mutant[i] += Find * (best[i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
         }
     } else if (mutation_strategy == "current_to_pbest1bin" || mutation_strategy == "current_to_pbest1exp") {   
-        auto sorted_indices = argsort(fitness, true);
-        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
-        auto pbestind = random_choice(top_p_indices, 1).front();
+        auto pbestind = select_pbest_index(pind);
         auto indices = random_choice(available_indices, 2);
         r1 = indices[0];
         r2 = indices[1];
@@ -76,9 +86,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
             mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
         }
     } else if (mutation_strategy == "current_to_pbest_A_1bin" || mutation_strategy == "current_to_pbest_A_1exp") {   
-        auto sorted_indices = argsort(fitness, true);
-        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
-        auto pbestind = random_choice(top_p_indices, 1).front();
+        auto pbestind = select_pbest_index(pind);
 
         auto indices = random_choice(available_indices, 1);
         auto indices2 = random_choice(archive.size()+population.size(), 1);
@@ -94,9 +102,7 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
         }
 
     }   else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
-        auto sorted_indices = argsort(fitness, true);
-        std::vector<size_t> top_p_indices(sorted_indices.begin(), sorted_indices.begin() + pind);
-        auto pbestind = random_choice(top_p_indices, 1).front();
+        auto pbestind = select_pbest_index(pind);
 
         auto indices = random_choice(available_indices, 1);
         auto indices2 = random_choice(archive.size()+population.size(), 1);
@@ -190,6 +196,11 @@ void Differential_Evolution::adaptParameters(){
 void Differential_Evolution::doDE_operation(std::vector<std::vector<double>>& trials){
     size_t popsize = population.size();
     std::vector<double> mutant;
+    if (!fitness.empty()) {
+        sorted_indices = argsort(fitness, true);
+    } else {
+        sorted_indices.clear();
+    }
     for (int i = 0; i < popsize; ++i) {
         mutant = mutate(i);
         trials[i] = crossover(population[i], mutant, CR[i]);

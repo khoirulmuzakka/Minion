@@ -71,6 +71,7 @@ protected :
     std::vector<double> fitness_before;
     size_t no_improve_counter=0;
     double Fw=1.0;
+    std::vector<size_t> sorted_indices;
 
     /**
      * @brief Initializes the population and other parameters.

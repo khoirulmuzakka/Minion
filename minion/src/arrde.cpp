@@ -313,12 +313,8 @@ void ARRDE::adaptParameters() {
 
     //update p 
     p = std::vector<size_t>(population.size(), 2);
-    size_t ptemp;
-    double sr = S_CR.size()/double(population.size());
     for (int i = 0; i < population.size(); ++i) {
-        double fraction = rand_gen(0.05, 0.3);
-        ptemp = std::max(2, static_cast<int>(round(fraction * population.size())));
-        p[i] = ptemp;
+        p[i] = std::max(2, static_cast<int>(round(0.2 * population.size())));
     };
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
@@ -417,7 +413,7 @@ std::vector<double> ARRDE::applyLocalConstraints(const std::vector<double>& p) {
     if (inside){
         for (size_t j=0; j<p.size(); j++){
             if (!checkOutsideLocals(p[j], locals[j])){
-                if (rand_gen()< 1.0) ret[j] = sample_outside_local_bounds(bounds[j].first, bounds[j].second, locals[j]);
+                ret[j] = sample_outside_local_bounds(bounds[j].first, bounds[j].second, locals[j]);
             };
         }
     }
