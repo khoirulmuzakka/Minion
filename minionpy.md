@@ -64,5 +64,5 @@ If you use **MinionPy** in your research or projects, we would be grateful if yo
 
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
 > *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
-> Zenodo. [https://doi.org/10.5281/zenodo.14893994](https://doi.org/10.5281/zenodo.14794240)  
+> Zenodo. [https://doi.org/10.5281/zenodo.14794239](https://doi.org/10.5281/zenodo.14794239)  
 
