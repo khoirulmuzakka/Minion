@@ -1,4 +1,9 @@
 # Changelog
+## [0.2.4] - 2025-10-02
+### Changed
+- GIL handling during python calls. 
+- An improved mutation implementation.
+
 ## [0.2.3] - 2025-08-21
 ### Changed
 - Classical algorithms such as L-BFGS pick the best guess from the given guesses during initialization. 

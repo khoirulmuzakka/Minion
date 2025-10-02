@@ -5,6 +5,14 @@ Changelog
    :local:
    :depth: 2
 
+Version 0.2.4 - 2025-10-02
+--------------------------
+
+**Changed**
+
+- GIL handling during python calls. 
+- An improved mutation implementation.
+
 Version 0.2.3 - 2025-08-21
 --------------------------
 
