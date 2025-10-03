@@ -217,11 +217,17 @@ void printVectorOfVectors(const std::vector<std::vector<double>>& vec) {
 }
 
 std::vector<double> normalize_vector(const std::vector<double>& input) {
+    const double epsilon = 1e-12;
     double sum = std::accumulate(input.begin(), input.end(), 0.0);
+    double denom = sum;
+    if (!std::isfinite(denom)) {
+        denom = 0.0;
+    }
+    denom += (denom >= 0.0 ? epsilon : -epsilon);
+
     std::vector<double> normalized(input.size());
-    for (size_t i = 0; i < input.size(); ++i) {
-        normalized[i] = input[i] / sum;
-    };
+    std::transform(input.begin(), input.end(), normalized.begin(),
+                   [denom](double value) { return value / denom; });
     return normalized;
 }
 

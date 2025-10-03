@@ -9,7 +9,7 @@ namespace minion {
  * @file nlshader_sp.h
  * @brief Header file for the NLSHADE_RSP class, which implements a minimization algorithm.
  * 
- * My own implementation of the NLSHADE_RSP algorithm.
+ * Implementation of the NLSHADE_RSP algorithm.
  * Reference : V. Stanovov, S. Akhmedova and E. Semenkin, "NL-SHADE-RSP Algorithm with Adaptive Archive and Selective Pressure for CEC 2021 Numerical Optimization," 2021 IEEE Congress on Evolutionary Computation (CEC), Kraków, Poland, 2021, pp. 809-816, doi: 10.1109/CEC45853.2021.9504959.
  */
 

@@ -9,7 +9,7 @@ namespace minion {
  * @file lsrtde.h
  * @brief Header file for the LSRTDE class, which implements a minimization algorithm.
  * 
- * My own implementation of the LSRTDE algorithm.
+ * Implementation of the LSRTDE algorithm.
  * Reference : V. Stanovov and E. Semenkin, "Success Rate-based Adaptive Differential Evolution L-SRTDE for CEC 2024 Competition," 2024 IEEE Congress on Evolutionary Computation (CEC), Yokohama, Japan, 2024, pp. 1-8, doi: 10.1109/CEC60901.2024.10611907.
  */
 

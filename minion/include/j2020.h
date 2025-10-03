@@ -10,7 +10,7 @@ namespace minion {
  * @file j2020.h
  * @brief Header file for the j2020 class.
  *
- * My own implementation of the j2020 algorithm.
+ * Implementation of the j2020 algorithm.
  * Reference : J. Brest, M. S. Maučec and B. Bošković, "Differential Evolution Algorithm for Single Objective Bound-Constrained Optimization: Algorithm j2020," 2020 IEEE Congress on Evolutionary Computation (CEC), Glasgow, UK, 2020, pp. 1-8, doi: 10.1109/CEC48606.2020.9185551.
  */
 
