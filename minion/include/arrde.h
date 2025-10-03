@@ -1,14 +1,14 @@
 #ifndef ARRDE_H
 #define ARRDE_H
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+
 #include "de.h"
 #include "utility.h"
 
 namespace minion {
-
-#include <cmath>
-#include <algorithm>
-#include <iostream>
 
 /**
  * @class ARRDE : Adaptive Restart-Refine - Differential Evolution
@@ -41,7 +41,7 @@ class ARRDE : public Differential_Evolution {
         double reltol;
         double restartRelTol;
         double refineRelTol;
-        double strartRefine=0.8;
+        double startRefine=0.8;
         size_t Nrestart=1; //nitially set to 1, first run is consedered a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;
@@ -66,7 +66,7 @@ class ARRDE : public Differential_Evolution {
          * @param local The list of local intervals.
          * @return True if x is outside all intervals, false otherwise.
          */
-        bool checkOutsideLocals(double x, std::vector<std::pair<double, double>> local);
+        bool checkOutsideLocals(double x, const std::vector<std::pair<double, double>>& local);
 
         /**
          * @brief Merges overlapping intervals.
@@ -103,10 +103,14 @@ class ARRDE : public Differential_Evolution {
          */
         void update_locals();
 
-        /**
-         * @brief Remove element from a avector
-         */
-        void removeElement(std::vector<size_t>& vec, size_t x);
+        void adjustPopulationSize();
+        void adjustArchiveSize();
+        void processRestartCycle();
+        void executeRestart(size_t targetSize);
+        void executeRefine(size_t targetSize);
+        void executeFinalRefine(size_t targetSize);
+        void updateParameterMemory();
+        void resampleControlParameters();
 
         double restart_prob(double x, double y, double alpha_ = 500, double m_=2.0) const {
             // s(x) = max(0, 0.001 - x)

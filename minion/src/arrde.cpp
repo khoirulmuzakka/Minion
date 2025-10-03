@@ -1,465 +1,501 @@
 #include "arrde.h" 
 
+#include <cstddef>
+
 namespace minion {
 
-void ARRDE::initialize  (){
-    auto defaultKey = DefaultSettings().getDefaultSettings("ARRDE");
-    for (auto el : optionMap) defaultKey[el.first] = el.second;
-    Options options(defaultKey);
+void ARRDE::initialize() {
+    auto defaults = DefaultSettings().getDefaultSettings("ARRDE");
+    for (const auto& option : optionMap) {
+        defaults[option.first] = option.second;
+    }
+    Options options(defaults);
 
-    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
-    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
-    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
-        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+    boundStrategy = options.get<std::string>("bound_strategy", "reflect-random");
+    const std::vector<std::string> allowedBoundStrategies = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
+    if (std::find(allowedBoundStrategies.begin(), allowedBoundStrategies.end(), boundStrategy) == allowedBoundStrategies.end()) {
+        std::cerr << "Bound stategy '" << boundStrategy << "' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<int> ("population_size", 0) ; 
-    size_t defaultPopsize = size_t( std::max( std::min(2.0*bounds.size()+ 1.0*std::pow(log10(maxevals), 2.0), 1000.0), 10.0)); 
-    if (populationSize==0 ) populationSize = defaultPopsize;
-    if (populationSize<bounds.size()) populationSize = std::max(bounds.size(), size_t(10));
+    const auto dimension = bounds.size();
+    const double logComponent = std::pow(std::log10(maxevals), 2.0);
+    const double defaultPopulation = std::clamp(2.0 * static_cast<double>(dimension) + logComponent, 10.0, 1000.0);
 
-    maxPopSize_finalRefine= ( std::max( std::min(1.0*bounds.size() + 1.0*std::pow(log10(maxevals), 2.0) , 500.0), 10.0)); 
-    minPopSize = std::min(std::max(options.get<int> ("minimum_population_size", 4), 4), int(maxPopSize_finalRefine)) ; 
+    const int configuredPopulation = options.get<int>("population_size", 0);
+    if (configuredPopulation > 0) {
+        populationSize = static_cast<size_t>(configuredPopulation);
+    } else {
+        populationSize = static_cast<size_t>(defaultPopulation);
+    }
+    populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(10)));
+
+    const double refinePopulation = std::clamp(static_cast<double>(dimension) + logComponent, 10.0, 500.0);
+    maxPopSize_finalRefine = static_cast<size_t>(refinePopulation);
+    minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
+
     mutation_strategy = "current_to_pbest_A_1bin";
 
+    archive_size_ratio = options.get<double>("archive_size_ratio", 2.0);
+    if (archive_size_ratio < 0.0) {
+        archive_size_ratio = 2.0;
+    }
 
-    archive_size_ratio = options.get<double> ("archive_size_ratio", 2.0) ; 
-    if (archive_size_ratio < 0.0) archive_size_ratio=2.0;
     memorySizeRatio = archive_size_ratio;
-    memorySize= size_t( memorySizeRatio*populationSize);
+    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
 
     M_CR = rand_gen(0.5, 0.8, memorySize);
-    M_F =  rand_gen(0.2, 0.5, memorySize);
-    reltol =options.get<double>("converge_reltol", 0.005);
+    M_F = rand_gen(0.2, 0.5, memorySize);
+
+    reltol = options.get<double>("converge_reltol", 0.005);
     restartRelTol = reltol;
     refineRelTol = restartRelTol;
 
-    decrease=options.get<double>("refine_decrease_factor", 0.9);
-    strartRefine= options.get<double>("restart-refine-duration", 0.8);
-    maxRestart =options.get<int>("maximum_consecutive_restarts", 2);
+    decrease = options.get<double>("refine_decrease_factor", 0.9);
+    startRefine = options.get<double>("restart-refine-duration", 0.8);
+    maxRestart = options.get<int>("maximum_consecutive_restarts", 2);
 
-    useLatin=true;
-    hasInitialized=true;
+    useLatin = true;
+    hasInitialized = true;
 }
 
 
 void ARRDE::adaptParameters() {
+    adjustPopulationSize();
+    adjustArchiveSize();
 
-    //-------------------- update population size -------------------------------------//
-    double Nevals_eff = double(Nevals), Maxevals_eff = double (strartRefine*maxevals); 
-    double minPopSize_eff = std::max(4.0,1.0*bounds.size()); 
-    double maxPopSize_eff = double(populationSize); 
-    if (!final_refine) reduction_strategy="linear"; 
-    else reduction_strategy="linear"; 
-    if (final_refine){
-        Nevals_eff = double(Nevals)-double(Neval_stratrefine);
-        Maxevals_eff =  maxevals-double(Neval_stratrefine);
-        minPopSize_eff=  double(minPopSize); 
-        maxPopSize_eff = double(maxPopSize_finalRefine);
+    if (!final_refine && Nevals >= startRefine * maxevals) {
+        init_final_refine = true;
     }
-    // update population size
-    size_t new_population_size;
-    if (reduction_strategy=="linear"){
-        new_population_size =size_t( (minPopSize_eff - maxPopSize_eff) * (Nevals_eff/Maxevals_eff ) + maxPopSize_eff);
-    } else if (reduction_strategy=="exponential") {
-        new_population_size = size_t(maxPopSize_eff * std::pow(minPopSize_eff/maxPopSize_eff, double(Nevals_eff)/double(Maxevals_eff)));
-    } else if (reduction_strategy=="agsk"){
-        double ratio = Nevals_eff/Maxevals_eff;
-        new_population_size = size_t(round(maxPopSize_eff + (minPopSize_eff - maxPopSize_eff) * std::pow(ratio, 1.0-ratio) ));
-    } else {
-        throw std::logic_error("Uknnown reduction strategy");
-    };
-    
-    if (new_population_size<minPopSize_eff) new_population_size= size_t(minPopSize_eff);
-    if (population.size() > new_population_size) {
-        std::vector<size_t> sorted_index = argsort(fitness, true);
 
-        std::vector<std::vector<double>> new_population_subset(new_population_size);
-        std::vector<double> new_fitness_subset(new_population_size);
-        for (int i = 0; i < new_population_size; ++i) {
-            new_population_subset[i] = population[ sorted_index [i]];
-            new_fitness_subset[i] = fitness[ sorted_index [i]];
+    const double spread = calcStdDev(fitness) / std::fabs(calcMean(fitness));
+    if (spread <= reltol || init_final_refine) {
+        processRestartCycle();
+    }
+
+    updateParameterMemory();
+    resampleControlParameters();
+}
+
+void ARRDE::adjustPopulationSize() {
+    double nevalsEff = static_cast<double>(Nevals);
+    double maxevalsEff = startRefine * static_cast<double>(maxevals);
+    double minSizeEff = std::max(4.0, static_cast<double>(bounds.size()));
+    double maxSizeEff = static_cast<double>(populationSize);
+
+    reduction_strategy = "linear";
+    if (final_refine) {
+        nevalsEff = static_cast<double>(Nevals) - static_cast<double>(Neval_stratrefine);
+        maxevalsEff = static_cast<double>(maxevals) - static_cast<double>(Neval_stratrefine);
+        minSizeEff = static_cast<double>(minPopSize);
+        maxSizeEff = static_cast<double>(maxPopSize_finalRefine);
+    }
+
+    if (maxevalsEff <= 0.0) {
+        maxevalsEff = 1.0;
+    }
+
+    size_t newPopulationSize = 0;
+    if (reduction_strategy == "linear") {
+        newPopulationSize = static_cast<size_t>((minSizeEff - maxSizeEff) * (nevalsEff / maxevalsEff) + maxSizeEff);
+    } else if (reduction_strategy == "exponential") {
+        const double ratio = minSizeEff / maxSizeEff;
+        newPopulationSize = static_cast<size_t>(maxSizeEff * std::pow(ratio, nevalsEff / maxevalsEff));
+    } else if (reduction_strategy == "agsk") {
+        const double progress = nevalsEff / maxevalsEff;
+        newPopulationSize = static_cast<size_t>(std::round(maxSizeEff + (minSizeEff - maxSizeEff) * std::pow(progress, 1.0 - progress)));
+    } else {
+        throw std::logic_error("Unknown reduction strategy");
+    }
+
+    const size_t minAllowedSize = static_cast<size_t>(std::max(1.0, std::floor(minSizeEff)));
+    newPopulationSize = std::max(newPopulationSize, minAllowedSize);
+
+    if (population.size() > newPopulationSize) {
+        const auto sortedIndex = argsort(fitness, true);
+        std::vector<std::vector<double>> trimmedPopulation(newPopulationSize);
+        std::vector<double> trimmedFitness(newPopulationSize);
+
+        for (size_t i = 0; i < newPopulationSize; ++i) {
+            trimmedPopulation[i] = population[sortedIndex[i]];
+            trimmedFitness[i] = fitness[sortedIndex[i]];
         }
 
-        population = new_population_subset;
-        fitness = new_fitness_subset;
-    };
-
-    //-------------------- update archive size -------------------------------------//
-    //update archive size
-    size_t archiveSize= static_cast<size_t> (archive_size_ratio*population.size());
-    while (archive.size() > archiveSize) {
-        size_t random_index = rand_int(archive.size());
-        archive.erase(archive.begin() + random_index);
+        population = std::move(trimmedPopulation);
+        fitness = std::move(trimmedFitness);
     }
+}
+
+void ARRDE::adjustArchiveSize() {
+    const size_t targetSize = static_cast<size_t>(archive_size_ratio * static_cast<double>(population.size()));
+    while (archive.size() > targetSize) {
+        const size_t randomIndex = rand_int(archive.size());
+        archive.erase(archive.begin() + static_cast<std::ptrdiff_t>(randomIndex));
+    }
+}
+
+void ARRDE::processRestartCycle() {
+    if (!fitness_records.empty()) {
+        bestOverall = findMin(fitness_records);
+    }
+
+    if (first_run || refine || final_refine) {
+        MCR_records.insert(MCR_records.end(), M_CR.begin(), M_CR.end());
+        MF_records.insert(MF_records.end(), M_F.begin(), M_F.end());
+    }
+
+    for (const auto& individual : population) {
+        population_records.push_back(individual);
+    }
+    for (double value : fitness) {
+        fitness_records.push_back(value);
+    }
+
+    update_locals();
+
+    const size_t previousPopulationSize = population.size();
+
+    fitness_before.clear();
+    archive.clear();
+    population.clear();
+    fitness.clear();
+
+    const bool shouldRestart = (bestOverall <= best_fitness && Nrestart < maxRestart) || first_run || final_refine || refine;
+    if (shouldRestart) {
+        restart = true;
+        refine = false;
+    } else {
+        if (!final_refine) {
+            refine = true;
+        }
+
+        if (init_final_refine) {
+            restart = false;
+            refine = false;
+            final_refine = true;
+            init_final_refine = false;
+        } else {
+            restart = false;
+        }
+    }
+
+    if (restart) {
+        executeRestart(previousPopulationSize);
+    } else if (refine) {
+        executeRefine(previousPopulationSize);
+    } else if (final_refine) {
+        executeFinalRefine(previousPopulationSize);
+    }
+}
+
+void ARRDE::executeRestart(size_t targetSize) {
+    if (!final_refine) {
+        population = random_sampling(bounds, targetSize);
+        if (!locals.empty()) {
+            for (auto& individual : population) {
+                individual = applyLocalConstraints(individual);
+            }
+        }
+        fitness = func(population, data);
+        Nevals += population.size();
+    } else {
+        const auto randomIndex = random_choice(fitness_records.size(), targetSize, true);
+        population.reserve(targetSize);
+        fitness.reserve(targetSize);
+        for (size_t idx : randomIndex) {
+            population.push_back(population_records[idx]);
+            fitness.push_back(fitness_records[idx]);
+        }
+    }
+
+    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    memoryIndex = 0;
+
+    const size_t bestIndex = findArgMin(fitness);
+    best_fitness = fitness[bestIndex];
+    best = population[bestIndex];
+
+    reltol = final_refine ? 0.0 : restartRelTol;
+    ++Nrestart;
 
     if (!final_refine) {
-        if (Nevals >= strartRefine*maxevals) init_final_refine=true;
-    }
-    
-    //-------------------- Restart population if necessary. Set restart, refine status -------------------------------------//
-    double spread = calcStdDev(fitness)/fabs(calcMean(fitness));
-    if (spread <= reltol || init_final_refine) {
-        if (!fitness_records.empty()) bestOverall = findMin(fitness_records);
-
-        if (first_run || refine || final_refine) {
-            for (auto el : M_CR) MCR_records.push_back(el);
-            for (auto el : M_F) MF_records.push_back(el);
-        };
-
-        //if (final_refine)  std::cout << "\t\tPopulation converge " << Nevals << " " << bestOverall << " "<< best_fitness << " " << population.size() << " " << reltol << "\n";
-        for (int i =0; i<population.size(); i++){
-            population_records.push_back(population[i]);
-            fitness_records.push_back(fitness[i]);
-        }
-        update_locals();
-
-        size_t currSize = population.size();
-        size_t currArciveSize = archive.size();
-
-        fitness_before.clear();
-        archive.clear();
-        population.clear(); 
-        fitness.clear();
-        
-        ///std::cout << first_run << " " <<  refine << " " << restart << "\n";
-        if ( (bestOverall<=best_fitness && Nrestart<maxRestart) || first_run || final_refine || refine ) restart = true; 
-        else {
-            if (!final_refine ) {
-                restart = false;
-                refine = true;
-             }; 
-             
-            if (init_final_refine){
-                restart= false; 
-                refine = false;
-                final_refine = true;
-                init_final_refine= false;
-            }
-        }
-
-        if (restart) {
-            if (!final_refine) {
-                population = random_sampling(bounds, currSize);
-                if (!locals.empty()){
-                    for (size_t i=0; i<population.size(); i++) {
-                        population[i] = applyLocalConstraints(population[i]);
-                    };
-                };
-
-                fitness = func(population, data);
-                Nevals+=population.size();
-                //std::cout << "restart .... " << population.size() << "\n";
-
-            } else {
-                std::vector<size_t> random_indices;
-                random_indices = random_choice(fitness_records.size(), currSize, true);
-                for (int k=0; k<currSize; k++){
-                    population.push_back(population_records[random_indices[k]]); 
-                    fitness.push_back(fitness_records[random_indices[k]]);
-                }
-                //std::cout << "Final refine restart .... " << population.size() << "\n";
-            }
-
-            memorySize = size_t( memorySizeRatio*population.size());
-            memoryIndex=0;
-
-            size_t best_idx = findArgMin(fitness);
-            best_fitness = fitness[best_idx]; 
-            best = population[best_idx];
-
-            reltol= restartRelTol;
-            if (final_refine) reltol= 0.0;
-            Nrestart++;
-
-            if (!final_refine){
-                M_CR =  rand_gen(0.5, 0.8, memorySize);
-                M_F =  rand_gen(0.2, 0.5, memorySize);
-            } else {
-                M_CR = random_choice(MCR_records, memorySize, true); 
-                M_F = random_choice(MF_records, memorySize, true);  
-            }
-            
-            restart = true; 
-            refine = false;
-            first_run = false;
-
-        } else if (refine){
-            std::vector<size_t> random_indices;
-            random_indices = random_choice(fitness_records.size(), fitness_records.size(), false);
-            for (int i=0;i<currSize; i++){
-                population.push_back(population_records[random_indices[i]]);
-                fitness.push_back(fitness_records[random_indices[i]]);
-            }
-
-            refineRelTol = decrease*refineRelTol ; 
-            reltol = refineRelTol;
-
-            memorySize = size_t( memorySizeRatio*population.size());
-            memoryIndex=0;
-
-            //update best individual
-            size_t best_idx = findArgMin(fitness);
-            best_fitness = fitness[best_idx]; 
-            best = population[best_idx];
-            Nrestart=0;
-            
-            M_CR = random_choice(MCR_records, memorySize, true); 
-            M_F = random_choice(MF_records, memorySize, true);  
-
-            restart = false; 
-            refine = true;
-            //std::cout << "--------- refine .... " << population.size() << "\n";
-
-        } else if (final_refine){
-            //std::cout << "Final refine " << bestOverall << "\n";
-            currSize = maxPopSize_finalRefine;
-            currArciveSize = size_t(archive_size_ratio*currSize);
-            Neval_stratrefine=Nevals;
-
-            std::vector<size_t> random_indices;
-            if (fitness_records.size()<currSize) {
-                random_indices = random_choice(fitness_records.size(), currSize, true);
-            } else random_indices = argsort(fitness_records, true);
-        
-            for (int k=0; k<currSize; k++){
-                population.push_back(population_records[random_indices[k]]); 
-                fitness.push_back(fitness_records[random_indices[k]]);
-            }
-
-            reltol = 0.0;
-            memorySize = size_t( memorySizeRatio*population.size());
-            memoryIndex=0;
-
-            //update best individual
-            size_t best_idx = findArgMin(fitness);
-            best_fitness = fitness[best_idx]; 
-            best = population[best_idx];
-
-            refine=false;
-            restart = false;
-            first_run=false;
-
-            M_CR = random_choice(MCR_records, memorySize, true); 
-            M_F = random_choice(MF_records, memorySize, true);  
-            maxRestart=1e+300;
-            //std::cout << "------ Final Refine .... " << population.size() << "\n";
-        }   
-
-    };     
-            
-  
-    //-------------------- update CR, F -------------------------------------//
-    //update  weights and memory
-    std::vector<double> S_CR, S_F,  weights, weights_F;
-    
-    if (!fitness_before.empty()){
-        for (int i = 0; i < population.size(); ++i) {
-            if (trial_fitness[i] < fitness_before[i]) {
-                //double w = fabs( (fitness_before[i] - trial_fitness[i]) /(1.0+fabs(fitness_before[i])));
-                double w = fabs( fitness_before[i] - trial_fitness[i]);
-                S_CR.push_back(CR[i]);
-                S_F.push_back(F[i]);
-                weights.push_back(w);
-                weights_F.push_back( w*F[i]);
-            };
-        }
-    };
-    
-    bool hasUpdate=false;
-    if (!S_CR.empty()) {
-        double mCR, sCR, mF, sF;
-        weights = normalize_vector(weights); 
-        weights_F = normalize_vector(weights_F);
-
-        std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
-        std::tie(mF, sF) = getMeanStd(S_F, weights_F);
-        M_CR[memoryIndex] = mCR ; 
-        M_F[memoryIndex] = mF; 
-        hasUpdate=true;
-    }
-
-    if (hasUpdate){
-        if (memoryIndex == (memorySize-1)) memoryIndex =0;
-        else memoryIndex++;
-    };
-
-    //update F, CR
-    F= std::vector<double>(population.size(), 0.5);
-    CR= std::vector<double>(population.size(), 0.5);
-
-    std::vector<double> new_CR(population.size());
-    std::vector<double> new_F(population.size());
-
-    std::vector<size_t> selectIndices;
-    if (population.size() <= memorySize){
-        selectIndices = random_choice(memorySize, population.size(), false); 
+        M_CR = rand_gen(0.5, 0.8, memorySize);
+        M_F = rand_gen(0.2, 0.5, memorySize);
     } else {
-        selectIndices = random_choice(memorySize, population.size(), true); 
-    };
-    std::vector<double> CRlist, Flist;
-    for (int i = 0; i < population.size(); ++i) {
-        CRlist.push_back(M_CR[selectIndices[i]]); 
-        Flist.push_back(M_F[selectIndices[i]]); 
-    };
-    for (int i = 0; i < population.size(); ++i) {
-        new_CR[i] = rand_norm(CRlist[i], 0.1);
-        new_F[i] = rand_cauchy(Flist[i], 0.1); 
+        M_CR = random_choice(MCR_records, memorySize, true);
+        M_F = random_choice(MF_records, memorySize, true);
     }
-    
-    std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
-    std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.0, 1.); });
 
-    //update p 
-    p = std::vector<size_t>(population.size(), 2);
-    for (int i = 0; i < population.size(); ++i) {
-        p[i] = std::max(2, static_cast<int>(round(0.2 * population.size())));
-    };
+    restart = true;
+    refine = false;
+    first_run = false;
+}
+
+void ARRDE::executeRefine(size_t targetSize) {
+    const auto indices = random_choice(fitness_records.size(), fitness_records.size(), false);
+    population.reserve(targetSize);
+    fitness.reserve(targetSize);
+    for (size_t i = 0; i < targetSize; ++i) {
+        const size_t idx = indices[i];
+        population.push_back(population_records[idx]);
+        fitness.push_back(fitness_records[idx]);
+    }
+
+    refineRelTol *= decrease;
+    reltol = refineRelTol;
+
+    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    memoryIndex = 0;
+
+    const size_t bestIndex = findArgMin(fitness);
+    best_fitness = fitness[bestIndex];
+    best = population[bestIndex];
+    Nrestart = 0;
+
+    M_CR = random_choice(MCR_records, memorySize, true);
+    M_F = random_choice(MF_records, memorySize, true);
+
+    restart = false;
+    refine = true;
+}
+
+void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
+    const size_t refinedPopulationSize = maxPopSize_finalRefine;
+    Neval_stratrefine = Nevals;
+
+    std::vector<size_t> indices;
+    if (fitness_records.size() < refinedPopulationSize) {
+        indices = random_choice(fitness_records.size(), refinedPopulationSize, true);
+    } else {
+        indices = argsort(fitness_records, true);
+    }
+
+    population.reserve(refinedPopulationSize);
+    fitness.reserve(refinedPopulationSize);
+    for (size_t i = 0; i < refinedPopulationSize; ++i) {
+        const size_t idx = indices[i];
+        population.push_back(population_records[idx]);
+        fitness.push_back(fitness_records[idx]);
+    }
+
+    reltol = 0.0;
+    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    memoryIndex = 0;
+
+    const size_t bestIndex = findArgMin(fitness);
+    best_fitness = fitness[bestIndex];
+    best = population[bestIndex];
+
+    refine = false;
+    restart = false;
+    first_run = false;
+
+    M_CR = random_choice(MCR_records, memorySize, true);
+    M_F = random_choice(MF_records, memorySize, true);
+    maxRestart = 1e300;
+}
+
+void ARRDE::updateParameterMemory() {
+    if (fitness_before.empty()) {
+        return;
+    }
+
+    std::vector<double> successfulCR;
+    std::vector<double> successfulF;
+    std::vector<double> weights;
+    std::vector<double> weightedF;
+
+    successfulCR.reserve(population.size());
+    successfulF.reserve(population.size());
+    weights.reserve(population.size());
+    weightedF.reserve(population.size());
+
+    for (size_t i = 0; i < population.size(); ++i) {
+        if (trial_fitness[i] < fitness_before[i]) {
+            const double improvement = std::fabs(fitness_before[i] - trial_fitness[i]);
+            successfulCR.push_back(CR[i]);
+            successfulF.push_back(F[i]);
+            weights.push_back(improvement);
+            weightedF.push_back(improvement * F[i]);
+        }
+    }
+
+    if (successfulCR.empty() || memorySize == 0) {
+        return;
+    }
+
+    weights = normalize_vector(weights);
+    weightedF = normalize_vector(weightedF);
+
+    double meanCRValue, stdCRValue;
+    double meanFValue, stdFValue;
+    std::tie(meanCRValue, stdCRValue) = getMeanStd(successfulCR, weights);
+    std::tie(meanFValue, stdFValue) = getMeanStd(successfulF, weightedF);
+
+    M_CR[memoryIndex] = meanCRValue;
+    M_F[memoryIndex] = meanFValue;
+
+    memoryIndex = (memoryIndex + 1) % memorySize;
+}
+
+void ARRDE::resampleControlParameters() {
+    const size_t popSize = population.size();
+    F.assign(popSize, 0.5);
+    CR.assign(popSize, 0.5);
+
+    if (popSize == 0 || memorySize == 0) {
+        return;
+    }
+
+    std::vector<size_t> selectedIndices;
+    if (popSize <= memorySize) {
+        selectedIndices = random_choice(memorySize, popSize, false);
+    } else {
+        selectedIndices = random_choice(memorySize, popSize, true);
+    }
+
+    std::vector<double> newCR(popSize);
+    std::vector<double> newF(popSize);
+    for (size_t i = 0; i < popSize; ++i) {
+        newCR[i] = rand_norm(M_CR[selectedIndices[i]], 0.1);
+        newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.1);
+    }
+
+    std::transform(newCR.begin(), newCR.end(), CR.begin(), [](double value) { return clamp(value, 0.0, 1.0); });
+    std::transform(newF.begin(), newF.end(), F.begin(), [](double value) { return clamp(value, 0.0, 1.0); });
+
+    const int minP = std::max(2, static_cast<int>(std::round(0.2 * static_cast<double>(popSize))));
+    p.assign(popSize, static_cast<size_t>(minP));
+
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
-    stdF.push_back(calcStdDev(F));  
-
-};
+    stdF.push_back(calcStdDev(F));
+}
 
 
 bool ARRDE::checkIsBetween(double x, double low, double high) {
     return x >= low && x <= high;
 }
 
-bool ARRDE::checkOutsideLocals(double x, std::vector<std::pair<double, double>> local){
-    for (const auto& loc : local) {
-    if (checkIsBetween(x, loc.first, loc.second)) {
-        return false;
+bool ARRDE::checkOutsideLocals(double x, const std::vector<std::pair<double, double>>& local) {
+    for (const auto& interval : local) {
+        if (checkIsBetween(x, interval.first, interval.second)) {
+            return false;
         }
     }
     return true;
 }
 
 std::vector<std::pair<double, double>> ARRDE::merge_intervals(const std::vector<std::pair<double, double>>& intervals) {
-    if (intervals.empty()) return {};
+    if (intervals.empty()) {
+        return {};
+    }
 
-    std::vector<std::pair<double, double>> sorted_intervals = intervals;
-    // Explicit comparator for sorting pairs
-    std::sort(sorted_intervals.begin(), sorted_intervals.end(),
-            [](const std::pair<double, double>& a, const std::pair<double, double>& b) {
-                return a.first < b.first || (a.first == b.first && a.second < b.second);
-            });
-    std::vector<std::pair<double, double>> merged_intervals;
-    double current_low = sorted_intervals[0].first;
-    double current_high = sorted_intervals[0].second;
-    for (const auto& interval : sorted_intervals) {
-        if (interval.first <= current_high) {
-            current_high = std::max(current_high, interval.second);
+    std::vector<std::pair<double, double>> sortedIntervals = intervals;
+    std::sort(sortedIntervals.begin(), sortedIntervals.end(),
+              [](const std::pair<double, double>& lhs, const std::pair<double, double>& rhs) {
+                  return lhs.first < rhs.first || (lhs.first == rhs.first && lhs.second < rhs.second);
+              });
+
+    std::vector<std::pair<double, double>> mergedIntervals;
+    double currentLow = sortedIntervals.front().first;
+    double currentHigh = sortedIntervals.front().second;
+
+    for (const auto& interval : sortedIntervals) {
+        if (interval.first <= currentHigh) {
+            currentHigh = std::max(currentHigh, interval.second);
         } else {
-            merged_intervals.push_back({current_low, current_high});
-            current_low = interval.first;
-            current_high = interval.second;
+            mergedIntervals.emplace_back(currentLow, currentHigh);
+            currentLow = interval.first;
+            currentHigh = interval.second;
         }
     }
-    merged_intervals.push_back({current_low, current_high});
-    return merged_intervals;
+
+    mergedIntervals.emplace_back(currentLow, currentHigh);
+    return mergedIntervals;
 }
 
 std::vector<std::vector<std::pair<double, double>>> ARRDE::merge_intervals(std::vector<std::vector<std::pair<double, double>>>& intervals) {
-    std::vector<std::vector<std::pair<double, double>>> ret;
-    for (auto& el :intervals ) {
-        ret.push_back(merge_intervals(el));
+    std::vector<std::vector<std::pair<double, double>>> merged;
+    merged.reserve(intervals.size());
+    for (auto& intervalList : intervals) {
+        merged.push_back(merge_intervals(intervalList));
     }
-    return ret;
+    return merged;
 }
 
 double ARRDE::sample_outside_local_bounds(double low, double high, const std::vector<std::pair<double, double>>& local_bounds) {
-    // Merge overlapping local bounds
-    std::vector<std::pair<double, double>> merged_bounds =local_bounds;
+    std::vector<std::pair<double, double>> merged_bounds = merge_intervals(local_bounds);
 
-    // Determine the valid intervals outside the merged local bounds
     std::vector<std::pair<double, double>> valid_intervals;
     double previous_high = low;
     for (const auto& bound : merged_bounds) {
         if (bound.first > previous_high) {
-            valid_intervals.push_back({previous_high, bound.first});
+            valid_intervals.emplace_back(previous_high, bound.first);
         }
-        previous_high = bound.second;
+        previous_high = std::min(bound.second, high);
     }
 
     if (previous_high < high) {
-        valid_intervals.push_back({previous_high, high});
+        valid_intervals.emplace_back(previous_high, high);
     }
 
-    // Calculate the lengths of the valid intervals
     std::vector<double> lengths;
+    lengths.reserve(valid_intervals.size());
     for (const auto& interval : valid_intervals) {
         lengths.push_back(interval.second - interval.first);
     }
 
-    // Check if there are no valid intervals (edge case)
     if (lengths.empty()) {
-        lengths.push_back({(high-low)});
-        valid_intervals.push_back({low, high});
+        valid_intervals.emplace_back(low, high);
+        lengths.push_back(high - low);
     }
 
-    // Sample a point from the valid intervals based on their lengths as weights
     std::discrete_distribution<size_t> interval_dist(lengths.begin(), lengths.end());
-    size_t chosen_interval = interval_dist(get_rng());
-    // Sample within the chosen interval
+    const size_t chosen_interval = interval_dist(get_rng());
     return rand_gen(valid_intervals[chosen_interval].first, valid_intervals[chosen_interval].second);
 }
 
 std::vector<double> ARRDE::applyLocalConstraints(const std::vector<double>& p) {
-    std::vector<double> ret=p; 
-    bool inside = true;
-    if (inside){
-        for (size_t j=0; j<p.size(); j++){
-            if (!checkOutsideLocals(p[j], locals[j])){
-                ret[j] = sample_outside_local_bounds(bounds[j].first, bounds[j].second, locals[j]);
-            };
+    if (locals.empty()) {
+        return p;
+    }
+
+    std::vector<double> constrained = p;
+    for (size_t dim = 0; dim < p.size() && dim < locals.size(); ++dim) {
+        if (!checkOutsideLocals(p[dim], locals[dim])) {
+            constrained[dim] = sample_outside_local_bounds(bounds[dim].first, bounds[dim].second, locals[dim]);
         }
     }
 
-    return ret;
+    return constrained;
 }
-
-void ARRDE::removeElement(std::vector<size_t>& vec, size_t x) {
-    auto newEnd = std::remove(vec.begin(), vec.end(), x);
-    vec.erase(newEnd, vec.end());
-}
-
 
 void ARRDE::update_locals() {
-    for (size_t i =0; i<bounds.size(); i++){
-        std::vector<double> slice;
-        for (size_t j=0; j<population.size(); j++){
-            slice.push_back(population[j][i]);
-        };
-        double stdd = calcStdDev(slice);
-        double mean = calcMean(slice);
-        double low = mean-stdd;
-        double high = mean+stdd;
-        if (low<bounds[i].first){low =bounds[i].first;}
-        if (high>bounds[i].second){high=bounds[i].second;}
-        if (locals.size()<bounds.size()) {
-            locals.push_back({{low, high}});
-        } else {
-            locals[i].push_back({low, high});
-        };
-    };
+    if (population.empty()) {
+        return;
+    }
+
+    locals.resize(bounds.size());
+
+    for (size_t dim = 0; dim < bounds.size(); ++dim) {
+        std::vector<double> samples;
+        samples.reserve(population.size());
+        for (const auto& individual : population) {
+            samples.push_back(individual[dim]);
+        }
+
+        const double stdd = calcStdDev(samples);
+        const double mean = calcMean(samples);
+
+        double low = std::max(mean - stdd, bounds[dim].first);
+        double high = std::min(mean + stdd, bounds[dim].second);
+
+        locals[dim].emplace_back(low, high);
+    }
 
     locals = merge_intervals(locals);
-    /*
-    std::cout <<"New local bounds:\n";
-    for (auto& el : locals){
-        std::cout << "[ ";
-        for (auto& e : el) {
-            std::cout<<"("<<e.first<<","<<e.second<<"), ";
-        };
-        std::cout << "]\n";
-    }
-    */
-    
-
 }
 
-
-};
+}  // namespace minion
