@@ -2,6 +2,7 @@
 #define ADAPTIVE_NELDER_MEAD_H
 
 #include "minimizer_base.h"
+#include <limits>
 
 namespace minion {
 /**
@@ -52,14 +53,20 @@ public:
     void initialize  () override;
 
 private : 
-    std::vector<std::vector<double>> xtemp;
     std::vector<double> best; 
-    double fbest; 
-    int no_improve_counter=0;
-    size_t bestIndex;
-    double locality;
+    double fbest = std::numeric_limits<double>::max(); 
+    size_t bestIndex = 0;
+
+    double simplex_scale = 0.05;
+    double alpha = 1.0;
+    double gamma = 2.0;
+    double rho   = 0.5;
+    double sigma = 0.5;
+
     std::vector<double> xinit;
-};
+
+    std::vector<std::vector<double>> build_simplex(const std::vector<double>& center) const;
+}; 
 
 }
 

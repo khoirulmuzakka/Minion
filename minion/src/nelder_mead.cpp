@@ -1,180 +1,223 @@
 #include "nelder_mead.h"
-#include <algorithm>
 #include "default_options.h"
 
+#include <algorithm>
+#include <cmath>
 
 namespace minion {
 
-void NelderMead::initialize  (){
-    if (x0.empty()) throw std::runtime_error("Initial guesses can not be empty!");
-    else {
-        xinit = findBestPoint(x0);
+void NelderMead::initialize() {
+    if (x0.empty()) {
+        throw std::runtime_error("Nelder-Mead requires at least one initial guess.");
     }
-    auto defaultKey = DefaultSettings().getDefaultSettings("NelderMead");
-    for (auto el : optionMap) defaultKey[el.first] = el.second;
-    Options options(defaultKey);
 
-    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
-    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
-    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
-        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+    xinit = findBestPoint(x0);
+
+    auto defaults = DefaultSettings().getDefaultSettings("NelderMead");
+    for (const auto& entry : optionMap) {
+        defaults[entry.first] = entry.second;
+    }
+    Options options(defaults);
+
+    boundStrategy = options.get<std::string>("bound_strategy", "reflect-random");
+    std::vector<std::string> supported = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
+    if (std::find(supported.begin(), supported.end(), boundStrategy) == supported.end()) {
+        std::cerr << "Bound stategy '" << boundStrategy << "' is not recognized. 'reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
-    
-    locality = options.get<double> ("locality_factor", 1.0);
-    if (locality<0.0 || locality >1.0) locality = 0.5;
+
+    simplex_scale = clamp(options.get<double>("locality_factor", 0.05), 1e-10, 1.0);
+
     hasInitialized = true;
-};
+}
+
+std::vector<std::vector<double>> NelderMead::build_simplex(const std::vector<double>& center) const {
+    size_t n = center.size();
+    std::vector<std::vector<double>> simplex(n + 1, center);
+    if (n == 0) {
+        return simplex;
+    }
+
+    const double nonzdelt = simplex_scale;
+    const double zdelt = simplex_scale * 0.005; // ~0.00025 when simplex_scale=0.05
+
+    for (size_t i = 0; i < n; ++i) {
+        std::vector<double> vertex = center;
+        double step = nonzdelt * std::max(1.0, std::fabs(center[i]));
+        if (step == 0.0) {
+            step = zdelt;
+        }
+        vertex[i] += step;
+        simplex[i + 1] = std::move(vertex);
+    }
+
+    enforce_bounds(simplex, bounds, boundStrategy);
+    return simplex;
+}
 
 MinionResult NelderMead::optimize() {
-    try {
-        if (!hasInitialized) initialize();
-        size_t n = xinit.size();
-        std::vector<std::vector<double>> simplex(n + 1, std::vector<double>(n));
+    if (!hasInitialized) {
+        initialize();
+    }
 
-        std::vector<std::pair<double, double>> new_bounds = bounds; 
-        for (int i =0; i<bounds.size(); i++) {
-            double dis_up = locality * fabs(bounds[i].second-xinit[i]);
-            double dis_down = locality * fabs(xinit[i]-bounds[i].first);
-            new_bounds[i] = { xinit[i]-dis_down, xinit[i]+dis_up };
+    try {
+        history.clear();
+
+        size_t n = xinit.size();
+        if (n == 0) {
+            throw std::runtime_error("Nelder-Mead requires non-zero dimension.");
         }
 
-        simplex= latin_hypercube_sampling(new_bounds, bounds.size()+1); 
-        
-        // Evaluate function values at the initial simplex points
-        std::vector<double> fvals(n + 1);
-        enforce_bounds(simplex, bounds, boundStrategy);
-        fvals = func(simplex, data);
-        bestIndex = findArgMin(fvals); 
+        alpha = 1.0;
+        gamma = 1.0 + 2.0 / static_cast<double>(n);
+        rho   = 0.75 - 1.0 / (2.0 * static_cast<double>(n));
+        sigma = 1.0 - rho;
+
+        double xtol = stoppingTol;
+        double ftol = stoppingTol;
+
+        std::vector<std::vector<double>> simplex = build_simplex(xinit);
+        std::vector<double> fvals = func(simplex, data);
+        size_t nfev = simplex.size();
+
+        bestIndex = findArgMin(fvals);
         best = simplex[bestIndex];
         fbest = fvals[bestIndex];
 
         size_t iter = 0;
-        size_t nfev = n + 1;
         bool success = false;
-        std::string message = "";
+        std::string message;
 
-        do {
-            if (no_improve_counter>5000){
-                simplex = latin_hypercube_sampling(bounds, bounds.size()+1);
-                fvals = func(simplex, data); 
-                simplex[0]= best;
-                fvals[0] = fbest;
-                nfev+=fvals.size();
-            }   
-            // Sort simplex and fvals based on fvals
-            std::vector<size_t> indices = argsort(fvals, true);
-            std::vector<std::vector<double>> simplex_sorted(n + 1);
-            std::vector<double> fvals_sorted(n + 1);
-            for (size_t i = 0; i <= n; ++i) {
-                simplex_sorted[i] = simplex[indices[i]];
-                fvals_sorted[i] = fvals[indices[i]];
+        auto push_history = [&](bool done) {
+            minionResult = MinionResult(best, fbest, iter, nfev, done, message);
+            history.push_back(minionResult);
+            if (callback != nullptr) {
+                callback(&minionResult);
             }
-            simplex = simplex_sorted;
-            fvals = fvals_sorted;
+        };
 
-            if (fvals[0]<fbest) {
-                fbest = fvals[0]; 
-                best = simplex[0]; 
-                no_improve_counter=0;
-            } else {
-                no_improve_counter++;
-            };
+        push_history(false);
 
-            // Check convergence
-            double frange =calcStdDev(fvals)/ calcMean(fvals);
-            if (frange < stoppingTol) {
+        while (nfev < maxevals) {
+            std::vector<size_t> order = argsort(fvals, true);
+            std::vector<std::vector<double>> sortedSimplex(simplex.size());
+            std::vector<double> sortedFvals(fvals.size());
+            for (size_t i = 0; i < simplex.size(); ++i) {
+                sortedSimplex[i] = simplex[order[i]];
+                sortedFvals[i] = fvals[order[i]];
+            }
+            simplex.swap(sortedSimplex);
+            fvals.swap(sortedFvals);
+
+            best = simplex[0];
+            fbest = fvals[0];
+            bestIndex = 0;
+
+            double maxXdiff = 0.0;
+            double maxFdiff = 0.0;
+            for (size_t i = 1; i < simplex.size(); ++i) {
+                for (size_t d = 0; d < n; ++d) {
+                    maxXdiff = std::max(maxXdiff, std::fabs(simplex[i][d] - best[d]));
+                }
+                maxFdiff = std::max(maxFdiff, std::fabs(fvals[i] - fbest));
+            }
+
+            if (maxXdiff <= xtol && maxFdiff <= ftol) {
                 success = true;
                 message = "Optimization converged.";
                 break;
             }
 
-            // Calculate centroid
             std::vector<double> centroid(n, 0.0);
             for (size_t i = 0; i < n; ++i) {
-                for (size_t j = 0; j < n; ++j) {
-                    centroid[j] += simplex[i][j];
+                for (size_t d = 0; d < n; ++d) {
+                    centroid[d] += simplex[i][d];
                 }
             }
-            for (size_t j = 0; j < n; ++j) {
-                centroid[j] /= n;
+            for (size_t d = 0; d < n; ++d) {
+                centroid[d] /= static_cast<double>(n);
             }
 
-            // Reflection
-            std::vector<double> xr = centroid;
-            for (size_t j = 0; j < n; ++j) {
-                xr[j] += 1.0 * (centroid[j] - simplex[n][j]);
-            }
-            xtemp = {xr};
-            enforce_bounds(xtemp, bounds, boundStrategy);
-            double fr = func(xtemp, data)[0];
-            ++nfev;
-
-            if (fr < fvals[n - 1]) {
-                // Expansion
-                if (fr < fvals[0]) {
-                    std::vector<double> xe = centroid;
-                    for (size_t j = 0; j < n; ++j) {
-                        xe[j] += 2.0 * (xr[j] - centroid[j]);
-                    }
-                    double fe = func({xe}, data)[0];
-                    ++nfev;
-                    if (fe < fr) {
-                        simplex[n] = xe;
-                        fvals[n] = fe;
-                    } else {
-                        simplex[n] = xr;
-                        fvals[n] = fr;
-                    }
-                } else {
-                    simplex[n] = xr;
-                    fvals[n] = fr;
-                }
-            } else {
-                // Contraction
-                std::vector<double> xc = centroid;
-                for (size_t j = 0; j < n; ++j) {
-                    xc[j] += 0.5 * (simplex[n][j] - centroid[j]);
-                }
-                xtemp = {xc};
-                enforce_bounds(xtemp, bounds, boundStrategy);
-                double fc = func(xtemp, data)[0];
+            auto evaluate_point = [&](std::vector<double> point) {
+                enforce_bounds(point, bounds, boundStrategy);
+                std::vector<std::vector<double>> args = {point};
+                double value = func(args, data)[0];
                 ++nfev;
+                return std::make_pair(std::move(point), value);
+            };
 
-                if (fc < fvals[n]) {
-                    simplex[n] = xc;
-                    fvals[n] = fc;
+            std::vector<double> xr(n);
+            for (size_t d = 0; d < n; ++d) {
+                xr[d] = centroid[d] + alpha * (centroid[d] - simplex[n][d]);
+            }
+            auto [xReflection, fReflection] = evaluate_point(std::move(xr));
+
+            if (fReflection < fvals[0]) {
+                std::vector<double> xe(n);
+                for (size_t d = 0; d < n; ++d) {
+                    xe[d] = centroid[d] + gamma * (xReflection[d] - centroid[d]);
+                }
+                auto [xExpansion, fExpansion] = evaluate_point(std::move(xe));
+                if (fExpansion < fReflection) {
+                    simplex[n] = std::move(xExpansion);
+                    fvals[n] = fExpansion;
                 } else {
-                    // Reduction
-                    std::vector<double> fvalTemp ; 
-                    xtemp = std::vector<std::vector<double>>(n, std::vector<double>(n));
+                    simplex[n] = std::move(xReflection);
+                    fvals[n] = fReflection;
+                }
+            } else if (fReflection < fvals[n - 1]) {
+                simplex[n] = std::move(xReflection);
+                fvals[n] = fReflection;
+            } else {
+                bool outside = fReflection < fvals[n];
+                std::vector<double> xc(n);
+                if (outside) {
+                    for (size_t d = 0; d < n; ++d) {
+                        xc[d] = centroid[d] + rho * (xReflection[d] - centroid[d]);
+                    }
+                } else {
+                    for (size_t d = 0; d < n; ++d) {
+                        xc[d] = centroid[d] + rho * (simplex[n][d] - centroid[d]);
+                    }
+                }
+                auto [xContraction, fContraction] = evaluate_point(std::move(xc));
+
+                if ((outside && fContraction <= fReflection) || (!outside && fContraction < fvals[n])) {
+                    simplex[n] = std::move(xContraction);
+                    fvals[n] = fContraction;
+                } else {
                     for (size_t i = 1; i <= n; ++i) {
-                        for (size_t j = 0; j < n; ++j) {
-                            simplex[i][j] = simplex[0][j] + 0.5 * (simplex[i][j] - simplex[0][j]);
-                            xtemp[i-1][j] = simplex[i][j];
+                        for (size_t d = 0; d < n; ++d) {
+                            simplex[i][d] = simplex[0][d] + sigma * (simplex[i][d] - simplex[0][d]);
                         }
                     }
-                    enforce_bounds(simplex, bounds, boundStrategy );
-                    enforce_bounds(xtemp, bounds, boundStrategy);
-                    fvalTemp = func(xtemp, data);
-                    for (size_t i=0; i<n; ++i){
-                        fvals[i+1] = fvalTemp[i];
+                    enforce_bounds(simplex, bounds, boundStrategy);
+                    std::vector<std::vector<double>> reduced(simplex.begin() + 1, simplex.end());
+                    auto shrinkVals = func(reduced, data);
+                    nfev += shrinkVals.size();
+                    for (size_t i = 0; i < shrinkVals.size(); ++i) {
+                        fvals[i + 1] = shrinkVals[i];
                     }
-                    nfev += n;
                 }
             }
-            //std::cout << fvals[0] << "\n";
+
             ++iter;
-        } while (nfev < maxevals);
+            push_history(false);
+
+            if (nfev >= maxevals) {
+                break;
+            }
+        }
 
         if (!success) {
             message = "Maximum number of evaluations reached.";
         }
 
-        return MinionResult(simplex[0], fvals[0], iter, nfev, success, message);
-    } catch (const std::exception& e) {
-        throw std::runtime_error(e.what());
-    };
+        push_history(true);
+        return history.back();
+    } catch (const std::exception& ex) {
+        throw std::runtime_error(ex.what());
+    }
 }
 
-}
+} // namespace minion

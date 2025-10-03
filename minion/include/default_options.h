@@ -54,6 +54,7 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_NLSHADE_RSP = {
             {"population_size", 0},  
+            {"minimum_population_size", 4}, 
             {"memory_size", 100},
             {"archive_size_ratio" , 2.6} , 
             {"bound_strategy" , std::string("reflect-random")}
@@ -108,7 +109,7 @@ class DefaultSettings{
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
-                {"locality_factor", 1.0},
+                {"locality_factor", 0.05},
                 {"bound_strategy" , std::string("reflect-random")}, 
         };
 

@@ -3,6 +3,7 @@
 #include <chrono>
 #include "minion.h"
 #include "utility.h"
+#include <fstream>
 
 std::vector <double> objective_function (const std::vector<std::vector<double>> & x, void* data){
      minion::CECBase* func = static_cast<minion::CECBase* > (data);

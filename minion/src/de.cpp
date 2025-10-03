@@ -170,7 +170,7 @@ void Differential_Evolution::init (){
     size_t best_idx = findArgMin(fitness);
     best = population[best_idx];
     best_fitness = fitness[best_idx];
-    Nevals++;
+    Nevals += population.size();
     history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
 };
 
