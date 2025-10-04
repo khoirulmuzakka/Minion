@@ -5,6 +5,13 @@ Changelog
    :local:
    :depth: 2
 
+Version 0.2.5 - 2025-10-05
+--------------------------
+
+**Added**
+
+- Implemented PSO, SPSO-2011, DMSPSO, LSHADE_cnepsin, and CMAES
+
 Version 0.2.4 - 2025-10-02
 --------------------------
 

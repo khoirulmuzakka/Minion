@@ -22,7 +22,7 @@ Minion also serves as a **research platform** for developing and testing new opt
     - Basic Differential Evolution (DE)
     - JADE  
     - L-SHADE  
-    - LSHADE-cnEpSin *(ensemble sinusoidal LSHADE with covariance learning)*
+    - LSHADE-cnEpSin 
     - jSO  
     - j2020  
     - NL-SHADE-RSP  

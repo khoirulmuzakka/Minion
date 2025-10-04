@@ -22,7 +22,7 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
       - Basic Differential Evolution (DE)
       - JADE  
       - L-SHADE  
-      - LSHADE-cnEpSin *(ensemble sinusoidal LSHADE with covariance learning)*
+      - LSHADE-cnEpSin
       - jSO
       - j2020 
       - NL-SHADE-RSP 
