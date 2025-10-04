@@ -21,6 +21,10 @@
 #include "lsrtde.h"
 #include "jso.h"
 #include "abc.h"
+#include "pso.h"
+#include "spso2011.h"
+#include "dmspso.h"
+#include "lshadecnepsin.h"
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "minimizer.h"
@@ -143,6 +147,26 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("stdF", &LSHADE::stdF)
         .def_readonly("diversity", &LSHADE::diversity);
 
+    py::class_<LSHADE_cnEpSin, Differential_Evolution>(m, "LSHADE_cnEpSin")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &LSHADE_cnEpSin::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &LSHADE_cnEpSin::meanCR)
+        .def_readonly("meanF", &LSHADE_cnEpSin::meanF)
+        .def_readonly("stdCR", &LSHADE_cnEpSin::stdCR)
+        .def_readonly("stdF", &LSHADE_cnEpSin::stdF)
+        .def_readonly("diversity", &LSHADE_cnEpSin::diversity);
+
     py::class_<jSO, Differential_Evolution>(m, "jSO")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
@@ -218,6 +242,54 @@ PYBIND11_MODULE(minionpycpp, m) {
 
         .def_readwrite("history", &MinimizerBase::history)
         .def("optimize", &ABC::optimize, py::call_guard<py::gil_scoped_release>());
+
+    py::class_<PSO, MinimizerBase>(m, "PSO")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+
+        .def("optimize", &PSO::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("diversity", &PSO::diversity)
+        .def_readonly("spatialDiversity", &PSO::spatialDiversity);
+
+    py::class_<SPSO2011, PSO>(m, "SPSO2011")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &SPSO2011::optimize, py::call_guard<py::gil_scoped_release>());
+
+    py::class_<DMSPSO, PSO>(m, "DMSPSO")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &DMSPSO::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<Dual_Annealing, MinimizerBase>(m, "Dual_Annealing")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

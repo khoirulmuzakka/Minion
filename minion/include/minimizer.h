@@ -14,6 +14,10 @@
 #include "gwo_de.h"
 #include "nlshadersp.h"
 #include "abc.h"
+#include "pso.h"
+#include "spso2011.h"
+#include "dmspso.h"
+#include "lshadecnepsin.h"
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "l_bfgs.h"
@@ -36,7 +40,7 @@ class Minimizer {
          * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization in the population-population based algorithms, or minion will pick teh best one in L-BFGS or NelderMead.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"
+         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param relTol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
@@ -65,6 +69,10 @@ class Minimizer {
             else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "PSO") optimizer = new PSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "SPSO2011") optimizer = new SPSO2011(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "DMSPSO") optimizer = new DMSPSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algo == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS") optimizer = new L_BFGS(func, x0, data, callback, tol, maxevals, seed, options);
@@ -79,7 +87,7 @@ class Minimizer {
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE"
+         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param relTol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
@@ -108,6 +116,10 @@ class Minimizer {
             else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algo == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "PSO") optimizer = new PSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "SPSO2011") optimizer = new SPSO2011(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "DMSPSO") optimizer = new DMSPSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algo == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algo == "L_BFGS") optimizer = new L_BFGS(func, {x0}, data, callback, tol, maxevals, seed, options);

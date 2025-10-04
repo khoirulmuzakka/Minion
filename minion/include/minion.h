@@ -25,5 +25,9 @@
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "l_bfgs.h"
+#include "pso.h"
+#include "spso2011.h"
+#include "dmspso.h"
+#include "lshadecnepsin.h"
 
 #endif // MINION_H

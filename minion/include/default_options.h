@@ -96,6 +96,61 @@ class DefaultSettings{
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
+        std::map<std::string, ConfigValue>  default_settings_PSO = {
+            {"population_size", 0},
+            {"inertia_weight", 0.7},
+            {"cognitive_coefficient", 1.5},
+            {"social_coefficient", 1.5},
+            {"velocity_clamp", 0.2},
+            {"use_latin", true},
+            {"support_tolerance", true},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+
+        std::map<std::string, ConfigValue>  default_settings_SPSO2011 = {
+            {"population_size", 0},
+            {"phi_personal", 2.05},
+            {"phi_social", 2.05},
+            {"neighborhood_size", 3},
+            {"inertia_weight", 0.72984},
+            {"cognitive_coefficient", 2.05},
+            {"social_coefficient", 2.05},
+            {"velocity_clamp", 0.2},
+            {"use_latin", true},
+            {"support_tolerance", true},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+
+        std::map<std::string, ConfigValue>  default_settings_DMSPSO = {
+            {"population_size", 0},
+            {"inertia_weight", 0.7},
+            {"cognitive_coefficient", 1.2},
+            {"social_coefficient", 1.0},
+            {"local_coefficient", 1.4},
+            {"global_coefficient", 0.8},
+            {"subswarm_count", 4},
+            {"regroup_period", 5},
+            {"velocity_clamp", 0.2},
+            {"use_latin", true},
+            {"support_tolerance", true},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+
+        std::map<std::string, ConfigValue>  default_settings_LSHADE_cnEpSin = {
+            {"population_size", 0},
+            {"memory_size", 5},
+            {"archive_rate", 1.4},
+            {"minimum_population_size", 4},
+            {"p_best_fraction", 0.11},
+            {"rotation_probability", 0.4},
+            {"neighborhood_fraction", 0.5},
+            {"freq_init", 0.5},
+            {"learning_period", 20},
+            {"sin_freq_base", 0.5},
+            {"epsilon", 1e-8},
+            {"bound_strategy", std::string("reflect-random")}
+        };
+
         std::map<std::string, ConfigValue>  default_settings_DA= {
             {"acceptance_par", -5.0},  
             {"visit_par", 2.67},  
@@ -151,6 +206,10 @@ class DefaultSettings{
                 {"GWO_DE", default_settings_GWO_DE}, 
                 {"NelderMead", default_settings_NelderMead}, 
                 {"ABC", default_settings_ABC}, 
+                {"PSO", default_settings_PSO}, 
+                {"SPSO2011", default_settings_SPSO2011}, 
+                {"DMSPSO", default_settings_DMSPSO}, 
+                {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
                 {"DA", default_settings_DA}, 
                 {"L_BFGS_B", default_settings_LBFGSB}, 
                 {"L_BFGS", default_settings_LBFGS}
