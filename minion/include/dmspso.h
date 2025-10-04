@@ -11,6 +11,19 @@ namespace minion {
  */
 class DMSPSO : public PSO {
 public:
+    /**
+     * @brief Construct the dynamic multi-swarm PSO variant.
+     *
+     * @param func Objective function to minimize.
+     * @param bounds Search-space bounds.
+     * @param x0 Optional set of initial particles.
+     * @param data User payload forwarded to the objective.
+     * @param callback Per-iteration callback receiving the best solution.
+     * @param tol Diversity tolerance used by the base stop criterion.
+     * @param maxevals Maximum number of objective evaluations.
+     * @param seed RNG seed (negative -> random seed).
+     * @param options Configuration map (sub-swarm count, regroup period, etc.).
+     */
     DMSPSO(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,

@@ -21,15 +21,17 @@ Minion also serves as a **research platform** for developing and testing new opt
   - **Differential Evolution-based algorithms:**
     - Basic Differential Evolution (DE)
     - JADE  
-    - L-SHADE 
-    - jSO
-    - j2020 
-    - NL-SHADE-RSP 
-    - LSRTDE 
-    - ARRDE (our novel Adaptive Restart-Refine DE algorithm)  
+    - L-SHADE  
+    - LSHADE-cnEpSin *(ensemble sinusoidal LSHADE with covariance learning)*
+    - jSO  
+    - j2020  
+    - NL-SHADE-RSP  
+    - LSRTDE  
+    - ARRDE *(Adaptive Restart-Refine DE, our novel algorithm)*  
   - **Other population-based algorithms:**
     - Artificial Bee Colony (ABC)
     - Grey Wolf DE Optimization  
+    - Canonical PSO, SPSO-2011, and Dynamic Multi-Swarm PSO (DMS-PSO)  
   - **Classical optimization algorithms:**
     - Nelder-Mead  
     - Generalized Simulated Annealing (Dual Annealing) 
@@ -62,6 +64,5 @@ If you use **Minion** or **MinionPy** in your research or projects, we would be 
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
 > *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
 > Zenodo. [https://doi.org/10.5281/zenodo.14794239](https://doi.org/10.5281/zenodo.14794239)  
-
 
 

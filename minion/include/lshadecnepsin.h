@@ -8,8 +8,31 @@
 
 namespace minion {
 
+/**
+ * @class LSHADE_cnEpSin
+ * @brief Ensemble sinusoidal L-SHADE with covariance learning and Euclidean neighbourhoods.
+ *
+ * This implementation mirrors the reference MATLAB code proposed by Awad et al.
+ * for CEC 2017.  Two sinusoidal strategies compete during the first half of the
+ * run, frequency memories are updated via Lehmer means, population size is
+ * linearly reduced, and crossover can be performed in a locally learned eigen
+ * space.
+ */
 class LSHADE_cnEpSin : public Differential_Evolution {
 public:
+    /**
+     * @brief Construct the LSHADE-cnEpSin optimizer.
+     *
+     * @param func Objective function to minimize.
+     * @param bounds Variable bounds for the DE population.
+     * @param x0 Optional set of initial individuals.
+     * @param data User payload passed to the objective.
+     * @param callback Progress callback invoked with the best-so-far state.
+     * @param tol Relative tolerance used by the inherited stop criterion.
+     * @param maxevals Maximum number of objective evaluations.
+     * @param seed RNG seed (negative -> random seed).
+     * @param options Configuration map (population multiplier, archive rate, etc.).
+     */
     LSHADE_cnEpSin(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,

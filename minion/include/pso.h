@@ -9,7 +9,7 @@ namespace minion {
 
 /**
  * @class PSO
- * @brief Basic particle swarm optimization algorithm.
+ * @brief Basic particle swarm optimizer that serves as the foundation for other PSO variants.
  */
 class PSO : public MinimizerBase {
 public:
@@ -42,6 +42,19 @@ protected:
     void configureFromOptions(const Options& options);
 
 public:
+    /**
+     * @brief Construct a PSO minimizer with the standard global-best topology.
+     *
+     * @param func Objective function to minimize.
+     * @param bounds Search-space bounds for each variable.
+     * @param x0 Optional initial particle locations.
+     * @param data User data forwarded to the objective.
+     * @param callback Per-iteration callback invoked with the current best.
+     * @param tol Relative tolerance used in the diversity-based stop test.
+     * @param maxevals Maximum number of objective evaluations.
+     * @param seed RNG seed (negative -> random seed).
+     * @param options Configuration map (inertia weight, coefficients, etc.).
+     */
     PSO(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,

@@ -23,6 +23,10 @@ from minionpycpp import ABC as cppABC
 from minionpycpp import Dual_Annealing as cppDual_Annealing
 from minionpycpp import L_BFGS_B as cppL_BFGS_B
 from minionpycpp import L_BFGS as cppL_BFGS
+from minionpycpp import PSO as cppPSO
+from minionpycpp import SPSO2011 as cppSPSO2011
+from minionpycpp import DMSPSO as cppDMSPSO
+from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
 
 
 _PyGILState_Ensure = ctypes.pythonapi.PyGILState_Ensure
@@ -474,6 +478,240 @@ class NelderMead(MinimizerBase):
 
 
 
+class PSO(MinimizerBase):
+    """
+    Canonical particle swarm optimization (global-best topology).
+
+    Options
+    -------
+    The `options` dictionary accepts:
+
+    - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
+    - ``inertia_weight`` (*float*): inertia term :math:`\omega` (default ``0.7``).
+    - ``cognitive_coefficient`` (*float*): self-attraction coefficient :math:`c_1`.
+    - ``social_coefficient`` (*float*): global-attraction coefficient :math:`c_2`.
+    - ``velocity_clamp`` (*float*): fraction of the search range used as velocity limit.
+    - ``use_latin`` (*bool*): initialize swarm with Latin hypercube sampling if ``True``.
+    - ``support_tolerance`` (*bool*): enable the diversity based stop criterion.
+    - ``bound_strategy`` (*str*): boundary handling policy (``"reflect-random"`` by default).
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the PSO algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Objective function to minimise. The function must accept a list of
+            candidate solutions and return a list of objective values.
+        bounds : list of tuple
+            Search-space bounds expressed as ``(lower, upper)`` pairs.
+        x0 : list[list[float]], optional
+            Optional particle positions used to seed the swarm.  When ``None``
+            (default) the swarm is initialised within the supplied bounds.
+        relTol : float, optional
+            Relative tolerance used by the diversity-based stopping criterion.
+            Default is ``1e-4``.
+        maxevals : int, optional
+            Maximum number of objective evaluations allowed. Default ``100000``.
+        callback : callable, optional
+            Callable invoked after each iteration with the current
+            :class:`MinionResult`.  Default ``None``.
+        seed : int, optional
+            Random seed for reproducibility.  If ``None`` (default) a random seed
+            is chosen.
+        options : dict, optional
+            Configuration dictionary.  If ``None`` the following defaults are used::
+
+                options = {
+                    "population_size"        :  0,
+                    "inertia_weight"         :  0.7,
+                    "cognitive_coefficient"  :  1.5,
+                    "social_coefficient"     :  1.5,
+                    "velocity_clamp"         :  0.2,
+                    "use_latin"              :  True,
+                    "support_tolerance"      :  True,
+                    "bound_strategy"         : "reflect-random"
+                }
+
+            The available options are:
+
+            - **population_size** (*int*): Swarm size.  When set to ``0`` the
+              default ``5 * D`` is used (``D`` is the dimensionality).
+            - **inertia_weight** (*float*): Inertia weight :math:`\omega`.
+            - **cognitive_coefficient** (*float*): Cognitive acceleration
+              coefficient :math:`c_1`.
+            - **social_coefficient** (*float*): Social acceleration coefficient
+              :math:`c_2`.
+            - **velocity_clamp** (*float*): Fraction of each coordinate range
+              used as the velocity limit.  ``0`` disables clamping.
+            - **use_latin** (*bool*): Use Latin hypercube sampling for the swarm
+              initialisation when ``True``.
+            - **support_tolerance** (*bool*): Enable (``True``) or disable
+              (``False``) the tolerance-based stopping rule.
+            - **bound_strategy** (*str*): Strategy for handling boundary
+              violations.  Choices match those exposed by the C++ backend.
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppPSO(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
+        return self.minionResult
+
+
+class SPSO2011(MinimizerBase):
+    """
+    Stochastic PSO 2011 (Clerc/Bratton) with constriction and adaptive neighbourhoods.
+
+    Options
+    -------
+    - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
+    - ``phi_personal`` (*float*): personal acceleration constant (:math:`\phi_1`, default ``2.05``).
+    - ``phi_social`` (*float*): social acceleration constant (:math:`\phi_2`, default ``2.05``).
+    - ``neighborhood_size`` (*int*): number of neighbours used in the local best selection.
+    - ``velocity_clamp`` (*float*): velocity limit as a fraction of the search span.
+    - ``use_latin`` (*bool*), ``support_tolerance`` (*bool*), ``bound_strategy`` (*str*): inherited from :class:`PSO`.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the SPSO2011 algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Objective function to be minimised (vectorised, see :class:`PSO`).
+        bounds : list of tuple
+            Search-space bounds for each variable.
+        x0, relTol, maxevals, callback, seed, options :
+            Same semantics as :class:`PSO`.
+
+        Notes
+        -----
+        The ``options`` dictionary extends :class:`PSO` with:
+
+        - **phi_personal** (*float*): Personal acceleration parameter
+          :math:`\phi_1` (default ``2.05``).
+        - **phi_social** (*float*): Social acceleration parameter
+          :math:`\phi_2` (default ``2.05``).
+        - **neighborhood_size** (*int*): Number of neighbours considered when
+          selecting the local best.  Values ``>= 1``.
+        - **velocity_clamp** (*float*): Inherited velocity clamp fraction.
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppSPSO2011(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
+        return self.minionResult
+
+
+class DMSPSO(MinimizerBase):
+    """
+    Dynamic multi-swarm PSO with periodic regrouping and co-operative subswarms.
+
+    Options
+    -------
+    - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
+    - ``inertia_weight`` (*float*), ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): base PSO coefficients.
+    - ``local_coefficient`` (*float*): influence of the subswarm best.
+    - ``global_coefficient`` (*float*): influence of the global best.
+    - ``subswarm_count`` (*int*): number of dynamic subswarms.
+    - ``regroup_period`` (*int*): iterations between subswarm reshuffles.
+    - ``velocity_clamp`` (*float*), ``use_latin`` (*bool*), ``support_tolerance`` (*bool*), ``bound_strategy`` (*str*): inherited from :class:`PSO`.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the DMS-PSO algorithm.
+
+        Parameters
+        ----------
+        func, bounds, x0, relTol, maxevals, callback, seed, options :
+            See :class:`PSO` for the base semantics.
+
+        Notes
+        -----
+        Additional entries recognised in ``options``:
+
+        - **local_coefficient** (*float*): Weight applied to the sub-swarm best
+          (default ``1.4``).
+        - **global_coefficient** (*float*): Weight applied to the global best
+          (default ``0.8``).
+        - **subswarm_count** (*int*): Number of concurrent sub-swarms.
+        - **regroup_period** (*int*): Iterations between sub-swarm reshuffles.
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppDMSPSO(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
+        return self.minionResult
+
+
+
 class LSHADE(MinimizerBase):
     """
     Implementation of the Linear Population Reduction - Success History Adaptive Differential Evolution (LSHADE) algorithm.
@@ -599,9 +837,87 @@ class LSHADE(MinimizerBase):
         self.diversity = self.optimizer.diversity
         return self.minionResult
 
+
+class LSHADE_cnEpSin(MinimizerBase):
+    """
+    Ensemble sinusoidal LSHADE with covariance learning (cnEpSin variant).
+
+    Reference
+    ---------
+    N. H. Awad, M. Z. Ali and P. N. Suganthan, "Ensemble Sinusoidal Differential
+    Covariance Matrix Adaptation with Euclidean Neighborhood for Solving CEC2017
+    Benchmark Problems," IEEE CEC 2017.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the LSHADE-cnEpSin algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Vectorised objective function returning a list of objective values.
+        bounds : list of tuple
+            Bounds for each decision variable.
+        x0 : list[list[float]], optional
+            Optional initial population.  When ``None`` the population is drawn
+            uniformly within the supplied bounds.
+        relTol, maxevals, callback, seed :
+            Same semantics as :class:`LSHADE`.
+        options : dict, optional
+            Additional configuration.  If ``None`` the following defaults are
+            applied::
+
+                options = {
+                    "population_size"        :   0,
+                    "memory_size"            :   5,
+                    "archive_rate"           :   1.4,
+                    "minimum_population_size":   4,
+                    "p_best_fraction"        :   0.11,
+                    "rotation_probability"   :   0.4,
+                    "neighborhood_fraction"  :   0.5,
+                    "freq_init"              :   0.5,
+                    "learning_period"        :  20,
+                    "sin_freq_base"          :   0.5,
+                    "epsilon"                : 1e-8,
+                    "bound_strategy"         : "reflect-random"
+                }
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppLSHADE_cnEpSin(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        """Run LSHADE-cnEpSin and expose statistics captured by the C++ backend."""
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = list(getattr(self.optimizer, "meanCR", []))
+        self.meanF = list(getattr(self.optimizer, "meanF", []))
+        self.stdCR = list(getattr(self.optimizer, "stdCR", []))
+        self.stdF = list(getattr(self.optimizer, "stdF", []))
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        return self.minionResult
+
+
 class jSO(MinimizerBase):
     """
-    mplementation of the jSO algorithm.
+    Implementation of the jSO algorithm.
 
     Reference : J. Brest, M. S. Maučec and B. Bošković, "Single objective real-parameter optimization: Algorithm jSO," 2017 IEEE Congress on Evolutionary Computation (CEC), Donostia, Spain, 2017, pp. 1311-1318, doi: 10.1109/CEC.2017.7969456.
 

@@ -21,15 +21,17 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
     - **Differential Evolution-based algorithms:**
       - Basic Differential Evolution (DE)
       - JADE  
-      - L-SHADE 
+      - L-SHADE  
+      - LSHADE-cnEpSin *(ensemble sinusoidal LSHADE with covariance learning)*
       - jSO
       - j2020 
       - NL-SHADE-RSP 
       - LSRTDE 
-      - ARRDE (our novel Adaptive Restart-Refine DE algorithm)  
+      - ARRDE *(Adaptive Restart-Refine DE)*  
     - **Other population-based algorithms:**
       - Artificial Bee Colony (ABC)
       - Grey Wolf DE Optimization  
+      - Canonical PSO, SPSO-2011, Dynamic Multi-Swarm PSO (DMS-PSO)  
     - **Classical optimization algorithms:**
       - Nelder-Mead  
       - Generalized Simulated Annealing (Dual Annealing)  
@@ -65,4 +67,3 @@ If you use **MinionPy** in your research or projects, we would be grateful if yo
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
 > *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
 > Zenodo. [https://doi.org/10.5281/zenodo.14794239](https://doi.org/10.5281/zenodo.14794239)  
-

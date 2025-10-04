@@ -11,6 +11,19 @@ namespace minion {
  */
 class SPSO2011 : public PSO {
 public:
+    /**
+     * @brief Construct the SPSO2011 variant.
+     *
+     * @param func Objective function to minimize.
+     * @param bounds Search-space bounds.
+     * @param x0 Optional initial swarm positions.
+     * @param data User payload for the objective.
+     * @param callback Progress callback invoked with the best-so-far state.
+     * @param tol Diversity tolerance that governs early stopping.
+     * @param maxevals Maximum number of objective evaluations.
+     * @param seed RNG seed (negative -> random seed).
+     * @param options Configuration map (phi values, neighbourhood size, etc.).
+     */
     SPSO2011(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,
