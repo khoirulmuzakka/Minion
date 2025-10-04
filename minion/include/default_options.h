@@ -2,6 +2,9 @@
 #define DEFAULT_OPTIONS_H
 
 #include <any>
+#include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <map> 
 #include <string>
 #include "minimizer_base.h"
@@ -10,6 +13,15 @@ namespace minion {
 
 class DefaultSettings{
     public :
+        static std::string normalizeName(const std::string& name) {
+            std::string norm = name;
+            std::transform(norm.begin(), norm.end(), norm.begin(), [](unsigned char c){
+                if (c == '-' || c == ' ') return '_';
+                return static_cast<char>(std::toupper(c));
+            });
+            return norm;
+        }
+
         std::map<std::string, ConfigValue> default_settings_DE = {
             {"population_size", 0}, 
             {"mutation_rate", 0.5}, 
@@ -109,13 +121,15 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_SPSO2011 = {
             {"population_size", 0},
-            {"phi_personal", 2.05},
-            {"phi_social", 2.05},
+            {"inertia_weight", 0.729844},
+            {"cognitive_coefficient", 1.49618},
+            {"social_coefficient", 1.49618},
+            {"phi_personal", 1.49618},
+            {"phi_social", 1.49618},
             {"neighborhood_size", 3},
-            {"inertia_weight", 0.72984},
-            {"cognitive_coefficient", 2.05},
-            {"social_coefficient", 2.05},
-            {"velocity_clamp", 0.2},
+            {"informant_degree", 3},
+            {"velocity_clamp", 0.0},
+            {"normalize", false},
             {"use_latin", true},
             {"support_tolerance", true},
             {"bound_strategy" , std::string("reflect-random")}
@@ -217,8 +231,16 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){
             auto it = algoToSettingsMap.find(algo);
-            if (it == algoToSettingsMap.end())  throw std::runtime_error("Unknown algorithm name: " + algo);
-            return it->second;
+            if (it != algoToSettingsMap.end()) {
+                return it->second;
+            }
+            std::string normalized = normalizeName(algo);
+            for (const auto& entry : algoToSettingsMap) {
+                if (normalizeName(entry.first) == normalized) {
+                    return entry.second;
+                }
+            }
+            throw std::runtime_error("Unknown algorithm name: " + algo);
         }    
 };
     

@@ -15,7 +15,7 @@ void PSO::configureFromOptions(const Options& options) {
         boundStrategy = "reflect-random";
     }
 
-    size_t suggestedSize = bounds.empty() ? 0 : 5 * bounds.size();
+    size_t suggestedSize = bounds.empty() ? 0 : 40;
     populationSize = static_cast<size_t>(options.get<int>("population_size", 0));
     if (populationSize == 0) {
         populationSize = std::max<size_t>(suggestedSize, size_t(10));

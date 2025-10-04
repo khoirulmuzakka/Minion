@@ -34,6 +34,12 @@ class Minimizer {
     private : 
         MinimizerBase* optimizer; 
 
+        static std::string normalizeAlgo(std::string algo){
+            std::transform(algo.begin(), algo.end(), algo.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
+            std::replace(algo.begin(), algo.end(), '-', '_');
+            return algo;
+        }
+
     public:
         /**
          * @brief Constructor 
@@ -60,8 +66,7 @@ class Minimizer {
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
         {
-            std::string algoUpper = algo;
-            std::transform(algoUpper.begin(), algoUpper.end(), algoUpper.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
+            std::string algoUpper = normalizeAlgo(algo);
 
             if (algoUpper == "DE") optimizer = new Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
@@ -72,7 +77,7 @@ class Minimizer {
             else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algoUpper == "NELDERMEAD") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NELDERMEAD" || algoUpper == "NELDER_MEAD") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, x0, data, callback, tol, maxevals, seed, options);
@@ -110,8 +115,7 @@ class Minimizer {
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
         {
-            std::string algoUpper = algo;
-            std::transform(algoUpper.begin(), algoUpper.end(), algoUpper.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
+            std::string algoUpper = normalizeAlgo(algo);
 
             if (algoUpper == "DE") optimizer = new Differential_Evolution(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
@@ -122,7 +126,7 @@ class Minimizer {
             else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algoUpper == "NELDERMEAD") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NELDERMEAD" || algoUpper == "NELDER_MEAD") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);

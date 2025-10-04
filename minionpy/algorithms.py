@@ -588,10 +588,12 @@ class SPSO2011(MinimizerBase):
     Options
     -------
     - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
-    - ``phi_personal`` (*float*): personal acceleration constant (:math:`\phi_1`, default ``2.05``).
-    - ``phi_social`` (*float*): social acceleration constant (:math:`\phi_2`, default ``2.05``).
-    - ``neighborhood_size`` (*int*): number of neighbours used in the local best selection.
-    - ``velocity_clamp`` (*float*): velocity limit as a fraction of the search span.
+    - ``inertia_weight`` (*float*): inertia parameter :math:`\omega` (default ``0.729844``).
+    - ``cognitive_coefficient`` (*float*): parameter :math:`c_1` (default ``1.49618``).
+    - ``social_coefficient`` (*float*): parameter :math:`c_2` (default ``1.49618``).
+    - ``informant_degree`` (*int*): expected number of informants per particle (default ``3``).
+    - ``velocity_clamp`` (*float*): optional velocity clamp fraction (default ``0``).
+    - ``normalize`` (*bool*): operate in the normalised unit hypercube before mapping back to the original bounds (default ``True``).
     - ``use_latin`` (*bool*), ``support_tolerance`` (*bool*), ``bound_strategy`` (*str*): inherited from :class:`PSO`.
     """
 
@@ -617,15 +619,15 @@ class SPSO2011(MinimizerBase):
 
         Notes
         -----
-        The ``options`` dictionary extends :class:`PSO` with:
+        The ``options`` dictionary mirrors the C++ implementation.  In
+        addition to the entries recognised by :class:`PSO`, you can specify:
 
-        - **phi_personal** (*float*): Personal acceleration parameter
-          :math:`\phi_1` (default ``2.05``).
-        - **phi_social** (*float*): Social acceleration parameter
-          :math:`\phi_2` (default ``2.05``).
-        - **neighborhood_size** (*int*): Number of neighbours considered when
-          selecting the local best.  Values ``>= 1``.
-        - **velocity_clamp** (*float*): Inherited velocity clamp fraction.
+        - **inertia_weight** (*float*): inertia parameter :math:`\omega`.
+        - **cognitive_coefficient** (*float*): coefficient :math:`c_1`.
+        - **social_coefficient** (*float*): coefficient :math:`c_2`.
+        - **informant_degree** (*int*): expected number of informants.
+        - **velocity_clamp** (*float*): optional velocity clamp fraction.
+        - **normalize** (*bool*): enable/disable internal normalisation.
         """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppSPSO2011(

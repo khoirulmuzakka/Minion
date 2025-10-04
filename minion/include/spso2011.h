@@ -2,6 +2,8 @@
 #define SPSO2011_H
 
 #include "pso.h"
+#include <cmath>
+#include <limits>
 
 namespace minion {
 
@@ -43,17 +45,26 @@ protected:
     void init() override;
     void updateVelocitiesAndPositions() override;
 
+public:
+    MinionResult optimize() override;
+
 private:
-    double phiPersonal = 2.05;
-    double phiSocial = 2.05;
-    double constriction = 0.72984;
-    size_t neighborhoodSize = 3;
+    double c1 = 0.5 + std::log(2.0);
+    double c2 = 0.5 + std::log(2.0);
+    double inertia = 1.0 / (2.0 * std::log(2.0));
+    size_t informantDegree = 3;
+    bool normalizeSpace = false;
 
-    std::vector<std::vector<size_t>> neighborhoods;
-    std::vector<size_t> neighborhoodBestIndices;
+    std::vector<std::vector<size_t>> informants;
+    bool topologyDirty = true;
+    size_t stagnationCounter = 0;
+    double lastBestFitness = std::numeric_limits<double>::infinity();
 
-    void rebuildNeighborhoods();
-    void updateNeighborhoodBests();
+    std::vector<std::vector<double>> normPositions;
+    std::vector<std::vector<double>> normPersonalBest;
+
+    void randomizeInformants();
+    std::vector<double> samplePointInSphere(const std::vector<double>& center, double radius) const;
 };
 
 }
