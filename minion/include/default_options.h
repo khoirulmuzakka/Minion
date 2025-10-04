@@ -159,6 +159,18 @@ class DefaultSettings{
             {"bound_strategy", std::string("reflect-random")}
         };
 
+        std::map<std::string, ConfigValue> default_settings_CMAES = {
+            {"population_size", 0},
+            {"mu", 0},
+            {"initial_step", 0.3},
+            {"cc", 0.0},
+            {"cs", 0.0},
+            {"c1", 0.0},
+            {"cmu", 0.0},
+            {"damps", 0.0},
+            {"bound_strategy", std::string("reflect-random")}
+        };
+
         std::map<std::string, ConfigValue>  default_settings_DA= {
             {"acceptance_par", -5.0},  
             {"visit_par", 2.67},  
@@ -218,6 +230,7 @@ class DefaultSettings{
                 {"SPSO2011", default_settings_SPSO2011}, 
                 {"DMSPSO", default_settings_DMSPSO}, 
                 {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
+                {"CMAES", default_settings_CMAES}, 
                 {"DA", default_settings_DA}, 
                 {"L_BFGS_B", default_settings_LBFGSB}, 
                 {"L_BFGS", default_settings_LBFGS}

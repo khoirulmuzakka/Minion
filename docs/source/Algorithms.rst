@@ -81,20 +81,21 @@ such as Nelder-Mead, do not.
 Here is a list of algorithms implemented in Minion/MinionPy that **support** batch function calls, and therefore can fully take advantage 
 of parallelization:
 
-1) DE  
-2) LSHADE  
-3) JADE  
-4) jSO  
-5) ARRDE  
-6) NL-SHADE-RSP  
-7) LSRTDE  
-8) GWO-DE  
-9) ABC  
-10) L-BFGS-B  
-11) PSO 
-12) SPSO2011 
-13) DMSPSO 
-14) LSHADEcnEpSin
+- DE  
+- LSHADE  
+- JADE  
+- jSO  
+- ARRDE  
+- NL-SHADE-RSP  
+- LSRTDE  
+- GWO-DE  
+- ABC  
+- PSO  
+- SPSO2011  
+- DMSPSO  
+- CMA-ES  
+- LSHADE-cnEpSin  
+- L-BFGS-B  
 
 Algorithms that **do not** support batch function calls:
 
@@ -317,6 +318,35 @@ Default options::
 - ``sin_freq_base`` (*float*): Base frequency of the first sinusoidal strategy.
 - ``epsilon`` (*float*): Small constant used in probability updates.
 - ``bound_strategy`` (*str*): Boundary handling policy.
+
+
+CMA-ES
+------
+Covariance Matrix Adaptation Evolution Strategy samples offspring from an evolving multivariate normal distribution whose covariance is adapted from successful steps.
+
+*Reference: Hansen, N. and Ostermeier, A., "Adapting Arbitrary Normal Mutation Distributions in Evolution Strategies," 1996.*
+
+Algorithm name : ``"CMAES"``
+
+Default options::
+
+    {
+        "population_size"  : 0,
+        "mu"               : 0,
+        "initial_step"     : 0.3,
+        "cc"               : 0.0,
+        "cs"               : 0.0,
+        "c1"               : 0.0,
+        "cmu"              : 0.0,
+        "damps"            : 0.0,
+        "bound_strategy"   : "reflect-random"
+    }
+
+- ``population_size`` (*int*): Offspring population size (``0`` → ``4 + 3\log D``).
+- ``mu`` (*int*): Number of parents contributing to the new mean (``0`` → ``population_size / 2``).
+- ``initial_step`` (*float*): Initial step size (scaled by the average bound width).
+- ``cc``, ``cs``, ``c1``, ``cmu``, ``damps`` (*float*): Strategy parameters (defaults follow standard CMA-ES equations).
+- ``bound_strategy`` (*str*): Boundary handling policy applied to offspring.
 
 Parameters : 
 

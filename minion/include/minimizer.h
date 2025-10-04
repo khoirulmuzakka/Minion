@@ -18,6 +18,7 @@
 #include "spso2011.h"
 #include "dmspso.h"
 #include "lshadecnepsin.h"
+#include "cmaes.h"
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "l_bfgs.h"
@@ -83,6 +84,7 @@ class Minimizer {
             else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSHADE_CNEPSIN") optimizer = new LSHADE_cnEpSin(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "CMAES") optimizer = new CMAES(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "L_BFGS") optimizer = new L_BFGS(func, x0, data, callback, tol, maxevals, seed, options);
@@ -132,6 +134,7 @@ class Minimizer {
             else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSHADE_CNEPSIN") optimizer = new LSHADE_cnEpSin(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "CMAES") optimizer = new CMAES(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "L_BFGS") optimizer = new L_BFGS(func, {x0}, data, callback, tol, maxevals, seed, options);

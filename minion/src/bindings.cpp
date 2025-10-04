@@ -25,6 +25,7 @@
 #include "spso2011.h"
 #include "dmspso.h"
 #include "lshadecnepsin.h"
+#include "cmaes.h"
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "minimizer.h"
@@ -290,6 +291,21 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
         .def("optimize", &DMSPSO::optimize, py::call_guard<py::gil_scoped_release>());
+
+    py::class_<CMAES, MinimizerBase>(m, "CMAES")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &CMAES::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<Dual_Annealing, MinimizerBase>(m, "Dual_Annealing")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

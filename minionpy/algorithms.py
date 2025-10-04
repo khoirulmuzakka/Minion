@@ -27,6 +27,7 @@ from minionpycpp import PSO as cppPSO
 from minionpycpp import SPSO2011 as cppSPSO2011
 from minionpycpp import DMSPSO as cppDMSPSO
 from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
+from minionpycpp import CMAES as cppCMAES
 
 
 _PyGILState_Ensure = ctypes.pythonapi.PyGILState_Ensure
@@ -905,6 +906,61 @@ class LSHADE_cnEpSin(MinimizerBase):
         self.meanF = list(getattr(self.optimizer, "meanF", []))
         self.stdCR = list(getattr(self.optimizer, "stdCR", []))
         self.stdF = list(getattr(self.optimizer, "stdF", []))
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        return self.minionResult
+
+
+class CMAES(MinimizerBase):
+    """
+    Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+
+    Options
+    -------
+    Default options used when ``options`` is ``None``::
+
+        {
+            "population_size"  : 0,
+            "mu"               : 0,
+            "initial_step"     : 0.3,
+            "cc"               : 0.0,
+            "cs"               : 0.0,
+            "c1"               : 0.0,
+            "cmu"              : 0.0,
+            "damps"            : 0.0,
+            "bound_strategy"   : "reflect-random"
+        }
+
+    - ``population_size`` (*int*): offspring population size (``0`` → ``4 + 3\log D``).
+    - ``mu`` (*int*): number of parents (``0`` → ``population_size / 2``).
+    - ``initial_step`` (*float*): initial step size (scaled by the average bound range).
+    - ``cc``, ``cs``, ``c1``, ``cmu``, ``damps`` (*float*): strategy parameters (defaults follow the reference equations).
+    - ``bound_strategy`` (*str*): boundary handling policy.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppCMAES(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
 
