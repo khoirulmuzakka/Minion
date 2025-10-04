@@ -1,168 +1,205 @@
 #include "abc.h"
 
+#include <algorithm>
+#include <cmath>
+#include <numeric>
+
 namespace minion {
 
-void ABC::initialize() {
-    auto defaultKey = DefaultSettings().getDefaultSettings("ABC");
-    for (auto el : optionMap) defaultKey[el.first] = el.second;
-    Options options(defaultKey);
+namespace {
+inline double nectar_quality(double fitness_value) {
+    if (fitness_value >= 0.0) {
+        return 1.0 / (1.0 + fitness_value);
+    }
+    return 1.0 + std::fabs(fitness_value);
+}
+} // namespace
 
-    boundStrategy = options.get<std::string> ("bound_strategy", "reflect-random");
-    std::vector<std::string> all_boundStrategy = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
-    if (std::find(all_boundStrategy.begin(), all_boundStrategy.end(), boundStrategy)== all_boundStrategy.end()) {
-        std::cerr << "Bound stategy '"+ boundStrategy+"' is not recognized. 'Reflect-random' will be used.\n";
+void ABC::initialize() {
+    auto defaults = DefaultSettings().getDefaultSettings("ABC");
+    for (const auto& kv : optionMap) {
+        defaults[kv.first] = kv.second;
+    }
+    Options options(defaults);
+
+    boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
+    std::vector<std::string> allowed = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};
+    if (std::find(allowed.begin(), allowed.end(), boundStrategy) == allowed.end()) {
+        std::cerr << "Bound stategy '" << boundStrategy << "' is not recognized. 'Reflect-random' will be used.\n";
         boundStrategy = "reflect-random";
     }
 
-    populationSize = options.get<int> ("population_size", 0); 
-    if (populationSize==0) populationSize= 5*bounds.size();
+    populationSize = static_cast<size_t>(options.get<int>("population_size", 0));
+    if (populationSize == 0) {
+        populationSize = std::max<size_t>(5 * std::max<size_t>(bounds.size(), size_t(1)), size_t(5));
+    }
 
-    mutation_strategy = options.get<std::string> ("mutation_strategy", "current_to_best2"); 
-    std::vector<std::string> all_strategy = {"best1", "best2", "best2nd", "rand1", "current_to_best2" }; 
-    if (std::find(all_strategy.begin(), all_strategy.end(), mutation_strategy) == all_strategy.end()) {
-        std::cerr << "Mutation strategy : "+mutation_strategy+" is not known or supported. ’best1' will be used instead\n";
-        mutation_strategy="best1"; 
-    };
-    hasInitialized=true;
+    limit = static_cast<size_t>(std::max<int>(options.get<int>("limit", 100), 1));
+    hasInitialized = true;
 }
 
-void ABC::init(){
-    population = latin_hypercube_sampling(bounds, populationSize);
+void ABC::init() {
+    population = random_sampling(bounds, populationSize);
     if (!x0.empty()) {
-        for (int i=0; i<x0.size(); i++) {
-            if ( i < population.size() ) population[i] = x0[i];
-        };
-    };
+        for (size_t i = 0; i < x0.size() && i < population.size(); ++i) {
+            population[i] = x0[i];
+        }
+    }
+
     fitness = func(population, data);
+    Nevals += population.size();
+
+    trialCounters.assign(population.size(), 0);
+
     size_t best_idx = findArgMin(fitness);
     best = population[best_idx];
     best_fitness = fitness[best_idx];
-    Nevals++;
+
     history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
 }
 
-std::vector<double> ABC::mutate(size_t idx){
-    std::vector<int> available_indices(population.size()), indices;
-    size_t r1, r2, r3;
-    std::iota(available_indices.begin(), available_indices.end(), 0);
-    available_indices.erase(available_indices.begin() + idx);
-    std::vector<double> mutant;
+std::vector<double> ABC::generateNeighbor(size_t sourceIndex, size_t partnerIndex, size_t dimensionIndex) const {
+    std::vector<double> candidate = population[sourceIndex];
+    double phi = rand_gen(-1.0, 1.0);
+    candidate[dimensionIndex] = candidate[dimensionIndex] + phi * (candidate[dimensionIndex] - population[partnerIndex][dimensionIndex]);
+    return candidate;
+}
 
-    if (mutation_strategy == "best1") {
-        auto indices = random_choice<int>(available_indices, 2);
-        r1 = indices[0];
-        r2 = indices[1];
-        mutant = best;
-        for (size_t i = 0; i < best.size(); ++i) {
-            mutant[i] += rand_gen(-1.0, 1.0) * (population[r1][i] - population[r2][i]);
-        }
-    } else if (mutation_strategy == "rand1") {
-        indices = random_choice<int>(available_indices, 3);
-        r1  = indices[0];
-        r2 = indices[1];
-        r3 = indices[2];
-        mutant = population[r1];
-        for (size_t i = 0; i < population[r1].size(); ++i) {
-            mutant[i] += rand_gen(-1.0, 1.0) * (population[r2][i] - population[r3][i]);
-        }
-    }  else if (mutation_strategy == "current_to_best2") {
-        auto indices = random_choice<int>(available_indices, 2);
-        r1 = indices[0];
-        r2 = indices[1];
-        mutant = population[idx];
-        for (size_t i = 0; i < population[idx].size(); ++i) {
-            mutant[i] += rand_gen(-1.0, 1.0) * (best[i] - population[idx][i]) + rand_gen(-1.0, 1.0) * (best[i] - population[r2][i]);
-        }
-    } else {
-        throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
+double ABC::evaluateCandidate(const std::vector<double>& candidate) {
+    std::vector<std::vector<double>> wrapper(1, candidate);
+    auto result = func(wrapper, data);
+    Nevals += 1;
+    return result.front();
+}
+
+std::vector<double> ABC::computeProbabilities() const {
+    std::vector<double> probabilities(population.size(), 0.0);
+    std::vector<double> qualities(population.size(), 0.0);
+    for (size_t i = 0; i < population.size(); ++i) {
+        qualities[i] = nectar_quality(fitness[i]);
     }
-    return mutant;
-};
+    double sum = std::accumulate(qualities.begin(), qualities.end(), 0.0);
+    if (sum <= 0.0) {
+        double uniform = 1.0 / static_cast<double>(probabilities.size());
+        std::fill(probabilities.begin(), probabilities.end(), uniform);
+    } else {
+        for (size_t i = 0; i < probabilities.size(); ++i) {
+            probabilities[i] = qualities[i] / sum;
+        }
+    }
+    return probabilities;
+}
 
+bool ABC::employedPhase() {
+    bool improved = false;
+    size_t dim = bounds.size();
+    for (size_t i = 0; i < population.size(); ++i) {
+        size_t partner;
+        do {
+            partner = rand_int(population.size());
+        } while (partner == i);
+        size_t dimIndex = rand_int(dim == 0 ? 1 : dim);
+
+        auto candidate = generateNeighbor(i, partner, dimIndex);
+        enforce_bounds(candidate, bounds, boundStrategy);
+        double candidateFitness = evaluateCandidate(candidate);
+
+        if (candidateFitness < fitness[i]) {
+            population[i] = std::move(candidate);
+            fitness[i] = candidateFitness;
+            trialCounters[i] = 0;
+            improved = true;
+        } else {
+            trialCounters[i] += 1;
+        }
+        if (Nevals >= maxevals) {
+            break;
+        }
+    }
+    return improved;
+}
+
+bool ABC::onlookerPhase() {
+    bool improved = false;
+    auto probabilities = computeProbabilities();
+    std::vector<size_t> indices(population.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    size_t dim = bounds.size();
+
+    size_t onlookers = 0;
+    while (onlookers < population.size()) {
+        auto chosen = random_choice(indices, 1, probabilities);
+        size_t i = chosen.front();
+
+        size_t partner;
+        do {
+            partner = rand_int(population.size());
+        } while (partner == i);
+        size_t dimIndex = rand_int(dim == 0 ? 1 : dim);
+
+        auto candidate = generateNeighbor(i, partner, dimIndex);
+        enforce_bounds(candidate, bounds, boundStrategy);
+        double candidateFitness = evaluateCandidate(candidate);
+
+        if (candidateFitness < fitness[i]) {
+            population[i] = std::move(candidate);
+            fitness[i] = candidateFitness;
+            trialCounters[i] = 0;
+            improved = true;
+        } else {
+            trialCounters[i] += 1;
+        }
+        ++onlookers;
+        if (Nevals >= maxevals) {
+            break;
+        }
+    }
+    return improved;
+}
+
+bool ABC::scoutPhase() {
+    auto maxIt = std::max_element(trialCounters.begin(), trialCounters.end());
+    if (maxIt == trialCounters.end() || static_cast<size_t>(*maxIt) < limit) {
+        return false;
+    }
+    size_t index = static_cast<size_t>(std::distance(trialCounters.begin(), maxIt));
+    population[index] = random_sampling(bounds, 1).front();
+    fitness[index] = evaluateCandidate(population[index]);
+    trialCounters[index] = 0;
+    return true;
+}
 
 MinionResult ABC::optimize() {
     if (!hasInitialized) initialize();
     try {
         history.clear();
+        Nevals = 0;
         init();
-        size_t iter=1;
-        do {
-            auto save_population = population ; 
-            auto save_fitness = fitness;
+        size_t iter = 1;
 
-            // Generate trial solution using DE-like mutation strategy
-            std::vector<std::vector<double>> trials(population.size(), std::vector<double>(population[0].size()));
-            for (int i = 0; i < populationSize; ++i) {
-                trials[i] = mutate(i);
-            };
-            enforce_bounds(trials, bounds, boundStrategy);
-            std::vector<double> trial_fitness = func(trials, data);
-            Nevals += trials.size();
-            population = trials;
-            fitness = trial_fitness;
-
-            //greedy selection
-            for (int i =0; i<population.size(); i++){
-                if (fitness[i]>save_fitness[i]){
-                    population[i] = save_population[i]; 
-                    fitness[i] = save_fitness[i];
-                };
-            };
-
-            save_population = population;
-            save_fitness = fitness;
+        while (Nevals < maxevals) {
+            employedPhase();
+            if (Nevals >= maxevals) break;
+            onlookerPhase();
+            if (Nevals >= maxevals) break;
+            scoutPhase();
 
             size_t best_idx = findArgMin(fitness);
-            best = population[best_idx];
-            best_fitness = fitness[best_idx];
+            if (fitness[best_idx] < best_fitness) {
+                best_fitness = fitness[best_idx];
+                best = population[best_idx];
+            }
 
-            //Assign probability to be selected for the ext step
-            std::vector<double> fitness_measure, prob; 
-            double min_fitness = findMin(fitness);
-            double sum =0.0;
-            for (auto& val : fitness) {
-                double fval = 1.0/(1e+10 + val-min_fitness) ;
-                fitness_measure.push_back( fval ); 
-                sum = sum+fval;
-            } 
-            for (int i=0; i< fitness_measure.size(); i++) prob.push_back( fitness_measure[i]/sum);
-            
-            // select new trials based on the assign probability
-            population = random_choice(population, population.size(), prob);
-            //generate mutant from the current population
-            for (int i = 0; i < populationSize; ++i) {
-                trials[i] = mutate(i);
-            };
-
-            //evaluate the new mutant
-            enforce_bounds(trials, bounds, boundStrategy);
-            population = trials; 
-            fitness = func(population, data);
-            Nevals += population.size();
-
-            //greedy selection
-            for (int i =0; i<population.size(); i++){
-                if (fitness[i]>save_fitness[i]){
-                    population[i] = save_population[i]; 
-                    fitness[i] = save_fitness[i];
-                };
-            };
-
-            best_idx = findArgMin(fitness);
-            best = population[best_idx];
-            best_fitness = fitness[best_idx];
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
             history.push_back(minionResult);
-            iter++;
             if (callback != nullptr) callback(&minionResult);
-
-        } while(Nevals < maxevals); 
+            ++iter;
+        }
 
         return getBestFromHistory();
-
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
-    };
+    }
 }
 
 }

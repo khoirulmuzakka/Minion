@@ -92,7 +92,7 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_ABC= {
             {"population_size", 0},  
-            {"mutation_strategy", std::string("rand1")},
+            {"limit", 100},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 

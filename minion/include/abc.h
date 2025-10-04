@@ -19,20 +19,13 @@ public:
     double best_fitness;
     size_t populationSize;
     size_t Nevals = 0;
-    std::string mutation_strategy; 
+    size_t limit = 100;
 
 protected:
     /**
      * @brief Initializes the population and other parameters.
      */
     virtual void init();
-
-    /**
-     * @brief Mutates a given individual.
-     * @param idx Index of the individual to mutate.
-     * @return A mutated individual.
-     */
-    std::vector<double> mutate(size_t idx);
 
 public:
     /**
@@ -70,6 +63,16 @@ public:
      * @brief Initialize the algorithm given the input settings.
      */
     void initialize() override;
+
+private:
+    std::vector<int> trialCounters;
+
+    std::vector<double> computeProbabilities() const;
+    bool employedPhase();
+    bool onlookerPhase();
+    bool scoutPhase();
+    std::vector<double> generateNeighbor(size_t sourceIndex, size_t partnerIndex, size_t dimensionIndex) const;
+    double evaluateCandidate(const std::vector<double>& candidate);
 };
 
 }

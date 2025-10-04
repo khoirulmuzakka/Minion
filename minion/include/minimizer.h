@@ -21,6 +21,8 @@
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "l_bfgs.h"
+#include <algorithm>
+#include <cctype>
 
 namespace minion {
 
@@ -58,24 +60,27 @@ class Minimizer {
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
         {
-            if (algo == "DE") optimizer = new Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSHADE") optimizer = new LSHADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "JADE") optimizer = new JADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "j2020") optimizer = new j2020(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSRTDE") optimizer = new LSRTDE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "jSO") optimizer = new jSO (func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "ARRDE") optimizer = new ARRDE (func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "PSO") optimizer = new PSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "SPSO2011") optimizer = new SPSO2011(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "DMSPSO") optimizer = new DMSPSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algo == "L_BFGS") optimizer = new L_BFGS(func, x0, data, callback, tol, maxevals, seed, options);
+            std::string algoUpper = algo;
+            std::transform(algoUpper.begin(), algoUpper.end(), algoUpper.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
+
+            if (algoUpper == "DE") optimizer = new Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NELDERMEAD") optimizer = new NelderMead(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSHADE_CNEPSIN") optimizer = new LSHADE_cnEpSin(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "L_BFGS") optimizer = new L_BFGS(func, x0, data, callback, tol, maxevals, seed, options);
             else throw std::runtime_error("Unknwon algorithm : "+ algo);
         };
 
@@ -105,24 +110,27 @@ class Minimizer {
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) 
         {
-            if (algo == "DE") optimizer = new Differential_Evolution(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSHADE") optimizer = new LSHADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "JADE") optimizer = new JADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "j2020") optimizer = new j2020(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSRTDE") optimizer = new LSRTDE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "jSO") optimizer = new jSO (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "ARRDE") optimizer = new ARRDE (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "NelderMead") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "PSO") optimizer = new PSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "SPSO2011") optimizer = new SPSO2011(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "DMSPSO") optimizer = new DMSPSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algo == "L_BFGS") optimizer = new L_BFGS(func, {x0}, data, callback, tol, maxevals, seed, options);
+            std::string algoUpper = algo;
+            std::transform(algoUpper.begin(), algoUpper.end(), algoUpper.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); });
+
+            if (algoUpper == "DE") optimizer = new Differential_Evolution(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NELDERMEAD") optimizer = new NelderMead(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "SPSO2011") optimizer = new SPSO2011(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "LSHADE_CNEPSIN") optimizer = new LSHADE_cnEpSin(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "L_BFGS_B") optimizer = new L_BFGS_B(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "L_BFGS") optimizer = new L_BFGS(func, {x0}, data, callback, tol, maxevals, seed, options);
             else throw std::runtime_error("Unknwon algorithm : "+ algo);
         };
 
