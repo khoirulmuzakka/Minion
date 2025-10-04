@@ -114,8 +114,6 @@ class DefaultSettings{
             {"cognitive_coefficient", 1.5},
             {"social_coefficient", 1.5},
             {"velocity_clamp", 0.2},
-            {"use_latin", true},
-            {"support_tolerance", true},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -130,8 +128,6 @@ class DefaultSettings{
             {"informant_degree", 3},
             {"velocity_clamp", 0.0},
             {"normalize", false},
-            {"use_latin", true},
-            {"support_tolerance", true},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -145,8 +141,6 @@ class DefaultSettings{
             {"subswarm_count", 4},
             {"regroup_period", 5},
             {"velocity_clamp", 0.2},
-            {"use_latin", true},
-            {"support_tolerance", true},
             {"bound_strategy" , std::string("reflect-random")}
         };
 

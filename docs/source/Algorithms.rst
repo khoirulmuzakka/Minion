@@ -59,21 +59,9 @@ making it less intuitive to map to maxevals.
 
 Below is a list of algorithms that **ignore** the ``relTol`` parameter. Even if it is set, it will have no effect:
 
-1) ARRDE  
-2) LSRTDE  
-3) NL-SHADE-RSP  
-4) j2020  
-5) Dual Annealing  
-6) GWO-DE  
-
-
-The following DE-based algorithms **do** support tolerance-based stopping:
-
-- DE
-- JADE
-- LSHADE
-- jSO
-- Nelder-Mead
+- ARRDE  
+- j2020  
+- Dual Annealing  
 
 For these, the ``relTol`` (in Python) or ``tol`` (in C++) parameters specify the maximum allowed value for the standard deviation of the 
 function values divided by the average of the function values before the algorithm stops.
@@ -103,6 +91,10 @@ of parallelization:
 8) GWO-DE  
 9) ABC  
 10) L-BFGS-B  
+11) PSO 
+12) SPSO2011 
+13) DMSPSO 
+14) LSHADEcnEpSin
 
 Algorithms that **do not** support batch function calls:
 
@@ -197,6 +189,134 @@ Differential Evolution (DE) is a population-based stochastic optimization algori
 *Reference : Storn, R and Price, K, Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces, Journal of Global Optimization, 1997, 11, 341 - 359.*
 
 Algorithm name : ``"DE"``
+
+
+Particle Swarm Optimization (PSO)
+---------------------------------
+Minion implements several particle swarm variants. The canonical PSO uses a global-best topology and the standard inertia / acceleration update.
+
+*Reference: Kennedy, J. and Eberhart, R., "Particle Swarm Optimization," Proc. IEEE International Conference on Neural Networks, 1995.*
+
+Algorithm name : ``"PSO"``
+
+Default options::
+
+    {
+        "population_size"       : 0,
+        "inertia_weight"        : 0.7,
+        "cognitive_coefficient" : 1.5,
+        "social_coefficient"    : 1.5,
+        "velocity_clamp"        : 0.2,
+        "bound_strategy"        : "reflect-random"
+    }
+
+- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
+- ``inertia_weight`` (*float*): Inertia weight :math:`\omega`.
+- ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Acceleration constants :math:`c_1`, :math:`c_2`.
+- ``velocity_clamp`` (*float*): Fraction of the search range used as the velocity limit (``0`` disables).
+- ``bound_strategy`` (*str*): Boundary handling policy.
+
+
+SPSO-2011
+---------
+This implementation mirrors the stochastic PSO 2011 variant proposed by Clerc and Bratton, including adaptive informant topologies and hypersphere sampling.
+
+*Reference: M. Zambrano-Bigiarini, M. Clerc and R. Rojas, "Standard Particle Swarm Optimisation 2011 at CEC-2013: A baseline for future PSO improvements," 2013 IEEE Congress on Evolutionary Computation, Cancun, Mexico, 2013, pp. 2337-2344, doi: 10.1109/CEC.2013.6557848.*
+
+Algorithm name : ``"SPSO2011"``
+
+Default options::
+
+    {
+        "population_size"       : 0,
+        "inertia_weight"        : 0.729844,
+        "cognitive_coefficient" : 1.49618,
+        "social_coefficient"    : 1.49618,
+        "phi_personal"          : 1.49618,
+        "phi_social"            : 1.49618,
+        "neighborhood_size"     : 3,
+        "informant_degree"      : 3,
+        "velocity_clamp"        : 0.0,
+        "normalize"             : False,
+        "bound_strategy"        : "reflect-random"
+    }
+
+- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
+- ``inertia_weight`` (*float*): Inertia parameter :math:`\omega` (default 0.729844).
+- ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Acceleration constants.
+- ``informant_degree`` / ``neighborhood_size`` (*int*): Number of informants per particle.
+- ``velocity_clamp`` (*float*): Optional velocity clamp fraction.
+- ``normalize`` (*bool*): Work in a normalised unit hypercube before mapping back to bounds.
+- ``bound_strategy`` (*str*): Boundary handling policy.
+
+
+Dynamic Multi-Swarm PSO (DMSPSO)
+--------------------------------
+Dynamic Multi-Swarm PSO partitions the swarm into co-operative sub-swarms that periodically regroup, blending global and local attraction.
+
+Algorithm name : ``"DMSPSO"``
+
+Default options::
+
+    {
+        "population_size"       : 0,
+        "inertia_weight"        : 0.7,
+        "cognitive_coefficient" : 1.2,
+        "social_coefficient"    : 1.0,
+        "local_coefficient"     : 1.4,
+        "global_coefficient"    : 0.8,
+        "subswarm_count"        : 4,
+        "regroup_period"        : 5,
+        "velocity_clamp"        : 0.2,
+        "bound_strategy"        : "reflect-random"
+    }
+
+- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
+- ``inertia_weight`` (*float*), ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Base PSO coefficients.
+- ``local_coefficient`` (*float*): Influence of the sub-swarm best.
+- ``global_coefficient`` (*float*): Influence of the global best.
+- ``subswarm_count`` (*int*): Number of sub-swarms.
+- ``regroup_period`` (*int*): Iterations between swarm regrouping.
+- ``velocity_clamp`` (*float*), ``bound_strategy`` (*str*): Boundary handling.
+
+
+LSHADE-cnEpSin
+---------------
+Ensemble Sinusoidal LSHADE with covariance learning augments LSHADE with an ensemble of sinusoidal F-adaptation schemes and a local covariance matrix for crossover.
+
+*Reference: N. H. Awad, M. Z. Ali and P. N. Suganthan, "Ensemble sinusoidal differential covariance matrix adaptation with Euclidean neighborhood for solving CEC2017 benchmark problems," 2017 IEEE Congress on Evolutionary Computation (CEC), Donostia, Spain, 2017, pp. 372-379, doi: 10.1109/CEC.2017.7969336.*
+
+Algorithm name : ``"LSHADE_cnEpSin"``
+
+Default options::
+
+    {
+        "population_size"        : 0,
+        "memory_size"            : 5,
+        "archive_rate"           : 1.4,
+        "minimum_population_size": 4,
+        "p_best_fraction"        : 0.11,
+        "rotation_probability"   : 0.4,
+        "neighborhood_fraction"  : 0.5,
+        "freq_init"              : 0.5,
+        "learning_period"        : 20,
+        "sin_freq_base"          : 0.5,
+        "epsilon"                : 1e-8,
+        "bound_strategy"         : "reflect-random"
+    }
+
+- ``population_size`` (*int*): Initial population size (``0`` → ``18 * D``).
+- ``memory_size`` (*int*): Number of entries in the SF/CR/frequency memories.
+- ``archive_rate`` (*float*): Ratio between archive size and current population.
+- ``minimum_population_size`` (*int*): Final population size after linear reduction.
+- ``p_best_fraction`` (*float*): Fraction of top individuals used in the current-to-pbest mutation.
+- ``rotation_probability`` (*float*): Probability of performing eigen-space crossover.
+- ``neighborhood_fraction`` (*float*): Fraction of the population used to build the covariance matrix.
+- ``freq_init`` (*float*): Initial sinusoidal frequency value.
+- ``learning_period`` (*int*): Window size for the ensemble success statistics.
+- ``sin_freq_base`` (*float*): Base frequency of the first sinusoidal strategy.
+- ``epsilon`` (*float*): Small constant used in probability updates.
+- ``bound_strategy`` (*str*): Boundary handling policy.
 
 Parameters : 
 

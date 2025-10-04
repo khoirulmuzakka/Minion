@@ -34,8 +34,8 @@ public:
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>())
-        : Differential_Evolution(func, bounds, x0, data, callback, 0.0, maxevals, seed, options) {
-        support_tol = false;
+        : Differential_Evolution(func, bounds, x0, data, callback, tol, maxevals, seed, options) {
+        support_tol = true;
     }
 
     void initialize() override;

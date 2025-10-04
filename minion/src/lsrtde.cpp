@@ -103,6 +103,11 @@ MinionResult LSRTDE::optimize() {
 
     try {
         history.clear();
+        meanCR.clear();
+        meanF.clear();
+        stdCR.clear();
+        stdF.clear();
+        diversity.clear();
 
         // Evaluate initial front
         fitness = func(population, data);
@@ -147,7 +152,7 @@ MinionResult LSRTDE::optimize() {
             std::vector<double> usedF(currentFront, 0.0);
             std::vector<size_t> chosen(currentFront, 0);
 
-            double meanF = 0.4 + std::tanh(successRate * 5.0) * 0.25;
+            double meanOfF = 0.4 + std::tanh(successRate * 5.0) * 0.25;
             double sigmaF = 0.02;
 
             successCRBuffer.clear();
@@ -176,7 +181,7 @@ MinionResult LSRTDE::optimize() {
 
                 double sampledF;
                 do {
-                    sampledF = rand_norm(meanF, sigmaF);
+                    sampledF = rand_norm(meanOfF, sigmaF);
                 } while (sampledF < 0.0 || sampledF > 1.0);
                 usedF[i] = sampledF;
 
@@ -262,14 +267,18 @@ MinionResult LSRTDE::optimize() {
 
             F.assign(frontSize, avgF);
             CR.assign(frontSize, avgCR);
-           // meanF.push_back(avgF);
-           // stdF.push_back(stdFVal);
-           // meanCR.push_back(avgCR);
-           // stdCR.push_back(stdCRVal);
+            meanF.push_back(avgF);
+            stdF.push_back(stdFVal);
+            meanCR.push_back(avgCR);
+            stdCR.push_back(stdCRVal);
 
             bestIndex = findArgMin(fitness);
             best = population[bestIndex];
             best_fitness = fitness[bestIndex];
+
+            if (support_tol && checkStopping()) {
+                break;
+            }
 
             generation++;
             if (Nevals >= maxevals) {

@@ -31,8 +31,8 @@ void PSO::configureFromOptions(const Options& options) {
     if (velocityClamp < 0.0) {
         velocityClamp = 0.0;
     }
-    useLatin = options.get<bool>("use_latin", true);
-    support_tol = options.get<bool>("support_tolerance", true);
+    useLatin = true;
+    support_tol = true;
 }
 
 void PSO::initialize() {

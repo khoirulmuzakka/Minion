@@ -479,7 +479,7 @@ class NelderMead(MinimizerBase):
 
 
 class PSO(MinimizerBase):
-    """
+    r"""
     Canonical particle swarm optimization (global-best topology).
 
     Options
@@ -504,7 +504,7 @@ class PSO(MinimizerBase):
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
-        """
+        r"""
         Initialize the PSO algorithm.
 
         Parameters
@@ -531,34 +531,22 @@ class PSO(MinimizerBase):
         options : dict, optional
             Configuration dictionary.  If ``None`` the following defaults are used::
 
-                options = {
-                    "population_size"        :  0,
-                    "inertia_weight"         :  0.7,
-                    "cognitive_coefficient"  :  1.5,
-                    "social_coefficient"     :  1.5,
-                    "velocity_clamp"         :  0.2,
-                    "use_latin"              :  True,
-                    "support_tolerance"      :  True,
-                    "bound_strategy"         : "reflect-random"
+                {
+                    "population_size"       : 0,
+                    "inertia_weight"        : 0.7,
+                    "cognitive_coefficient" : 1.5,
+                    "social_coefficient"    : 1.5,
+                    "velocity_clamp"        : 0.2,
+                    "bound_strategy"        : "reflect-random"
                 }
 
             The available options are:
 
-            - **population_size** (*int*): Swarm size.  When set to ``0`` the
-              default ``5 * D`` is used (``D`` is the dimensionality).
+            - **population_size** (*int*): Swarm size (``0`` → ``5 * D``).
             - **inertia_weight** (*float*): Inertia weight :math:`\omega`.
-            - **cognitive_coefficient** (*float*): Cognitive acceleration
-              coefficient :math:`c_1`.
-            - **social_coefficient** (*float*): Social acceleration coefficient
-              :math:`c_2`.
-            - **velocity_clamp** (*float*): Fraction of each coordinate range
-              used as the velocity limit.  ``0`` disables clamping.
-            - **use_latin** (*bool*): Use Latin hypercube sampling for the swarm
-              initialisation when ``True``.
-            - **support_tolerance** (*bool*): Enable (``True``) or disable
-              (``False``) the tolerance-based stopping rule.
-            - **bound_strategy** (*str*): Strategy for handling boundary
-              violations.  Choices match those exposed by the C++ backend.
+            - **cognitive_coefficient**, **social_coefficient** (*float*): Accelerations :math:`c_1`, :math:`c_2`.
+            - **velocity_clamp** (*float*): Fraction of the search range used as the velocity limit (``0`` disables).
+            - **bound_strategy** (*str*): Boundary handling policy.
         """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppPSO(
@@ -587,14 +575,28 @@ class SPSO2011(MinimizerBase):
 
     Options
     -------
-    - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
-    - ``inertia_weight`` (*float*): inertia parameter :math:`\omega` (default ``0.729844``).
-    - ``cognitive_coefficient`` (*float*): parameter :math:`c_1` (default ``1.49618``).
-    - ``social_coefficient`` (*float*): parameter :math:`c_2` (default ``1.49618``).
-    - ``informant_degree`` (*int*): expected number of informants per particle (default ``3``).
-    - ``velocity_clamp`` (*float*): optional velocity clamp fraction (default ``0``).
-    - ``normalize`` (*bool*): operate in the normalised unit hypercube before mapping back to the original bounds (default ``True``).
-    - ``use_latin`` (*bool*), ``support_tolerance`` (*bool*), ``bound_strategy`` (*str*): inherited from :class:`PSO`.
+    Default options used when ``options`` is ``None``::
+
+        {
+            "population_size"       : 0,
+            "inertia_weight"        : 0.729844,
+            "cognitive_coefficient" : 1.49618,
+            "social_coefficient"    : 1.49618,
+            "phi_personal"          : 1.49618,
+            "phi_social"            : 1.49618,
+            "neighborhood_size"     : 3,
+            "informant_degree"      : 3,
+            "velocity_clamp"        : 0.0,
+            "normalize"             : False,
+            "bound_strategy"        : "reflect-random"
+        }
+
+    - ``population_size`` (*int*): swarm size (``0`` → ``5 * D``).
+    - ``inertia_weight`` (*float*), ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): PSO constants.
+    - ``informant_degree`` / ``neighborhood_size`` (*int*): number of informants per particle.
+    - ``velocity_clamp`` (*float*): optional velocity clamp fraction.
+    - ``normalize`` (*bool*): operate in normalised coordinates before mapping back to the original bounds.
+    - ``bound_strategy`` (*str*): boundary handling policy.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -617,17 +619,6 @@ class SPSO2011(MinimizerBase):
         x0, relTol, maxevals, callback, seed, options :
             Same semantics as :class:`PSO`.
 
-        Notes
-        -----
-        The ``options`` dictionary mirrors the C++ implementation.  In
-        addition to the entries recognised by :class:`PSO`, you can specify:
-
-        - **inertia_weight** (*float*): inertia parameter :math:`\omega`.
-        - **cognitive_coefficient** (*float*): coefficient :math:`c_1`.
-        - **social_coefficient** (*float*): coefficient :math:`c_2`.
-        - **informant_degree** (*int*): expected number of informants.
-        - **velocity_clamp** (*float*): optional velocity clamp fraction.
-        - **normalize** (*bool*): enable/disable internal normalisation.
         """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppSPSO2011(
@@ -658,11 +649,12 @@ class DMSPSO(MinimizerBase):
     -------
     - ``population_size`` (*int*): swarm size (defaults to ``5 * D`` when 0).
     - ``inertia_weight`` (*float*), ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): base PSO coefficients.
-    - ``local_coefficient`` (*float*): influence of the subswarm best.
-    - ``global_coefficient`` (*float*): influence of the global best.
-    - ``subswarm_count`` (*int*): number of dynamic subswarms.
-    - ``regroup_period`` (*int*): iterations between subswarm reshuffles.
-    - ``velocity_clamp`` (*float*), ``use_latin`` (*bool*), ``support_tolerance`` (*bool*), ``bound_strategy`` (*str*): inherited from :class:`PSO`.
+    - ``local_coefficient`` (*float*): influence of the subswarm best (default ``1.4``).
+    - ``global_coefficient`` (*float*): influence of the global best (default ``0.8``).
+    - ``subswarm_count`` (*int*): number of dynamic subswarms (default ``4``).
+    - ``regroup_period`` (*int*): iterations between subswarm reshuffles (default ``5``).
+    - ``velocity_clamp`` (*float*): fraction of the search range used as the velocity limit (default ``0.2``).
+    - ``bound_strategy`` (*str*): boundary handling policy (``"reflect-random"`` by default).
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -2276,15 +2268,22 @@ class Minimizer(MinimizerBase):
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
-        all_algo = ["LSHADE", "DE", "JADE", "jSO", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "ARRDE", "ABC", "DA", "L_BFGS_B", "L_BFGS"]
-        if not (algo in all_algo) : 
-            raise Exception("Uknownn algorithm. The algorithm must be one of these : ", all_algo)
-        
-        if (algo in ["NelderMead", "DA", "L_BFGS", "L_BFGS_B"])  and (x0 is None) : 
-            raise RuntimeError("x0 must not be none nor empty for Nelder-Mead to work!")
+        all_algo = [
+            "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
+            "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
+            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso"
+        ]
+
+        algo_lower = algo.lower()
+
+        if algo_lower not in all_algo:
+            raise Exception("Unknown algorithm. The algorithm must be one of these:", all_algo)
+
+        if algo_lower in ["neldermead", "da", "l_bfgs", "l_bfgs_b"] and (x0 is None):
+            raise RuntimeError("x0 must not be None or empty for Nelder-Mead to work!")
         
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo_lower, relTol, maxevals, self.seed, self.options)
     
     def optimize(self):
         """
