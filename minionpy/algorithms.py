@@ -912,29 +912,12 @@ class LSHADE_cnEpSin(MinimizerBase):
 
 class CMAES(MinimizerBase):
     """
-    Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+    Implementation of the Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
 
-    Options
-    -------
-    Default options used when ``options`` is ``None``::
+    Reference : Hansen, N. and Ostermeier, A., "Adapting Arbitrary Normal Mutation
+    Distributions in Evolution Strategies," 1996.
 
-        {
-            "population_size"  : 0,
-            "mu"               : 0,
-            "initial_step"     : 0.3,
-            "cc"               : 0.0,
-            "cs"               : 0.0,
-            "c1"               : 0.0,
-            "cmu"              : 0.0,
-            "damps"            : 0.0,
-            "bound_strategy"   : "reflect-random"
-        }
-
-    - ``population_size`` (*int*): offspring population size (``0`` → ``4 + 3\log D``).
-    - ``mu`` (*int*): number of parents (``0`` → ``population_size / 2``).
-    - ``initial_step`` (*float*): initial step size (scaled by the average bound range).
-    - ``cc``, ``cs``, ``c1``, ``cmu``, ``damps`` (*float*): strategy parameters (defaults follow the reference equations).
-    - ``bound_strategy`` (*str*): boundary handling policy.
+    This class inherits from `MinimizerBase`.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -945,6 +928,43 @@ class CMAES(MinimizerBase):
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the CMA-ES algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Vectorised objective function returning a list of objective values.
+        bounds : list of tuple
+            Bounds for each decision variable.
+        x0 : list[list[float]], optional
+            Optional collection of initial guesses. When multiple candidates are
+            supplied, the best according to ``func`` seeds the initial mean.
+        relTol : float, optional
+            Relative tolerance used by the stopping criterion. Default ``1e-4``.
+        maxevals : int, optional
+            Maximum number of function evaluations. Default ``100000``.
+        callback : callable, optional
+            User callback receiving intermediate :class:`MinionResult` objects.
+        seed : int, optional
+            Seed for the pseudo-random number generator. ``None`` keeps the
+            global RNG state.
+        options : dict, optional
+            Additional CMA-ES configuration. If ``None`` the following defaults
+            are applied::
+
+                options = {
+                    "population_size"  : 0,
+                    "mu"               : 0,
+                    "initial_step"     : 0.3,
+                    "cc"               : 0.0,
+                    "cs"               : 0.0,
+                    "c1"               : 0.0,
+                    "cmu"              : 0.0,
+                    "damps"            : 0.0,
+                    "bound_strategy"   : "reflect-random"
+                }
+        """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
         self.optimizer = cppCMAES(
             self._func_for_cpp,
@@ -2327,7 +2347,7 @@ class Minimizer(MinimizerBase):
         all_algo = [
             "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
             "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
-            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso"
+            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes"
         ]
 
         algo_lower = algo.lower()

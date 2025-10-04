@@ -177,6 +177,13 @@ In Python, you can pass the parameters via a dictionary when creating the `Minim
 
 
 
+.. note::
+
+   The optional ``x0`` argument can contain **multiple** initial guesses. 
+   Population-based algorithms, such as Differential Evolution variants, LSHADE, and PSO, use these samples to initialise their populations. 
+   For algorithms that evolve a single incumbent solution (e.g., CMA-ES, Nelder-Mead, L-BFGS, L-BFGS-B), Minion evaluates the provided guesses first and starts from the best-performing one.
+
+
 Each algorithm comes with a set of configurable parameters that affect its behavior during the optimization process. For example, the ``population_size`` parameter controls the number of candidate solutions in the population, while the ``mutation_rate`` defines the probability of modifying a candidate solution during the mutation process. 
 
 Please refer to the respective algorithm section for detailed descriptions of each parameter.
@@ -200,22 +207,31 @@ Minion implements several particle swarm variants. The canonical PSO uses a glob
 
 Algorithm name : ``"PSO"``
 
-Default options::
+Parameters : 
 
-    {
-        "population_size"       : 0,
-        "inertia_weight"        : 0.7,
-        "cognitive_coefficient" : 1.5,
-        "social_coefficient"    : 1.5,
-        "velocity_clamp"        : 0.2,
-        "bound_strategy"        : "reflect-random"
-    }
+- ``population_size``: 0  
 
-- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
-- ``inertia_weight`` (*float*): Inertia weight :math:`\omega`.
-- ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Acceleration constants :math:`c_1`, :math:`c_2`.
-- ``velocity_clamp`` (*float*): Fraction of the search range used as the velocity limit (``0`` disables).
-- ``bound_strategy`` (*str*): Boundary handling policy.
+  .. note:: Swarm size. If set to ``0``, it defaults to ``5 * D`` where ``D`` is the problem dimension.
+
+- ``inertia_weight``: 0.7  
+
+  .. note:: Inertia weight :math:`\omega` that controls how much momentum each particle carries between steps.
+
+- ``cognitive_coefficient``: 1.5  
+
+  .. note:: Personal acceleration constant :math:`c_1` steering particles toward their own best position.
+
+- ``social_coefficient``: 1.5  
+
+  .. note:: Social acceleration constant :math:`c_2` that pulls particles toward the global best.
+
+- ``velocity_clamp``: 0.2  
+
+  .. note:: Fraction of the search range used as a velocity limit. ``0`` disables clamping.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 SPSO-2011
@@ -226,29 +242,51 @@ This implementation mirrors the stochastic PSO 2011 variant proposed by Clerc an
 
 Algorithm name : ``"SPSO2011"``
 
-Default options::
+Parameters : 
 
-    {
-        "population_size"       : 0,
-        "inertia_weight"        : 0.729844,
-        "cognitive_coefficient" : 1.49618,
-        "social_coefficient"    : 1.49618,
-        "phi_personal"          : 1.49618,
-        "phi_social"            : 1.49618,
-        "neighborhood_size"     : 3,
-        "informant_degree"      : 3,
-        "velocity_clamp"        : 0.0,
-        "normalize"             : False,
-        "bound_strategy"        : "reflect-random"
-    }
+- ``population_size``: 0  
 
-- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
-- ``inertia_weight`` (*float*): Inertia parameter :math:`\omega` (default 0.729844).
-- ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Acceleration constants.
-- ``informant_degree`` / ``neighborhood_size`` (*int*): Number of informants per particle.
-- ``velocity_clamp`` (*float*): Optional velocity clamp fraction.
-- ``normalize`` (*bool*): Work in a normalised unit hypercube before mapping back to bounds.
-- ``bound_strategy`` (*str*): Boundary handling policy.
+  .. note:: Swarm size. ``0`` selects the heuristic default of ``5 * D``.
+
+- ``inertia_weight``: 0.729844  
+
+  .. note:: Inertia parameter :math:`\omega` controlling exploration versus exploitation.
+
+- ``cognitive_coefficient``: 1.49618  
+
+  .. note:: Cognitive acceleration constant influencing attraction toward each particle's personal best.
+
+- ``social_coefficient``: 1.49618  
+
+  .. note:: Social acceleration constant drawing particles toward informants and the global best.
+
+- ``phi_personal``: 1.49618  
+
+  .. note:: Parameter used in the stochastic hypersphere sampling for the personal component.
+
+- ``phi_social``: 1.49618  
+
+  .. note:: Parameter used in the stochastic hypersphere sampling for the social component.
+
+- ``neighborhood_size``: 3  
+
+  .. note:: Number of neighbors considered when building the adaptive informant topology.
+
+- ``informant_degree``: 3  
+
+  .. note:: Degree of the communication graph; controls how many informants each particle has.
+
+- ``velocity_clamp``: 0.0  
+
+  .. note:: Maximum velocity as a fraction of the search range. ``0`` disables the clamp.
+
+- ``normalize``: False  
+
+  .. note:: Whether to transform search vectors into a normalised unit hypercube before mapping back to bounds.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 Dynamic Multi-Swarm PSO (DMSPSO)
@@ -257,28 +295,47 @@ Dynamic Multi-Swarm PSO partitions the swarm into co-operative sub-swarms that p
 
 Algorithm name : ``"DMSPSO"``
 
-Default options::
+Parameters : 
 
-    {
-        "population_size"       : 0,
-        "inertia_weight"        : 0.7,
-        "cognitive_coefficient" : 1.2,
-        "social_coefficient"    : 1.0,
-        "local_coefficient"     : 1.4,
-        "global_coefficient"    : 0.8,
-        "subswarm_count"        : 4,
-        "regroup_period"        : 5,
-        "velocity_clamp"        : 0.2,
-        "bound_strategy"        : "reflect-random"
-    }
+- ``population_size``: 0  
 
-- ``population_size`` (*int*): Swarm size (``0`` → ``5 * D``).
-- ``inertia_weight`` (*float*), ``cognitive_coefficient`` (*float*), ``social_coefficient`` (*float*): Base PSO coefficients.
-- ``local_coefficient`` (*float*): Influence of the sub-swarm best.
-- ``global_coefficient`` (*float*): Influence of the global best.
-- ``subswarm_count`` (*int*): Number of sub-swarms.
-- ``regroup_period`` (*int*): Iterations between swarm regrouping.
-- ``velocity_clamp`` (*float*), ``bound_strategy`` (*str*): Boundary handling.
+  .. note:: Swarm size. ``0`` enables the adaptive default of ``5 * D`` particles.
+
+- ``inertia_weight``: 0.7  
+
+  .. note:: Inertia term balancing exploration and exploitation across sub-swarms.
+
+- ``cognitive_coefficient``: 1.2  
+
+  .. note:: Personal attraction strength toward each particle's historical best.
+
+- ``social_coefficient``: 1.0  
+
+  .. note:: Global attraction weight toward the swarm-wide best.
+
+- ``local_coefficient``: 1.4  
+
+  .. note:: Influence of the current sub-swarm best position.
+
+- ``global_coefficient``: 0.8  
+
+  .. note:: Influence of the overall global best retained across regroupings.
+
+- ``subswarm_count``: 4  
+
+  .. note:: Number of co-operative sub-swarms maintained before regrouping.
+
+- ``regroup_period``: 5  
+
+  .. note:: Iterations between sub-swarm regrouping events.
+
+- ``velocity_clamp``: 0.2  
+
+  .. note:: Fraction of the search range that caps particle velocities. ``0`` disables clamping.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 LSHADE-cnEpSin
@@ -289,95 +346,102 @@ Ensemble Sinusoidal LSHADE with covariance learning augments LSHADE with an ense
 
 Algorithm name : ``"LSHADE_cnEpSin"``
 
-Default options::
+Parameters : 
 
-    {
-        "population_size"        : 0,
-        "memory_size"            : 5,
-        "archive_rate"           : 1.4,
-        "minimum_population_size": 4,
-        "p_best_fraction"        : 0.11,
-        "rotation_probability"   : 0.4,
-        "neighborhood_fraction"  : 0.5,
-        "freq_init"              : 0.5,
-        "learning_period"        : 20,
-        "sin_freq_base"          : 0.5,
-        "epsilon"                : 1e-8,
-        "bound_strategy"         : "reflect-random"
-    }
+- ``population_size``: 0  
 
-- ``population_size`` (*int*): Initial population size (``0`` → ``18 * D``).
-- ``memory_size`` (*int*): Number of entries in the SF/CR/frequency memories.
-- ``archive_rate`` (*float*): Ratio between archive size and current population.
-- ``minimum_population_size`` (*int*): Final population size after linear reduction.
-- ``p_best_fraction`` (*float*): Fraction of top individuals used in the current-to-pbest mutation.
-- ``rotation_probability`` (*float*): Probability of performing eigen-space crossover.
-- ``neighborhood_fraction`` (*float*): Fraction of the population used to build the covariance matrix.
-- ``freq_init`` (*float*): Initial sinusoidal frequency value.
-- ``learning_period`` (*int*): Window size for the ensemble success statistics.
-- ``sin_freq_base`` (*float*): Base frequency of the first sinusoidal strategy.
-- ``epsilon`` (*float*): Small constant used in probability updates.
-- ``bound_strategy`` (*str*): Boundary handling policy.
+  .. note:: Initial population size. ``0`` chooses the default ``18 * D`` heuristic.
+
+- ``memory_size``: 5  
+
+  .. note:: Number of entries stored in the shared scaling-factor, crossover-rate, and frequency memories.
+
+- ``archive_rate``: 1.4  
+
+  .. note:: Ratio between archive size and current population size.
+
+- ``minimum_population_size``: 4  
+
+  .. note:: Final population size reached by linear population reduction.
+
+- ``p_best_fraction``: 0.11  
+
+  .. note:: Fraction of top individuals eligible for the current-to-``p``-best mutation.
+
+- ``rotation_probability``: 0.4  
+
+  .. note:: Probability of switching to eigen-space crossover with covariance learning.
+
+- ``neighborhood_fraction``: 0.5  
+
+  .. note:: Fraction of the population used to estimate the covariance matrix.
+
+- ``freq_init``: 0.5  
+
+  .. note:: Initial value for the sinusoidal frequency adaptation.
+
+- ``learning_period``: 20  
+
+  .. note:: Window size for tracking ensemble success statistics.
+
+- ``sin_freq_base``: 0.5  
+
+  .. note:: Base frequency for the first sinusoidal strategy.
+
+- ``epsilon``: 1e-8  
+
+  .. note:: Small constant used to stabilise probability updates.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 CMA-ES
 ------
 Covariance Matrix Adaptation Evolution Strategy samples offspring from an evolving multivariate normal distribution whose covariance is adapted from successful steps.
 
-*Reference: Hansen, N. and Ostermeier, A., "Adapting Arbitrary Normal Mutation Distributions in Evolution Strategies," 1996.*
+*Reference: N. Hansen and A. Ostermeier, "Adapting arbitrary normal mutation distributions in evolution strategies: the covariance matrix adaptation," Proceedings of IEEE International Conference on Evolutionary Computation, Nagoya, Japan, 1996, pp. 312-317, doi: 10.1109/ICEC.1996.542381.*
 
 Algorithm name : ``"CMAES"``
-
-Default options::
-
-    {
-        "population_size"  : 0,
-        "mu"               : 0,
-        "initial_step"     : 0.3,
-        "cc"               : 0.0,
-        "cs"               : 0.0,
-        "c1"               : 0.0,
-        "cmu"              : 0.0,
-        "damps"            : 0.0,
-        "bound_strategy"   : "reflect-random"
-    }
-
-- ``population_size`` (*int*): Offspring population size (``0`` → ``4 + 3\log D``).
-- ``mu`` (*int*): Number of parents contributing to the new mean (``0`` → ``population_size / 2``).
-- ``initial_step`` (*float*): Initial step size (scaled by the average bound width).
-- ``cc``, ``cs``, ``c1``, ``cmu``, ``damps`` (*float*): Strategy parameters (defaults follow standard CMA-ES equations).
-- ``bound_strategy`` (*str*): Boundary handling policy applied to offspring.
 
 Parameters : 
 
 - ``population_size``: 0  
 
-  .. note:: Initial population size (N). If set to `0`, it will be automatically determined. 
+  .. note:: Number of offspring sampled each generation. ``0`` derives the default ``4 + 3 \log(D)`` value.
 
-                .. math::
+- ``mu``: 0  
 
-                        N = 5 \cdot D
+  .. note:: Number of parents contributing to the new mean. ``0`` sets it to ``population_size / 2``.
 
-                where *D* is the dimensionality of the problem.
+- ``initial_step``: 0.3  
 
-- ``mutation_rate``: 0.5 
+  .. note:: Initial global step size, scaled by the average bound width.
 
-  .. note:: The value of the mutation rate (F).
+- ``cc``: 0.0  
 
-- ``crossover_rate``: 0.8  
+  .. note:: Cumulation parameter for the covariance evolution path.
 
-  .. note:: The probability of recombining parent and mutant vectors (CR value).
+- ``cs``: 0.0  
 
-- ``mutation_strategy``: ``best1bin``  
+  .. note:: Cumulation parameter for the step-size control path.
 
-  .. note:: Mutation strategy used in the optimization process. Available strategies:  
-                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
-                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``.
+- ``c1``: 0.0  
 
-- ``bound_strategy``: ``reflect-random`` 
+  .. note:: Learning rate for rank-one covariance updates.
 
-  .. note:: Method for handling boundary violations. Available strategies:  
-                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+- ``cmu``: 0.0  
+
+  .. note:: Learning rate for the rank-``\mu`` covariance update.
+
+- ``damps``: 0.0  
+
+  .. note:: Damping parameter controlling how aggressively the step size adapts.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 Adaptive Restart-Refine Differential Evolution (ARRDE)
@@ -402,7 +466,7 @@ Parameters :
 
   .. note:: final (minimum) population size during linear population size reduction.
 
-- ``archive_size_ratio``: 2.0  
+- ``archive_size_ratio``: 2.5  
 
   .. note:: The ratio of archive size to the current population size .
 
@@ -410,7 +474,7 @@ Parameters :
 
   .. note:: The value of std(f)/mean(f) below which a population is said to be converged.
 
-- ``refine_decrease_factor``: 0.9 
+- ``refine_decrease_factor``: 0.8 
 
   .. note:: The decrease factor of *converge_relTol* in the refinement phase. 
 

@@ -96,8 +96,14 @@ void CMAES::initialize() {
 
     mean = Eigen::VectorXd::Zero(dimension);
     if (!x0.empty() && x0[0].size() == dimension) {
+        std::vector<double> initialGuess;
+        if (x0.size() > 1) {
+            initialGuess = findBestPoint(x0);
+        } else {
+            initialGuess = x0.front();
+        }
         for (size_t i = 0; i < dimension; ++i) {
-            mean(static_cast<Eigen::Index>(i)) = x0[0][i];
+            mean(static_cast<Eigen::Index>(i)) = initialGuess[i];
         }
     } else {
         auto initial = random_sampling(bounds, 1).front();
