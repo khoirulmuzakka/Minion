@@ -65,14 +65,7 @@ public:
     void initialize() override;
 
 private:
-    std::vector<int> trialCounters;
-
-    std::vector<double> computeProbabilities() const;
-    bool employedPhase();
-    bool onlookerPhase();
-    bool scoutPhase();
-    std::vector<double> generateNeighbor(size_t sourceIndex, size_t partnerIndex, size_t dimensionIndex) const;
-    double evaluateCandidate(const std::vector<double>& candidate);
+    std::vector<size_t> trialCounters;
 };
 
 }
