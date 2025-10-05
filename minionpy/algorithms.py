@@ -28,6 +28,8 @@ from minionpycpp import SPSO2011 as cppSPSO2011
 from minionpycpp import DMSPSO as cppDMSPSO
 from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
 from minionpycpp import CMAES as cppCMAES
+from minionpycpp import ABIPOP_CMAES as cppABIPOP_CMAES
+
 
 
 _PyGILState_Ensure = ctypes.pythonapi.PyGILState_Ensure
@@ -981,7 +983,69 @@ class CMAES(MinimizerBase):
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
+        return self.minionResult
+    
+
+class ABIPOP_CMAES(MinimizerBase):
+    """
+    Implementation of the ABIPOP Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+
+    This class inherits from `MinimizerBase`.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the CMA-ES algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Vectorised objective function returning a list of objective values.
+        bounds : list of tuple
+            Bounds for each decision variable.
+        x0 : list[list[float]], optional
+            Optional collection of initial guesses. When multiple candidates are
+            supplied, the best according to ``func`` seeds the initial mean.
+        relTol : float, optional
+            Relative tolerance used by the stopping criterion. Default ``1e-4``.
+        maxevals : int, optional
+            Maximum number of function evaluations. Default ``100000``.
+        callback : callable, optional
+            User callback receiving intermediate :class:`MinionResult` objects.
+        seed : int, optional
+            Seed for the pseudo-random number generator. ``None`` keeps the
+            global RNG state.
+        options : dict, optional
+            Additional CMA-ES configuration. If ``None`` the following defaults
+            are applied::
+
+                options = {
+                    
+                }
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppABIPOP_CMAES(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -2347,7 +2411,7 @@ class Minimizer(MinimizerBase):
         all_algo = [
             "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
             "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
-            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes"
+            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "abipop_cmaes"
         ]
 
         algo_lower = algo.lower()
