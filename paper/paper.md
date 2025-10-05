@@ -76,7 +76,7 @@ Minion currently implements the following optimization algorithms:
 - L-BFGS-B [@doi:10.1137/0916069]
 - L-BFGS [@Liu1989]
 
-Additional algorithms are planned for future releases. Minion also ships benchmark suites from IEEE CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022.
+Additional algorithms are planned for future releases. Minion also ships benchmark suites from IEEE CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
 
 Minion exposes a consistent `Minimizer` interface in both C++ and Python. Algorithms are selected via a simple identifier (e.g. `"ARRDE"`, `"L_BFGS_B"`), and option names remain stable across population-based and quasi-Newton methods. The result object, `MinionResult`, mirrors the structure of `scipy.optimize.OptimizeResult`, making it straightforward to exchange results with SciPy tooling or any code that expects that layout.
 
