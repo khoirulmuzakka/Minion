@@ -66,7 +66,6 @@ Minion currently implements the following optimization algorithms:
 - NL-SHADE-RSP [@9504959]
 - LSRTDE [@10611907]
 - Adaptive Restart-Refine Differential Evolution (ARRDE)
-- Grey Wolf Differential Evolution (GWO-DE) [@Mirjalili2014]
 - Artificial Bee Colony (ABC) [@10.1007/978-3-540-72950-1_77]
 - Canonical PSO [@Kennedy1995]
 - SPSO-2011 [@ZambranoBigiarini2013]
@@ -83,7 +82,7 @@ Minion exposes a consistent `Minimizer` interface in both C++ and Python. Algori
 
 In Minion, the optional ``x0`` argument may contain multiple initial guesses—an uncommon capability in optimisation libraries. This is practical when prior knowledge suggests several promising starting points or when restart strategies are desired. Population methods treat the entries as explicit seeds for their initial populations, while single-trajectory solvers (e.g. CMA-ES, Nelder–Mead, L-BFGS variants) evaluate each candidate and proceed from the best-performing one. The behaviour streamlines the reuse of domain heuristics when launching new optimisation runs.
 
-Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce several features tailored to noisy, vectorised workloads. Gradient estimates are generated from batched finite differences, while noise-aware step sizes and a Lanczos-style smoothing filter reduce variance in the resulting updates. This design is motivated by the robustness that has kept Minuit/Migrad a standard tool in high-energy physics for decades [@James1975]. The accompanying benchmark notebook shows that, under these modifications, Minion’s quasi-Newton solvers compete favourably with Minuit/Migrad on noisy CEC test suites while preserving a fully vectorised evaluation pipeline.
+Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce several features tailored to noisy, vectorised workloads. Gradient estimates are generated from batched finite differences, while noise-aware step sizes and a Lanczos-style smoothing filter reduce variance in the resulting updates. This design is motivated by the robustness that has kept Minuit/Migrad a standard tool in high-energy physics for decades [@James:1994vla]. The accompanying benchmark notebook shows that, under these modifications, Minion’s quasi-Newton solvers compete favourably with Minuit/Migrad on noisy CEC test suites while preserving a fully vectorised evaluation pipeline.
 
 # Availability and documentation
 Minion is primarily implemented in C++. However, recognizing the popularity of Python and its ease of use, a Python wrapper (MinionPy) is also available. It can be installed via PIP, allowing for seamless integration into Python-based workflows. Documentation on how to use both Minion and MinionPy is available at: https://minion-py.readthedocs.io/ .
