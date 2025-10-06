@@ -54,25 +54,35 @@ Minion supports the following optimization algorithms:
 
 - **Differential Evolution (DE) Variants:**
 
-  - ``"LSHADE"``  (Success History Adaptive DE with Linear Population Size Reduction)
-  - ``"DE"``      (The original DE)
-  - ``"JADE"``     (An adaptive DE)
-  - ``"jSO"``      (A variant of LSHADE with some improvements)
-  - ``"NLSHADE_RSP"`` (A variant of LSHADE with some improvements)
-  - ``"j2020"``  (A variant of jDE algorithm)
-  - ``"GWO_DE"``  (Grey Wolf-DE optimization)
-  - ``"ARRDE"``   (Adaptive restart-refine DE)
-  - ``"LSRTDE"``  (A variant of LSHADE with some improvements)
+    - ``"LSHADE"``  (Success History Adaptive DE with Linear Population Size Reduction)
+    - ``"DE"``      (The original DE)
+    - ``"JADE"``     (An adaptive DE)
+    - ``"jSO"``      (A variant of LSHADE with some improvements)
+    - ``"NLSHADE_RSP"`` (A variant of LSHADE with some improvements)
+    - ``"LSHADE_cnEpSin"`` (A variant of LSHADE with some improvements)
+    - ``"j2020"``  (A variant of jDE algorithm)
+    - ``"GWO_DE"``  (Grey Wolf-DE optimization)
+    - ``"ARRDE"``   (Adaptive restart-refine DE)
+    - ``"LSRTDE"``  (A variant of LSHADE with some improvements)
 
 - **Swarm Intelligence Algorithms:**
 
-  - ``"ABC"`` (Artificial Bee Colony)
-  - ``"DA"`` (Generalized Simulated Annealing or Dual Annealing)
+    - ``"ABC"`` (Artificial Bee Colony)
+    - ``"PSO"`` (Particle Swarm Optimization)
+    - ``"SPSO2011"`` (Standard PSO 2011 variant)
+    - ``"DMSPSO"`` (Dynamic Multi-Swarm PSO)
+
+- **CMA-ES Variants:**
+
+    - ``"CMAES"`` (Covariance Matrix Adaptation Evolution Strategy)
+    - ``"BIPOP_aCMAES"`` (Adaptive bi-population CMA-ES with adaptive restarts)
 
 - **Classical Optimization Methods:**
 
-  - ``"NelderMead"``
-  - ``"L_BFGS_B"`` (Limited-memory BFGS with Bound Constraints)
+    - ``"NelderMead"``
+    - ``"DA"`` (Generalized Simulated Annealing or Dual Annealing)
+    - ``"L_BFGS_B"`` (Limited-memory BFGS with Bound Constraints)
+    - ``"L_BFGS"`` (Unconstrained L-BFGS)
 
 Each of these algorithms can be selected using their corresponding names when calling Minion's `Minimizer`.
 

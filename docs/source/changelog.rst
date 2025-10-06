@@ -5,6 +5,14 @@ Changelog
    :local:
    :depth: 2
 
+
+Version 0.2.6 - 2025-10-06
+--------------------------
+
+**Added**
+
+- Implemented BIPOP_aCMAES
+
 Version 0.2.5 - 2025-10-05
 --------------------------
 

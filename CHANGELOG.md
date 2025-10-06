@@ -1,4 +1,8 @@
 # Changelog
+## [0.2.6] - 2025-10-06
+### Added
+- Added BIPOP_aCMAES
+
 ## [0.2.5] - 2025-10-05
 ### Added
 - Added PSO, SPSO-2011, DMSPSO, LSHADE_cnepsin, and CMAES
