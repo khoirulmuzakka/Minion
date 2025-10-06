@@ -33,6 +33,7 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
       - Grey Wolf DE Optimization  
       - Canonical PSO, SPSO-2011, Dynamic Multi-Swarm PSO (DMS-PSO)  
       - CMA-ES *(Covariance Matrix Adaptation Evolution Strategy)*  
+      - BIPOP-aCMAES
     - **Classical optimization algorithms:**
       - Nelder-Mead  
       - Generalized Simulated Annealing (Dual Annealing)  

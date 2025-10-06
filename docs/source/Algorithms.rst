@@ -94,6 +94,7 @@ of parallelization:
 - SPSO2011  
 - DMSPSO  
 - CMA-ES  
+- BIPOP-aCMAES
 - LSHADE-cnEpSin  
 - L-BFGS-B  
 
@@ -438,6 +439,37 @@ Parameters :
 - ``damps``: 0.0  
 
   .. note:: Damping parameter controlling how aggressively the step size adapts.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+
+BIPOP aCMA-ES
+--------------
+BIPOP aCMA-ES is an adaptive bi-population variant of CMA-ES that alternates between runs with small and large population sizes to balance local refinement and global exploration. It includes an adaptive restart mechanism to allocate budget across these runs.
+
+*Reference: Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference Companion on Genetic and Evolutionary Computation Conference: Late Breaking Papers (GECCO '09). Association for Computing Machinery, New York, NY, USA, 2389–2396. https://doi.org/10.1145/1570256.1570333. *
+
+Algorithm name : ``"BIPOP_aCMAES"``
+
+Parameters : 
+
+- ``population_size``: 0  
+
+  .. note:: Number of offspring sampled each generation. ``0`` derives the default value based on the dimensionality of the problem.
+
+- ``max_restarts``: 8
+
+  .. note:: Maximum number of adaptive restarts the algorithm will perform.
+
+- ``max_iterations``: 5000
+
+  .. note:: Maximum number of iterations (generations) allowed per run.
+
+- ``initial_step``: 0.3
+
+  .. note:: Initial global step size (sigma), scaled by the average bound width.
 
 - ``bound_strategy``: ``reflect-random``  
 

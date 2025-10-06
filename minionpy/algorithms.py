@@ -28,7 +28,7 @@ from minionpycpp import SPSO2011 as cppSPSO2011
 from minionpycpp import DMSPSO as cppDMSPSO
 from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
 from minionpycpp import CMAES as cppCMAES
-from minionpycpp import ABIPOP_CMAES as cppABIPOP_CMAES
+from minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
 
 
 
@@ -986,9 +986,11 @@ class CMAES(MinimizerBase):
         return self.minionResult
     
 
-class ABIPOP_CMAES(MinimizerBase):
+class BIPOP_aCMAES(MinimizerBase):
     """
-    Implementation of the ABIPOP Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+    Implementation of the BIPOP Adaptive Covariance Matrix Adaptation Evolution Strategy (BIPOP aCMA-ES).
+
+    Reference : Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference Companion on Genetic and Evolutionary Computation Conference: Late Breaking Papers (GECCO '09). Association for Computing Machinery, New York, NY, USA, 2389–2396. https://doi.org/10.1145/1570256.1570333
 
     This class inherits from `MinimizerBase`.
     """
@@ -1002,7 +1004,7 @@ class ABIPOP_CMAES(MinimizerBase):
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
-        Initialize the CMA-ES algorithm.
+        Initialize the BIPOP aCMA-ES algorithm.
 
         Parameters
         ----------
@@ -1027,11 +1029,15 @@ class ABIPOP_CMAES(MinimizerBase):
             are applied::
 
                 options = {
-                    
+                    "population_size" : 0,    # If 0, determined automatically
+                    "max_restarts"    : 8,    # Maximum number of adaptive restarts
+                    "max_iterations"  : 5000, # Max iterations per run
+                    "initial_step"    : 0.3,  # Initial CMA-ES step size (sigma)
+                    "bound_strategy"  : "reflect-random" # Boundary handling
                 }
         """
         super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppABIPOP_CMAES(
+        self.optimizer = cppBIPOP_aCMAES(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
@@ -2411,7 +2417,7 @@ class Minimizer(MinimizerBase):
         all_algo = [
             "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
             "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
-            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "abipop_cmaes"
+            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "bipop_acmaes"
         ]
 
         algo_lower = algo.lower()

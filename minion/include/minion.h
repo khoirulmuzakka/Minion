@@ -29,6 +29,6 @@
 #include "spso2011.h"
 #include "dmspso.h"
 #include "lshadecnepsin.h"
-#include "abipop_cmaes.h"
+#include "bipop_acmaes.h"
 
 #endif // MINION_H

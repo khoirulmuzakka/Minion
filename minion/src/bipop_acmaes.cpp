@@ -1,4 +1,4 @@
-#include "abipop_cmaes.h"
+#include "bipop_acmaes.h"
 
 #include "default_options.h"
 #include "utility.h"
@@ -10,7 +10,7 @@
 
 namespace minion {
 
-ABIPOP_CMAES::ABIPOP_CMAES(
+BIPOP_aCMAES::BIPOP_aCMAES(
     MinionFunction func,
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
@@ -22,7 +22,7 @@ ABIPOP_CMAES::ABIPOP_CMAES(
     std::map<std::string, ConfigValue> options)
     : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
 
-void ABIPOP_CMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
+void BIPOP_aCMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
     n_params = n_params_;
     n_offsprings_reserve = n_offsprings_reserve_;
     n_parents_reserve = n_parents_reserve_;
@@ -48,7 +48,7 @@ void ABIPOP_CMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_par
     keys_offsprings.resize(n_offsprings_reserve);
 }
 
-void ABIPOP_CMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_) {
+void BIPOP_aCMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_) {
     n_params = n_params_;
     n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
     n_parents = std::min(n_parents_, n_parents_reserve);
@@ -119,7 +119,7 @@ void ABIPOP_CMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, si
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
 }
 
-std::vector<double> ABIPOP_CMAES::applyBounds(const std::vector<double>& candidate) const {
+std::vector<double> BIPOP_aCMAES::applyBounds(const std::vector<double>& candidate) const {
     if (!useBounds) {
         return candidate;
     }
@@ -128,12 +128,12 @@ std::vector<double> ABIPOP_CMAES::applyBounds(const std::vector<double>& candida
     return wrapper.front();
 }
 
-std::vector<double> ABIPOP_CMAES::eigenToStd(const Eigen::VectorXd& vec) const {
+std::vector<double> BIPOP_aCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
-void ABIPOP_CMAES::initialize() {
-    auto defaults = DefaultSettings().getDefaultSettings("ABIPOP_CMAES");
+void BIPOP_aCMAES::initialize() {
+    auto defaults = DefaultSettings().getDefaultSettings("BIPOP_aCMAES");
     for (const auto& item : optionMap) {
         defaults[item.first] = item.second;
     }
@@ -141,7 +141,7 @@ void ABIPOP_CMAES::initialize() {
 
     dimension = bounds.size();
     if (dimension == 0) {
-        throw std::runtime_error("ABIPOP CMA-ES requires bounded variables");
+        throw std::runtime_error("BIPOP aCMA-ES requires bounded variables");
     }
 
     useBounds = !bounds.empty();
@@ -157,7 +157,7 @@ void ABIPOP_CMAES::initialize() {
 
     maxRestarts = static_cast<size_t>(options.get<int>("max_restarts", 8));
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
-    support_tol = options.get<bool>("support_tol", true);
+    support_tol = true;
 
     sigma0 = options.get<double>("initial_step", 0.3);
     if (sigma0 <= 0.0) {
@@ -207,7 +207,7 @@ void ABIPOP_CMAES::initialize() {
     hasInitialized = true;
 }
 
-void ABIPOP_CMAES::sampleOffsprings() {
+void BIPOP_aCMAES::sampleOffsprings() {
     for (size_t j = 0; j < era.n_offsprings; ++j) {
         for (size_t i = 0; i < era.n_params; ++i) {
             era.z_offsprings(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = rand_norm(0.0, 1.0);
@@ -227,7 +227,7 @@ void ABIPOP_CMAES::sampleOffsprings() {
     }
 }
 
-size_t ABIPOP_CMAES::evaluatePopulation() {
+size_t BIPOP_aCMAES::evaluatePopulation() {
     currentFitness.assign(era.n_offsprings, std::numeric_limits<double>::infinity());
     if (Nevals >= maxevals) {
         should_stop_run = true;
@@ -276,7 +276,7 @@ size_t ABIPOP_CMAES::evaluatePopulation() {
     return evalCount;
 }
 
-void ABIPOP_CMAES::rankAndSort() {
+void BIPOP_aCMAES::rankAndSort() {
     std::vector<double> fitness(era.n_offsprings);
     for (size_t i = 0; i < era.n_offsprings; ++i) {
         fitness[i] = era.f_offsprings(static_cast<Eigen::Index>(i));
@@ -299,7 +299,7 @@ void ABIPOP_CMAES::rankAndSort() {
     currentFitness = fitness;
 }
 
-void ABIPOP_CMAES::updateBest() {
+void BIPOP_aCMAES::updateBest() {
     if (era.keys_offsprings.empty()) {
         return;
     }
@@ -314,14 +314,14 @@ void ABIPOP_CMAES::updateBest() {
     }
 }
 
-void ABIPOP_CMAES::assignNewMean() {
+void BIPOP_aCMAES::assignNewMean() {
     era.x_mean_old = era.x_mean;
     Eigen::VectorXd weights = era.w.head(static_cast<Eigen::Index>(era.n_parents));
     era.y_mean = era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_parents)) * weights;
     era.x_mean = era.x_mean + era.sigma * era.y_mean;
 }
 
-void ABIPOP_CMAES::updateEvolutionPaths() {
+void BIPOP_aCMAES::updateEvolutionPaths() {
     Eigen::VectorXd CinvSqrt_y = era.C_invsqrt * era.y_mean;
     era.p_s = (1.0 - era.c_s) * era.p_s + era.p_s_fact * CinvSqrt_y;
 
@@ -334,7 +334,7 @@ void ABIPOP_CMAES::updateEvolutionPaths() {
     era.p_c = (1.0 - era.c_c) * era.p_c + era.h_sig * era.p_c_fact * era.y_mean;
 }
 
-void ABIPOP_CMAES::updateWeights() {
+void BIPOP_aCMAES::updateWeights() {
     for (size_t i = 0; i < era.n_offsprings; ++i) {
         if (era.w(static_cast<Eigen::Index>(i)) < 0.0) {
             Eigen::VectorXd adjusted = era.C_invsqrt * era.y_offsprings_ranked.col(static_cast<Eigen::Index>(i));
@@ -348,7 +348,7 @@ void ABIPOP_CMAES::updateWeights() {
     }
 }
 
-void ABIPOP_CMAES::updateCovarianceMatrix() {
+void BIPOP_aCMAES::updateCovarianceMatrix() {
     double h1 = (1.0 - era.h_sig) * era.c_c * (2.0 - era.c_c);
     double w_sum = era.w.head(static_cast<Eigen::Index>(era.n_offsprings)).sum();
 
@@ -362,15 +362,15 @@ void ABIPOP_CMAES::updateCovarianceMatrix() {
     era.C = 0.5 * (era.C + era.C.transpose());
 }
 
-void ABIPOP_CMAES::updateStepsize() {
+void BIPOP_aCMAES::updateStepsize() {
     double norm_ps = era.p_s.norm();
     era.sigma *= std::exp(era.c_s / era.d_s * (norm_ps / era.chi - 1.0));
 }
 
-void ABIPOP_CMAES::updateEigenDecomposition() {
+void BIPOP_aCMAES::updateEigenDecomposition() {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(era.C);
     if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigen decomposition failed in ABIPOP CMA-ES");
+        throw std::runtime_error("Eigen decomposition failed in BIPOP_aCMA-ES");
     }
     Eigen::VectorXd evals = solver.eigenvalues();
     for (Eigen::Index i = 0; i < evals.size(); ++i) {
@@ -386,7 +386,7 @@ void ABIPOP_CMAES::updateEigenDecomposition() {
     era.C_invsqrt = era.B * invSqrt.asDiagonal() * era.B.transpose();
 }
 
-void ABIPOP_CMAES::checkStoppingCriteria() {
+void BIPOP_aCMAES::checkStoppingCriteria() {
     if (era.eigvals_C.size() == 0) {
         return;
     }
@@ -434,7 +434,7 @@ void ABIPOP_CMAES::checkStoppingCriteria() {
     }
 }
 
-void ABIPOP_CMAES::recordHistory(double relRange) {
+void BIPOP_aCMAES::recordHistory(double relRange) {
     bool success = support_tol && relRange <= stoppingTol;
     minionResult = MinionResult(best, best_fitness, globalGeneration, Nevals, success, success ? "stopping tolerance reached" : "");
     history.push_back(minionResult);
@@ -447,7 +447,7 @@ void ABIPOP_CMAES::recordHistory(double relRange) {
     }
 }
 
-MinionResult ABIPOP_CMAES::optimize() {
+MinionResult BIPOP_aCMAES::optimize() {
     if (!hasInitialized) {
         initialize();
     }

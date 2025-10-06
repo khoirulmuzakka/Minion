@@ -1,5 +1,5 @@
-#ifndef ABIPOP_CMAES_H
-#define ABIPOP_CMAES_H
+#ifndef BIPOP_ACMAES_H
+#define BIPOP_ACMAES_H
 
 #include "minimizer_base.h"
 
@@ -10,12 +10,20 @@
 namespace minion {
 
 /**
- * @class ABIPOP_CMAES
- * @brief Adaptive BIPOP Covariance Matrix Adaptation Evolution Strategy implementation.
+ * @class BIPOP_aCMAES
+ * @brief Class implementing the BIPOP-aCMA-ES algorithm.
+ *
+ * Reference: Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference Companion on Genetic and Evolutionary Computation Conference: Late Breaking Papers (GECCO '09). Association for Computing Machinery, New York, NY, USA, 2389–2396. https://doi.org/10.1145/1570256.1570333
+ *
+ * The BIPOP_aCMAES class implements an adaptive variant of the BIPOP
+ * (bi-population) Covariance Matrix Adaptation Evolution Strategy (CMA-ES).
+ * It manages multiple restart strategies with varying population sizes and
+ * maintains evolution paths, covariance updates, and step-size control to
+ * efficiently explore and exploit the search space.
  */
-class ABIPOP_CMAES : public MinimizerBase {
+class BIPOP_aCMAES : public MinimizerBase {
 public:
-    ABIPOP_CMAES(
+    BIPOP_aCMAES(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},

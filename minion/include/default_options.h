@@ -171,12 +171,11 @@ class DefaultSettings{
             {"bound_strategy", std::string("reflect-random")}
         };
 
-        std::map<std::string, ConfigValue> default_settings_ABIPOP_CMAES = {
+        std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"max_restarts", 8},
             {"max_iterations", 5000},
             {"initial_step", 0.3},
-            {"support_tol", true},
             {"bound_strategy", std::string("reflect-random")}
         };
 
@@ -240,7 +239,7 @@ class DefaultSettings{
                 {"DMSPSO", default_settings_DMSPSO}, 
                 {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
                 {"CMAES", default_settings_CMAES}, 
-                {"ABIPOP_CMAES", default_settings_ABIPOP_CMAES}, 
+                {"BIPOP_aCMAES", default_settings_BIPOP_aCMAES}, 
                 {"DA", default_settings_DA}, 
                 {"L_BFGS_B", default_settings_LBFGSB}, 
                 {"L_BFGS", default_settings_LBFGS}
