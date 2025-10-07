@@ -315,7 +315,7 @@ void ARRDE::updateParameterMemory() {
             const double improvement = std::fabs(fitness_before[i] - trial_fitness[i]);
             successfulCR.push_back(CR[i]);
             successfulF.push_back(F[i]);
-            weights.push_back(improvement);
+            weights.push_back(improvement*CR[i]);
             weightedF.push_back(improvement * F[i]);
         }
     }

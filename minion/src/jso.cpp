@@ -73,7 +73,7 @@ void jSO::adaptParameters() {
                 double w = (fitness_before[i] - trial_fitness[i]);
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
-                weights.push_back(w);
+                weights.push_back(w* CR[i]);
                 weights_F.push_back( w*F[i]);
             };
         }
