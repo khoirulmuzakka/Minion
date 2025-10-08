@@ -30,10 +30,7 @@ void Differential_Evolution::initialize  (){
 }
 
 std::vector<double> Differential_Evolution::mutate(size_t idx){
-    std::vector<int> available_indices(population.size()), indices;
     size_t r1, r2, r3;
-    std::iota(available_indices.begin(), available_indices.end(), 0);
-    available_indices.erase(available_indices.begin() + idx);
     double Find = F[idx];
     size_t pind = p[idx];
     std::vector<double> mutant;
@@ -52,71 +49,89 @@ std::vector<double> Differential_Evolution::mutate(size_t idx){
     };
 
     if (mutation_strategy == "best1bin" || mutation_strategy == "best1exp") {
-        auto indices = random_choice<int>(available_indices, 2);
-        r1 = indices[0];
-        r2 = indices[1];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size());
+        } while (r2 == idx || r2 == r1);
         mutant = best;
         for (size_t i = 0; i < best.size(); ++i) {
             mutant[i] += Find * (population[r1][i] - population[r2][i]);
         }
     } else if (mutation_strategy == "rand1bin" || mutation_strategy == "rand1exp") {
-        indices = random_choice<int>(available_indices, 3);
-        r1  = indices[0];
-        r2 = indices[1];
-        r3 = indices[2];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size());
+        } while (r2 == idx || r2 == r1);
+        do {
+            r3 = rand_int(population.size());
+        } while (r3 == idx || r3 == r1 || r3 == r2);
         mutant = population[r1];
         for (size_t i = 0; i < population[r1].size(); ++i) {
             mutant[i] += Find * (population[r2][i] - population[r3][i]);
         }
     } else if (mutation_strategy == "current_to_best1bin" || mutation_strategy == "current_to_best1exp") {
-        auto indices = random_choice<int>(available_indices, 2);
-        r1 = indices[0];
-        r2 = indices[1];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size());
+        } while (r2 == idx || r2 == r1);
         mutant = population[idx];
         for (size_t i = 0; i < population[idx].size(); ++i) {
             mutant[i] += Find * (best[i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
         }
     } else if (mutation_strategy == "current_to_pbest1bin" || mutation_strategy == "current_to_pbest1exp") {   
         auto pbestind = select_pbest_index(pind);
-        auto indices = random_choice(available_indices, 2);
-        r1 = indices[0];
-        r2 = indices[1];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size());
+        } while (r2 == idx || r2 == r1);
         mutant = population[idx];
         for (size_t i = 0; i < population[idx].size(); ++i) {
             mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
         }
-    } else if (mutation_strategy == "current_to_pbest_A_1bin" || mutation_strategy == "current_to_pbest_A_1exp") {   
+        } else if (mutation_strategy == "current_to_pbest_A_1bin" || mutation_strategy == "current_to_pbest_A_1exp") {   
         auto pbestind = select_pbest_index(pind);
-
-        auto indices = random_choice(available_indices, 1);
-        auto indices2 = random_choice(archive.size()+population.size(), 1);
-        r1 = indices[0];
-        r2 = indices2[0];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size() + archive.size());
+        } while (r2 == idx || r2 == r1);
         mutant = population[idx];
         for (size_t i = 0; i < population[idx].size(); ++i) {
-            if (r2 < archive.size()) {
-                mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - archive[r2][i]);
+            if (r2 < population.size()) {
+                // r2 is from population
+                mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
             } else {
-                mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2-archive.size()][i]);
+                // r2 is from archive
+                mutant[i] += Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - archive[r2 - population.size()][i]);
             }
         }
-
-    }   else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
+        } else if (mutation_strategy == "current_to_pbest_AW_1bin" || mutation_strategy == "current_to_pbest_AW_1exp") {   
         auto pbestind = select_pbest_index(pind);
-
-        auto indices = random_choice(available_indices, 1);
-        auto indices2 = random_choice(archive.size()+population.size(), 1);
-        r1 = indices[0];
-        r2 = indices2[0];
+        do {
+            r1 = rand_int(population.size());
+        } while (r1 == idx);
+        do {
+            r2 = rand_int(population.size() + archive.size());
+        } while (r2 == idx || r2 == r1);
         mutant = population[idx];
         for (size_t i = 0; i < population[idx].size(); ++i) {
-            if (r2 < archive.size()) {
-                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - archive[r2][i]);
+            if (r2 < population.size()) {
+                // r2 is from population
+                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2][i]);
             } else {
-                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - population[r2-archive.size()][i]);
+                // r2 is from archive
+                mutant[i] += Fw*Find * (population[pbestind][i] - population[idx][i]) + Find * (population[r1][i] - archive[r2 - population.size()][i]);
             }
         }
-    
     } else {
         throw std::invalid_argument("Unknown mutation strategy: " + mutation_strategy);
     }
@@ -136,13 +151,17 @@ std::vector<double> Differential_Evolution::_crossover_bin(const std::vector<dou
 
 std::vector<double> Differential_Evolution::_crossover_exp(const std::vector<double>& target, const std::vector<double>& mutant, double C) {
     size_t dimension = target.size();
-    size_t startLoc = rand_int(dimension);
-    size_t L = startLoc+1;
-    while(rand_gen() < C && L < dimension)
-        L++;
+    size_t n = rand_int(dimension);  // Starting index
+    size_t L = 0;
+    
     std::vector<double> trial = target;
-    for(size_t j=startLoc; j!=L; j++)
-        trial[j] = mutant[j];
+    
+    // Copy from mutant starting at n, with wrapping
+    do {
+        size_t idx = (n + L) % dimension;
+        trial[idx] = mutant[idx];
+        L++;
+    } while (rand_gen() < C && L < dimension);
 
     return trial;
 }

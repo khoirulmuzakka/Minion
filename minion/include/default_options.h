@@ -88,7 +88,7 @@ class DefaultSettings{
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("reflect-random")} 
+            {"bound_strategy" , std::string("random")} 
         };
 
 
@@ -99,7 +99,7 @@ class DefaultSettings{
             {"archive_size_ratio", 2.6}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("reflect-random")} 
+            {"bound_strategy" , std::string("random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_ABC= {

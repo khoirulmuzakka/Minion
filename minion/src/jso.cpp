@@ -34,9 +34,9 @@ void jSO::initialize  (){
         reduction_strategy="linear";
     }
 
-    minPopSize = options.get<int>("minimum_population_size", 4);
-    if (populationSize == minPopSize) popreduce = true; 
-    else popreduce= false;
+        minPopSize = options.get<int>("minimum_population_size", 4);
+    if (populationSize == minPopSize) popreduce = false; 
+    else popreduce = true;
     hasInitialized=true;
 }
 
@@ -65,33 +65,57 @@ void jSO::adaptParameters() {
         archive.erase(archive.begin() + random_index);
     }
 
-    //update  weights and memory
-    std::vector<double> S_CR, S_F,  weights, weights_F;
+        //update  weights and memory using weighted Lehmer mean
+    std::vector<double> S_CR, S_F, dif_fitness;
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = (fitness_before[i] - trial_fitness[i]);
+                double w = std::abs(fitness_before[i] - trial_fitness[i]);
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
-                weights.push_back(w* CR[i]);
-                weights_F.push_back( w*F[i]);
+                dif_fitness.push_back(w);
             };
         }
     };
 
     if (!S_CR.empty()) {
-        double muCR, sCR, muF, sF;
-        weights = normalize_vector(weights); 
-        weights_F = normalize_vector(weights_F);
-
-        std::tie(muCR, sCR) = getMeanStd(S_CR, weights);
-        std::tie(muF, sF) = getMeanStd(S_F, weights_F);
-        M_CR[memoryIndex] = (muCR + M_CR[memoryIndex])/2.0;
-        M_F[memoryIndex] = (muF + M_F[memoryIndex])/2.0;
+        double sum = 0.0;
+        for (int i = 0; i < dif_fitness.size(); ++i) {
+            sum += dif_fitness[i];
+        }
+        
+        // Weighted Lehmer mean for F and CR
+        double temp_sum_sf = 0.0;
+        double temp_sum_cr = 0.0;
+        double meanF_lehmer = 0.0;
+        double meanCR_lehmer = 0.0;
+        
+        for (int i = 0; i < S_F.size(); ++i) {
+            double weight = dif_fitness[i] / sum;
+            
+            meanF_lehmer += weight * S_F[i] * S_F[i];
+            temp_sum_sf += weight * S_F[i];
+            
+            meanCR_lehmer += weight * S_CR[i] * S_CR[i];
+            temp_sum_cr += weight * S_CR[i];
+        }
+        
+        meanF_lehmer /= temp_sum_sf;
+        
+        if (temp_sum_cr == 0.0) {
+            meanCR_lehmer = -1.0;  // Special value indicating terminal CR
+        } else {
+            meanCR_lehmer /= temp_sum_cr;
+        }
+        
+        // jSO uses arithmetic mean of old and new Lehmer mean
+        M_CR[memoryIndex] = (meanCR_lehmer + M_CR[memoryIndex])/2.0;
+        M_F[memoryIndex] = (meanF_lehmer + M_F[memoryIndex])/2.0;
+        
         if (memoryIndex == (memorySize-1)) {
-            M_CR[memoryIndex] =0.9; 
+            M_CR[memoryIndex] = 0.9; 
             M_F[memoryIndex] = 0.9;
-            memoryIndex =0;
+            memoryIndex = 0;
         } else memoryIndex++;
     };
 
@@ -107,22 +131,30 @@ void jSO::adaptParameters() {
     selecIndices = random_choice(allind, population.size(), true); 
 
     for (int i = 0; i < population.size(); ++i) {
-        do {
+        // Generate CR - special handling for terminal CR
+        if (M_CR[selecIndices[i]] == -1.0) {
+            new_CR[i] = 0.0;
+        } else {
             new_CR[i] = rand_norm(M_CR[selecIndices[i]], 0.1);
-        } while (new_CR[i]<=0.0); 
+        }
 
         do {
             new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
-        } while (new_F[i]<=0.0);
+        } while (new_F[i] <= 0.0);
 
-        if (Nevals<0.25*maxevals && new_CR[i]<0.7) new_CR[i]=0.7;
-        if (Nevals<0.5*maxevals && new_CR[i]<0.6) new_CR[i]=0.6;
-        if (Nevals<0.6*maxevals && new_F[i]>0.7 ) new_F[i] =0.7;
+        // jSO-specific parameter adjustments based on progress
+        if (Nevals < 0.25*maxevals && new_CR[i] < 0.7) new_CR[i] = 0.7;
+        if (Nevals < 0.5*maxevals && new_CR[i] < 0.6) new_CR[i] = 0.6;
+        if (Nevals < 0.6*maxevals && new_F[i] > 0.7) new_F[i] = 0.7;
     };
 
  
-    std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
-    std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.01, 1.0); });
+    
+    // Clamp CR to [0, 1] and F to (0, 1]
+    for (int i = 0; i < population.size(); ++i) {
+        CR[i] = std::min(1.0, std::max(0.0, new_CR[i]));
+        F[i] = std::min(1.0, new_F[i]);  // F is already > 0 from do-while
+    }
 
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));

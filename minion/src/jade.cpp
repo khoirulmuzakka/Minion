@@ -45,9 +45,9 @@ void JADE::initialize  (){
         reduction_strategy="linear";
     }
 
-    minPopSize = options.get<int>("minimum_population_size", 4);
-    if (populationSize == minPopSize) popreduce = true; 
-    else popreduce= false;
+        minPopSize = options.get<int>("minimum_population_size", 4);
+    if (populationSize == minPopSize) popreduce = false; 
+    else popreduce = true;
     hasInitialized=true;
 }
 
@@ -93,34 +93,28 @@ void JADE::adaptParameters() {
     }
 
 
-    //update  weights and memory
-    std::vector<double> S_CR, S_F,  weights, weights_F;
+        //update  weights and memory using arithmetic mean
+    std::vector<double> S_CR, S_F;
     if (!fitness_before.empty()){
         for (int i = 0; i < population.size(); ++i) {
             if (trial_fitness[i] < fitness_before[i]) {
-                double w = (fitness_before[i] - trial_fitness[i]);
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
-                weights.push_back(1.0);
-                weights_F.push_back( 1.0*F[i]);
             };
         }
     };
 
-    //update muCR, muF
+    //update muCR, muF using arithmetic mean (JADE uses simple mean, not weighted Lehmer mean)
     if (!S_CR.empty()) {
-        double mCR, sCR, mF, sF;
-
-        weights = normalize_vector(weights); 
-        weights_F = normalize_vector(weights_F);
-
-        std::tie(mCR, sCR) = getMeanStd(S_CR, weights);
-        std::tie(mF, sF) = getMeanStd(S_F, weights_F);
+        double mCR = calcMean(S_CR);
+        double mF = calcMean(S_F);
+        
         double c_eff = double(S_CR.size())/double(population.size());
-        if (c_eff<0.05) c_eff=0.05;
-        if (c!=0.0) c_eff = c;
-        muCR = (1-c_eff)*muCR+c_eff*mCR;
-        muF = (1-c_eff)*muF+c_eff*mF;
+        if (c_eff < 0.05) c_eff = 0.05;
+        if (c != 0.0) c_eff = c;
+        
+        muCR = (1.0 - c_eff) * muCR + c_eff * mCR;
+        muF = (1.0 - c_eff) * muF + c_eff * mF;
     };
      
 
@@ -131,13 +125,19 @@ void JADE::adaptParameters() {
     std::vector<double> new_CR(population.size());
     std::vector<double> new_F(population.size());
 
-    for (int i = 0; i < population.size(); ++i) {
+        for (int i = 0; i < population.size(); ++i) {
         new_CR[i] = rand_norm(muCR, 0.1);
-        new_F[i] = rand_cauchy(muF, 0.1);
+        
+        do {
+            new_F[i] = rand_cauchy(muF, 0.1);
+        } while (new_F[i] <= 0.0);
     }
 
-    std::transform(new_CR.begin(), new_CR.end(), CR.begin(), [](double cr) { return clamp(cr, 0.0, 1.0); });
-    std::transform(new_F.begin(), new_F.end(), F.begin(), [](double f) { return clamp(f, 0.01, 1.0); });
+    // Clamp CR to [0, 1] and F to (0, 1]
+    for (int i = 0; i < population.size(); ++i) {
+        CR[i] = std::min(1.0, std::max(0.0, new_CR[i]));
+        F[i] = std::min(1.0, new_F[i]);  // F is already > 0 from do-while
+    }
 
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));

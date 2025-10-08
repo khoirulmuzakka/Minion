@@ -302,21 +302,18 @@ void ARRDE::updateParameterMemory() {
 
     std::vector<double> successfulCR;
     std::vector<double> successfulF;
-    std::vector<double> weights;
-    std::vector<double> weightedF;
+    std::vector<double> dif_fitness;
 
     successfulCR.reserve(population.size());
     successfulF.reserve(population.size());
-    weights.reserve(population.size());
-    weightedF.reserve(population.size());
+    dif_fitness.reserve(population.size());
 
     for (size_t i = 0; i < population.size(); ++i) {
         if (trial_fitness[i] < fitness_before[i]) {
             const double improvement = std::fabs(fitness_before[i] - trial_fitness[i]);
             successfulCR.push_back(CR[i]);
             successfulF.push_back(F[i]);
-            weights.push_back(improvement*CR[i]);
-            weightedF.push_back(improvement * F[i]);
+            dif_fitness.push_back(improvement);
         }
     }
 
@@ -324,16 +321,37 @@ void ARRDE::updateParameterMemory() {
         return;
     }
 
-    weights = normalize_vector(weights);
-    weightedF = normalize_vector(weightedF);
+    // Calculate weighted Lehmer mean
+    double sum = 0.0;
+    for (size_t i = 0; i < dif_fitness.size(); ++i) {
+        sum += dif_fitness[i];
+    }
 
-    double meanCRValue, stdCRValue;
-    double meanFValue, stdFValue;
-    std::tie(meanCRValue, stdCRValue) = getMeanStd(successfulCR, weights);
-    std::tie(meanFValue, stdFValue) = getMeanStd(successfulF, weightedF);
+    double temp_sum_sf = 0.0;
+    double temp_sum_cr = 0.0;
+    double meanF_lehmer = 0.0;
+    double meanCR_lehmer = 0.0;
 
-    M_CR[memoryIndex] = meanCRValue;
-    M_F[memoryIndex] = meanFValue;
+    for (size_t i = 0; i < successfulF.size(); ++i) {
+        const double weight = dif_fitness[i] / sum;
+
+        meanF_lehmer += weight * successfulF[i] * successfulF[i];
+        temp_sum_sf += weight * successfulF[i];
+
+        meanCR_lehmer += weight * successfulCR[i] * successfulCR[i];
+        temp_sum_cr += weight * successfulCR[i];
+    }
+
+    meanF_lehmer /= temp_sum_sf;
+
+    if (temp_sum_cr == 0.0) {
+        meanCR_lehmer = -1.0;  // Special value indicating terminal CR
+    } else {
+        meanCR_lehmer /= temp_sum_cr;
+    }
+
+    M_CR[memoryIndex] = meanCR_lehmer;
+    M_F[memoryIndex] = meanF_lehmer;
 
     memoryIndex = (memoryIndex + 1) % memorySize;
 }
@@ -357,12 +375,23 @@ void ARRDE::resampleControlParameters() {
     std::vector<double> newCR(popSize);
     std::vector<double> newF(popSize);
     for (size_t i = 0; i < popSize; ++i) {
-        newCR[i] = rand_norm(M_CR[selectedIndices[i]], 0.1);
-        newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.1);
+        // Generate CR - special handling for terminal CR
+        if (M_CR[selectedIndices[i]] == -1.0) {
+            newCR[i] = 0.0;
+        } else {
+            newCR[i] = rand_norm(M_CR[selectedIndices[i]], 0.1);
+        }
+
+        do {
+            newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.1);
+        } while (newF[i] <= 0.0);
     }
 
-    std::transform(newCR.begin(), newCR.end(), CR.begin(), [](double value) { return clamp(value, 0.0, 1.0); });
-    std::transform(newF.begin(), newF.end(), F.begin(), [](double value) { return clamp(value, 0.0, 1.0); });
+    // Clamp CR to [0, 1] and F to (0, 1]
+    for (size_t i = 0; i < popSize; ++i) {
+        CR[i] = std::min(1.0, std::max(0.0, newCR[i]));
+        F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
+    }
 
     const int minP = std::max(2, static_cast<int>(std::round(0.2 * static_cast<double>(popSize))));
     p.assign(popSize, static_cast<size_t>(minP));
