@@ -5,6 +5,12 @@ Changelog
    :local:
    :depth: 2
 
+Version 0.2.7 - 2025-10-10
+--------------------------
+
+**Changed**
+
+- More correct implementations of LSHADE, jSO, JADE, DE, and ARRDE.
 
 Version 0.2.6 - 2025-10-06
 --------------------------
