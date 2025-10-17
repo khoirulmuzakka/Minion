@@ -708,7 +708,6 @@ class DMSPSO(MinimizerBase):
         return self.minionResult
 
 
-
 class LSHADE(MinimizerBase):
     """
     Implementation of the Linear Population Reduction - Success History Adaptive Differential Evolution (LSHADE) algorithm.

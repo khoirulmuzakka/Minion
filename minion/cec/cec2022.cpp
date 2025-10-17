@@ -27,7 +27,7 @@ namespace CEC2022 {
         int cf_num=12,i,j;
         if (func_num<1||func_num>12)
             {
-                printf("\nError: Test function %d is not defined.\n", func_num);
+                throw std::runtime_error("\nError: Test function %d is not defined.\n");
             }
         if (ini_flag==1)
         {
@@ -58,11 +58,11 @@ namespace CEC2022 {
 
             if (!(nx==2||nx==10||nx==20))
             {
-                printf("\nError: Test functions are only defined for D=2,10,20.\n");
+                throw std::runtime_error("\nError: Test functions are only defined for D=2,10,20.\n");
             }
             if (nx==2&&(func_num==6||func_num==7||func_num==8))
             {
-                printf("\nError:  NOT defined for D=2.\n");
+                throw std::runtime_error("\nError:  NOT defined for D=2.\n");
             }
 
             /* Load Matrix M*/
@@ -70,13 +70,13 @@ namespace CEC2022 {
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open M_%d_D%d.txt for reading \n",func_num,nx);
+                throw std::runtime_error("\n Error: Cannot open M_%d_D%d.txt for reading \n");
             }
             if (func_num<9)
             {
                 M=(double*)malloc(nx*nx*sizeof(double));
                 if (M==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for (i=0; i<nx*nx; i++)
                 {
                     fscanf(fpt,"%lf",&M[i]);
@@ -86,7 +86,7 @@ namespace CEC2022 {
             {
                 M=(double*)malloc(cf_num*nx*nx*sizeof(double));
                 if (M==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for (i=0; i<cf_num*nx*nx; i++)
                 {
                     fscanf(fpt,"%lf",&M[i]);
@@ -99,14 +99,14 @@ namespace CEC2022 {
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open shift_data_%d.txt for reading \n",func_num);
+                throw std::runtime_error("\n Error: Cannot open shift_data_%d.txt for reading \n");
             }
 
             if (func_num<9)
             {
                 OShift=(double *)malloc(nx*sizeof(double));
                 if (OShift==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<nx;i++)
                 {
                     fscanf(fpt,"%lf",&OShift[i]);
@@ -117,7 +117,7 @@ namespace CEC2022 {
                 //OShift=(double *)malloc(nx*sizeof(double));
                 OShift=(double *)malloc(nx*cf_num*sizeof(double));
                 if (OShift==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<cf_num-1;i++)
                 {
                     for (j=0;j<nx;j++)
@@ -145,11 +145,11 @@ namespace CEC2022 {
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {
-                    printf("\n Error: Cannot open shuffle_data_%d_D%d.txt for reading \n", func_num, nx);
+                    throw std::runtime_error("\n Error: Cannot open shuffle_data_%d_D%d.txt for reading \n");
                 }
                 SS=(int *)malloc(nx*sizeof(int));
                 if (SS==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<nx;i++)
                 {
                     fscanf(fpt,"%d",&SS[i]);
@@ -160,7 +160,6 @@ namespace CEC2022 {
             n_flag=nx;
             func_flag=func_num;
             ini_flag=1;
-            //printf("Function has been initialized!\n");
         }
 
 
@@ -217,7 +216,7 @@ namespace CEC2022 {
                 f[i]+=2700.0;
                 break;
             default:
-                printf("\nError: There are only 10 test functions in this test suite!\n");
+                throw std::runtime_error("\nError: There are only 10 test functions in this test suite!\n");
                 f[i] = 0.0;
                 break;
             }

@@ -61,7 +61,7 @@ class DefaultSettings{
             {"population_size", 0},  
             {"memory_size", 5},
             {"success_rate" , 0.5} , 
-            {"bound_strategy" , std::string("reflect-random")}
+            {"bound_strategy" , std::string("random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_NLSHADE_RSP = {

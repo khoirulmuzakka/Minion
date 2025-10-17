@@ -453,21 +453,21 @@ PYBIND11_MODULE(minionpycpp, m) {
 
     py::class_<CEC2014Functions>(m, "CEC2014Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
-        .def("__call__", &CEC2014Functions::operator());
+        .def("__call__", &CEC2014Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2017Functions>(m, "CEC2017Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
-        .def("__call__", &CEC2017Functions::operator());
+        .def("__call__", &CEC2017Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2019Functions>(m, "CEC2019Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
-        .def("__call__", &CEC2019Functions::operator());
+        .def("__call__", &CEC2019Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2020Functions>(m, "CEC2020Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
-        .def("__call__", &CEC2020Functions::operator());
+        .def("__call__", &CEC2020Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2022Functions>(m, "CEC2022Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
-        .def("__call__", &CEC2022Functions::operator());
+        .def("__call__", &CEC2022Functions::operator(), py::call_guard<py::gil_scoped_release>());
 }

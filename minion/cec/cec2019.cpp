@@ -53,7 +53,7 @@ namespace CEC2019{
 
             if (!(nx==2||nx==10||nx==9||nx==16||nx==18))
             {
-                printf("Error: Test functions are only defined for D=10, 9, 16, 18 \n F1 is defined on D=9 \n F2 is defined on D=16 \n F3 is defined on D=18 \n F4-F10 are defined on D=10.");
+                throw std::runtime_error("Error: Test functions are only defined for D=10, 9, 16, 18 \n F1 is defined on D=9 \n F2 is defined on D=16 \n F3 is defined on D=18 \n F4-F10 are defined on D=10.");
             }
             
 
@@ -64,11 +64,11 @@ namespace CEC2019{
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open input file for reading \n");
+                throw std::runtime_error("\n Error: Cannot open input file for reading \n");
             }
             M=(double*)malloc(nx*nx*sizeof(double));
             if (M==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
             for (i=0; i<nx*nx; i++)
             {
                 fscanf(fpt,"%lf",&M[i]);
@@ -84,12 +84,12 @@ namespace CEC2019{
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open input file for reading \n");
+                throw std::runtime_error("\n Error: Cannot open input file for reading \n");
             }
 
             OShift=(double *)malloc(nx*sizeof(double));
             if (OShift==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
             for(i=0;i<nx;i++)
             {
                 fscanf(fpt,"%lf",&OShift[i]);
@@ -101,7 +101,6 @@ namespace CEC2019{
             n_flag=nx;
             func_flag=func_num;
             ini_flag=1;
-            //printf("Function has been initialized!\n");
         }
 
 
@@ -159,7 +158,7 @@ namespace CEC2019{
                 f[i]+=1.0;
                 break;
             default:
-                printf("\nError: There are only 30 test functions in this test suite!\n");
+                throw std::runtime_error("\nError: There are only 30 test functions in this test suite!\n");
                 f[i] = 0.0;
                 break;
             }

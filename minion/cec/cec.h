@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <exception>
 
 namespace minion {
 

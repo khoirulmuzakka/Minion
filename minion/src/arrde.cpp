@@ -34,7 +34,7 @@ void ARRDE::initialize() {
     maxPopSize_finalRefine = static_cast<size_t>(refinePopulation);
     minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
 
-    mutation_strategy = "current_to_pbest_A_1bin";
+    mutation_strategy = "current_to_pbest_AW_1bin";
 
     archive_size_ratio = options.get<double>("archive_size_ratio", 2.0);
     if (archive_size_ratio < 0.0) {
@@ -51,10 +51,10 @@ void ARRDE::initialize() {
     restartRelTol = reltol;
     refineRelTol = restartRelTol;
 
-    decrease = options.get<double>("refine_decrease_factor", 0.9);
+    decrease = options.get<double>("refine_decrease_factor", 0.8);
     startRefine = options.get<double>("restart-refine-duration", 0.8);
     maxRestart = options.get<int>("maximum_consecutive_restarts", 2);
-
+    Fw=1.25;
     useLatin = true;
     hasInitialized = true;
 }

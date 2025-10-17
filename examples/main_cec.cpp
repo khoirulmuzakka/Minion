@@ -122,14 +122,23 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::vector<double>> results;
     for (int i=0; i<numRuns; i++){
+        std::cout << "========================\n";
         std::cout << "\nRun : "<< i+1 << "\n";
         auto start = std::chrono::high_resolution_clock::now();
         std::vector<double> result_per_run;
-        for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i));
+        for (auto& num : funcnums) {
+            try {
+                result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i));
+            } catch (const std::exception& e) {
+                continue;
+            }
+        };
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = (end - start);
         std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
         results.push_back(result_per_run);
+        std::cout << "========================\n";
+       
     };
     dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
 

@@ -52,11 +52,11 @@ namespace CEC2017{
 
             if (!(nx==2||nx==10||nx==20||nx==30||nx==50||nx==100))
             {
-                printf("\nError: Test functions are only defined for D=2,10,20,30,50,100.\n");
+                throw std::runtime_error("\nError: Test functions are only defined for D=2,10,20,30,50,100.\n");
             }
             if (nx==2&&((func_num>=17&&func_num<=22)||(func_num>=29&&func_num<=30)))
             {
-                printf("\nError: hf01,hf02,hf03,hf04,hf05,hf06,cf07&cf08 are NOT defined for D=2.\n");
+                throw std::runtime_error("\nError: hf01,hf02,hf03,hf04,hf05,hf06,cf07&cf08 are NOT defined for D=2.\n");
             }
 
             /* Load Matrix M*/
@@ -64,14 +64,14 @@ namespace CEC2017{
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open input file for reading \n");
+                throw std::runtime_error("\n Error: Cannot open input file for reading \n");
                 std::cout << FileName << "\n";
             }
             if (func_num<20)
             {
                 M=(double*)malloc(nx*nx*sizeof(double));
                 if (M==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for (i=0; i<nx*nx; i++)
                 {
                     fscanf(fpt,"%lf",&M[i]);
@@ -81,7 +81,7 @@ namespace CEC2017{
             {
                 M=(double*)malloc(cf_num*nx*nx*sizeof(double));
                 if (M==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for (i=0; i<cf_num*nx*nx; i++)
                 {
                     fscanf(fpt,"%lf",&M[i]);
@@ -94,14 +94,14 @@ namespace CEC2017{
             fpt = fopen(FileName,"r");
             if (fpt==NULL)
             {
-                printf("\n Error: Cannot open input file for reading \n");
+                throw std::runtime_error("\n Error: Cannot open input file for reading \n");
             }
 
             if (func_num<20)
             {
                 OShift=(double *)malloc(nx*sizeof(double));
                 if (OShift==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<nx;i++)
                 {
                     fscanf(fpt,"%lf",&OShift[i]);
@@ -111,7 +111,7 @@ namespace CEC2017{
             {
                 OShift=(double *)malloc(nx*cf_num*sizeof(double));
                 if (OShift==NULL)
-                printf("\nError: there is insufficient memory available!\n");
+                throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<cf_num-1;i++)
                 {
                     for (j=0;j<nx;j++)
@@ -137,11 +137,11 @@ namespace CEC2017{
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {
-                    printf("\n Error: Cannot open input file for reading \n");
+                    throw std::runtime_error("\n Error: Cannot open input file for reading \n");
                 }
                 SS=(int *)malloc(nx*sizeof(int));
                 if (SS==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<nx;i++)
                 {
                     fscanf(fpt,"%d",&SS[i]);
@@ -154,11 +154,11 @@ namespace CEC2017{
                 fpt = fopen(FileName,"r");
                 if (fpt==NULL)
                 {
-                    printf("\n Error: Cannot open input file for reading \n");
+                    throw std::runtime_error("\n Error: Cannot open input file for reading \n");
                 }
                 SS=(int *)malloc(nx*cf_num*sizeof(int));
                 if (SS==NULL)
-                    printf("\nError: there is insufficient memory available!\n");
+                    throw std::runtime_error("\nError: there is insufficient memory available!\n");
                 for(i=0;i<nx*cf_num;i++)
                 {
                     fscanf(fpt,"%d",&SS[i]);
@@ -170,7 +170,7 @@ namespace CEC2017{
             n_flag=nx;
             func_flag=func_num;
             ini_flag=1;
-            //printf("Function has been initialized!\n");
+            //throw std::runtime_error("Function has been initialized!\n");
         }
 
 
@@ -299,7 +299,7 @@ namespace CEC2017{
                 f[i]+=3000.0;
                 break;
             default:
-                printf("\nError: There are only 30 test functions in this test suite!\n");
+                throw std::runtime_error("\nError: There are only 30 test functions in this test suite!\n");
                 f[i] = 0.0;
                 break;
             }
