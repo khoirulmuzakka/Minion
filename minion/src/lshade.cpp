@@ -82,6 +82,9 @@ void LSHADE::adaptParameters() {
     while (archive.size() > archiveSize) {
         size_t random_index = rand_int(archive.size());
         archive.erase(archive.begin() + random_index);
+        if (random_index < archive_fitness.size()) {
+            archive_fitness.erase(archive_fitness.begin() + static_cast<std::ptrdiff_t>(random_index));
+        }
     }
     
         //update  weights and memory using weighted Lehmer mean

@@ -17,6 +17,7 @@ public :
     std::vector<double> best;
     double best_fitness;
     std::vector<std::vector<double>> archive;
+    std::vector<double> archive_fitness;
     size_t populationSize;
     size_t Nevals=0;
 

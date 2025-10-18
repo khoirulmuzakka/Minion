@@ -20,10 +20,11 @@ class ARRDE : public Differential_Evolution {
         std::vector<double> M_CR, M_F;
         size_t memorySize=50;
         std::vector<std::vector<double>> population_records, archive_records;
-        std::vector<double> fitness_records;
+        std::vector<double> fitness_records, archive_fitness_records;
         std::vector<double> MCR_records, MF_records;
         double memorySizeRatio=2.0;
         int minPopSize= 4;
+        static constexpr size_t archiveRecordMaxSize = 1000;
 
     private : 
         double archive_size_ratio;
@@ -36,6 +37,7 @@ class ARRDE : public Differential_Evolution {
         bool restart = false;
         bool final_refine = false;
         bool first_run = true;
+        bool population_converged = false;
         double bestOverall =  std::numeric_limits<double>::max();
         double decrease=0.9;
         double reltol;

@@ -295,6 +295,9 @@ void LSHADE_cnEpSin::enforceArchiveLimit() {
     while (archive.size() > capacity) {
         size_t idx = rand_int(archive.size());
         archive.erase(archive.begin() + static_cast<long>(idx));
+        if (idx < archive_fitness.size()) {
+            archive_fitness.erase(archive_fitness.begin() + static_cast<long>(idx));
+        }
     }
 }
 
@@ -421,6 +424,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
 
         Nevals = 0;
         archive.clear();
+        archive_fitness.clear();
 
         init();
 
@@ -556,7 +560,9 @@ MinionResult LSHADE_cnEpSin::optimize() {
             difValues.reserve(currentPopSize);
 
             std::vector<std::vector<double>> parentsToArchive;
+            std::vector<double> parentFitnessToArchive;
             parentsToArchive.reserve(currentPopSize);
+            parentFitnessToArchive.reserve(currentPopSize);
 
             for (size_t i = 0; i < currentPopSize; ++i) {
                 double parentFit = fitnessOld[i];
@@ -566,6 +572,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
                     population[i] = trials[i];
                     fitness[i] = childFit;
                     parentsToArchive.push_back(populationOld[i]);
+                    parentFitnessToArchive.push_back(parentFit);
                     successIndices.push_back(i);
                     difValues.push_back(diff);
                 } else {
@@ -574,8 +581,9 @@ MinionResult LSHADE_cnEpSin::optimize() {
                 }
             }
 
-            for (const auto& parent : parentsToArchive) {
-                archive.push_back(parent);
+            for (size_t k = 0; k < parentsToArchive.size(); ++k) {
+                archive.push_back(parentsToArchive[k]);
+                archive_fitness.push_back(parentFitnessToArchive[k]);
             }
             enforceArchiveLimit();
 

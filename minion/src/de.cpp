@@ -229,6 +229,8 @@ void Differential_Evolution::doDE_operation(std::vector<std::vector<double>>& tr
 MinionResult Differential_Evolution::optimize() {
     if (!hasInitialized) initialize();
     try {
+        archive.clear();
+        archive_fitness.clear();
         history.clear();
         init();
         size_t iter=1;
@@ -244,7 +246,10 @@ MinionResult Differential_Evolution::optimize() {
             fitness_before = fitness; 
             for (int i = 0; i < population.size(); ++i) {
                 if (trial_fitness[i] <= fitness[i]) { 
-                    if (trial_fitness[i] < fitness[i]) archive.push_back(population[i]);
+                    if (trial_fitness[i] < fitness[i]) {
+                        archive.push_back(population[i]);
+                        archive_fitness.push_back(fitness_before[i]);
+                    }
                     population[i] = trials[i];
                     fitness[i] = trial_fitness[i];
                 };   

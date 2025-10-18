@@ -51,10 +51,9 @@ void ARRDE::initialize() {
     restartRelTol = reltol;
     refineRelTol = restartRelTol;
 
-    decrease = options.get<double>("refine_decrease_factor", 0.8);
-    startRefine = options.get<double>("restart-refine-duration", 0.8);
+    decrease = options.get<double>("refine_decrease_factor", 0.85);
+    startRefine = options.get<double>("restart-refine-duration", 0.85);
     maxRestart = options.get<int>("maximum_consecutive_restarts", 2);
-    Fw=1.25;
     useLatin = true;
     hasInitialized = true;
 }
@@ -80,10 +79,10 @@ void ARRDE::adaptParameters() {
 void ARRDE::adjustPopulationSize() {
     double nevalsEff = static_cast<double>(Nevals);
     double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = std::max(4.0, static_cast<double>(bounds.size()));
+    double minSizeEff = std::max(10.0, static_cast<double>(bounds.size()));
     double maxSizeEff = static_cast<double>(populationSize);
 
-    reduction_strategy = "linear";
+    reduction_strategy = "agsk";
     if (final_refine) {
         nevalsEff = static_cast<double>(Nevals) - static_cast<double>(Neval_stratrefine);
         maxevalsEff = static_cast<double>(maxevals) - static_cast<double>(Neval_stratrefine);
@@ -131,6 +130,9 @@ void ARRDE::adjustArchiveSize() {
     while (archive.size() > targetSize) {
         const size_t randomIndex = rand_int(archive.size());
         archive.erase(archive.begin() + static_cast<std::ptrdiff_t>(randomIndex));
+        if (randomIndex < archive_fitness.size()) {
+            archive_fitness.erase(archive_fitness.begin() + static_cast<std::ptrdiff_t>(randomIndex));
+        }
     }
 }
 
@@ -151,12 +153,38 @@ void ARRDE::processRestartCycle() {
         fitness_records.push_back(value);
     }
 
+    if (!archive.empty()) {
+        if (archive_fitness.size() == archive.size()) {
+            const auto archiveIndices = argsort(archive_fitness, true);
+            for (size_t idx : archiveIndices) {
+                archive_records.push_back(archive[idx]);
+                archive_fitness_records.push_back(archive_fitness[idx]);
+            }
+        } else {
+            const size_t limit = std::min(archive.size(), archive_fitness.size());
+            for (size_t idx = 0; idx < limit; ++idx) {
+                archive_records.push_back(archive[idx]);
+                archive_fitness_records.push_back(archive_fitness[idx]);
+            }
+        }
+
+        if (archive_records.size() > archiveRecordMaxSize) {
+            const size_t excess = archive_records.size() - archiveRecordMaxSize;
+            archive_records.erase(archive_records.begin(),
+                                  archive_records.begin() + static_cast<std::ptrdiff_t>(excess));
+            archive_fitness_records.erase(
+                archive_fitness_records.begin(),
+                archive_fitness_records.begin() + static_cast<std::ptrdiff_t>(excess));
+        }
+    }
+
     update_locals();
 
     const size_t previousPopulationSize = population.size();
 
     fitness_before.clear();
     archive.clear();
+    archive_fitness.clear();
     population.clear();
     fitness.clear();
 
@@ -263,19 +291,45 @@ void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
     const size_t refinedPopulationSize = maxPopSize_finalRefine;
     Neval_stratrefine = Nevals;
 
-    std::vector<size_t> indices;
-    if (fitness_records.size() < refinedPopulationSize) {
-        indices = random_choice(fitness_records.size(), refinedPopulationSize, true);
-    } else {
-        indices = argsort(fitness_records, true);
-    }
-
     population.reserve(refinedPopulationSize);
     fitness.reserve(refinedPopulationSize);
-    for (size_t i = 0; i < refinedPopulationSize; ++i) {
-        const size_t idx = indices[i];
+
+    std::vector<size_t> populationIndices = argsort(fitness_records, true);
+    const size_t fromPopulation = std::min(populationIndices.size(), refinedPopulationSize);
+    for (size_t i = 0; i < fromPopulation; ++i) {
+        const size_t idx = populationIndices[i];
         population.push_back(population_records[idx]);
         fitness.push_back(fitness_records[idx]);
+    }
+
+    size_t remaining = refinedPopulationSize - fromPopulation;
+    if (remaining > 0) {
+        std::vector<size_t> archiveIndices = argsort(archive_fitness_records, true);
+        const size_t fromArchive = std::min(remaining, archiveIndices.size());
+        for (size_t i = 0; i < fromArchive; ++i) {
+            const size_t idx = archiveIndices[i];
+            population.push_back(archive_records[idx]);
+            fitness.push_back(archive_fitness_records[idx]);
+        }
+        remaining -= fromArchive;
+    }
+
+    if (remaining > 0) {
+        if (!archive_records.empty()) {
+            auto extraIndices = random_choice(archive_records.size(), remaining, true);
+            for (size_t idx : extraIndices) {
+                population.push_back(archive_records[idx]);
+                fitness.push_back(archive_fitness_records[idx]);
+            }
+            remaining = 0;
+        } else if (!population_records.empty()) {
+            auto extraIndices = random_choice(population_records.size(), remaining, true);
+            for (size_t idx : extraIndices) {
+                population.push_back(population_records[idx]);
+                fitness.push_back(fitness_records[idx]);
+            }
+            remaining = 0;
+        }
     }
 
     reltol = 0.0;
@@ -379,11 +433,11 @@ void ARRDE::resampleControlParameters() {
         if (M_CR[selectedIndices[i]] == -1.0) {
             newCR[i] = 0.0;
         } else {
-            newCR[i] = rand_norm(M_CR[selectedIndices[i]], 0.1);
+            newCR[i] = rand_norm(M_CR[selectedIndices[i]], 0.05);
         }
 
         do {
-            newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.1);
+            newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.05);
         } while (newF[i] <= 0.0);
     }
 
@@ -393,7 +447,7 @@ void ARRDE::resampleControlParameters() {
         F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
     }
 
-    const int minP = std::max(2, static_cast<int>(std::round(0.2 * static_cast<double>(popSize))));
+    const int minP = std::max(2, static_cast<int>(std::round(0.25 * static_cast<double>(popSize))));
     p.assign(popSize, static_cast<size_t>(minP));
 
     meanCR.push_back(calcMean(CR));
