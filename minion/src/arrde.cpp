@@ -21,7 +21,7 @@ void ARRDE::initialize() {
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
     const double defaultPopulation = std::clamp(2.0 * static_cast<double>(dimension) + logComponent, 10.0, 1000.0);
-
+    //const double defaultPopulation    = std::clamp(25.0*log(dimension)*sqrt(dimension), 10.0, 1000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
@@ -30,7 +30,7 @@ void ARRDE::initialize() {
     }
     populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(10)));
 
-    const double refinePopulation = std::clamp(static_cast<double>(dimension) + logComponent, 10.0, 500.0);
+    const double refinePopulation = std::clamp(static_cast<double>(dimension) , 10.0, 500.0);
     maxPopSize_finalRefine = static_cast<size_t>(refinePopulation);
     minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
 
@@ -79,15 +79,16 @@ void ARRDE::adaptParameters() {
 void ARRDE::adjustPopulationSize() {
     double nevalsEff = static_cast<double>(Nevals);
     double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = std::max(10.0, static_cast<double>(bounds.size()));
+    double minSizeEff = std::max(4.0, static_cast<double>(bounds.size()));
     double maxSizeEff = static_cast<double>(populationSize);
 
-    reduction_strategy = "agsk";
+    reduction_strategy = "exponential";
     if (final_refine) {
         nevalsEff = static_cast<double>(Nevals) - static_cast<double>(Neval_stratrefine);
         maxevalsEff = static_cast<double>(maxevals) - static_cast<double>(Neval_stratrefine);
         minSizeEff = static_cast<double>(minPopSize);
         maxSizeEff = static_cast<double>(maxPopSize_finalRefine);
+        reduction_strategy = "linear";
     }
 
     if (maxevalsEff <= 0.0) {
