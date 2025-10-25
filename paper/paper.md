@@ -66,11 +66,12 @@ Minion currently implements the following optimization algorithms:
 - NL-SHADE-RSP [@9504959]
 - LSRTDE [@10611907]
 - Adaptive Restart-Refine Differential Evolution (ARRDE)
-- Artificial Bee Colony (ABC) [@10.1007/978-3-540-72950-1_77]
+- Artificial Bee Colony (ABC) [@Karaboga2005]
 - Canonical PSO [@Kennedy1995]
 - SPSO-2011 [@ZambranoBigiarini2013]
 - Dynamic Multi-Swarm PSO (DMS-PSO) [@1501611]
 - Covariance Matrix Adaptation Evolution Strategy (CMA-ES) [@Hansen1996]
+- BI-population CMA-ES (BIPOP-ACMAES) [@bipop2009]
 - Generalized Simulated Annealing (Dual Annealing) [@XIANG1997216]
 - Nelder–Mead [@10.1093/comjnl/7.4.308]
 - L-BFGS-B [@doi:10.1137/0916069]
@@ -78,7 +79,7 @@ Minion currently implements the following optimization algorithms:
 
 Additional algorithms are planned for future releases. Minion also ships benchmark suites from IEEE CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
 
-Minion exposes a consistent `Minimizer` interface in both C++ and Python. Algorithms are selected via a simple identifier (e.g. `"ARRDE"`, `"L_BFGS_B"`), and option names remain stable across population-based and quasi-Newton methods. The result object, `MinionResult`, mirrors the structure of `scipy.optimize.OptimizeResult`, making it straightforward to exchange results with SciPy tooling or any code that expects that layout.
+Minion offers a unified `Minimizer` interface available in both C++ and Python, providing a consistent way to access all implemented algorithms. Solvers are selected by concise identifiers (e.g., `"ARRDE"` or `"L_BFGS_B"`), and option names are standardized across methods for clarity and interoperability. The result structure, `MinionResult`, adopts the general layout of `scipy.optimize.OptimizeResult` — a familiar convention in the scientific computing community. This design choice enhances usability and readability, allowing users to work with Minion intuitively while remaining fully independent of SciPy.
 
 In Minion, the optional ``x0`` argument may contain multiple initial guesses—an uncommon capability in optimisation libraries. This is practical when prior knowledge suggests several promising starting points or when restart strategies are desired. Population methods treat the entries as explicit seeds for their initial populations, while single-trajectory solvers (e.g. CMA-ES, Nelder–Mead, L-BFGS variants) evaluate each candidate and proceed from the best-performing one. The behaviour streamlines the reuse of domain heuristics when launching new optimisation runs.
 
