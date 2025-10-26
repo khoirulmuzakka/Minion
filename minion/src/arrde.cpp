@@ -20,8 +20,8 @@ void ARRDE::initialize() {
 
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
-    const double defaultPopulation = std::clamp(2.0 * static_cast<double>(dimension) + logComponent, 10.0, 1000.0);
-    //const double defaultPopulation    = std::clamp(25.0*log(dimension)*sqrt(dimension), 10.0, 1000.0);
+    const double eta = double(maxevals)/double(dimension);
+    const double defaultPopulation    = std::clamp(log(dimension)*sqrt(dimension)*(1.0+1.5*log10(eta)*log10(eta)), 10.0, 2000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
@@ -30,19 +30,19 @@ void ARRDE::initialize() {
     }
     populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(10)));
 
-    const double refinePopulation = std::clamp(static_cast<double>(dimension) , 10.0, 500.0);
+    const double refinePopulation = std::clamp(defaultPopulation , 10.0, 500.0);
     maxPopSize_finalRefine = static_cast<size_t>(refinePopulation);
     minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
 
     mutation_strategy = "current_to_pbest_AW_1bin";
-
+    Fw=1.0;
     archive_size_ratio = options.get<double>("archive_size_ratio", 2.0);
     if (archive_size_ratio < 0.0) {
         archive_size_ratio = 2.0;
     }
 
     memorySizeRatio = archive_size_ratio;
-    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
+    memorySize = 6; //std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
 
     M_CR = rand_gen(0.5, 0.8, memorySize);
     M_F = rand_gen(0.2, 0.5, memorySize);
@@ -79,16 +79,16 @@ void ARRDE::adaptParameters() {
 void ARRDE::adjustPopulationSize() {
     double nevalsEff = static_cast<double>(Nevals);
     double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = std::max(4.0, static_cast<double>(bounds.size()));
+    double minSizeEff = std::max(4.0, 0.5*static_cast<double>(bounds.size()));
     double maxSizeEff = static_cast<double>(populationSize);
 
-    reduction_strategy = "exponential";
+    reduction_strategy = "agsk";
     if (final_refine) {
         nevalsEff = static_cast<double>(Nevals) - static_cast<double>(Neval_stratrefine);
         maxevalsEff = static_cast<double>(maxevals) - static_cast<double>(Neval_stratrefine);
         minSizeEff = static_cast<double>(minPopSize);
         maxSizeEff = static_cast<double>(maxPopSize_finalRefine);
-        reduction_strategy = "linear";
+        //reduction_strategy = "linear";
     }
 
     if (maxevalsEff <= 0.0) {
@@ -237,7 +237,7 @@ void ARRDE::executeRestart(size_t targetSize) {
         }
     }
 
-    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -273,7 +273,7 @@ void ARRDE::executeRefine(size_t targetSize) {
     refineRelTol *= decrease;
     reltol = refineRelTol;
 
-    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -334,7 +334,7 @@ void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
     }
 
     reltol = 0.0;
-    memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
+    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -448,7 +448,7 @@ void ARRDE::resampleControlParameters() {
         F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
     }
 
-    const int minP = std::max(2, static_cast<int>(std::round(0.25 * static_cast<double>(popSize))));
+    const int minP = std::max(2, static_cast<int>(std::round(0.11* static_cast<double>(popSize))));
     p.assign(popSize, static_cast<size_t>(minP));
 
     meanCR.push_back(calcMean(CR));

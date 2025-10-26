@@ -33,10 +33,10 @@ class DefaultSettings{
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
             {"population_size", 0},  
             {"minimum_population_size", 4}, 
-            {"archive_size_ratio", 1.5}, 
+            {"archive_size_ratio", 2.6}, 
             {"converge_reltol", 0.005}, 
             {"refine_decrease_factor" , 0.85}, 
-            {"restart-refine-duration", 0.9}, 
+            {"restart-refine-duration", 0.85}, 
             {"maximum_consecutive_restarts" , 2},
             {"bound_strategy" , std::string("reflect-random")} , 
         };
