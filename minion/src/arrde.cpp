@@ -21,7 +21,7 @@ void ARRDE::initialize() {
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
     const double eta = double(maxevals)/double(dimension);
-    const double defaultPopulation    = std::clamp(log(dimension)*sqrt(dimension)*(1.0+1.5*log10(eta)*log10(eta)), 10.0, 2000.0);
+    const double defaultPopulation    = std::clamp(log(dimension)*sqrt(dimension)*(1.0+1.0*log10(eta)*log10(eta)), 10.0, 2000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
