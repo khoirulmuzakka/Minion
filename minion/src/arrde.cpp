@@ -21,7 +21,7 @@ void ARRDE::initialize() {
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
     const double eta = double(maxevals)/double(dimension);
-    const double defaultPopulation    = std::clamp(log(dimension)*sqrt(dimension)*(1.0+1.0*log10(eta)*log10(eta)), 10.0, 2000.0);
+    const double defaultPopulation    = std::clamp(dimension*(1.0+log10(eta)*log10(eta)), 10.0, 2000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
@@ -29,9 +29,11 @@ void ARRDE::initialize() {
         populationSize = static_cast<size_t>(defaultPopulation);
     }
     populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(10)));
+    first_run_archive_max_size = populationSize;
+    first_run_archive.clear();
+    first_run_archive_fitness.clear();
 
-    const double refinePopulation = std::clamp(defaultPopulation , 10.0, 500.0);
-    maxPopSize_finalRefine = static_cast<size_t>(refinePopulation);
+    maxPopSize_finalRefine = populationSize;
     minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
 
     mutation_strategy = "current_to_pbest_AW_1bin";
@@ -42,7 +44,7 @@ void ARRDE::initialize() {
     }
 
     memorySizeRatio = archive_size_ratio;
-    memorySize = 6; //std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
+    memorySize = 10; //std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
 
     M_CR = rand_gen(0.5, 0.8, memorySize);
     M_F = rand_gen(0.2, 0.5, memorySize);
@@ -79,7 +81,7 @@ void ARRDE::adaptParameters() {
 void ARRDE::adjustPopulationSize() {
     double nevalsEff = static_cast<double>(Nevals);
     double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = std::max(4.0, 0.5*static_cast<double>(bounds.size()));
+    double minSizeEff = minPopSize; //std::max(4.0, 0.5*static_cast<double>(bounds.size()));
     double maxSizeEff = static_cast<double>(populationSize);
 
     reduction_strategy = "agsk";
@@ -304,7 +306,18 @@ void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
     }
 
     size_t remaining = refinedPopulationSize - fromPopulation;
-    if (remaining > 0) {
+    if (remaining > 0 && !first_run_archive.empty()) {
+        std::vector<size_t> firstRunIndices = argsort(first_run_archive_fitness, true);
+        const size_t fromFirstRun = std::min(remaining, firstRunIndices.size());
+        for (size_t i = 0; i < fromFirstRun; ++i) {
+            const size_t idx = firstRunIndices[i];
+            population.push_back(first_run_archive[idx]);
+            fitness.push_back(first_run_archive_fitness[idx]);
+        }
+        remaining -= fromFirstRun;
+    }
+
+    if (remaining > 0 && !archive_fitness_records.empty()) {
         std::vector<size_t> archiveIndices = argsort(archive_fitness_records, true);
         const size_t fromArchive = std::min(remaining, archiveIndices.size());
         for (size_t i = 0; i < fromArchive; ++i) {
@@ -321,6 +334,13 @@ void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
             for (size_t idx : extraIndices) {
                 population.push_back(archive_records[idx]);
                 fitness.push_back(archive_fitness_records[idx]);
+            }
+            remaining = 0;
+        } else if (!first_run_archive.empty()) {
+            auto extraIndices = random_choice(first_run_archive.size(), remaining, true);
+            for (size_t idx : extraIndices) {
+                population.push_back(first_run_archive[idx]);
+                fitness.push_back(first_run_archive_fitness[idx]);
             }
             remaining = 0;
         } else if (!population_records.empty()) {
@@ -408,7 +428,12 @@ void ARRDE::updateParameterMemory() {
     M_CR[memoryIndex] = meanCR_lehmer;
     M_F[memoryIndex] = meanF_lehmer;
 
-    memoryIndex = (memoryIndex + 1) % memorySize;
+    //memoryIndex = (memoryIndex + 1) % memorySize;
+    if (memoryIndex == (memorySize-1)) {
+            M_CR[memoryIndex] = 0.8; 
+            M_F[memoryIndex] = 0.8;
+            memoryIndex = 0;
+        } else memoryIndex++;
 }
 
 void ARRDE::resampleControlParameters() {
@@ -448,13 +473,34 @@ void ARRDE::resampleControlParameters() {
         F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
     }
 
-    const int minP = std::max(2, static_cast<int>(std::round(0.11* static_cast<double>(popSize))));
+    const int minP = std::max(2, static_cast<int>(std::round(0.1* static_cast<double>(popSize))));
     p.assign(popSize, static_cast<size_t>(minP));
 
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
     stdF.push_back(calcStdDev(F));
+}
+
+void ARRDE::addToFirstRunArchive(const std::vector<double>& candidate, double fitnessValue) {
+    first_run_archive.push_back(candidate);
+    first_run_archive_fitness.push_back(fitnessValue);
+    if (first_run_archive_max_size == 0) {
+        return;
+    }
+
+    if (first_run_archive.size() > first_run_archive_max_size) {
+        const size_t removeIdx = findArgMax(first_run_archive_fitness);
+        first_run_archive.erase(first_run_archive.begin() + static_cast<std::ptrdiff_t>(removeIdx));
+        first_run_archive_fitness.erase(first_run_archive_fitness.begin() + static_cast<std::ptrdiff_t>(removeIdx));
+    }
+}
+
+void ARRDE::onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) {
+    if (!first_run || !improved) {
+        return;
+    }
+    addToFirstRunArchive(candidate, fitnessValue);
 }
 
 

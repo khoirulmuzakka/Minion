@@ -22,9 +22,12 @@ class ARRDE : public Differential_Evolution {
         std::vector<std::vector<double>> population_records, archive_records;
         std::vector<double> fitness_records, archive_fitness_records;
         std::vector<double> MCR_records, MF_records;
+        std::vector<std::vector<double>> first_run_archive;
+        std::vector<double> first_run_archive_fitness;
         double memorySizeRatio=2.0;
         int minPopSize= 4;
         static constexpr size_t archiveRecordMaxSize = 1000;
+        size_t first_run_archive_max_size = 0;
 
     private : 
         double archive_size_ratio;
@@ -113,6 +116,7 @@ class ARRDE : public Differential_Evolution {
         void executeFinalRefine(size_t targetSize);
         void updateParameterMemory();
         void resampleControlParameters();
+        void addToFirstRunArchive(const std::vector<double>& candidate, double fitnessValue);
 
         double restart_prob(double x, double y, double alpha_ = 500, double m_=2.0) const {
             // s(x) = max(0, 0.001 - x)
@@ -169,6 +173,9 @@ class ARRDE : public Differential_Evolution {
          * @brief Initialize the algorithm given the input settings.
          */
         void initialize  () override;
+
+    protected:
+        void onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) override;
 };
 
 }

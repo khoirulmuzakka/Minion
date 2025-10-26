@@ -256,9 +256,12 @@ MinionResult Differential_Evolution::optimize() {
             }
 
             size_t best_idx = findArgMin(fitness);
-            if (fitness[best_idx] >= best_fitness) {no_improve_counter++;} else {no_improve_counter =0;};
+            const double previous_best = best_fitness;
+            const bool improved = fitness[best_idx] < previous_best;
+            if (!improved) {no_improve_counter++;} else {no_improve_counter =0;};
             best = population[best_idx];
             best_fitness = fitness[best_idx];
+            onBestUpdated(best, best_fitness, improved);
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
             history.push_back(minionResult);
             iter++;

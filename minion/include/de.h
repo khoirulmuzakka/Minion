@@ -73,6 +73,13 @@ protected :
     size_t no_improve_counter=0;
     double Fw=1.0;
     std::vector<size_t> sorted_indices;
+    /**
+     * @brief Hook that runs whenever the global best is updated.
+     * @param candidate The new global best candidate.
+     * @param fitnessValue The fitness of the candidate.
+     * @param improved True if the candidate improves the previous best.
+     */
+    virtual void onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) {}
 
     /**
      * @brief Initializes the population and other parameters.
