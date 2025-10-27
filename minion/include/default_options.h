@@ -34,9 +34,9 @@ class DefaultSettings{
             {"population_size", 0},  
             {"minimum_population_size", 4}, 
             {"archive_size_ratio", 1.0}, 
-            {"converge_reltol", 0.001}, 
-            {"refine_decrease_factor" , 0.8}, 
-            {"restart-refine-duration", 0.9}, 
+            {"converge_reltol", 0.0001}, 
+            {"refine_decrease_factor" , 1.0}, 
+            {"restart-refine-duration", 0.95}, 
             {"maximum_consecutive_restarts" , 2},
             {"bound_strategy" , std::string("reflect-random")} , 
         };
