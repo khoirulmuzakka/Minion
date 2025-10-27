@@ -21,22 +21,22 @@ void ARRDE::initialize() {
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
     const double eta = double(maxevals)/double(dimension);
-    const double defaultPopulation    = std::clamp(dimension*(1.0+std::pow(log10(eta), 2.0)), 10.0, 2000.0);
+    const double defaultPopulation    = std::clamp(dimension*(1.0+std::pow(log10(eta), 2.3)), 4.0, 2000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
     } else {
         populationSize = static_cast<size_t>(defaultPopulation);
     }
-    populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(10)));
+    populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(4)));
     first_run_archive_max_size = populationSize;
     first_run_archive.clear();
     first_run_archive_fitness.clear();
 
-    maxPopSize_finalRefine =  std::max(size_t(0.5*populationSize), std::max(dimension, static_cast<size_t>(10)));
+    maxPopSize_finalRefine =  std::max(size_t(0.5*populationSize), std::max(dimension, static_cast<size_t>(4)));
     minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
 
-    mutation_strategy = "current_to_pbest_A_1bin";
+    mutation_strategy = "current_to_pbest_AW_1bin";
     Fw=1.0;
     archive_size_ratio = 1.0;
     if (archive_size_ratio < 0.0) {
@@ -81,7 +81,7 @@ void ARRDE::adaptParameters() {
 void ARRDE::adjustPopulationSize() {
     double nevalsEff = static_cast<double>(Nevals);
     double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = minPopSize; //std::max(4.0, 0.5*static_cast<double>(bounds.size()));
+    double minSizeEff = minPopSize; 
     double maxSizeEff = static_cast<double>(populationSize);
 
     reduction_strategy = "exponential";
@@ -238,8 +238,6 @@ void ARRDE::executeRestart(size_t targetSize) {
             fitness.push_back(fitness_records[idx]);
         }
     }
-
-    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -274,8 +272,6 @@ void ARRDE::executeRefine(size_t targetSize) {
 
     refineRelTol *= decrease;
     reltol = refineRelTol;
-
-    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -354,7 +350,6 @@ void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
     }
 
     reltol = 0.0;
-    //memorySize = std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(population.size())));
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
@@ -434,6 +429,7 @@ void ARRDE::updateParameterMemory() {
             M_F[memoryIndex] = 0.8;
             memoryIndex = 0;
         } else memoryIndex++;
+
 }
 
 void ARRDE::resampleControlParameters() {
