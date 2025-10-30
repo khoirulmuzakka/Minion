@@ -74,7 +74,7 @@ if(NOT SKBUILD)
     list(REMOVE_ITEM MINION_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
 
     # Define the shared library
-    add_library(minion SHARED ${MINION_SOURCE_FILES})
+    add_library(minion STATIC ${MINION_SOURCE_FILES})
     target_link_libraries(minion)
     if (MSVC)
         set_target_properties(minion PROPERTIES

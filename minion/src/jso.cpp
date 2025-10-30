@@ -34,7 +34,8 @@ void jSO::initialize  (){
         reduction_strategy="linear";
     }
 
-        minPopSize = options.get<int>("minimum_population_size", 4);
+    minPopSize = options.get<int>("minimum_population_size", 4);
+    reduction_strategy="exponential";
     if (populationSize == minPopSize) popreduce = false; 
     else popreduce = true;
     hasInitialized=true;
@@ -47,7 +48,6 @@ void jSO::adaptParameters() {
     if (new_population_size<minPopSize) new_population_size=minPopSize;
     if (population.size() > new_population_size) {
         std::vector<size_t> sorted_index = argsort(fitness, true);
-
         std::vector<std::vector<double>> new_population_subset(new_population_size);
         std::vector<double> new_fitness_subset(new_population_size);
         for (int i = 0; i < new_population_size; ++i) {
@@ -144,7 +144,7 @@ void jSO::adaptParameters() {
         do {
             new_F[i] = rand_cauchy(M_F[selecIndices[i]], 0.1);
         } while (new_F[i] <= 0.0);
-
+            
         // jSO-specific parameter adjustments based on progress
         if (Nevals < 0.25*maxevals && new_CR[i] < 0.7) new_CR[i] = 0.7;
         if (Nevals < 0.5*maxevals && new_CR[i] < 0.6) new_CR[i] = 0.6;

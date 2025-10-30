@@ -35,10 +35,10 @@ class ARRDE : public Differential_Evolution {
         size_t Neval_stratrefine=0;
         std::string reduction_strategy;
         bool popreduce;
+        bool do_refine=false;
 
         bool refine = false;
         bool restart = false;
-        bool final_refine = false;
         bool first_run = true;
         bool population_converged = false;
         double bestOverall =  std::numeric_limits<double>::max();
@@ -46,14 +46,12 @@ class ARRDE : public Differential_Evolution {
         double reltol;
         double restartRelTol;
         double refineRelTol;
-        double startRefine=0.8;
         size_t Nrestart=1; //nitially set to 1, first run is consedered a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;
-        double maxRestart =1;
-        size_t maxPopSize_finalRefine;
-        bool init_final_refine=false;
+        double maxRestart =2;
 
+        size_t newPopulationSize = 0;
     private :
 
         /**
@@ -113,24 +111,9 @@ class ARRDE : public Differential_Evolution {
         void processRestartCycle();
         void executeRestart(size_t targetSize);
         void executeRefine(size_t targetSize);
-        void executeFinalRefine(size_t targetSize);
         void updateParameterMemory();
         void resampleControlParameters();
         void addToFirstRunArchive(const std::vector<double>& candidate, double fitnessValue);
-
-        double restart_prob(double x, double y, double alpha_ = 500, double m_=2.0) const {
-            // s(x) = max(0, 0.001 - x)
-            double s = std::max(0.0, 0.005 - x);
-            if (s == 0.0) return 0.0;
-
-            // x-dependence
-            double x_part = 1.0 - std::exp(-alpha_ * s);
-
-            // y-dependence
-            double h = (y < 0.5) ? 1.0 : std::max(0.0, 1.0 - m_ * (y - 0.5));
-
-            return x_part * h;
-        }
 
 
     public :

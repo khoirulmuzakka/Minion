@@ -1,6 +1,7 @@
 #include "arrde.h" 
 
 #include <cstddef>
+#include <stdexcept>
 
 namespace minion {
 
@@ -21,7 +22,7 @@ void ARRDE::initialize() {
     const auto dimension = bounds.size();
     const double logComponent = std::pow(std::log10(maxevals), 2.0);
     const double eta = double(maxevals)/double(dimension);
-    const double defaultPopulation    = std::clamp(dimension*(1.0+std::pow(log10(eta), 2.3)), 4.0, 2000.0);
+    const double defaultPopulation    = std::clamp(dimension*(std::pow(log10(eta), 2.5)), 4.0, 2000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
@@ -29,32 +30,22 @@ void ARRDE::initialize() {
         populationSize = static_cast<size_t>(defaultPopulation);
     }
     populationSize = std::max(populationSize, std::max(dimension, static_cast<size_t>(4)));
-    first_run_archive_max_size = populationSize;
-    first_run_archive.clear();
-    first_run_archive_fitness.clear();
-
-    maxPopSize_finalRefine =  std::max(size_t(0.5*populationSize), std::max(dimension, static_cast<size_t>(4)));
-    minPopSize = std::clamp(options.get<int>("minimum_population_size", 4), 4, static_cast<int>(maxPopSize_finalRefine));
+    minPopSize = std::max(options.get<int>("minimum_population_size", 4), 4);
 
     mutation_strategy = "current_to_pbest_AW_1bin";
-    Fw=1.0;
+    Fw=0.7;
     archive_size_ratio = 1.0;
-    if (archive_size_ratio < 0.0) {
-        archive_size_ratio = 2.0;
-    }
+    memorySize = 5;
 
-    memorySizeRatio = archive_size_ratio;
-    memorySize = 5; //std::max<size_t>(1, static_cast<size_t>(memorySizeRatio * static_cast<double>(populationSize)));
-
-    M_CR = rand_gen(0.5, 0.8, memorySize);
-    M_F = rand_gen(0.2, 0.5, memorySize);
+    M_CR = std::vector<double>(memorySize, 0.8) ;
+    M_F =  std::vector<double>(memorySize, 0.3) ;
 
     reltol = 1e-5;
     restartRelTol = reltol;
-    refineRelTol = restartRelTol;
+    refineRelTol = reltol;
 
-    decrease = 1.0; //options.get<double>("refine_decrease_factor", 0.85);
-    startRefine = options.get<double>("restart-refine-duration", 0.85);
+    reduction_strategy = "custom";
+    decrease = 1.0; //std::max(1.0, 1.0/log10(dimension)); //options.get<double>("refine_decrease_factor", 0.85);
     maxRestart = options.get<int>("maximum_consecutive_restarts", 2);
     useLatin = true;
     hasInitialized = true;
@@ -64,54 +55,62 @@ void ARRDE::initialize() {
 void ARRDE::adaptParameters() {
     adjustPopulationSize();
     adjustArchiveSize();
-
-    if (!final_refine && Nevals >= startRefine * maxevals) {
-        init_final_refine = true;
-    }
-
     const double spread = calcStdDev(fitness) / std::fabs(calcMean(fitness));
-    if (spread <= reltol || init_final_refine) {
+    if (spread <= reltol || do_refine) {
+        //std::cout << Nevals << " " << restart << " " << best_fitness << " " << spread << " " << reltol << " " << population.size()<<"\n";
         processRestartCycle();
     }
-
     updateParameterMemory();
     resampleControlParameters();
 }
 
-void ARRDE::adjustPopulationSize() {
-    double nevalsEff = static_cast<double>(Nevals);
-    double maxevalsEff = startRefine * static_cast<double>(maxevals);
-    double minSizeEff = minPopSize; 
-    double maxSizeEff = static_cast<double>(populationSize);
-
-    reduction_strategy = "exponential";
-    if (final_refine) {
-        nevalsEff = static_cast<double>(Nevals) - static_cast<double>(Neval_stratrefine);
-        maxevalsEff = static_cast<double>(maxevals) - static_cast<double>(Neval_stratrefine);
-        minSizeEff = static_cast<double>(minPopSize);
-        maxSizeEff = static_cast<double>(maxPopSize_finalRefine);
-        //reduction_strategy = "exponential";
-    }
-
-    if (maxevalsEff <= 0.0) {
-        maxevalsEff = 1.0;
-    }
-
-    size_t newPopulationSize = 0;
+void ARRDE::adjustPopulationSize() {   
     if (reduction_strategy == "linear") {
-        newPopulationSize = static_cast<size_t>((minSizeEff - maxSizeEff) * (nevalsEff / maxevalsEff) + maxSizeEff);
+        newPopulationSize = static_cast<size_t>(
+            (double(minPopSize) - double(populationSize)) * 
+            (double(Nevals) / double(maxevals)) + populationSize
+        );
+
     } else if (reduction_strategy == "exponential") {
-        const double ratio = minSizeEff / maxSizeEff;
-        newPopulationSize = static_cast<size_t>(maxSizeEff * std::pow(ratio, nevalsEff / maxevalsEff));
+        const double ratio = double(minPopSize) / double(populationSize);
+        newPopulationSize = static_cast<size_t>(
+            double(populationSize) * std::pow(ratio, double(Nevals) / double(maxevals))
+        );
+
     } else if (reduction_strategy == "agsk") {
-        const double progress = nevalsEff / maxevalsEff;
-        newPopulationSize = static_cast<size_t>(std::round(maxSizeEff + (minSizeEff - maxSizeEff) * std::pow(progress, 1.0 - progress)));
+        const double progress = double(Nevals) / double(maxevals);
+        newPopulationSize = static_cast<size_t>(
+            std::round(double(populationSize) + 
+            (double(minPopSize) - double(populationSize)) * 
+            std::pow(progress, 1.0 - progress))
+        );
+
+    } else if (reduction_strategy == "custom") {
+        const double progress = double(Nevals) / double(maxevals);
+        const double A = double(populationSize);
+        const double B = double(minPopSize);
+        const double C = std::max(4.0, 0.5 * double(bounds.size()));
+        const double dim = double(bounds.size());
+        const double D = std::max(dim, 0.25*A);
+        const double pp = 0.7+4.32/(1.0+std::pow(dim/13.65, 2.0)); //std::max(0.8, 5.0-double(bounds.size())/10); // steepness parameter (>1). You can tweak this.
+
+        double value;
+        if (progress <= 0.9) {
+            // Nonlinear fast decrease from A to C
+            const double t = progress / 0.9;
+            value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
+        } else {
+            // Linear decrease from D to B
+            value = D +10.0* (B - D) * (progress - 0.9);
+        }
+
+        newPopulationSize = static_cast<size_t>(std::round(value));
+
     } else {
         throw std::logic_error("Unknown reduction strategy");
     }
 
-    const size_t minAllowedSize = static_cast<size_t>(std::max(1.0, std::floor(minSizeEff)));
-    newPopulationSize = std::max(newPopulationSize, minAllowedSize);
+    newPopulationSize = std::max(newPopulationSize, size_t(4));
 
     if (population.size() > newPopulationSize) {
         const auto sortedIndex = argsort(fitness, true);
@@ -126,6 +125,9 @@ void ARRDE::adjustPopulationSize() {
         population = std::move(trimmedPopulation);
         fitness = std::move(trimmedFitness);
     }
+
+    if (newPopulationSize >population.size()) do_refine=true;
+   // if (double(Nevals) / double(maxevals) >0.9) std::cout<< double(Nevals) / double(maxevals) << " " <<newPopulationSize<< " " << population.size() << "\n";
 }
 
 void ARRDE::adjustArchiveSize() {
@@ -139,12 +141,34 @@ void ARRDE::adjustArchiveSize() {
     }
 }
 
+void ARRDE::addToFirstRunArchive(const std::vector<double>& candidate, double fitnessValue) {
+    first_run_archive.push_back(candidate);
+    first_run_archive_fitness.push_back(fitnessValue);
+    if (first_run_archive_max_size == 0) {
+        return;
+    }
+
+    if (first_run_archive.size() > first_run_archive_max_size) {
+        const size_t removeIdx = findArgMax(first_run_archive_fitness);
+        first_run_archive.erase(first_run_archive.begin() + static_cast<std::ptrdiff_t>(removeIdx));
+        first_run_archive_fitness.erase(first_run_archive_fitness.begin() + static_cast<std::ptrdiff_t>(removeIdx));
+    }
+}
+
+void ARRDE::onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) {
+    if (!first_run || !improved) {
+        return;
+    }
+    addToFirstRunArchive(candidate, fitnessValue);
+}
+
+
 void ARRDE::processRestartCycle() {
     if (!fitness_records.empty()) {
         bestOverall = findMin(fitness_records);
     }
 
-    if (first_run || refine || final_refine) {
+    if (first_run || refine ) {
         MCR_records.insert(MCR_records.end(), M_CR.begin(), M_CR.end());
         MF_records.insert(MF_records.end(), M_F.begin(), M_F.end());
     }
@@ -182,187 +206,161 @@ void ARRDE::processRestartCycle() {
     }
 
     update_locals();
-
-    const size_t previousPopulationSize = population.size();
-
     fitness_before.clear();
     archive.clear();
     archive_fitness.clear();
     population.clear();
     fitness.clear();
 
-    const bool shouldRestart = (bestOverall <= best_fitness && Nrestart < maxRestart) || first_run || final_refine || refine;
+    const bool shouldRestart = (bestOverall <= best_fitness && Nrestart < maxRestart) || first_run ||refine   ;
     if (shouldRestart) {
         restart = true;
         refine = false;
     } else {
-        if (!final_refine) {
-            refine = true;
-        }
+        refine=true;
+        restart=false;
+    }
 
-        if (init_final_refine) {
-            restart = false;
-            refine = false;
-            final_refine = true;
-            init_final_refine = false;
-        } else {
-            restart = false;
-        }
+    if (do_refine) {
+        refine = true; 
+        restart = false; 
+        do_refine = false;
     }
 
     if (restart) {
-        executeRestart(previousPopulationSize);
+        executeRestart(newPopulationSize);
     } else if (refine) {
-        executeRefine(previousPopulationSize);
-    } else if (final_refine) {
-        executeFinalRefine(previousPopulationSize);
-    }
+        executeRefine(newPopulationSize);
+    } ;
 }
 
 void ARRDE::executeRestart(size_t targetSize) {
-    if (!final_refine) {
-        population = random_sampling(bounds, targetSize);
-        if (!locals.empty()) {
-            for (auto& individual : population) {
-                individual = applyLocalConstraints(individual);
-            }
-        }
-        fitness = func(population, data);
-        Nevals += population.size();
-    } else {
-        const auto randomIndex = random_choice(fitness_records.size(), targetSize, true);
-        population.reserve(targetSize);
-        fitness.reserve(targetSize);
-        for (size_t idx : randomIndex) {
-            population.push_back(population_records[idx]);
-            fitness.push_back(fitness_records[idx]);
+    population = random_sampling(bounds, targetSize);
+    if (!locals.empty()) {
+        for (auto& individual : population) {
+            individual = applyLocalConstraints(individual);
         }
     }
+    fitness = func(population, data);
+    Nevals += population.size();
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
     best_fitness = fitness[bestIndex];
     best = population[bestIndex];
+    reltol = restartRelTol;
 
-    reltol = final_refine ? 0.0 : restartRelTol;
-    ++Nrestart;
-
-    if (!final_refine) {
-        M_CR = rand_gen(0.5, 0.8, memorySize);
-        M_F = rand_gen(0.2, 0.5, memorySize);
-    } else {
-        M_CR = random_choice(MCR_records, memorySize, true);
-        M_F = random_choice(MF_records, memorySize, true);
-    }
+    M_CR = rand_gen(0.5, 0.8, memorySize);
+    M_F = rand_gen(0.2, 0.5, memorySize);
 
     restart = true;
     refine = false;
     first_run = false;
+    ++Nrestart;
 }
 
 void ARRDE::executeRefine(size_t targetSize) {
-    const auto indices = random_choice(fitness_records.size(), fitness_records.size(), false);
+    //std::cout << "Refine triggered\n";
     population.reserve(targetSize);
     fitness.reserve(targetSize);
-    for (size_t i = 0; i < targetSize; ++i) {
+
+    std::vector<size_t> indices;
+    indices = random_choice(fitness_records.size(), fitness_records.size(), false);
+
+    size_t eff_size =  fitness_records.size() <= targetSize ? fitness_records.size() : targetSize ;
+    for (size_t i = 0; i < eff_size; ++i) {
         const size_t idx = indices[i];
         population.push_back(population_records[idx]);
         fitness.push_back(fitness_records[idx]);
+    }; 
+    if (Nevals>0.9*maxevals) {
+        auto best_sofar_ind = findArgMin(fitness_records);
+        population[0] = population_records[best_sofar_ind];
+        fitness[0] = fitness_records[best_sofar_ind];
+    };
+    
+    
+    auto remaining = targetSize - eff_size;
+    if (remaining > 0) {
+        const auto appendCandidate = [&](const std::vector<double>& candidate, double candidateFitness) {
+            population.push_back(candidate);
+            fitness.push_back(candidateFitness);
+        };
+        const auto fetchFitness = [&](const std::vector<double>& sourceFitness, size_t idx) -> double {
+            if (idx >= sourceFitness.size()) {
+                throw std::runtime_error("Fitness record missing for archived individual.");
+            }
+            return sourceFitness[idx];
+        };
+
+        if (!first_run_archive.empty() && remaining > 0) {
+            const size_t to_take = std::min(remaining, first_run_archive.size());
+            if (first_run_archive_fitness.size() == first_run_archive.size()) {
+                const auto sorted_indices = argsort(first_run_archive_fitness, true);
+                for (size_t i = 0; i < to_take; ++i) {
+                    const size_t idx = sorted_indices[i];
+                    const double candidateFitness = fetchFitness(first_run_archive_fitness, idx);
+                    appendCandidate(first_run_archive[idx], candidateFitness);
+                }
+            } else {
+                const auto indices_first = random_choice(first_run_archive.size(), to_take, false);
+                for (size_t idx : indices_first) {
+                    const double candidateFitness = fetchFitness(first_run_archive_fitness, idx);
+                    appendCandidate(first_run_archive[idx], candidateFitness);
+                }
+            }
+            remaining -= to_take;
+        }
+
+        if (!archive_records.empty() && remaining > 0) {
+            const size_t to_take = std::min(remaining, archive_records.size());
+            if (archive_fitness_records.size() == archive_records.size() && !archive_fitness_records.empty()) {
+                const auto sorted_indices = argsort(archive_fitness_records, true);
+                for (size_t i = 0; i < to_take; ++i) {
+                    const size_t idx = sorted_indices[i];
+                    const double candidateFitness = fetchFitness(archive_fitness_records, idx);
+                    appendCandidate(archive_records[idx], candidateFitness);
+                }
+            } else {
+                const auto indices_archive = random_choice(archive_records.size(), to_take, false);
+                for (size_t idx : indices_archive) {
+                    const double candidateFitness = fetchFitness(archive_fitness_records, idx);
+                    appendCandidate(archive_records[idx], candidateFitness);
+                }
+            }
+            remaining -= to_take;
+        }
+
+        if (remaining > 0 && !first_run_archive.empty()) {
+            const auto indices_first = random_choice(first_run_archive.size(), remaining, true);
+            for (size_t idx : indices_first) {
+                const double candidateFitness = fetchFitness(first_run_archive_fitness, idx);
+                appendCandidate(first_run_archive[idx], candidateFitness);
+            }
+            remaining = 0;
+        }
     }
+
+    if (Nevals>0.9*maxevals) {
+       // std::cout << "Test "<< double(Nevals)/maxevals <<" " << population.size() << "\n"; 
+       // printVector(fitness);
+    };
+
 
     refineRelTol *= decrease;
     reltol = refineRelTol;
+    if (Nevals>0.9*maxevals) reltol = 0.0;
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);
     best_fitness = fitness[bestIndex];
     best = population[bestIndex];
     Nrestart = 0;
-
     M_CR = random_choice(MCR_records, memorySize, true);
     M_F = random_choice(MF_records, memorySize, true);
-
     restart = false;
     refine = true;
-}
-
-void ARRDE::executeFinalRefine(size_t /*targetSize*/) {
-    const size_t refinedPopulationSize = maxPopSize_finalRefine;
-    Neval_stratrefine = Nevals;
-
-    population.reserve(refinedPopulationSize);
-    fitness.reserve(refinedPopulationSize);
-
-    std::vector<size_t> populationIndices = argsort(fitness_records, true);
-    const size_t fromPopulation = std::min(populationIndices.size(), refinedPopulationSize);
-    for (size_t i = 0; i < fromPopulation; ++i) {
-        const size_t idx = populationIndices[i];
-        population.push_back(population_records[idx]);
-        fitness.push_back(fitness_records[idx]);
-    }
-
-    size_t remaining = refinedPopulationSize - fromPopulation;
-    if (remaining > 0 && !first_run_archive.empty()) {
-        std::vector<size_t> firstRunIndices = argsort(first_run_archive_fitness, true);
-        const size_t fromFirstRun = std::min(remaining, firstRunIndices.size());
-        for (size_t i = 0; i < fromFirstRun; ++i) {
-            const size_t idx = firstRunIndices[i];
-            population.push_back(first_run_archive[idx]);
-            fitness.push_back(first_run_archive_fitness[idx]);
-        }
-        remaining -= fromFirstRun;
-    }
-
-    if (remaining > 0 && !archive_fitness_records.empty()) {
-        std::vector<size_t> archiveIndices = argsort(archive_fitness_records, true);
-        const size_t fromArchive = std::min(remaining, archiveIndices.size());
-        for (size_t i = 0; i < fromArchive; ++i) {
-            const size_t idx = archiveIndices[i];
-            population.push_back(archive_records[idx]);
-            fitness.push_back(archive_fitness_records[idx]);
-        }
-        remaining -= fromArchive;
-    }
-
-    if (remaining > 0) {
-        if (!archive_records.empty()) {
-            auto extraIndices = random_choice(archive_records.size(), remaining, true);
-            for (size_t idx : extraIndices) {
-                population.push_back(archive_records[idx]);
-                fitness.push_back(archive_fitness_records[idx]);
-            }
-            remaining = 0;
-        } else if (!first_run_archive.empty()) {
-            auto extraIndices = random_choice(first_run_archive.size(), remaining, true);
-            for (size_t idx : extraIndices) {
-                population.push_back(first_run_archive[idx]);
-                fitness.push_back(first_run_archive_fitness[idx]);
-            }
-            remaining = 0;
-        } else if (!population_records.empty()) {
-            auto extraIndices = random_choice(population_records.size(), remaining, true);
-            for (size_t idx : extraIndices) {
-                population.push_back(population_records[idx]);
-                fitness.push_back(fitness_records[idx]);
-            }
-            remaining = 0;
-        }
-    }
-
-    reltol = 0.0;
-    memoryIndex = 0;
-
-    const size_t bestIndex = findArgMin(fitness);
-    best_fitness = fitness[bestIndex];
-    best = population[bestIndex];
-
-    refine = false;
-    restart = false;
     first_run = false;
-
-    M_CR = random_choice(MCR_records, memorySize, true);
-    M_F = random_choice(MF_records, memorySize, true);
-    maxRestart = 1e300;
 }
 
 void ARRDE::updateParameterMemory() {
@@ -420,13 +418,16 @@ void ARRDE::updateParameterMemory() {
         meanCR_lehmer /= temp_sum_cr;
     }
 
-    M_CR[memoryIndex] = meanCR_lehmer;
-    M_F[memoryIndex] = meanF_lehmer;
+    //M_CR[memoryIndex] = meanCR_lehmer;
+    //M_F[memoryIndex] = meanF_lehmer;
 
+    // jSO uses arithmetic mean of old and new Lehmer mean
+    M_CR[memoryIndex] = (meanCR_lehmer + M_CR[memoryIndex])/2.0;
+    M_F[memoryIndex] = (meanF_lehmer + M_F[memoryIndex])/2.0;
     //memoryIndex = (memoryIndex + 1) % memorySize;
     if (memoryIndex == (memorySize-1)) {
-            M_CR[memoryIndex] = 0.8; 
-            M_F[memoryIndex] = 0.8;
+            M_CR[memoryIndex] = 0.9; 
+            M_F[memoryIndex] = 0.9;
             memoryIndex = 0;
         } else memoryIndex++;
 
@@ -461,44 +462,51 @@ void ARRDE::resampleControlParameters() {
         do {
             newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.05);
         } while (newF[i] <= 0.0);
+
+        if (first_run){
+            // jSO-specific parameter adjustments based on progress
+            if (Nevals < 0.25*maxevals && newCR[i] < 0.7) newCR[i] = 0.7;
+            if (Nevals < 0.5*maxevals && newCR[i] < 0.6) newCR[i] = 0.6;
+            if (Nevals < 0.6*maxevals && newF[i] > 0.7) newF[i] = 0.7;
+        }
     }
+
 
     // Clamp CR to [0, 1] and F to (0, 1]
     for (size_t i = 0; i < popSize; ++i) {
         CR[i] = std::min(1.0, std::max(0.0, newCR[i]));
         F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
     }
+    
+    if (first_run){
+        //update Fw 
+        if (Nevals < 0.2*maxevals) Fw=0.7; 
+        else if (Nevals < 0.4*maxevals) Fw=0.8; 
+        else Fw=1.2;
 
-    const int minP = std::max(2, static_cast<int>(std::round(0.11* static_cast<double>(popSize))));
-    p.assign(popSize, static_cast<size_t>(minP));
+        //update p 
+        p = std::vector<size_t>(population.size(), 1);
+        size_t ptemp;
+        for (int i = 0; i < population.size(); ++i) {
+            double pmax =0.25; 
+            double pmin=pmax/2.0; 
+            double fraction = pmax- (pmax-pmin)*Nevals/maxevals;
+            ptemp = size_t(round(population.size()* fraction));
+            if (ptemp<2) ptemp=2;
+            p[i] = ptemp;
+        };
+    } else {
+        Fw=1.0;
+        const int minP = std::max(2, static_cast<int>(std::round(0.11* static_cast<double>(popSize))));
+        p.assign(popSize, static_cast<size_t>(minP));
+    }
+
 
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
     stdF.push_back(calcStdDev(F));
 }
-
-void ARRDE::addToFirstRunArchive(const std::vector<double>& candidate, double fitnessValue) {
-    first_run_archive.push_back(candidate);
-    first_run_archive_fitness.push_back(fitnessValue);
-    if (first_run_archive_max_size == 0) {
-        return;
-    }
-
-    if (first_run_archive.size() > first_run_archive_max_size) {
-        const size_t removeIdx = findArgMax(first_run_archive_fitness);
-        first_run_archive.erase(first_run_archive.begin() + static_cast<std::ptrdiff_t>(removeIdx));
-        first_run_archive_fitness.erase(first_run_archive_fitness.begin() + static_cast<std::ptrdiff_t>(removeIdx));
-    }
-}
-
-void ARRDE::onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) {
-    if (!first_run || !improved) {
-        return;
-    }
-    addToFirstRunArchive(candidate, fitnessValue);
-}
-
 
 bool ARRDE::checkIsBetween(double x, double low, double high) {
     return x >= low && x <= high;
