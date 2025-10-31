@@ -91,7 +91,7 @@ void ARRDE::adjustPopulationSize() {
         const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
         const double D = std::max(2*dim, 0.1*A);
-        double pp = 1.0+4.461*exp(-0.109*dim) ;
+        double pp = 1.0+4.303*exp(-0.073*dim) ;
         double value;
         if (progress <= 0.9) {
             // Nonlinear fast decrease from A to C
