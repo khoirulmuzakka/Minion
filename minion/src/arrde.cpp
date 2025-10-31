@@ -87,10 +87,10 @@ void ARRDE::adjustPopulationSize() {
     } else if (reduction_strategy == "custom") {
         const double progress = double(Nevals) / double(maxevals);
         const double A = double(populationSize);
-        const double B = double(minPopSize);
+        const double B = std::max(4.0, 0.5 * double(bounds.size()));
         const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
-        const double D = std::max(2*dim, 0.25*A);
+        const double D = std::max(2*dim, 0.1*A);
         double pp = 1.0+4.461*exp(-0.109*dim) ;
         double value;
         if (progress <= 0.9) {
@@ -339,11 +339,6 @@ void ARRDE::executeRefine(size_t targetSize) {
             remaining = 0;
         }
     }
-
-    if (Nevals>0.9*maxevals) {
-       // std::cout << "Test "<< double(Nevals)/maxevals <<" " << population.size() << "\n"; 
-       // printVector(fitness);
-    };
 
 
     refineRelTol *= decrease;
