@@ -90,18 +90,16 @@ void ARRDE::adjustPopulationSize() {
         const double B = double(minPopSize);
         const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
-        const double D = std::max(2*dim, 0.1*A);
-        double pp = std::min(2.5, 1.0+9.16/(1.0+std::pow(dim/7.41, 2.0))); //std::max(0.8, 5.0-double(bounds.size())/10); // steepness parameter (>1). You can tweak this.
-
+        const double D = std::max(2*dim, 0.25*A);
+        double pp = 1.0+4.461*exp(-0.109*dim) ;
         double value;
         if (progress <= 0.9) {
             // Nonlinear fast decrease from A to C
             const double t = progress / 0.9;
             value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
         } else {
-             // Nonlinear fast decrease from A to C
-            pp=3.0;
-            const double t = (progress-0.9) /0.9 ;
+            pp=1.0;
+            const double t = (progress-0.9) /0.1 ;
             value = D - (D - B) * (1.0 - std::pow(1.0 - t, pp));
         }
 
@@ -479,29 +477,22 @@ void ARRDE::resampleControlParameters() {
         F[i] = std::min(1.0, newF[i]);  // F is already > 0 from do-while
     }
     
-    if (true){
-        //update Fw 
-        if (Nevals < 0.2*maxevals) Fw=0.7; 
-        else if (Nevals < 0.4*maxevals) Fw=0.8; 
-        else Fw=1.2;
+    //update Fw 
+    if (Nevals < 0.2*maxevals) Fw=0.7; 
+    else if (Nevals < 0.4*maxevals) Fw=0.8; 
+    else Fw=1.2;
 
-        //update p 
-        p = std::vector<size_t>(population.size(), 1);
-        size_t ptemp;
-        for (int i = 0; i < population.size(); ++i) {
-            double pmax =0.25; 
-            double pmin=pmax/2.0; 
-            double fraction = pmax- (pmax-pmin)*Nevals/maxevals;
-            ptemp = size_t(round(population.size()* fraction));
-            if (ptemp<2) ptemp=2;
-            p[i] = ptemp;
-        };
-    } else {
-        Fw=1.0;
-        const int minP = std::max(2, static_cast<int>(std::round(0.11* static_cast<double>(popSize))));
-        p.assign(popSize, static_cast<size_t>(minP));
-    }
-
+    //update p 
+    p = std::vector<size_t>(population.size(), 1);
+    size_t ptemp;
+    for (int i = 0; i < population.size(); ++i) {
+        double pmax =0.25; 
+        double pmin=pmax/2.0; 
+        double fraction = pmax- (pmax-pmin)*Nevals/maxevals;
+        ptemp = size_t(round(population.size()* fraction));
+        if (ptemp<2) ptemp=2;
+        p[i] = ptemp;
+    };
 
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
