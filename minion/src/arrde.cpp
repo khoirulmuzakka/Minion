@@ -21,7 +21,7 @@ void ARRDE::initialize() {
 
     const auto dimension = bounds.size();
     const double eta = double(maxevals)/double(dimension);
-    const double defaultPopulation    = std::clamp(dimension*(std::pow(log10(eta), 2.2)), 4.0, 2000.0);
+    const double defaultPopulation    = std::clamp(dimension*std::pow(log10(eta), 2.0), 4.0, 3000.0);
     const int configuredPopulation = options.get<int>("population_size", 0);
     if (configuredPopulation > 0) {
         populationSize = static_cast<size_t>(configuredPopulation);
@@ -39,13 +39,13 @@ void ARRDE::initialize() {
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
 
-    reltol = 1e-5;
-    restartRelTol = reltol;
-    refineRelTol = reltol;
+    reltol = 0.0;
+    restartRelTol = 1e-4;
+    refineRelTol = 1e-6;
 
     reduction_strategy = "custom";
     decrease = 1.0; //std::max(1.0, 1.0/log10(dimension)); //options.get<double>("refine_decrease_factor", 0.85);
-    maxRestart = options.get<int>("maximum_consecutive_restarts", 2);
+    maxRestart = 2; // options.get<int>("maximum_consecutive_restarts", 2);
     useLatin = true;
     hasInitialized = true;
 }
@@ -54,7 +54,7 @@ void ARRDE::initialize() {
 void ARRDE::adaptParameters() {
     adjustPopulationSize();
     adjustArchiveSize();
-    const double spread = calcStdDev(fitness) / std::fabs(calcMean(fitness));
+    spread = calcStdDev(fitness) / std::fabs(calcMean(fitness));
     if (spread <= reltol || do_refine) {
         //std::cout << Nevals << " " << restart << " " << best_fitness << " " << spread << " " << reltol << " " << population.size()<<"\n";
         processRestartCycle();
@@ -91,7 +91,7 @@ void ARRDE::adjustPopulationSize() {
         const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
         const double D = std::max(2*dim, 0.2*A);
-        double pp = 1.0+4.303*exp(-0.073*dim) ;
+        double pp = 1.0+1.351*exp(-0.0301*dim) ;
         double value;
         if (progress <= 0.9) {
             // Nonlinear fast decrease from A to C
@@ -126,7 +126,7 @@ void ARRDE::adjustPopulationSize() {
     }
 
     if (newPopulationSize >population.size()) do_refine=true;
-   // if (double(Nevals) / double(maxevals) >0.9) std::cout<< double(Nevals) / double(maxevals) << " " <<newPopulationSize<< " " << population.size() << "\n";
+    //std::cout<< double(Nevals) / double(maxevals) << " " <<newPopulationSize<< " " << population.size() << "\n";
 }
 
 void ARRDE::adjustArchiveSize() {
@@ -171,13 +171,15 @@ void ARRDE::processRestartCycle() {
         MCR_records.insert(MCR_records.end(), M_CR.begin(), M_CR.end());
         MF_records.insert(MF_records.end(), M_F.begin(), M_F.end());
     }
-
-    for (const auto& individual : population) {
-        population_records.push_back(individual);
-    }
-    for (double value : fitness) {
-        fitness_records.push_back(value);
-    }
+    
+    if (first_run || spread <= reltol){
+        for (const auto& individual : population) {
+            population_records.push_back(individual);
+        }
+        for (double value : fitness) {
+            fitness_records.push_back(value);
+        }
+    };
 
     if (!archive.empty()) {
         if (archive_fitness.size() == archive.size()) {
@@ -457,12 +459,11 @@ void ARRDE::resampleControlParameters() {
             newF[i] = rand_cauchy(M_F[selectedIndices[i]], 0.05);
         } while (newF[i] <= 0.0);
 
-        if (true){
-            // jSO-specific parameter adjustments based on progress
-            if (Nevals < 0.25*maxevals && newCR[i] < 0.7) newCR[i] = 0.7;
-            if (Nevals < 0.5*maxevals && newCR[i] < 0.6) newCR[i] = 0.6;
-            if (Nevals < 0.6*maxevals && newF[i] > 0.7) newF[i] = 0.7;
-        }
+        // jSO-specific parameter adjustments based on progress
+        if (Nevals < 0.25*maxevals && newCR[i] < 0.7) newCR[i] = 0.7;
+        if (Nevals < 0.5*maxevals && newCR[i] < 0.6) newCR[i] = 0.6;
+        if (Nevals < 0.6*maxevals && newF[i] > 0.7) newF[i] = 0.7;
+        
     }
 
 
@@ -476,6 +477,7 @@ void ARRDE::resampleControlParameters() {
     if (Nevals < 0.2*maxevals) Fw=0.7; 
     else if (Nevals < 0.4*maxevals) Fw=0.8; 
     else Fw=1.2;
+
 
     //update p 
     p = std::vector<size_t>(population.size(), 1);

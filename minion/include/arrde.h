@@ -36,6 +36,7 @@ class ARRDE : public Differential_Evolution {
         std::string reduction_strategy;
         bool popreduce;
         bool do_refine=false;
+        double spread;
 
         bool refine = false;
         bool restart = false;
