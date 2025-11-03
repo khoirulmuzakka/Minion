@@ -90,7 +90,7 @@ void ARRDE::adjustPopulationSize() {
         const double B = std::max(4.0, 0.5 * double(bounds.size()));
         const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
-        const double D = std::max(2*dim, 0.2*A);
+        const double D = std::max(2*dim, 0.25*A);
         double pp = 1.0+1.351*exp(-0.0301*dim) ;
         double value;
         if (progress <= 0.9) {
@@ -98,7 +98,7 @@ void ARRDE::adjustPopulationSize() {
             const double t = progress / 0.9;
             value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
         } else {
-            pp=1.0;
+            pp=2.0;
             const double t = (progress-0.9) /0.1 ;
             value = D - (D - B) * (1.0 - std::pow(1.0 - t, pp));
         }
@@ -422,10 +422,16 @@ void ARRDE::updateParameterMemory() {
     M_F[memoryIndex] = (meanF_lehmer + M_F[memoryIndex])/2.0;
     //memoryIndex = (memoryIndex + 1) % memorySize;
     if (memoryIndex == (memorySize-1)) {
+        if (first_run){
             M_CR[memoryIndex] = 0.9; 
             M_F[memoryIndex] = 0.9;
             memoryIndex = 0;
-        } else memoryIndex++;
+        } else {
+            M_CR[memoryIndex] = 0.8; 
+            M_F[memoryIndex] = 0.8;
+            memoryIndex = 0;
+        }
+    } else memoryIndex++;
 
 }
 
