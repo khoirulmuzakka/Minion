@@ -126,7 +126,7 @@ void ARRDE::adjustPopulationSize() {
     }
 
     if (newPopulationSize >population.size()) do_refine=true;
-    maxRestart= std::max(2, int(round(2.0+5.0*double(Nevals)/double(maxevals))));
+    maxRestart= std::max(1, int(round(1.0+4.0*double(Nevals)/double(maxevals))));
 }
 
 void ARRDE::adjustArchiveSize() {
@@ -225,7 +225,6 @@ void ARRDE::processRestartCycle() {
     if (do_refine) {
         refine = true; 
         restart = false; 
-        do_refine = false;
     }
 
     if (restart) {
@@ -274,10 +273,11 @@ void ARRDE::executeRefine(size_t targetSize) {
         population.push_back(population_records[idx]);
         fitness.push_back(fitness_records[idx]);
     }; 
-    if (Nevals>0.9*maxevals) {
+    if (Nevals>0.9*maxevals && do_refine) {
         auto best_sofar_ind = findArgMin(fitness_records);
         population[0] = population_records[best_sofar_ind];
         fitness[0] = fitness_records[best_sofar_ind];
+        do_refine=false;
     };
     
     
