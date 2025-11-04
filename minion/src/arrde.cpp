@@ -39,13 +39,13 @@ void ARRDE::initialize() {
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
 
-    reltol = 0.0;
+    reltol = 1e-8;
     restartRelTol = 1e-4;
     refineRelTol = 1e-6;
 
     reduction_strategy = "custom";
-    decrease = 1.0; //std::max(1.0, 1.0/log10(dimension)); //options.get<double>("refine_decrease_factor", 0.85);
-    maxRestart = 2; // options.get<int>("maximum_consecutive_restarts", 2);
+    decrease = 1.0; 
+    maxRestart = 2; 
     useLatin = true;
     hasInitialized = true;
 }
@@ -126,7 +126,7 @@ void ARRDE::adjustPopulationSize() {
     }
 
     if (newPopulationSize >population.size()) do_refine=true;
-    //std::cout<< double(Nevals) / double(maxevals) << " " <<newPopulationSize<< " " << population.size() << "\n";
+    maxRestart= std::max(2, int(round(2.0+5.0*double(Nevals)/double(maxevals))));
 }
 
 void ARRDE::adjustArchiveSize() {
@@ -413,24 +413,14 @@ void ARRDE::updateParameterMemory() {
     } else {
         meanCR_lehmer /= temp_sum_cr;
     }
-
-    //M_CR[memoryIndex] = meanCR_lehmer;
-    //M_F[memoryIndex] = meanF_lehmer;
-
     // jSO uses arithmetic mean of old and new Lehmer mean
     M_CR[memoryIndex] = (meanCR_lehmer + M_CR[memoryIndex])/2.0;
     M_F[memoryIndex] = (meanF_lehmer + M_F[memoryIndex])/2.0;
-    //memoryIndex = (memoryIndex + 1) % memorySize;
+
     if (memoryIndex == (memorySize-1)) {
-        if (first_run){
-            M_CR[memoryIndex] = 0.9; 
-            M_F[memoryIndex] = 0.9;
-            memoryIndex = 0;
-        } else {
-            M_CR[memoryIndex] = 0.8; 
-            M_F[memoryIndex] = 0.8;
-            memoryIndex = 0;
-        }
+        M_CR[memoryIndex] = 0.9; 
+        M_F[memoryIndex] = 0.9;
+        memoryIndex = 0;
     } else memoryIndex++;
 
 }
