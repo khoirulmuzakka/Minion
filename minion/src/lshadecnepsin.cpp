@@ -288,16 +288,79 @@ void LSHADE_cnEpSin::updateMemories(const std::vector<size_t>& successIndices,
     memoryPos = (memoryPos + 1) % memorySize;
 }
 
-void LSHADE_cnEpSin::enforceArchiveLimit() {
-    if (archive.empty()) return;
-    size_t capacity = static_cast<size_t>(std::round(archiveRate * population.size()));
-    capacity = std::max<size_t>(capacity, 1);
-    while (archive.size() > capacity) {
-        size_t idx = rand_int(archive.size());
-        archive.erase(archive.begin() + static_cast<long>(idx));
-        if (idx < archive_fitness.size()) {
-            archive_fitness.erase(archive_fitness.begin() + static_cast<long>(idx));
+void LSHADE_cnEpSin::updateArchive(const std::vector<std::vector<double>>& newEntries,
+                                   const std::vector<double>& newFitness) {
+    if (newEntries.size() != newFitness.size()) {
+        throw std::runtime_error("Archive update mismatch between candidates and fitness values.");
+    }
+
+    size_t capacity = 0;
+    if (!population.empty()) {
+        capacity = static_cast<size_t>(std::round(archiveRate * population.size()));
+    }
+    if (capacity == 0) {
+        archive.clear();
+        archive_fitness.clear();
+        return;
+    }
+
+    std::vector<std::vector<double>> combined;
+    combined.reserve(archive.size() + newEntries.size());
+    combined.insert(combined.end(), archive.begin(), archive.end());
+    combined.insert(combined.end(), newEntries.begin(), newEntries.end());
+
+    std::vector<double> combinedFitness = archive_fitness;
+    combinedFitness.insert(combinedFitness.end(), newFitness.begin(), newFitness.end());
+
+    if (combined.empty()) {
+        archive.clear();
+        archive_fitness.clear();
+        return;
+    }
+
+    std::vector<size_t> indices(combined.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    auto lexicographicalIndexCompare = [&](size_t lhs, size_t rhs) {
+        const auto& a = combined[lhs];
+        const auto& b = combined[rhs];
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+    };
+    std::sort(indices.begin(), indices.end(), lexicographicalIndexCompare);
+
+    std::vector<std::vector<double>> uniqueArchive;
+    std::vector<double> uniqueFitness;
+    uniqueArchive.reserve(combined.size());
+    uniqueFitness.reserve(combined.size());
+
+    for (size_t i = 0; i < indices.size(); ++i) {
+        size_t idx = indices[i];
+        const auto& candidate = combined[idx];
+        if (!uniqueArchive.empty()) {
+            const auto& previous = uniqueArchive.back();
+            if (candidate.size() == previous.size() && std::equal(candidate.begin(), candidate.end(), previous.begin())) {
+                continue;
+            }
         }
+        uniqueArchive.push_back(candidate);
+        uniqueFitness.push_back(combinedFitness[idx]);
+    }
+
+    if (uniqueArchive.size() > capacity) {
+        std::vector<size_t> order(uniqueArchive.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::shuffle(order.begin(), order.end(), get_rng());
+        archive.clear();
+        archive_fitness.clear();
+        archive.reserve(capacity);
+        archive_fitness.reserve(capacity);
+        for (size_t i = 0; i < capacity; ++i) {
+            size_t idx = order[i];
+            archive.push_back(uniqueArchive[idx]);
+            archive_fitness.push_back(uniqueFitness[idx]);
+        }
+    } else {
+        archive = std::move(uniqueArchive);
+        archive_fitness = std::move(uniqueFitness);
     }
 }
 
@@ -330,7 +393,7 @@ void LSHADE_cnEpSin::reducePopulationIfNeeded() {
             fitness.erase(fitness.begin() + static_cast<long>(idx));
         }
         populationSize = population.size();
-        enforceArchiveLimit();
+        updateArchive({}, {});
     } else {
         populationSize = currentPop;
     }
@@ -581,11 +644,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
                 }
             }
 
-            for (size_t k = 0; k < parentsToArchive.size(); ++k) {
-                archive.push_back(parentsToArchive[k]);
-                archive_fitness.push_back(parentFitnessToArchive[k]);
-            }
-            enforceArchiveLimit();
+            updateArchive(parentsToArchive, parentFitnessToArchive);
 
             size_t successCount = successIndices.size();
             size_t failureCount = currentPopSize - successCount;

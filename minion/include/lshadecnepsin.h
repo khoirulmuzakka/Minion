@@ -99,7 +99,8 @@ private:
                         const std::vector<double>& Fvec,
                         const std::vector<double>& freqVec);
 
-    void enforceArchiveLimit();
+    void updateArchive(const std::vector<std::vector<double>>& newEntries,
+                       const std::vector<double>& newFitness);
     void reducePopulationIfNeeded();
 
     void buildNeighbourCovariance(const std::vector<size_t>& sortedIndices,
