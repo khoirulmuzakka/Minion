@@ -1,4 +1,9 @@
 # Changelog
+## [0.2.8] - 2025-11-06
+### Changed
+- More correct implementations of LSHADE_cnepsin and ARRDE.
+
+# Changelog
 ## [0.2.7] - 2025-10-10
 ### Changed
 - More correct implementations of LSHADE, jSO, JADE, DE, and ARRDE.

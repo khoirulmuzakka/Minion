@@ -5,6 +5,13 @@ Changelog
    :local:
    :depth: 2
 
+Version 0.2.8 - 2025-11-06
+--------------------------
+
+**Changed**
+
+- More correct implementations of LSHADE_cnepsin and ARRDE.
+
 Version 0.2.7 - 2025-10-10
 --------------------------
 

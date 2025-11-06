@@ -2146,11 +2146,6 @@ class ARRDE(MinimizerBase):
                 options = {
                     "population_size"           :  0,  
                     "minimum_population_size"   : 4,
-                    "archive_size_ratio"        :  2.0, 
-                    "converge_reltol"           :  0.005,
-                    "refine_decrease_factor"    : 0.9, 
-                    "restart-refine-duration"   : 0.8, 
-                    "maximum_consecutive_restarts" : 2,
                     "bound_strategy"            : "reflect-random"
                 }
 
@@ -2160,15 +2155,10 @@ class ARRDE(MinimizerBase):
 
                 .. math::
 
-                    N = 2 \\cdot D + \\log(N_{maxevals})^2
+                    N =D \\cdot \\log_{10}(N_{maxevals}/D)^2.2
 
                 where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
-            - **minimum_population_size** (int) : final (minimum) population size during linear population size reduction.
-            - **archive_size_ratio** (float) : the ratio of archive size to the current population size .
-            - **converge_relTol** (float) : The value of std(f)/mean(f) below which a population is said to be converged.
-            - **refine_decrease_factor** (float) : The decrease factor of *converge_relTol* in the refinement phase. 
-            - **restart-refine-duration** (float) : a fraction of evaluation budget during which restart-refine phase occurs. The remaining fraction is dedicated to final refinement. 
-            - **maximum_consecutive_restarts** (int) : maximum number of consecutive restarts during restart-refine phase.
+            - **minimum_population_size** (int) : final (minimum) population size after population size reduction.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 

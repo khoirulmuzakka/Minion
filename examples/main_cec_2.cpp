@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
         for (int i=0; i<numRuns; i++){
             std::cout << "\nRun : "<< i+1 << ", with maxevals : " << Nmaxevals << "\n";
             std::vector<double> result_per_run;
-            for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo));
+            for (auto& num : funcnums) result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i));
             results.push_back(result_per_run);
         };
         dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
