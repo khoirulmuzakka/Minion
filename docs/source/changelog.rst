@@ -5,6 +5,14 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.0.1 - 2025-11-07
+--------------------------
+
+**Changed**
+
+- Fixed memory leaks. 
+- Version 1.0.1 now instead of 0.2.9
+
 Version 0.2.8 - 2025-11-06
 --------------------------
 

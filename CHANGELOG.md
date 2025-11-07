@@ -1,4 +1,9 @@
 # Changelog
+
+## [1.0.1] - 2025-11-07
+### Changed
+- Fixed memory leaks.
+
 ## [0.2.8] - 2025-11-06
 ### Changed
 - More correct implementations of LSHADE_cnepsin and ARRDE.
