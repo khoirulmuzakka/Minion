@@ -249,8 +249,8 @@ class MinimizerBase {
         /**
          * @brief destructor
          */
-        ~MinimizerBase(){};
-
+        virtual ~MinimizerBase() = default;
+        
         /**
          * @brief Virtual function to perform the optimization.
          * @return A MinionResult object containing the result of the optimization.

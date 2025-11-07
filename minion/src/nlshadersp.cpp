@@ -491,36 +491,41 @@ void NLSHADE_RSP::MainCycle()
         
     } while(NFEval < MaxFEval);
 }
+
+
 void NLSHADE_RSP::Clean()
 {
-    delete Donor;
-    delete Trial;
-    delete Rands;
-    for(int i=0;i!=NIndsMax;i++)
-    {
-        delete Popul[i];
-        delete PopulTemp[i];
+    delete[] Donor;
+    delete[] Trial;
+    delete[] Rands;
+
+    for(int i=0; i<NIndsMax; i++) {
+        delete[] Popul[i];
+        delete[] PopulTemp[i];
     }
-    for(int i=0;i!=NIndsMax*Int_ArchiveSizeParam;i++)
-        delete Archive[i];
-    delete ArchUsages;
-    delete Archive;
-    delete Popul;
-    delete PopulTemp;
-    delete FitMass;
-    delete FitMassTemp;
-    delete FitMassCopy;
-    delete BestInd;
-    delete Indexes;
-    delete BackIndexes;
-    delete tempSuccessCr;
-    delete tempSuccessF;
-    delete FGenerated;
-    delete CrGenerated;
-    delete FitDelta;
-    delete MemoryCr;
-    delete MemoryF;
-    delete Weights;
+    delete[] Popul;
+    delete[] PopulTemp;
+
+    for(int i=0; i<NIndsMax*Int_ArchiveSizeParam; i++)
+        delete[] Archive[i];
+    delete[] Archive;
+
+    delete[] ArchUsages;
+    delete[] FitMass;
+    delete[] FitMassTemp;
+    delete[] FitMassCopy;
+    delete[] BestInd;
+    delete[] Indexes;
+    delete[] BackIndexes;
+    delete[] tempSuccessCr;
+    delete[] tempSuccessF;
+    delete[] FGenerated;
+    delete[] CrGenerated;
+    delete[] FitDelta;
+    delete[] MemoryCr;
+    delete[] MemoryF;
+    delete[] Weights;
 }
+
 
 }
