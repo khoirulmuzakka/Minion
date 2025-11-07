@@ -47,9 +47,9 @@ public:
     CECBase(int function_number, int dimension);
 
     /**
-     * @brief Destructor.
+     * @brief destructor
      */
-    ~CECBase(){};
+    virtual ~CECBase() = default;
 
     /**
      * @brief Operator to evaluate CEC2020 test functions.
