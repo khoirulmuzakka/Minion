@@ -16,7 +16,7 @@ void jSO::initialize  (){
 
     double dimension = double(bounds.size());
     populationSize = options.get<int> ("population_size", 0) ; 
-    if (populationSize==0) populationSize= size_t(25.0*log(dimension)*sqrt(dimension));
+    if (populationSize==0) populationSize= std::max(size_t(4), size_t(25.0*log(dimension)*sqrt(dimension)));
 
     mutation_strategy= "current_to_pbest_AW_1bin";
 

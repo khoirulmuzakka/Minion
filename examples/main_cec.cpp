@@ -18,6 +18,16 @@ constexpr std::array<double, 126> kProblem9UpperBoundsExample = {
              0.217, 0.024, 0.076, 0.228, 0.228, 0.228, 0.058, 0.112, 0.062, 0.082, 0.035, 0.09, 0.032, 0.095, 0.022, 0.025, 0.032, 0.087, 0.035, 0.024, 0.081,
              0.124, 0.024, 0.076, 0.124, 0.124, 0.124, 0.058, 0.112, 0.062, 0.082, 0.035, 0.065, 0.032, 0.095, 0.022, 0.124, 0.032, 0.087, 0.035, 0.024, 0.106,
              0.116, 0.024, 0.076, 0.116, 0.116, 0.116, 0.058, 0.087, 0.062, 0.082, 0.035, 0.09, 0.032, 0.095, 0.022, 0.116, 0.032, 0.087, 0.035, 0.024, 0.106};
+constexpr std::array<double, 26> kMessengerLB = {1900.0,  2.5,  0.0,  0.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+                                                 100.0,  0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 1.1,   1.1,
+                                                 1.05,   1.05, 1.05, -kPi, -kPi, -kPi, -kPi, -kPi};
+constexpr std::array<double, 26> kMessengerUB = {2200.0, 5.0,  1.0,  1.0, 500.0, 500.0, 500.0, 500.0, 500.0,
+                                                 600.0,  0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 6.0,   6.0,
+                                                 6.0,    6.0,  6.0,  kPi,  kPi,  kPi,  kPi,  kPi};
+constexpr std::array<double, 22> kCassiniLB = {-1000.0, 3.0,  0.0,  0.0, 100.0, 100.0, 30.0,  400.0, 800.0, 0.01, 0.01,
+                                               0.01,    0.01, 0.01, 1.05, 1.05,  1.15,  1.7,  -kPi,  -kPi, -kPi, -kPi};
+constexpr std::array<double, 22> kCassiniUB = {0.0, 5.0, 1.0, 1.0, 400.0, 500.0, 300.0, 1600.0, 2200.0, 0.9, 0.9,
+                                               0.9, 0.9, 0.9, 6.0, 6.0, 6.5, 291.0, kPi, kPi, kPi, kPi};
 
 std::vector<std::pair<double, double>> make_bounds(const std::vector<double>& lb,
                                                    const std::vector<double>& ub) {
@@ -209,6 +219,22 @@ CEC2011ProblemDef get_cec2011_problem(int function_number) {
         }
         return {96, bounds};
     }
+    case 21: {
+        std::vector<std::pair<double, double>> bounds;
+        bounds.reserve(26);
+        for (size_t i = 0; i < kMessengerLB.size(); ++i) {
+            bounds.emplace_back(kMessengerLB[i], kMessengerUB[i]);
+        }
+        return {26, bounds};
+    }
+    case 22: {
+        std::vector<std::pair<double, double>> bounds;
+        bounds.reserve(22);
+        for (size_t i = 0; i < kCassiniLB.size(); ++i) {
+            bounds.emplace_back(kCassiniLB[i], kCassiniUB[i]);
+        }
+        return {22, bounds};
+    }
     default:
         throw std::runtime_error("CEC2011 problem definition not available.");
     }
@@ -335,7 +361,7 @@ int main(int argc, char* argv[]) {
     if (year==2017 || year == 2014) funcnums =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,13, 14, 15, 16, 17, 18, 19, 20,  21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
     else if (year==2020 || year == 2019) funcnums = {1,2,3,4,5,6,7,8,9, 10}; 
     else if (year==2022) funcnums =  {1,2,3,4,5,6,7,8,9, 10, 11, 12}; 
-    else if (year==2011) funcnums = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
+    else if (year==2011) funcnums = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
     else throw std::runtime_error("Year invalid.");
 
     std::vector<std::vector<double>> results;

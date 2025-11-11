@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 
 # Cleanup previous builds
 echo "Cleaning up old builds..."
-rm -rf dist build *.egg-info
+#rm -rf dist build *.egg-info
 rm -rf minionpy/lib/ lib/
 
 # Create and enter the build directory
@@ -20,7 +20,7 @@ cmake -G "Unix Makefiles" ..
 
 # Compile with optimal parallelization
 echo "Compiling Minion..."
-cmake --build . --clean-first --config Release -- -j$(nproc)
+cmake --build .  --config Release -- -j$(nproc)
 
 # Move back to root
 cd ..           

@@ -9,6 +9,10 @@
 #include <vector>
 #include <Eigen/Dense>
 
+#ifdef E
+#undef E
+#endif
+
 namespace minion {
 
 CEC2011Functions::CEC2011Functions(int function_number, int dimension)
@@ -744,6 +748,15 @@ struct HydroThermalProblem {
     bool valvePoint;
 };
 
+enum class MGADSMObjectiveType { OrbitInsertion, TotalDVRendezvous };
+
+struct MGADSMProblem {
+    std::vector<int> sequence;
+    MGADSMObjectiveType objective;
+    double rpTarget;
+    double eTarget;
+};
+
 constexpr int kHydroUnits = 4;
 constexpr int kHydroHours = 24;
 constexpr std::array<double, kHydroHours> kHydroDemand = {1370, 1390, 1360, 1290, 1290, 1410, 1650, 2000, 2240, 2320, 2230, 2310,
@@ -1030,6 +1043,532 @@ double evaluateHydroThermal(const double *x, int nx, const HydroThermalProblem &
                                 weights.reservoir * reservoirPenalty;
     return totalCost + totalPenalty;
 }
+
+namespace mgadsm {
+
+constexpr double kMuSun = 1.32712428e11;
+constexpr double kSecondsPerDay = 86400.0;
+
+inline double clampCos(double value) {
+    return std::max(-1.0, std::min(1.0, value));
+}
+
+inline Eigen::Vector3d unitVector(const Eigen::Vector3d &v) {
+    const double n = v.norm();
+    if (n == 0.0) {
+        return Eigen::Vector3d::Zero();
+    }
+    return v / n;
+}
+
+double m2E(double M, double e);
+double e2M(double E, double e);
+std::array<double, 6> ic2par(const Eigen::Vector3d &r0, const Eigen::Vector3d &v0, double mu);
+double ni2E(double ni, double e);
+std::pair<Eigen::Vector3d, Eigen::Vector3d> par2IC(const std::array<double, 6> &elements, double mu);
+void plephAn(double mjd2000, int planet, Eigen::Vector3d &r, Eigen::Vector3d &v);
+
+Eigen::Vector3d propagatePosition(const Eigen::Vector3d &r0,
+                                  const Eigen::Vector3d &v0,
+                                  double dt,
+                                  double mu,
+                                  Eigen::Vector3d &vOut) {
+    Eigen::Matrix3d DD = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d rAdj = r0;
+    Eigen::Vector3d vAdj = v0;
+    const Eigen::Vector3d h = r0.cross(v0);
+    Eigen::Vector3d ih = unitVector(h);
+    if (std::abs(std::abs(ih.z()) - 1.0) < 1e-3) {
+        DD << 1.0, 0.0, 0.0,
+              0.0, 0.0, 1.0,
+              0.0, -1.0, 0.0;
+        rAdj = DD * rAdj;
+        vAdj = DD * vAdj;
+    }
+    auto elements = ic2par(rAdj, vAdj, mu);
+    const double ecc = elements[1];
+    const double a = elements[0];
+    const double rate = (ecc < 1.0) ? std::sqrt(mu / (a * a * a)) : std::sqrt(-mu / (a * a * a));
+    const double M0 = e2M(elements[5], ecc);
+    const double M = M0 + rate * dt;
+    elements[5] = m2E(M, ecc);
+    auto state = par2IC(elements, mu);
+    Eigen::Vector3d rVec = DD.transpose() * state.first;
+    vOut = DD.transpose() * state.second;
+    return rVec;
+}
+
+struct LambertResult {
+    Eigen::Vector3d v1;
+    Eigen::Vector3d v2;
+    double semiMajor;
+    double p;
+};
+
+double x2tof(double x, double s, double c, bool longWay, int revolutions);
+double tofExpression(double sigma, double alpha, double beta, int revolutions);
+
+LambertResult lambert(const Eigen::Vector3d &r1,
+                      const Eigen::Vector3d &r2,
+                      double tofSeconds,
+                      double mu,
+                      bool longWay) {
+    if (tofSeconds <= 0.0) {
+        throw std::runtime_error("Lambert transfer time must be positive.");
+    }
+    const double R = r1.norm();
+    const double V = std::sqrt(mu / R);
+    const double T = R / V;
+    const Eigen::Vector3d r1n = r1 / R;
+    const Eigen::Vector3d r2n = r2 / R;
+    const double t = tofSeconds / T;
+    const double r2mod = r2n.norm();
+    double theta = std::acos(clampCos(r1n.dot(r2n / r2mod)));
+    if (longWay) {
+        theta = 2.0 * PI - theta;
+    }
+    const double c = std::sqrt(1.0 + r2mod * r2mod - 2.0 * r2mod * std::cos(theta));
+    const double s = (1.0 + r2mod + c) / 2.0;
+    const double am = s / 2.0;
+    const double lambda = std::sqrt(r2mod) * std::cos(theta / 2.0) / s;
+
+    double x;
+    {
+        double x1 = std::log(1.0 - 0.5233);
+        double x2 = std::log(1.0 + 0.5233);
+        double y1 = std::log(x2tof(std::exp(x1) - 1.0, s, c, longWay, 0)) - std::log(t);
+        double y2 = std::log(x2tof(std::exp(x2) - 1.0, s, c, longWay, 0)) - std::log(t);
+        double err = 1.0;
+        while (err > 1e-11 && y1 != y2) {
+            const double xNew = (x1 * y2 - y1 * x2) / (y2 - y1);
+            const double yNew = std::log(x2tof(std::exp(xNew) - 1.0, s, c, longWay, 0)) - std::log(t);
+            err = std::abs(x1 - xNew);
+            x1 = x2;
+            y1 = y2;
+            x2 = xNew;
+            y2 = yNew;
+        }
+        x = std::exp(x2) - 1.0;
+    }
+
+    const double a = am / (1.0 - x * x);
+    double beta;
+    double psi;
+    double eta2;
+    if (x < 1.0) {
+        beta = 2.0 * std::asin(std::sqrt((s - c) / (2.0 * a)));
+        if (longWay) {
+            beta = -beta;
+        }
+        const double alpha = 2.0 * std::acos(x);
+        psi = (alpha - beta) / 2.0;
+        eta2 = 2.0 * a * std::sin(psi) * std::sin(psi) / s;
+    } else {
+        beta = 2.0 * std::asinh(std::sqrt((c - s) / (2.0 * a)));
+        if (longWay) {
+            beta = -beta;
+        }
+        const double alpha = 2.0 * std::acosh(x);
+        psi = (alpha - beta) / 2.0;
+        eta2 = -2.0 * a * std::sinh(psi) * std::sinh(psi) / s;
+    }
+    const double eta = std::sqrt(std::abs(eta2));
+    const double p = r2mod / (am * eta2) * std::sin(theta / 2.0) * std::sin(theta / 2.0);
+    const double sigma1 = (1.0 / eta) / std::sqrt(am) * (2.0 * lambda * am - (lambda + x * eta));
+    Eigen::Vector3d ih = unitVector(r1n.cross(r2n));
+    if (longWay) {
+        ih = -ih;
+    }
+    const double vr1 = sigma1;
+    const double vt1 = std::sqrt(std::abs(p));
+    const Eigen::Vector3d v1 = (vr1 * r1n + vt1 * ih.cross(r1n)) * V;
+    const double vt2 = vt1 / r2mod;
+    const double vr2 = -vr1 + (vt1 - vt2) / std::tan(theta / 2.0);
+    const Eigen::Vector3d v2 = ((vr2 * r2n / r2mod) + vt2 * ih.cross(r2n / r2mod)) * V;
+    return {v1, v2, a * R, p * R};
+}
+
+double evaluate(const double *x, int nx, const MGADSMProblem &problem) {
+    const int N = static_cast<int>(problem.sequence.size());
+    if (N < 2) {
+        throw std::runtime_error("MGADSM problem must contain at least two bodies.");
+    }
+    const int expected = 4 + 2 * (N - 1) + 2 * (N - 2);
+    if (nx != expected) {
+        throw std::runtime_error("Invalid MGADSM dimension.");
+    }
+    const double tdep = x[0];
+    const double vinfMag = x[1];
+    const double udir = x[2];
+    const double vdir = x[3];
+    std::vector<double> tof(N - 1);
+    std::vector<double> alpha(N - 1);
+    for (int i = 0; i < N - 1; ++i) {
+        tof[i] = x[4 + i];
+        alpha[i] = x[4 + (N - 1) + i];
+    }
+    std::vector<double> rpNonDim(N - 2);
+    std::vector<double> gamma(N - 2);
+    const int rpOffset = 4 + 2 * (N - 1);
+    const int gammaOffset = rpOffset + (N - 2);
+    for (int i = 0; i < N - 2; ++i) {
+        rpNonDim[i] = x[rpOffset + i];
+        gamma[i] = x[gammaOffset + i];
+    }
+    constexpr std::array<double, 6> kPlanetMu = {22321.0, 324860.0, 398601.19, 42828.3, 1.267e8, 37.93951970883e6};
+    constexpr std::array<double, 6> kPlanetRadius = {2440.0, 6052.0, 6378.0, 3397.0, 71492.0, 60330.0};
+    std::vector<Eigen::Vector3d> r(N), v(N);
+    std::vector<Eigen::Vector3d> v_sc_pl_in(N), v_sc_pl_out(N);
+    std::vector<Eigen::Vector3d> rd(N - 1);
+    std::vector<Eigen::Vector3d> v_sc_dsm_in(N - 1), v_sc_dsm_out(N - 1);
+    std::vector<double> muVec(N);
+    double currentTime = tdep;
+    for (int i = 0; i < N; ++i) {
+        const int body = std::abs(problem.sequence[i]);
+        plephAn(currentTime, body, r[i], v[i]);
+        if (body < 1 || body > 6) {
+            throw std::runtime_error("MGADSM currently supports bodies up to Saturn.");
+        }
+        muVec[i] = kPlanetMu[body - 1];
+        if (i < N - 1) {
+            currentTime += tof[i];
+        }
+    }
+    std::vector<double> rp(N - 2, 0.0);
+    for (int i = 0; i < N - 2; ++i) {
+        const int body = std::abs(problem.sequence[i + 1]);
+        if (body < 1 || body > 6) {
+            throw std::runtime_error("Unsupported fly-by body.");
+        }
+        rp[i] = rpNonDim[i] * kPlanetRadius[body - 1];
+    }
+    Eigen::Vector3d vtemp = r[0].cross(v[0]);
+    const Eigen::Vector3d iP1 = unitVector(v[0]);
+    const Eigen::Vector3d zP1 = unitVector(vtemp);
+    Eigen::Vector3d jP1 = zP1.cross(iP1);
+    if (jP1.norm() == 0.0) {
+        jP1 = Eigen::Vector3d::UnitY();
+    } else {
+        jP1.normalize();
+    }
+    const double theta = 2.0 * PI * udir;
+    const double phi = std::acos(clampCos(2.0 * vdir - 1.0)) - PI / 2.0;
+    const Eigen::Vector3d vinf = vinfMag *
+                                 (std::cos(theta) * std::cos(phi) * iP1 +
+                                  std::sin(theta) * std::cos(phi) * jP1 + std::sin(phi) * zP1);
+    v_sc_pl_in[0] = v[0];
+    v_sc_pl_out[0] = v[0] + vinf;
+    std::vector<double> tDSM(N - 1, 0.0);
+    tDSM[0] = alpha[0] * tof[0];
+    rd[0] = propagatePosition(r[0], v_sc_pl_out[0], tDSM[0] * kSecondsPerDay, kMuSun, v_sc_dsm_in[0]);
+    const bool longWayFirst = rd[0].cross(r[1]).z() <= 0.0;
+    auto lamFirst = lambert(rd[0], r[1], (tof[0] * (1.0 - alpha[0])) * kSecondsPerDay, kMuSun, longWayFirst);
+    v_sc_dsm_out[0] = lamFirst.v1;
+    v_sc_pl_in[1] = lamFirst.v2;
+    std::vector<double> DV(N, 0.0);
+    DV[0] = (v_sc_dsm_out[0] - v_sc_dsm_in[0]).norm();
+    for (int i = 0; i < N - 2; ++i) {
+        Eigen::Vector3d v_rel_in = v_sc_pl_in[i + 1] - v[i + 1];
+        const double e = 1.0 + rp[i] / muVec[i + 1] * v_rel_in.squaredNorm();
+        const double beta = 2.0 * std::asin(1.0 / e);
+        Eigen::Vector3d ix = unitVector(v_rel_in);
+        Eigen::Vector3d iy = ix.cross(unitVector(v[i + 1]));
+        if (iy.norm() == 0.0) {
+            iy = ix.cross(Eigen::Vector3d::UnitX());
+        }
+        iy.normalize();
+        const Eigen::Vector3d iz = ix.cross(iy);
+        const double gammaVal = gamma[i];
+        const Eigen::Vector3d iVout = std::cos(beta) * ix + std::cos(gammaVal) * std::sin(beta) * iy +
+                                      std::sin(gammaVal) * std::sin(beta) * iz;
+        const Eigen::Vector3d v_rel_out = v_rel_in.norm() * iVout;
+        v_sc_pl_out[i + 1] = v[i + 1] + v_rel_out;
+        tDSM[i + 1] = alpha[i + 1] * tof[i + 1];
+        rd[i + 1] =
+            propagatePosition(r[i + 1], v_sc_pl_out[i + 1], tDSM[i + 1] * kSecondsPerDay, kMuSun, v_sc_dsm_in[i + 1]);
+        const bool lw = rd[i + 1].cross(r[i + 2]).z() <= 0.0;
+        auto lam = lambert(rd[i + 1], r[i + 2], (tof[i + 1] * (1.0 - alpha[i + 1])) * kSecondsPerDay, kMuSun, lw);
+        v_sc_dsm_out[i + 1] = lam.v1;
+        v_sc_pl_in[i + 2] = lam.v2;
+        DV[i + 1] = (v_sc_dsm_out[i + 1] - v_sc_dsm_in[i + 1]).norm();
+    }
+    const Eigen::Vector3d v_rel_final = v.back() - v_sc_pl_in.back();
+    double arrivalDV = 0.0;
+    if (problem.objective == MGADSMObjectiveType::OrbitInsertion) {
+        const double muTarget = muVec.back();
+        const double rpTarget = problem.rpTarget;
+        const double eTarget = problem.eTarget;
+        const double dvper = std::sqrt(v_rel_final.squaredNorm() + 2.0 * muTarget / rpTarget);
+        const double dvper2 = std::sqrt(2.0 * muTarget / rpTarget - muTarget / rpTarget * (1.0 - eTarget));
+        arrivalDV = std::abs(dvper - dvper2);
+    } else {
+        arrivalDV = v_rel_final.norm();
+    }
+    DV.back() = arrivalDV;
+    double DVtot = 0.0;
+    for (double val : DV) {
+        DVtot += val;
+    }
+    if (problem.objective == MGADSMObjectiveType::OrbitInsertion) {
+        return DVtot;
+    }
+    return DVtot + vinfMag;
+}
+
+double x2tof(double x, double s, double c, bool longWay, int revolutions) {
+    const double am = s / 2.0;
+    const double a = am / (1.0 - x * x);
+    double beta;
+    double alpha;
+    if (x < 1.0) {
+        beta = 2.0 * std::asin(std::sqrt((s - c) / (2.0 * a)));
+        if (longWay) {
+            beta = -beta;
+        }
+        alpha = 2.0 * std::acos(x);
+    } else {
+        alpha = 2.0 * std::acosh(x);
+        beta = 2.0 * std::asinh(std::sqrt((s - c) / (-2.0 * a)));
+        if (longWay) {
+            beta = -beta;
+        }
+    }
+    return tofExpression(a, alpha, beta, revolutions);
+}
+
+double tofExpression(double sigma, double alpha, double beta, int revolutions) {
+    if (sigma > 0.0) {
+        return sigma * std::sqrt(sigma) * ((alpha - std::sin(alpha)) - (beta - std::sin(beta)) + revolutions * 2.0 * PI);
+    }
+    return -sigma * std::sqrt(-sigma) * ((std::sinh(alpha) - alpha) - (std::sinh(beta) - beta));
+}
+
+double m2E(double M, double e) {
+    double E = M + e * std::cos(M);
+    double err = 1.0;
+    int iter = 0;
+    while (err > 1e-10 && iter < 100) {
+        ++iter;
+        double f = (E - e * std::sin(E) - M);
+        double fp = 1.0 - e * std::cos(E);
+        double delta = f / fp;
+        E -= delta;
+        err = std::abs(delta);
+    }
+    return E;
+}
+
+double e2M(double E, double e) {
+    if (e < 1.0) {
+        return E - e * std::sin(E);
+    }
+    return e * std::tan(E) - std::log(std::tan(E / 2.0 + PI / 4.0));
+}
+
+std::array<double, 6> ic2par(const Eigen::Vector3d &r0, const Eigen::Vector3d &v0, double mu) {
+    const Eigen::Vector3d k(0.0, 0.0, 1.0);
+    const Eigen::Vector3d h = r0.cross(v0);
+    const double hNorm = h.norm();
+    const double p = h.squaredNorm() / mu;
+    Eigen::Vector3d n = k.cross(h);
+    double nNorm = n.norm();
+    if (nNorm == 0.0) {
+        n = Eigen::Vector3d::UnitX();
+        nNorm = 1.0;
+    }
+    n /= nNorm;
+    const double rNorm = r0.norm();
+    Eigen::Vector3d eVec = (v0.cross(h) / mu) - (r0 / rNorm);
+    const double e = eVec.norm();
+    std::array<double, 6> elements{};
+    elements[0] = p / (1.0 - e);
+    elements[1] = e;
+    const double i = std::acos(clampCos(h.z() / hNorm));
+    elements[2] = i;
+    double omega = std::acos(clampCos(n.x()));
+    if (n.y() < 0.0) {
+        omega = 2.0 * PI - omega;
+    }
+    elements[3] = omega;
+    double argPeri = std::acos(clampCos(n.dot(eVec) / e));
+    if (eVec.z() < 0.0) {
+        argPeri = 2.0 * PI - argPeri;
+    }
+    elements[4] = argPeri;
+    double trueAnomaly = std::acos(clampCos(eVec.dot(r0) / (e * rNorm)));
+    if (r0.dot(v0) < 0.0) {
+        trueAnomaly = 2.0 * PI - trueAnomaly;
+    }
+    elements[5] = ni2E(trueAnomaly, e);
+    return elements;
+}
+
+double ni2E(double ni, double e) {
+    if (e < 1.0) {
+        const double factor = std::sqrt((1.0 - e) / (1.0 + e));
+        return 2.0 * std::atan(factor * std::tan(ni / 2.0));
+    }
+    const double factor = std::sqrt((e - 1.0) / (e + 1.0));
+    return 2.0 * std::atan(factor * std::tan(ni / 2.0));
+}
+
+std::pair<Eigen::Vector3d, Eigen::Vector3d> par2IC(const std::array<double, 6> &elements, double mu) {
+    const double a = elements[0];
+    const double e = elements[1];
+    const double i = elements[2];
+    const double Omega = elements[3];
+    const double omega = elements[4];
+    const double EA = elements[5];
+    double xper;
+    double yper;
+    double xdotper;
+    double ydotper;
+    if (e < 1.0) {
+        const double b = a * std::sqrt(1.0 - e * e);
+        const double n = std::sqrt(mu / (a * a * a));
+        xper = a * (std::cos(EA) - e);
+        yper = b * std::sin(EA);
+        xdotper = -(a * n * std::sin(EA)) / (1.0 - e * std::cos(EA));
+        ydotper = (b * n * std::cos(EA)) / (1.0 - e * std::cos(EA));
+    } else {
+        const double b = -a * std::sqrt(e * e - 1.0);
+        const double n = std::sqrt(-mu / (a * a * a));
+        const double dNdzeta = e * (1.0 + std::tan(EA) * std::tan(EA)) -
+                               (0.5 + 0.5 * std::pow(std::tan(EA / 2.0 + PI / 4.0), 2)) /
+                                   std::tan(EA / 2.0 + PI / 4.0);
+        xper = a / std::cos(EA) - a * e;
+        yper = b * std::tan(EA);
+        xdotper = a * std::tan(EA) / std::cos(EA) * n / dNdzeta;
+        ydotper = b / (std::cos(EA) * std::cos(EA)) * n / dNdzeta;
+    }
+    Eigen::Matrix3d R;
+    const double cO = std::cos(Omega);
+    const double sO = std::sin(Omega);
+    const double co = std::cos(omega);
+    const double so = std::sin(omega);
+    const double ci = std::cos(i);
+    const double si = std::sin(i);
+    R(0, 0) = cO * co - sO * so * ci;
+    R(0, 1) = -cO * so - sO * co * ci;
+    R(0, 2) = sO * si;
+    R(1, 0) = sO * co + cO * so * ci;
+    R(1, 1) = -sO * so + cO * co * ci;
+    R(1, 2) = -cO * si;
+    R(2, 0) = so * si;
+    R(2, 1) = co * si;
+    R(2, 2) = ci;
+    Eigen::Vector3d r = R * Eigen::Vector3d(xper, yper, 0.0);
+    Eigen::Vector3d v = R * Eigen::Vector3d(xdotper, ydotper, 0.0);
+    return {r, v};
+}
+
+void plephAn(double mjd2000, int planet, Eigen::Vector3d &r, Eigen::Vector3d &v) {
+    const double RAD = PI / 180.0;
+    const double KM = 1.49597870691e8;
+    std::array<double, 6> E{};
+    double T = (mjd2000 + 36525.0) / 36525.0;
+    double TT = T * T;
+    double TTT = TT * T;
+    switch (planet) {
+    case 1:
+        E = {0.38709860,
+             0.20561421 + 0.00002046 * T - 0.00000003 * TT,
+             7.002880555555556 + 0.0018608333333333333 * T - 1.8333333333333333e-05 * TT,
+             47.14594444444444 + 1.1852083333333333 * T + 0.0001738888888888889 * TT,
+             28.753752777777777 + 0.3702805555555556 * T + 0.00012083333333333333 * TT,
+             102.27938055555556 + (149472.5152888889 + 6.388888888888889e-06 * T) * T};
+        break;
+    case 2:
+        E = {0.72333160,
+             0.00682069 - 0.00004774 * T + 9.1e-8 * TT,
+             3.3936305555555556 + 0.0010058333333333333 * T - 9.722222222222222e-07 * TT,
+             75.77964722222222 + 0.89985 * T + 0.00041 * TT,
+             54.38418611111111 + 0.5081861111111111 * T - 0.001386388888888889 * TT,
+             212.60321944444445 + (58517.803875 + 0.0012860555555555556 * T) * T};
+        break;
+    case 3:
+        E = {1.00000023,
+             0.01675104 - 0.0000418 * T - 1.26e-7 * TT,
+             0.0,
+             0.0,
+             101.22083333333333 + 1.719175 * T + 0.0004527777777777778 * TT + 3.3333333333333335e-06 * TTT,
+             358.47584444444445 + (35990.4975 - 0.00015027777777777778 * T - 3.3333333333333335e-06 * TT) * T};
+        break;
+    case 4:
+        E = {1.523688399,
+             0.0933129 + 0.000092064 * T - 7.7e-8 * TT,
+             1.8503333333333333 - 0.000675 * T + 1.2611111111111111e-05 * TT,
+             48.78644166666667 + 0.7709916666666667 * T - 1.388888888888889e-06 * TT - 5.333333333333333e-06 * TTT,
+             285.4317611111111 + 1.0697666666666667 * T + 0.00013125 * TT + 4.138888888888889e-06 * TTT,
+             319.529425 + (19139.8585 + 0.00018080555555555556 * T + 1.1944444444444444e-06 * TT) * T};
+        break;
+    case 5:
+        E = {5.202561,
+             0.04833475 + 0.00016418 * T - 4.676e-07 * TT - 1.7e-09 * TTT,
+             1.308736111111111 - 0.005696111111111111 * T + 3.888888888888889e-06 * TT,
+             99.44338611111111 + 1.01053 * T + 0.00035222222222222225 * TT - 8.511111111111112e-06 * TTT,
+             273.2775416666667 + 0.5994316666666667 * T + 0.00070405 * TT + 5.077777777777778e-06 * TTT,
+             225.32832777777778 + (3034.692023888889 - 0.0007215888888888889 * T + 1.7844444444444444e-06 * TT) * T};
+        break;
+    case 6:
+        E = {9.554747,
+             0.05589232 - 0.0003455 * T - 7.28e-07 * TT + 7.4e-10 * TTT,
+             2.4925194444444444 - 0.003918888888888889 * T - 1.548888888888889e-05 * TT + 4.4444444444444447e-08 * TTT,
+             112.79038888888889 + 0.8731951388888889 * T - 0.00015218055555555556 * TT - 5.305555555555556e-06 * TTT,
+             338.3077722222222 + 1.0852206944444444 * T + 0.0009785416666666667 * TT + 9.916666666666666e-06 * TTT,
+             175.46621666666666 + (1221.5514677777778 - 0.0005018194444444444 * T - 5.1944444444444446e-06 * TT) * T};
+        break;
+    case 7:
+        E = {19.21814,
+             0.0463444 - 0.00002658 * T + 7.7e-08 * TT,
+             0.7724638888888889 + 0.0006252777777777778 * T + 3.95e-05 * TT,
+             73.47709722222223 + 0.4986677777777778 * T + 0.0013116666666666667 * TT,
+             98.07155277777777 + 0.985765 * T - 0.0010744722222222222 * TT - 6.055555555555555e-07 * TTT,
+             72.64881944444444 + (428.3791130555556 + 7.884444444444444e-05 * T + 1.1111111111111112e-09 * TT) * T};
+        break;
+    case 8:
+        E = {30.10957,
+             0.00899704 + 0.00000633 * T - 2.0e-12 * TT,
+             1.7792416666666667 - 0.00954361111111111 * T - 9.111111111111111e-06 * TT,
+             130.68135833333332 + 1.098935 * T + 0.00024986666666666665 * TT - 4.717777777777778e-06 * TTT,
+             276.0459666666667 + 0.32563944444444444 * T + 0.00014095 * TT + 4.113333333333333e-06 * TTT,
+             37.730669444444445 + (218.46133972222223 - 7.033333333333333e-05 * T) * T};
+        break;
+    case 9: {
+        double Tp = mjd2000 / 36525.0;
+        double TTp = Tp * Tp;
+        double TTTp = TTp * Tp;
+        double TTTTp = TTTp * Tp;
+        double TTTTTp = TTTTp * Tp;
+        E = {39.34041961252520 + 4.33305138120726 * Tp - 22.93749932403733 * TTp + 48.76336720791873 * TTTp -
+                 45.52494862462379 * TTTTp + 15.55134951783384 * TTTTTp,
+             0.24617365396517 + 0.09198001742190 * Tp - 0.57262288991447 * TTp + 1.39163022881098 * TTTp -
+                 1.46948451587683 * TTTTp + 0.56164158721620 * TTTTTp,
+             17.16690003784702 - 0.49770248790479 * Tp + 2.73751901890829 * TTp - 6.26973695197547 * TTTp +
+                 6.36276927397430 * TTTTp - 2.37006911673031 * TTTTTp,
+             110.222019291707 + 1.551579150048 * Tp - 9.701771291171 * TTp + 25.730756810615 * TTTp -
+                 30.140401383522 * TTTTp + 12.796598193159 * TTTTTp,
+             113.368933916592 + 9.436835192183 * Tp - 35.762300003726 * TTp + 48.966118351549 * TTTp -
+                 19.384576636609 * TTTTp - 3.362714022614 * TTTTTp,
+             15.17008631634665 + 137.023166578486 * Tp + 28.362805871736 * TTp - 29.677368415909 * TTTp -
+                 3.585159909117 * TTTTp + 13.406844652829 * TTTTTp};
+        break;
+    }
+    default:
+        throw std::runtime_error("Unsupported planet index for MGADSM");
+    }
+    E[0] *= KM;
+    for (int idx = 2; idx < 6; ++idx) {
+        E[idx] *= RAD;
+    }
+    E[5] = std::fmod(E[5], 2.0 * PI);
+    E[5] = m2E(E[5], E[1]);
+    auto state = par2IC(E, kMuSun);
+    r = state.first;
+    v = state.second;
+}
+
+} // namespace mgadsm
 
 struct Problem9Precomputed {
     Eigen::MatrixXd X;
@@ -2004,6 +2543,30 @@ const HydroThermalProblem &getHydroThermalCase3() {
     return problem;
 }
 
+const MGADSMProblem &getMessengerFull() {
+    static const MGADSMProblem problem = [] {
+        MGADSMProblem prob;
+        prob.sequence = {3, 2, 2, 1, 1, 1, 1};
+        prob.objective = MGADSMObjectiveType::OrbitInsertion;
+        prob.rpTarget = 2640.0;
+        prob.eTarget = 0.704;
+        return prob;
+    }();
+    return problem;
+}
+
+const MGADSMProblem &getCassini2() {
+    static const MGADSMProblem problem = [] {
+        MGADSMProblem prob;
+        prob.sequence = {3, 2, 2, 3, 5, 6};
+        prob.objective = MGADSMObjectiveType::TotalDVRendezvous;
+        prob.rpTarget = 0.0;
+        prob.eTarget = 0.0;
+        return prob;
+    }();
+    return problem;
+}
+
 } // namespace
 
 namespace CEC2011 {
@@ -2071,6 +2634,12 @@ void evaluate(double *x, double *f, int nx, int mx, int func_num) {
             break;
         case 20:
             f[i] = evaluateHydroThermal(xi, nx, getHydroThermalCase3());
+            break;
+        case 21:
+            f[i] = mgadsm::evaluate(xi, nx, getMessengerFull());
+            break;
+        case 22:
+            f[i] = mgadsm::evaluate(xi, nx, getCassini2());
             break;
         default:
             throw std::runtime_error("CEC2011 function not implemented yet");
