@@ -2,9 +2,7 @@ from .algorithms import *
 from .test_functions import *
 from .cec import *
 from .parallel import *
-
-try : from .cec_2011 import CEC2011
-except : pass
+from .cec_2011 import CEC2011
 
 # Define the package's version
 __version__ = "0.2.7"

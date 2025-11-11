@@ -7,6 +7,7 @@
 #include "gwo_de.h"
 #include "nelder_mead.h"
 #include "utility.h"
+#include "cec2011.h"
 #include "cec2017.h"
 #include "cec2014.h"
 #include "cec2019.h"
@@ -450,6 +451,10 @@ PYBIND11_MODULE(minionpycpp, m) {
 
         .def_readwrite("history", &Minimizer::history)
         .def("optimize", &Minimizer::optimize, py::call_guard<py::gil_scoped_release>());
+
+    py::class_<CEC2011Functions>(m, "CEC2011Functions")
+        .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
+        .def("__call__", &CEC2011Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2014Functions>(m, "CEC2014Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
