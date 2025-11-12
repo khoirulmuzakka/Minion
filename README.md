@@ -43,8 +43,10 @@ Minion also serves as a **research platform** for developing and testing new opt
   - Designed for **vectorized function evaluations**, supporting **multithreading and multiprocessing** to speed up optimization.
 - **Optimized C++ backend with Python API**
   - Enjoy the performance of C++ with the simplicity of Python.
-- **CEC Benchmark Suite**
-  - Includes benchmark problems from **2011, 2014, 2017, 2019, 2020, and 2022** for rigorous algorithm testing.
+- **CEC Benchmark Suite**  
+  - Includes CEC benchmark problems from 2011, 2014, 2017, 2019, 2020, and 2022 for rigorous algorithm testing.  
+  - The benchmark problems are directly adapted from the original C++ implementations.  
+  - The CEC 2011 suite, containing 22 real-world optimization problems, has been completely rewritten into C++ from the MATLAB version, making it much faster than the original.
 
 ## 🚀 Installation
 The Python wrapper (**minionpy**) is available on PyPI:
