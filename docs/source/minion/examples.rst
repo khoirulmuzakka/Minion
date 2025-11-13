@@ -33,7 +33,7 @@ The following C++ example showcases how to use Minion to optimize the Rosenbrock
 
     int main() {
         // List of optimization algorithms to test
-        std::vector<std::string> algoList = {"ARRDE", "LSHADE", "LSRTDE"};
+        std::vector<std::string> algoList = {"ARRDE", "AGSK", "LSHADE", "LSRTDE"};
         
         // Define the problem dimensions and bounds
         size_t dimension = 10;
@@ -60,9 +60,11 @@ Minion supports the following optimization algorithms:
     - ``"jSO"``      (A variant of LSHADE with some improvements)
     - ``"NLSHADE_RSP"`` (A variant of LSHADE with some improvements)
     - ``"LSHADE_cnEpSin"`` (A variant of LSHADE with some improvements)
+    - ``"IMODE"`` (Improved Multi-operator Differential Evolution)
     - ``"j2020"``  (A variant of jDE algorithm)
     - ``"GWO_DE"``  (Grey Wolf-DE optimization)
     - ``"ARRDE"``   (Adaptive restart-refine DE)
+    - ``"AGSK"``    (Adaptive gaining-sharing knowledge-based DE)
     - ``"LSRTDE"``  (A variant of LSHADE with some improvements)
 
 - **Swarm Intelligence Algorithms:**

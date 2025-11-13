@@ -14,12 +14,14 @@
 #include "cec2020.h"
 #include "cec2022.h"
 #include "lshade.h"
+#include "agsk.h"
 #include "jade.h"
 #include "de.h"
 #include "arrde.h"
 #include "nlshadersp.h"
 #include "j2020.h"
 #include "lsrtde.h"
+#include "imode.h"
 #include "jso.h"
 #include "abc.h"
 #include "pso.h"
@@ -149,6 +151,46 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("stdCR", &LSHADE::stdCR)
         .def_readonly("stdF", &LSHADE::stdF)
         .def_readonly("diversity", &LSHADE::diversity);
+
+    py::class_<AGSK, Differential_Evolution>(m, "AGSK")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &AGSK::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &AGSK::meanCR)
+        .def_readonly("meanF", &AGSK::meanF)
+        .def_readonly("stdCR", &AGSK::stdCR)
+        .def_readonly("stdF", &AGSK::stdF)
+        .def_readonly("diversity", &AGSK::diversity);
+
+    py::class_<IMODE, Differential_Evolution>(m, "IMODE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &IMODE::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &IMODE::meanCR)
+        .def_readonly("meanF", &IMODE::meanF)
+        .def_readonly("stdCR", &IMODE::stdCR)
+        .def_readonly("stdF", &IMODE::stdF)
+        .def_readonly("diversity", &IMODE::diversity);
 
     py::class_<LSHADE_cnEpSin, Differential_Evolution>(m, "LSHADE_cnEpSin")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

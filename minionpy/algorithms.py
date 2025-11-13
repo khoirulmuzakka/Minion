@@ -10,7 +10,9 @@ sys.path.append(custom_path)
 import numpy as np
 from minionpycpp import LSHADE as cppLSHADE
 from minionpycpp import LSHADE as cppJADE
+from minionpycpp import IMODE as cppIMODE
 from minionpycpp import ARRDE as cppARRDE
+from minionpycpp import AGSK as cppAGSK
 from minionpycpp import NLSHADE_RSP as cppNLSHADE_RSP
 from minionpycpp import j2020 as cppj2020
 from minionpycpp import jSO as cppjSO
@@ -831,6 +833,121 @@ class LSHADE(MinimizerBase):
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
         self.diversity = self.optimizer.diversity
+        return self.minionResult
+
+
+class AGSK(MinimizerBase):
+    r"""
+    Implementation of the Adaptive Gaining-Sharing Knowledge-based (AGSK) algorithm.
+
+    Reference:
+        A. W. Mohamed, A. A. Hadi, A. K. Mohamed, and N. H. Awad,
+        *Adaptive Gaining-Sharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems*,
+        IEEE CEC 2020.
+
+    AGSK organizes its search into junior and senior gaining-sharing phases with adaptive
+    knowledge pools, success-based probability updates, and an AGSK-style population
+    reduction schedule. It proved highly competitive on the CEC 2020 benchmark suite.
+
+    Options accepted via ``options`` (defaults shown) ::
+
+        {
+            "population_size"         : 0,      # auto -> 40*D if D>5 else 100
+            "minimum_population_size" : 12,
+            "bound_strategy"          : "reflect-random"
+        }
+
+    Notes
+    -----
+    - Setting ``population_size`` to ``0`` reproduces the reference scaling rule.
+    - ``minimum_population_size`` enforces the terminal population cap during
+      nonlinear reduction.
+    - Boundary handling reuses Minion's standard strategies (``"random"``,
+      ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``).
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None
+        ) :
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppAGSK(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+
+    def optimize(self):
+        """
+        Run the AGSK optimizer and capture history/statistics.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = self.optimizer.meanCR
+        self.meanF = self.optimizer.meanF
+        self.stdCR = self.optimizer.stdCR
+        self.stdF = self.optimizer.stdF
+        self.diversity = self.optimizer.diversity
+        return self.minionResult
+
+
+class IMODE(MinimizerBase):
+    r"""
+    Implementation of the Improved Multi-Operator Differential Evolution (IMODE) algorithm.
+
+    Reference: K. Sallam, *Improved Multi-operator Differential Evolution Algorithm (IMODE)*.
+
+    IMODE combines multiple mutation operators, adaptive control parameters, and
+    linear population size reduction. It is well suited for multimodal and
+    high-dimensional benchmark problems where maintaining diversity is critical.
+
+    Options accepted via ``options`` (defaults shown)::
+
+        {
+            "population_size"         : 0,      # auto -> max(18*D, 6*D^2) capped at 5000
+            "minimum_population_size" : 4,
+            "memory_size"             : 0,      # auto -> 20*D
+            "archive_size_ratio"      : 2.6,
+            "bound_strategy"          : "none"
+        }
+
+    Notes
+    -----
+    - Setting ``population_size`` to ``0`` reproduces the MATLAB reference scaling rule.
+    - ``memory_size`` of ``0`` activates the heuristic ``20 * D`` success-history length.
+    - The default boundary handler is ``"none"`` because IMODE uses its own hybrid repair.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppIMODE(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.meanCR = getattr(self.optimizer, "meanCR", [])
+        self.meanF = getattr(self.optimizer, "meanF", [])
+        self.stdCR = getattr(self.optimizer, "stdCR", [])
+        self.stdF = getattr(self.optimizer, "stdF", [])
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
 
 
@@ -2379,6 +2496,7 @@ class Minimizer(MinimizerBase):
             Available algorithms include:
 
             - `"LSHADE"`
+            - `"AGSK"`
             - `"DE"`
             - `"JADE"`
             - `"jSO"`

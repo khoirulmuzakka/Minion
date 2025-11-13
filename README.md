@@ -23,11 +23,13 @@ Minion also serves as a **research platform** for developing and testing new opt
     - JADE  
     - L-SHADE  
     - LSHADE-cnEpSin 
+    - IMODE  
     - jSO  
     - j2020  
     - NL-SHADE-RSP  
     - LSRTDE  
     - ARRDE *(Adaptive Restart-Refine DE, our novel algorithm)*  
+    - AGSK *(Adaptive Gaining-Sharing Knowledge-based DE)*  
   - **Other population-based algorithms:**
     - Artificial Bee Colony (ABC)
     - Grey Wolf DE Optimization  
@@ -68,4 +70,3 @@ If you use **Minion** or **MinionPy** in your research or projects, we would be 
 > Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
 > *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
 > Zenodo. [https://doi.org/10.5281/zenodo.14794239](https://doi.org/10.5281/zenodo.14794239)  
-

@@ -48,7 +48,7 @@ For example, let's define a simple **Sphere function** (sum of squares) to minim
 
 Choose an optimization algorithm from the available list:
 
-- **"DE"**, **"GWO_DE"**, **"ARRDE"**, **"LSHADE"**, **"JADE"**, **"jSO"**, **"NLSHADE_RSP"**, **"LSRTDE"**, **"j2020"**, **"NelderMead"**.
+- **"DE"**, **"GWO_DE"**, **"ARRDE"**, **"AGSK"**, **"LSHADE"**, **"JADE"**, **"jSO"**, **"NLSHADE_RSP"**, **"LSRTDE"**, **"j2020"**, **"NelderMead"**.
 
 Suppose we use the **ARRDE** algorithm. We can instantiate it using:
 

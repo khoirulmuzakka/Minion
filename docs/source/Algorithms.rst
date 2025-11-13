@@ -60,6 +60,7 @@ making it less intuitive to map to maxevals.
 Below is a list of algorithms that **ignore** the ``relTol`` parameter. Even if it is set, it will have no effect:
 
 - ARRDE  
+- AGSK  
 - j2020  
 - Dual Annealing  
 
@@ -83,6 +84,7 @@ of parallelization:
 
 - DE  
 - LSHADE  
+- AGSK  
 - JADE  
 - jSO  
 - ARRDE  
@@ -786,6 +788,37 @@ Parameters :
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
+
+AGSK Algorithm
+--------------
+Adaptive Gaining-Sharing Knowledge-based (AGSK) algorithm. Designed for the CEC 2020 benchmark suite, AGSK relies on junior/senior knowledge sharing phases, adaptive knowledge pools, and the AGSK population-size reduction policy.
+
+*Reference: A. W. Mohamed, A. A. Hadi, A. K. Mohamed, and N. H. Awad, "Adaptive Gaining-Sharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems," IEEE CEC 2020.*
+
+Algorithm name : ``"AGSK"``
+
+Parameters :
+
+- ``population_size``: 0  
+
+  .. note:: Initial population size (N). If set to `0`, it follows the reference rule  
+
+                .. math::
+
+                        N = \begin{cases}
+                            40 \cdot D, & D > 5,\\
+                            100, & \text{otherwise}
+                        \end{cases}
+
+                where *D* is the dimensionality of the problem.
+
+- ``minimum_population_size``: 12  
+
+  .. note:: Minimum population size allowed during AGSK's nonlinear reduction schedule. Must be >= 4.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Method for handling boundary violations. Available strategies: ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
 Artificial Bee Colony (ABC)
 ---------------------------

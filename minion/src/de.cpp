@@ -244,6 +244,7 @@ MinionResult Differential_Evolution::optimize() {
 
             std::replace_if(trial_fitness.begin(), trial_fitness.end(), [](double f) { return std::isnan(f); }, 1e+100);
             fitness_before = fitness; 
+            postEvaluation(trials, trial_fitness);
             for (int i = 0; i < population.size(); ++i) {
                 if (trial_fitness[i] <= fitness[i]) { 
                     if (trial_fitness[i] < fitness[i]) {

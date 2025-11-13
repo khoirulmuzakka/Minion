@@ -86,6 +86,20 @@ class DefaultSettings{
             {"bound_strategy" , std::string("random")} 
         };
 
+        std::map<std::string, ConfigValue>  default_settings_IMODE = {
+            {"population_size", 0},
+            {"minimum_population_size", 4},
+            {"memory_size", 0},
+            {"archive_size_ratio", 2.6},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+
+        std::map<std::string, ConfigValue>  default_settings_AGSK = {
+            {"population_size", 0},
+            {"minimum_population_size", 12},
+            {"bound_strategy" , std::string("reflect-random")}
+        };
+
 
         std::map<std::string, ConfigValue>  default_settings_LSHADE = {
             {"population_size", 0},  
@@ -226,6 +240,8 @@ class DefaultSettings{
                 {"LSRTDE", default_settings_LSRTDE}, 
                 {"ARRDE", default_settings_ARRDE}, 
                 {"jSO", default_settings_jSO}, 
+                {"IMODE", default_settings_IMODE},
+                {"AGSK", default_settings_AGSK},
                 {"GWO_DE", default_settings_GWO_DE}, 
                 {"NelderMead", default_settings_NelderMead}, 
                 {"ABC", default_settings_ABC}, 

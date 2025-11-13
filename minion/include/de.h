@@ -103,6 +103,13 @@ protected :
      */
     virtual void doDE_operation(std::vector<std::vector<double>>& trials);
 
+    /**
+     * @brief Hook executed after trial vectors are evaluated but before selection.
+     * @param trials Generated trial vectors.
+     * @param trial_fitness Fitness values of the trial vectors.
+     */
+    virtual void postEvaluation(const std::vector<std::vector<double>>&, const std::vector<double>&) {}
+
 public : 
 
     /**
