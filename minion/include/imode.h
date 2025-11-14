@@ -52,6 +52,7 @@ public:
         double localSearchStartFraction = 0.85;
         double localSearchBudgetFraction = 0.02;
         size_t lastLocalSearchEval = 0;
+        bool pendingLocalSearchAttempt = false;
 
         void reducePopulation();
         void trimArchive();

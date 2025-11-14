@@ -327,18 +327,18 @@ void IMODE::initialize() {
     const size_t dim = bounds.size();
     populationSize = options.get<int>("population_size", 0);
     if (populationSize == 0) {
-        const size_t linear = std::max<size_t>(18 * dim, 4);
-        const size_t quadratic = 6 * std::max<size_t>(dim, size_t(1)) * std::max<size_t>(dim, size_t(1));
-        const size_t capped = std::min<size_t>(std::max(linear, quadratic), 5000);
-        populationSize = std::max<size_t>(capped, 4);
+        const size_t side = std::max<size_t>(dim, size_t(1));
+        populationSize = 6 * side * side;
     }
     initialPopulationSize = populationSize;
 
-    minPopulationSize = std::max<size_t>(options.get<int>("minimum_population_size", 4), size_t(4));
+    const int minPopOpt = options.get<int>("minimum_population_size", 0);
+    minPopulationSize = minPopOpt > 0 ? static_cast<size_t>(minPopOpt) : size_t(4);
+    minPopulationSize = std::max<size_t>(minPopulationSize, size_t(4));
     archive_size_ratio = std::max(0.0, options.get<double>("archive_size_ratio", 2.6));
     memorySize = options.get<int>("memory_size", 0);
     if (memorySize == 0) {
-        memorySize = std::max<size_t>(20 * std::max<size_t>(dim, size_t(1)), size_t(5));
+        memorySize = std::max<size_t>(20 * std::max<size_t>(dim, size_t(1)), size_t(1));
     }
 
     memoryF.assign(memorySize, 0.2);
@@ -700,6 +700,7 @@ void IMODE::postEvaluation(const std::vector<std::vector<double>>&,
     }
     updateOperatorProbabilities(rewards);
     updateParameterMemory(goodF, goodCR, improvement);
+    pendingLocalSearchAttempt = true;
 }
 
 bool IMODE::shouldRunLocalSearch() const {
@@ -764,16 +765,16 @@ bool IMODE::runLocalSearch() {
         }
     }
 
-    SQPLocalSearch solver(func, bounds, data, stoppingTol, 1e-9);
+    SQPLocalSearch solver(func, bounds, data, 1e-6, 1e-9);
     SQPLocalSearchResult result = solver.optimize(best, startValue, lsBudget);
     Nevals += result.evaluations;
     if (result.success && result.fun < best_fitness && !result.x.empty()) {
         if (!population.empty()) {
-            const size_t worst_idx = findArgMax(fitness);
-            if (worst_idx < population.size()) {
-                population[worst_idx] = result.x;
-                fitness[worst_idx] = result.fun;
+            population.back() = result.x;
+            if (fitness.size() == population.size()) {
+                fitness.back() = result.fun;
             }
+            sortPopulationByFitness();
         }
         best = result.x;
         best_fitness = result.fun;
@@ -786,7 +787,10 @@ bool IMODE::runLocalSearch() {
 }
 
 void IMODE::onBestUpdated(const std::vector<double>&, double, bool) {
-    maybeRunLocalSearch();
+    if (pendingLocalSearchAttempt) {
+        maybeRunLocalSearch();
+        pendingLocalSearchAttempt = false;
+    }
 }
 
 } // namespace minion
