@@ -954,6 +954,15 @@ def run_report(
         with open(tex_path, "w", encoding="utf-8") as tex_file:
             tex_file.write(latex_table)
         print(f"LaTeX table saved to {tex_path}")
+        _, func_path = export_function_error_tables(
+            res_folder,
+            year,
+            algos,
+            DIM_MAX_EVALS,
+            drop_index=drop_index,
+            algo_display_map=algo_display_map,
+        )
+        print(f"Function-level LaTeX tables saved to {func_path}")
 
     return summary_df, FR_per_dim_df, h2h_per_dim_df
 
@@ -1200,6 +1209,125 @@ def generate_latex_table(
         tables.append("\n".join(lines))
 
     return "\n\n".join(tables)
+
+
+def generate_function_error_stats_latex(
+    matrices,
+    dims_list,
+    glob_min,
+    algos,
+    year,
+    drop_index=None,
+    algo_display_map=None,
+    float_format="{:.3e}",
+):
+    """
+    Build LaTeX tables reporting per-function error statistics (best/mean/std) per dimension.
+    """
+    algo_display_map = algo_display_map or {}
+    formatted_algos = [algo_display_map.get(algo, algo) for algo in algos]
+    n_funcs = yearToNfuncs[year]
+    valid_funcs = list(valid_funcs_iter(year, n_funcs, drop_index=drop_index))
+    if not valid_funcs:
+        raise ValueError("No valid functions remain after applying drop_index.")
+    glob_min = np.asarray(glob_min, dtype=float)
+    use_error_values = (year != 2011)
+
+    if callable(float_format):
+        format_value = float_format
+    else:
+        def format_value(val):
+            return float_format.format(val)
+
+    stat_order = ["best", "mean", "std"]
+    tables = []
+
+    for idim, dim_value in enumerate(dims_list):
+        lines = [
+            "\\begin{table*}[ht]",
+            "\\centering",
+            "\\footnotesize",
+            f"\\caption{{Error statistics for {dim_value}D}}",
+            f"\\label{{tab:function_errors_{dim_value}D}}",
+            f"\\begin{{tabular}}{{ll{'c'*len(algos)}}}",
+            "\\hline",
+            "Function & Statistic & " + " & ".join(formatted_algos) + r" \\",
+            "\\hline",
+        ]
+
+        for func_idx in valid_funcs:
+            stats_by_algo = {}
+            for algo in algos:
+                if use_error_values:
+                    samples = abs_error_samples(matrices, algo, idim, func_idx, glob_min[func_idx])
+                else:
+                    samples = matrices[algo][idim][:, func_idx]
+                stats_by_algo[algo] = {
+                    "best": float(np.min(samples)),
+                    "mean": float(np.mean(samples)),
+                    "std": float(np.std(samples, ddof=0)),
+                }
+
+            func_label = f"F{func_idx + 1}"
+            for row_idx, stat in enumerate(stat_order):
+                row_cells = []
+                if row_idx == 0:
+                    row_cells.append(f"\\multirow{{3}}{{*}}{{{func_label}}}")
+                else:
+                    row_cells.append("")
+                row_cells.append(stat)
+                stat_values = {algo: stats_by_algo[algo][stat] for algo in algos}
+                best_value = min(stat_values.values())
+                for algo in algos:
+                    val = stat_values[algo]
+                    entry = format_value(val)
+                    if np.isclose(val, best_value, rtol=1e-12, atol=1e-12):
+                        entry = f"\\textbf{{{entry}}}"
+                    row_cells.append(entry)
+                lines.append(" & ".join(row_cells) + r" \\")
+            lines.append("\\hline")
+
+        lines.extend([
+            "\\end{tabular}",
+            "\\end{table*}",
+        ])
+        tables.append("\n".join(lines))
+
+    return "\n\n".join(tables)
+
+
+def export_function_error_tables(
+    res_folder,
+    year,
+    algos,
+    DIM_MAX_EVALS,
+    drop_index=None,
+    algo_display_map=None,
+    output_filename="table_2.tex",
+    float_format="{:.3e}",
+):
+    """
+    Convenience wrapper that loads results, computes function-level statistics, and writes LaTeX.
+    """
+    matrices, dims_list = load_results(res_folder, algos, year, DIM_MAX_EVALS)
+    n_funcs = yearToNfuncs[year]
+    glob_min = yearToMin[year]
+    if glob_min is None:
+        glob_min = infer_glob_min_from_runs(matrices, n_funcs)
+    latex = generate_function_error_stats_latex(
+        matrices,
+        dims_list,
+        glob_min,
+        algos,
+        year,
+        drop_index=drop_index,
+        algo_display_map=algo_display_map,
+        float_format=float_format,
+    )
+    output_path = os.path.join(res_folder, output_filename)
+    with open(output_path, "w", encoding="utf-8") as tex_file:
+        tex_file.write(latex)
+    return latex, output_path
 
 
 def analyze_results(
@@ -1564,11 +1692,11 @@ def plot_score_trends(
                 linewidth=2,
                 color=colors(i),
             )
-        y_label = r"$S$" if metric == "FinalScore" else metric
-        ax.set_ylabel(y_label)
+        y_label = r"$S_{\text{tot}}$" if metric == "FinalScore" else metric
+        ax.set_ylabel(y_label, fontsize=14)
         ax.grid(True, linestyle="--", alpha=0.4)
 
-    axes[-1].set_xlabel(xlabel)
+    axes[-1].set_xlabel(xlabel, fontsize=14)
     handles, labels = axes[0].get_legend_handles_labels()
     axes[0].legend(handles, labels, loc="best")
     plt.tight_layout()
