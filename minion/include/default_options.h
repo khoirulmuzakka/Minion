@@ -32,7 +32,6 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
             {"population_size", 0},  
-            {"minimum_population_size", 4},  
             {"bound_strategy" , std::string("reflect-random")} , 
         };
 

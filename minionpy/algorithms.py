@@ -841,9 +841,7 @@ class AGSK(MinimizerBase):
     Implementation of the Adaptive Gaining-Sharing Knowledge-based (AGSK) algorithm.
 
     Reference:
-        A. W. Mohamed, A. A. Hadi, A. K. Mohamed, and N. H. Awad,
-        *Adaptive Gaining-Sharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems*,
-        IEEE CEC 2020.
+        A. W. Mohamed, A. A. Hadi, A. K. Mohamed and N. H. Awad, "Evaluating the Performance of Adaptive GainingSharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems," 2020 IEEE Congress on Evolutionary Computation (CEC), Glasgow, UK, 2020, pp. 1-8, doi: 10.1109/CEC48606.2020.9185901.
 
     AGSK organizes its search into junior and senior gaining-sharing phases with adaptive
     knowledge pools, success-based probability updates, and an AGSK-style population
@@ -896,7 +894,9 @@ class IMODE(MinimizerBase):
     r"""
     Implementation of the Improved Multi-Operator Differential Evolution (IMODE) algorithm.
 
-    Reference: K. Sallam, *Improved Multi-operator Differential Evolution Algorithm (IMODE)*.
+    Reference: 
+    Karam M. Sallam, Saber M. Elsayed, Ripon K. Chakrabortty, and Michael J. Ryan. 2020. 
+    Improved Multi-operator Differential Evolution Algorithm for Solving Unconstrained Problems. In 2020 IEEE Congress on Evolutionary Computation (CEC). IEEE Press, 1–8. https://doi.org/10.1109/CEC48606.2020.9185577.
 
     IMODE combines multiple mutation operators, adaptive control parameters, and
     linear population size reduction. It is well suited for multimodal and
@@ -2262,12 +2262,6 @@ class ARRDE(MinimizerBase):
 
                 options = {
                     "population_size"           :  0,  
-                    "minimum_population_size"   : 4,
-                    "archive_size_ratio"        :  2.0, 
-                    "converge_reltol"           :  0.005,
-                    "refine_decrease_factor"    : 0.9, 
-                    "restart-refine-duration"   : 0.8, 
-                    "maximum_consecutive_restarts" : 2,
                     "bound_strategy"            : "reflect-random"
                 }
 
@@ -2277,15 +2271,19 @@ class ARRDE(MinimizerBase):
 
                 .. math::
 
-                    N = 2 \\cdot D + \\log(N_{maxevals})^2
+                    N = \max\!\left(2D,\; \operatorname{clip}\big(D \cdot m(\eta), 4, 3000\big)\right)
 
-                where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
-            - **minimum_population_size** (int) : final (minimum) population size during linear population size reduction.
-            - **archive_size_ratio** (float) : the ratio of archive size to the current population size .
-            - **converge_relTol** (float) : The value of std(f)/mean(f) below which a population is said to be converged.
-            - **refine_decrease_factor** (float) : The decrease factor of *converge_relTol* in the refinement phase. 
-            - **restart-refine-duration** (float) : a fraction of evaluation budget during which restart-refine phase occurs. The remaining fraction is dedicated to final refinement. 
-            - **maximum_consecutive_restarts** (int) : maximum number of consecutive restarts during restart-refine phase.
+                where :math:`D` is dimensionality, :math:`\eta = \tfrac{N_{\text{maxevals}}}{D}`, and  
+
+                .. math::
+
+                    m(\eta) = 
+                    \begin{cases}
+                        2.0, & \log_{10} \eta \le 2,\\
+                        2.0 + 5.756 (\log_{10} \eta - 2)^{1.609}, & \text{otherwise.}
+                    \end{cases}
+
+                :math:`N_{\text{maxevals}}` is the maximum number of function evaluations. The final size is clipped to at least ``4``.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -2533,6 +2531,7 @@ class Minimizer(MinimizerBase):
         """
         all_algo = [
             "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
+            "imode", "agsk",
             "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
             "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "bipop_acmaes"
         ]

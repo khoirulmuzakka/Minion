@@ -36,7 +36,7 @@ void ARRDE::initialize() {
         populationSize = static_cast<size_t>(defaultPopulation);
     }
     populationSize = std::max(populationSize, std::max(2*dimension, static_cast<size_t>(4)));
-    minPopSize = std::max(options.get<int>("minimum_population_size", 4), 4);
+    minPopSize = int(dimension*0.5);
 
     mutation_strategy = "current_to_pbest_A_1bin";
     Fw=1.0;
@@ -71,51 +71,25 @@ void ARRDE::adaptParameters() {
 }
 
 void ARRDE::adjustPopulationSize() {   
-    if (reduction_strategy == "linear") {
-        newPopulationSize = static_cast<size_t>(
-            (double(minPopSize) - double(populationSize)) * 
-            (double(Nevals) / double(maxevals)) + populationSize
-        );
-
-    } else if (reduction_strategy == "exponential") {
-        const double ratio = double(minPopSize) / double(populationSize);
-        newPopulationSize = static_cast<size_t>(
-            double(populationSize) * std::pow(ratio, double(Nevals) / double(maxevals))
-        );
-
-    } else if (reduction_strategy == "agsk") {
-        const double progress = double(Nevals) / double(maxevals);
-        newPopulationSize = static_cast<size_t>(
-            std::round(double(populationSize) + 
-            (double(minPopSize) - double(populationSize)) * 
-            std::pow(progress, 1.0 - progress))
-        );
-
-    } else if (reduction_strategy == "custom") {
-        const double progress = double(Nevals) / double(maxevals);
-        const double A = double(populationSize);
-        const double B = std::max(4.0, 0.5 * double(bounds.size()));
-        const double C = std::max(4.0, 0.5 * double(bounds.size()));
-        const double dim = double(bounds.size());
-        const double D = std::max(2*dim, 0.25*A);
-        double pp = 1.17+2.075*exp(-0.0567*dim) ;
-        double value;
-        if (progress <= 0.9) {
-            // Nonlinear fast decrease from A to C
-            const double t = progress / 0.9;
-            value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
-        } else {
-            pp=2.0;
-            const double t = (progress-0.9) /0.1 ;
-            value = D - (D - B) * (1.0 - std::pow(1.0 - t, pp));
-        }
-
-        newPopulationSize = static_cast<size_t>(std::round(value));
-
+    const double progress = double(Nevals) / double(maxevals);
+    const double A = double(populationSize);
+    const double B = std::max(4.0, 0.5 * double(bounds.size()));
+    const double C = std::max(4.0, 0.5 * double(bounds.size()));
+    const double dim = double(bounds.size());
+    const double D = std::max(2*dim, 0.25*A);
+    double pp = 1.17+2.075*exp(-0.0567*dim) ;
+    double value;
+    if (progress <= 0.9) {
+        // Nonlinear fast decrease from A to C
+        const double t = progress / 0.9;
+        value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
     } else {
-        throw std::logic_error("Unknown reduction strategy");
+        pp=2.0;
+        const double t = (progress-0.9) /0.1 ;
+        value = D - (D - B) * (1.0 - std::pow(1.0 - t, pp));
     }
 
+    newPopulationSize = static_cast<size_t>(std::round(value));
     newPopulationSize = std::max(newPopulationSize, size_t(4));
 
     if (population.size() > newPopulationSize) {

@@ -10,7 +10,7 @@ namespace minion {
  * @brief Improved Multi-Operator Differential Evolution.
  *
  * Reference:
- * K. Sallam, "Improved Multi-Operator Differential Evolution Algorithm (IMODE)."
+ * Karam M. Sallam, Saber M. Elsayed, Ripon K. Chakrabortty, and Michael J. Ryan. 2020. Improved Multi-operator Differential Evolution Algorithm for Solving Unconstrained Problems. In 2020 IEEE Congress on Evolutionary Computation (CEC). IEEE Press, 1–8. https://doi.org/10.1109/CEC48606.2020.9185577
  *
  * IMODE mixes multiple mutation operators with success-history based
  * parameter adaptation and linear population size reduction.
