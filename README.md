@@ -28,8 +28,9 @@ Minion also serves as a **research platform** for developing and testing new opt
     - j2020  
     - NL-SHADE-RSP  
     - LSRTDE  
-    - ARRDE *(Adaptive Restart-Refine DE, our novel algorithm)*  
-    - AGSK *(Adaptive Gaining-Sharing Knowledge-based DE)*  
+    - ARRDE *(Adaptive Restart-Refine DE)*  
+    - AGSK 
+    - IMODE
   - **Other population-based algorithms:**
     - Artificial Bee Colony (ABC)
     - Grey Wolf DE Optimization  

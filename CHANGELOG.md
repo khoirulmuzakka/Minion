@@ -1,4 +1,8 @@
 # Changelog
+## [1.1.0] - 2025-11-23
+### Added
+- Added IMODE and AGSK
+- CEC2011 is now completely rewritten in C++. No MATLAB!
 
 ## [1.0.1] - 2025-11-07
 ### Changed

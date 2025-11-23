@@ -28,6 +28,8 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
       - NL-SHADE-RSP 
       - LSRTDE 
       - ARRDE *(Adaptive Restart-Refine DE)*  
+      - AGSK 
+      . IMODE
     - **Other population-based algorithms:**
       - Artificial Bee Colony (ABC)
       - Grey Wolf DE Optimization  
