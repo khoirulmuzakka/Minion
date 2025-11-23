@@ -60,6 +60,7 @@ making it less intuitive to map to maxevals.
 Below is a list of algorithms that **ignore** the ``relTol`` parameter. Even if it is set, it will have no effect:
 
 - ARRDE  
+- AGSK  
 - j2020  
 - Dual Annealing  
 
@@ -83,6 +84,7 @@ of parallelization:
 
 - DE  
 - LSHADE  
+- AGSK  
 - JADE  
 - jSO  
 - ARRDE  
@@ -135,7 +137,6 @@ In C++, you can retrieve the default settings for an algorithm and adjust the pa
 
     // Override default parameters
     options["population_size"] = 50; 
-    options["restart-refine-duration"] = 0.9;  
 
     // Initialize the minimizer with custom settings
     auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "ARRDE", 0.0, max_evals, -1, options);
@@ -153,13 +154,9 @@ In Python, you can pass the parameters via a dictionary when creating the `Minim
     import minionpy as mpy 
 
     options = {
-        "population_size"             : 0,           # Default population size (0 means auto-determined)
-        "archive_size_ratio"          : 2.0,         # Archive size relative to population size
-        "converge_reltol"             : 0.005,       # Convergence tolerance for relative error
-        "refine_decrease_factor"      : 0.9,         # Factor by which the mutation step size is reduced
-        "restart-refine-duration"     : 0.8,         # Duration for restart and refinement phase
-        "maximum_consecutive_restarts": 2,           # Maximum number of consecutive restarts
-        "bound_strategy"              : "reflect-random"  # Bound strategy for out-of-bounds values
+        "population_size"           : 0,           # Auto sizing based on dimension and budget when set to 0
+        "minimum_population_size"   : 4,           # Terminal population size (cannot be below 4)
+        "bound_strategy"            : "reflect-random"  # Boundary handling policy
     }
 
     # Use ARRDE algorithm for optimization
@@ -486,22 +483,28 @@ Parameters :
 
 - ``population_size``: 0  
 
-  .. note:: Initial population size (N). If set to ``0``, it will be automatically determined as follows:
+  .. note:: Initial population size. If set to ``0``, ARRDE computes  
 
                 .. math::
 
-                    N = D \cdot  \log_{10}(N_{maxevals}/D)^{2.2}
+                    N = \max\!\left(2D,\; \operatorname{clip}\big(D \cdot m(\eta), 4, 3000\big)\right)
 
-                where *D* is the dimensionality of the problem and :math:`N_{maxevals}` is the maximum number of function evaluations.
+                where :math:`D` is dimensionality, :math:`\eta = \tfrac{N_{\text{maxevals}}}{D}`, and  
 
-- ``minimum_population_size``: 4
+                .. math::
 
-  .. note:: final (minimum) population size after population size reduction.
+                    m(\eta) = 
+                    \begin{cases}
+                        2.0, & \log_{10} \eta \le 2,\\
+                        2.0 + 5.756 (\log_{10} \eta - 2)^{1.609}, & \text{otherwise.}
+                    \end{cases}
+
+                :math:`N_{\text{maxevals}}` is the maximum number of function evaluations. 
 
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  
-                    ``"random"``, ``"reflect-random"``, ``"clip"``.
+                    ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
 
 Grey Wolf Optimizer Differential Evolution (GWO-DE)
@@ -766,6 +769,73 @@ Parameters :
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
+
+IMODE Algorithm
+---------------
+Improved Multi-Operator Differential Evolution (IMODE) blends multiple mutation strategies with adaptive control parameters and a linear population reduction schedule to balance exploration and exploitation on challenging multimodal problems.
+
+*Reference: Karam M. Sallam, Saber M. Elsayed, Ripon K. Chakrabortty, and Michael J. Ryan. 2020. Improved Multi-operator Differential Evolution Algorithm for Solving Unconstrained Problems. In 2020 IEEE Congress on Evolutionary Computation (CEC). IEEE Press, 1–8. https://doi.org/10.1109/CEC48606.2020.9185577*
+
+Algorithm name : ``"IMODE"``
+
+Parameters :
+
+- ``population_size``: 0  
+
+  .. note:: Initial population size. If set to ``0``, it follows the IMODE rule  
+
+                .. math::
+
+                        N = \min(5000, \max(18 \cdot D, 6 \cdot D^2))
+
+                where *D* is the dimensionality of the problem.
+
+- ``minimum_population_size``: 4  
+
+  .. note:: Terminal population size used during linear reduction. Must be at least 4.
+
+- ``memory_size``: 0  
+
+  .. note:: Size of the success-history memory for adaptive parameters. ``0`` applies the heuristic ``20 \cdot D``.
+
+- ``archive_size_ratio``: 2.6  
+
+  .. note:: Archive size relative to the population size.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
+
+AGSK Algorithm
+--------------
+Adaptive Gaining-Sharing Knowledge-based (AGSK) algorithm. Designed for the CEC 2020 benchmark suite, AGSK relies on junior/senior knowledge sharing phases, adaptive knowledge pools, and the AGSK population-size reduction policy.
+
+*Reference: A. W. Mohamed, A. A. Hadi, A. K. Mohamed and N. H. Awad, "Evaluating the Performance of Adaptive GainingSharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems," 2020 IEEE Congress on Evolutionary Computation (CEC), Glasgow, UK, 2020, pp. 1-8, doi: 10.1109/CEC48606.2020.9185901.*
+
+Algorithm name : ``"AGSK"``
+
+Parameters :
+
+- ``population_size``: 0  
+
+  .. note:: Initial population size (N). If set to `0`, it follows the reference rule  
+
+                .. math::
+
+                        N = \begin{cases}
+                            40 \cdot D, & D > 5,\\
+                            100, & \text{otherwise}
+                        \end{cases}
+
+                where *D* is the dimensionality of the problem.
+
+- ``minimum_population_size``: 12  
+
+  .. note:: Minimum population size allowed during AGSK's nonlinear reduction schedule. Must be >= 4.
+
+- ``bound_strategy``: ``reflect-random``  
+
+  .. note:: Method for handling boundary violations. Available strategies: ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
 Artificial Bee Colony (ABC)
 ---------------------------
