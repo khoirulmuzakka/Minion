@@ -16,6 +16,7 @@
 #include "lshade.h"
 #include "agsk.h"
 #include "jade.h"
+#include "algotest.h"
 #include "de.h"
 #include "arrde.h"
 #include "nlshadersp.h"
@@ -253,6 +254,27 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("stdCR", &JADE::stdCR)
         .def_readonly("stdF", &JADE::stdF)
         .def_readonly("diversity", &JADE::diversity);
+
+    py::class_<NJADE, Differential_Evolution>(m, "NJADE")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"), 
+            py::arg("bounds"), 
+            py::arg("x0") =std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr, 
+            py::arg("callback") = nullptr, 
+            py::arg("tol") = 0.0001, 
+            py::arg("maxevals") = 100000, 
+            py::arg("seed") = -1, 
+            py::arg("options") = std::map<std::string, ConfigValue>())
+
+        .def("optimize", &NJADE::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &NJADE::meanCR)
+        .def_readonly("meanF", &NJADE::meanF)
+        .def_readonly("stdCR", &NJADE::stdCR)
+        .def_readonly("stdF", &NJADE::stdF)
+        .def_readonly("diversity", &NJADE::diversity);
 
     py::class_<NLSHADE_RSP, MinimizerBase>(m, "NLSHADE_RSP")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

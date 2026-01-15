@@ -76,6 +76,13 @@ class DefaultSettings{
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
+        std::map<std::string, ConfigValue> default_settings_NJADE  = {
+            {"population_size", 0}, 
+            {"mutation_strategy", std::string("current_to_pbest_A_1bin")}, 
+            {"memory_size", 5},
+            {"bound_strategy" , std::string("reflect-random")} 
+        };
+
         std::map<std::string, ConfigValue>  default_settings_jSO = {
             {"population_size", 0},  
             {"memory_size", 5}, 
@@ -234,6 +241,7 @@ class DefaultSettings{
                 {"DE", default_settings_DE}, 
                 {"LSHADE", default_settings_LSHADE}, 
                 {"JADE", default_settings_JADE}, 
+                {"NJADE", default_settings_NJADE}, 
                 {"j2020", default_settings_j2020}, 
                 {"NLSHADE_RSP", default_settings_NLSHADE_RSP}, 
                 {"LSRTDE", default_settings_LSRTDE}, 
