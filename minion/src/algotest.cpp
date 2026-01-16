@@ -33,14 +33,14 @@ void NJADE::adaptParameters() {
     if (popreduce) {
         const double progress = double(Nevals) / double(maxevals);
         const double A = double(populationSize);
-        const double C = 5; //std::max(4.0, 0.5 * double(bounds.size()));
+        const double C = std::max(4.0, 0.5 * double(bounds.size()));
         const double dim = double(bounds.size());
-        double pp = 1; //2 ;// 1.17 + 2.075 * exp(-0.0567 * dim);
+        double pp = 1.5; // 1.17 + 2.075 * exp(-0.0567 * dim);
         double value;
         const double t = progress ;
         value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
         size_t new_population_size = static_cast<size_t>(std::round(value));
-        new_population_size = std::max(new_population_size, size_t(5));
+        new_population_size = std::max(new_population_size, size_t(4));
 
         if (population.size() > new_population_size) {
             std::vector<size_t> sorted_index = argsort(fitness, true);
@@ -99,7 +99,7 @@ void NJADE::adaptParameters() {
         double c = double(S_CR.size())/double(population.size()); 
         //std::cout << "c_eff: " << c << "\n";
         bool reset = false;
-        if (c == 0.0) {
+        if (c ==0.0) {
             reset = true;
             //std::cout << "Reset NJADE memory at iteration " << Nevals << "\n";
         }
