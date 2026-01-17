@@ -79,6 +79,7 @@ private:
             double sigma_,
             size_t nevals,
             double best_fitness);
+        void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
     };
 
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;

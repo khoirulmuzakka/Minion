@@ -125,7 +125,63 @@ void ACMAES::Parameter::reinit(
     D.setIdentity();
     eigvals_C.setOnes();
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
-    //std::cout << "Nevals : " << nevals << "  ACMAES initialized with " << n_offsprings  << " offsprings, " << n_parents << " parents, "  << "Best fitness: " << best_fitness << "\n";
+    //std::cout << "Nevals : " << nevals << "  ACMAES initialized with " << n_offsprings << "Best fitness: " << best_fitness << "\n";
+}
+
+void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
+    n_params = n_params_;
+    n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
+    n_parents = std::min(n_parents_, n_parents_reserve);
+
+    double w_neg_sum = 0.0;
+    double w_pos_sum = 0.0;
+    for (size_t i = 0; i < n_offsprings; ++i) {
+        double wi = std::log((static_cast<double>(n_offsprings) + 1.0) / 2.0) - std::log(static_cast<double>(i) + 1.0);
+        w(static_cast<Eigen::Index>(i)) = wi;
+        if (wi >= 0.0) {
+            w_pos_sum += wi;
+        } else {
+            w_neg_sum += wi;
+        }
+    }
+
+    double w_sum_parent = 0.0;
+    double w_sq_sum_parent = 0.0;
+    for (size_t i = 0; i < n_parents; ++i) {
+        double wi = w(static_cast<Eigen::Index>(i));
+        w_sum_parent += wi;
+        w_sq_sum_parent += wi * wi;
+    }
+    double denom = w_sq_sum_parent <= 0.0 ? 1e-12 : w_sq_sum_parent;
+    n_mu_eff = (w_sum_parent * w_sum_parent) / denom;
+
+    double dim = static_cast<double>(n_params);
+    c_s = (n_mu_eff + 2.0) / (dim + n_mu_eff + 5.0);
+    c_c = (4.0 + n_mu_eff / dim) / (dim + 4.0 + 2.0 * n_mu_eff / dim);
+    c_1 = 2.0 / (std::pow(dim + 1.3, 2.0) + n_mu_eff);
+    c_mu = 2.0 * (n_mu_eff - 2.0 + 1.0 / n_mu_eff) / (std::pow(dim + 2.0, 2.0) + n_mu_eff);
+    c_mu = std::min(1.0 - c_1, c_mu);
+    d_s = 1.0 + c_s + 2.0 * std::max(0.0, std::sqrt((n_mu_eff - 1.0) / (dim + 1.0)) - 1.0);
+    chi = std::sqrt(dim) * (1.0 - 1.0 / (4.0 * dim) + 1.0 / (21.0 * dim * dim));
+    p_s_fact = std::sqrt(c_s * (2.0 - c_s) * n_mu_eff);
+    p_c_fact = std::sqrt(c_c * (2.0 - c_c) * n_mu_eff);
+
+    double a_mu = 1.0 + c_1 / std::max(1e-12, c_mu);
+    double a_mueff = 1.0 + 2.0 * n_mu_eff;
+    double a_posdef = (1.0 - c_1 - c_mu) / (dim * std::max(1e-12, c_mu));
+    double a_min = std::min({a_mu, a_mueff, a_posdef});
+    for (size_t i = 0; i < n_offsprings; ++i) {
+        double wi = w(static_cast<Eigen::Index>(i));
+        if (wi >= 0.0) {
+            w(static_cast<Eigen::Index>(i)) = wi / std::max(1e-12, w_pos_sum);
+        } else {
+            w(static_cast<Eigen::Index>(i)) = a_min * wi / std::max(1e-12, std::abs(w_neg_sum));
+        }
+    }
+
+    w_var.head(static_cast<Eigen::Index>(n_offsprings)) = w.head(static_cast<Eigen::Index>(n_offsprings));
+    y_mean.setZero();
+    f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
 }
 
 std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) const {
@@ -162,7 +218,7 @@ void ACMAES:: initialize() {
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        lambda = 16*bounds.size();
+        lambda = 20*bounds.size();
     }
     lambda = std::max<size_t>(lambda, 4);
 
@@ -506,6 +562,27 @@ MinionResult ACMAES::optimize() {
             bool restart = false;
             bool use_lhs = true;
             while (!should_stop && !restart && era.i_iteration < maxIterations) {
+                double inner_progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
+                if (inner_progress > 1.0) inner_progress = 1.0;
+                const double A_inner = double(lambda);
+                const double C_inner = lambda_default;
+                const double pp_inner = 1.0;
+                const double t_inner = inner_progress;
+                double inner_value = A_inner - (A_inner - C_inner) * (1.0 - std::pow(1.0 - t_inner, pp_inner));
+                size_t lambda_target = static_cast<size_t>(std::round(inner_value));
+                if (lambda_target < lambda_default) lambda_target = lambda_default;
+                if (lambda_target < 4) lambda_target = 4;
+                if (lambda_target != lambda_current) {
+                    lambda_current = lambda_target;
+                    size_t mu_target = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
+                    if (mu_target < 1) mu_target = 1;
+                    if (mu_target > lambda_current) mu_target = lambda_current;
+                    if (lambda_current > era.n_offsprings_reserve || mu_target > era.n_parents_reserve) {
+                        era.reserve(lambda_current, mu_target, dimension);
+                    }
+                    era.resize(lambda_current, mu_target, dimension);
+                }
+
                 if (use_lhs) {
                     for (size_t j = 0; j < era.n_offsprings; ++j) {
                         Eigen::VectorXd candidate = Eigen::Map<const Eigen::VectorXd>(lhs_init[j].data(),
@@ -553,11 +630,11 @@ MinionResult ACMAES::optimize() {
                 }
                 diversity.push_back(relRange);
                 recordHistory(relRange);
-              //  std::cout << "Generation " << generation
-               //           << ", Best Fitness = " << best_fitness << "\n";
-
+                //std::cout << "Generation " << generation << "Population " << lambda_current << " Eval " << Nevals << " Best fitness: " << best_fitness  << "\n";
+                          
                 if (relRange < 1e-8 || no_improve_generations >= restart_no_improve_tol) {
                     restart = true;
+                    no_improve_generations = 0;
                 }
 
                 ++era.i_iteration;
@@ -577,7 +654,6 @@ MinionResult ACMAES::optimize() {
             } else {
                 ++no_improve_restarts;
             }
-            lambda_current += lambda_default;
             first_run = false;
         }
 
