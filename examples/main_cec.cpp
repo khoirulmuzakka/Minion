@@ -397,6 +397,7 @@ int main(int argc, char* argv[]) {
             try {
                 result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i));
             } catch (const std::exception& e) {
+                std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
                 continue;
             }
         };

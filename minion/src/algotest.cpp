@@ -55,11 +55,41 @@ void NJADE::adaptParameters() {
         }
     }
 
+    pe = 0.5 + 0.5 * (double(Nevals) / double(maxevals));
+    if (pe < 0.5) pe = 0.5;
+    if (pe > 1.0) pe = 1.0;
+
+    const size_t popsize = population.size();
+    compare_fitness.assign(popsize, 0.0);
+    size_t soft_count = static_cast<size_t>(std::round(pe * popsize));
+    if (soft_count > popsize) soft_count = popsize;
+    std::vector<bool> is_soft(popsize, false);
+    std::vector<size_t> worst_indices;
+    if (soft_count > 0) {
+        std::vector<size_t> sorted_index = argsort(fitness, true);
+        worst_indices.assign(sorted_index.end() - static_cast<std::ptrdiff_t>(soft_count), sorted_index.end());
+        std::vector<size_t> all_indices(popsize);
+        for (size_t i = 0; i < popsize; ++i) all_indices[i] = i;
+        std::vector<size_t> chosen = random_choice(all_indices, soft_count, false);
+        for (size_t idx : chosen) {
+            is_soft[idx] = true;
+        }
+    }
+
+    for (size_t i = 0; i < popsize; ++i) {
+        if (is_soft[i] && !worst_indices.empty()) {
+            compare_fitness[i] = fitness[random_choice(worst_indices, 1).front()];
+        } else {
+            compare_fitness[i] = fitness[i];
+        }
+    }
+
     std::vector<double> S_CR, S_F, dif_fitness;
-    if (!fitness_before.empty()) {
+    if (!compare_fitness.empty() && compare_fitness.size() == population.size() &&
+        !trial_fitness.empty() && trial_fitness.size() == population.size()) {
         for (size_t i = 0; i < population.size(); ++i) {
-            if (trial_fitness[i] < fitness_before[i]) {
-                double w = std::abs(fitness_before[i] - trial_fitness[i]);
+            if (trial_fitness[i] < compare_fitness[i]) {
+                double w = std::abs(compare_fitness[i] - trial_fitness[i]);
                 S_CR.push_back(CR[i]);
                 S_F.push_back(F[i]);
                 dif_fitness.push_back(w);
@@ -100,15 +130,15 @@ void NJADE::adaptParameters() {
         //std::cout << "c_eff: " << c << "\n";
         bool reset = false;
         if (c ==0.0) {
-            reset = true;
+            //reset = true;
             //std::cout << "Reset NJADE memory at iteration " << Nevals << "\n";
         }
         if (reset) {
             M_CR[memoryIndex] = 0.8;
             M_F[memoryIndex] = 0.5;
         } else {
-            M_CR[memoryIndex] = c*meanCR_lehmer + M_CR[memoryIndex]*(1.0 - c);
-            M_F[memoryIndex] = c*meanF_lehmer + M_F[memoryIndex]*(1.0 - c);
+            M_CR[memoryIndex] = meanCR_lehmer ; // c*meanCR_lehmer + M_CR[memoryIndex]*(1.0 - c);
+            M_F[memoryIndex] =  meanF_lehmer; //c*meanF_lehmer + M_F[memoryIndex]*(1.0 - c);
         };
 
         memoryIndex = (memoryIndex + 1) % memorySize;
@@ -177,7 +207,7 @@ MinionResult NJADE::optimize() {
             std::replace_if(trial_fitness.begin(), trial_fitness.end(), [](double f) { return std::isnan(f); }, 1e+100);
             fitness_before = fitness;
             for (size_t i = 0; i < population.size(); ++i) {
-                if (trial_fitness[i] <= fitness_before[rand_int(population.size())]) {
+                if (trial_fitness[i] <= compare_fitness[i]) {
                     archive.push_back(population[i]);
                     archive_fitness.push_back(fitness_before[i]);
                     population[i] = trials[i];

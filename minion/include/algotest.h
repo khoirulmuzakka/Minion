@@ -17,6 +17,8 @@ class NJADE : public Differential_Evolution {
     size_t memoryIndex = 0;
     std::vector<double> M_CR;
     std::vector<double> M_F;
+    std::vector<double> compare_fitness;
+    double pe = 1.0;
 
   public:
     NJADE(

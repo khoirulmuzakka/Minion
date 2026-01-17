@@ -33,5 +33,6 @@
 #include "dmspso.h"
 #include "lshadecnepsin.h"
 #include "bipop_acmaes.h"
+#include "acmaes.h"
 
 #endif // MINION_H
