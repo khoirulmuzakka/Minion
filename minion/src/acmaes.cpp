@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <numeric>
 
@@ -49,14 +48,7 @@ void ACMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_r
     keys_offsprings.resize(n_offsprings_reserve);
 }
 
-void ACMAES::Parameter::reinit(
-    size_t n_offsprings_,
-    size_t n_parents_,
-    size_t n_params_,
-    const Eigen::VectorXd& x_mean_,
-    double sigma_,
-    size_t nevals,
-    double best_fitness) {
+void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_) {
     n_params = n_params_;
     n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
     n_parents = std::min(n_parents_, n_parents_reserve);
@@ -125,63 +117,6 @@ void ACMAES::Parameter::reinit(
     D.setIdentity();
     eigvals_C.setOnes();
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
-    //std::cout << "Nevals : " << nevals << "  ACMAES initialized with " << n_offsprings << "Best fitness: " << best_fitness << "\n";
-}
-
-void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
-    n_params = n_params_;
-    n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
-    n_parents = std::min(n_parents_, n_parents_reserve);
-
-    double w_neg_sum = 0.0;
-    double w_pos_sum = 0.0;
-    for (size_t i = 0; i < n_offsprings; ++i) {
-        double wi = std::log((static_cast<double>(n_offsprings) + 1.0) / 2.0) - std::log(static_cast<double>(i) + 1.0);
-        w(static_cast<Eigen::Index>(i)) = wi;
-        if (wi >= 0.0) {
-            w_pos_sum += wi;
-        } else {
-            w_neg_sum += wi;
-        }
-    }
-
-    double w_sum_parent = 0.0;
-    double w_sq_sum_parent = 0.0;
-    for (size_t i = 0; i < n_parents; ++i) {
-        double wi = w(static_cast<Eigen::Index>(i));
-        w_sum_parent += wi;
-        w_sq_sum_parent += wi * wi;
-    }
-    double denom = w_sq_sum_parent <= 0.0 ? 1e-12 : w_sq_sum_parent;
-    n_mu_eff = (w_sum_parent * w_sum_parent) / denom;
-
-    double dim = static_cast<double>(n_params);
-    c_s = (n_mu_eff + 2.0) / (dim + n_mu_eff + 5.0);
-    c_c = (4.0 + n_mu_eff / dim) / (dim + 4.0 + 2.0 * n_mu_eff / dim);
-    c_1 = 2.0 / (std::pow(dim + 1.3, 2.0) + n_mu_eff);
-    c_mu = 2.0 * (n_mu_eff - 2.0 + 1.0 / n_mu_eff) / (std::pow(dim + 2.0, 2.0) + n_mu_eff);
-    c_mu = std::min(1.0 - c_1, c_mu);
-    d_s = 1.0 + c_s + 2.0 * std::max(0.0, std::sqrt((n_mu_eff - 1.0) / (dim + 1.0)) - 1.0);
-    chi = std::sqrt(dim) * (1.0 - 1.0 / (4.0 * dim) + 1.0 / (21.0 * dim * dim));
-    p_s_fact = std::sqrt(c_s * (2.0 - c_s) * n_mu_eff);
-    p_c_fact = std::sqrt(c_c * (2.0 - c_c) * n_mu_eff);
-
-    double a_mu = 1.0 + c_1 / std::max(1e-12, c_mu);
-    double a_mueff = 1.0 + 2.0 * n_mu_eff;
-    double a_posdef = (1.0 - c_1 - c_mu) / (dim * std::max(1e-12, c_mu));
-    double a_min = std::min({a_mu, a_mueff, a_posdef});
-    for (size_t i = 0; i < n_offsprings; ++i) {
-        double wi = w(static_cast<Eigen::Index>(i));
-        if (wi >= 0.0) {
-            w(static_cast<Eigen::Index>(i)) = wi / std::max(1e-12, w_pos_sum);
-        } else {
-            w(static_cast<Eigen::Index>(i)) = a_min * wi / std::max(1e-12, std::abs(w_neg_sum));
-        }
-    }
-
-    w_var.head(static_cast<Eigen::Index>(n_offsprings)) = w.head(static_cast<Eigen::Index>(n_offsprings));
-    y_mean.setZero();
-    f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
 }
 
 std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) const {
@@ -197,7 +132,7 @@ std::vector<double> ACMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
-void ACMAES:: initialize() {
+void ACMAES::initialize() {
     auto defaults = DefaultSettings().getDefaultSettings("ACMAES");
     for (const auto& item : optionMap) {
         defaults[item.first] = item.second;
@@ -212,13 +147,10 @@ void ACMAES:: initialize() {
     useBounds = !bounds.empty();
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
 
-    double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
-    lambda_default = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
-    lambda_default = std::max<size_t>(lambda_default, 4);
-
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        lambda = 20*bounds.size();
+        double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
+        lambda = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
     }
     lambda = std::max<size_t>(lambda, 4);
 
@@ -227,10 +159,9 @@ void ACMAES:: initialize() {
         mu = std::max<size_t>(lambda / 2, 1);
     }
     mu = std::min(mu, lambda);
-    mu_ratio = lambda > 0 ? static_cast<double>(mu) / static_cast<double>(lambda) : 0.5;
 
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
-    support_tol = false;
+    support_tol = true;
 
     sigma0 = options.get<double>("initial_step", 0.3);
     if (sigma0 <= 0.0) {
@@ -433,18 +364,7 @@ void ACMAES::updateStepsize() {
 void ACMAES::updateEigenDecomposition() {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(era.C);
     if (solver.info() != Eigen::Success) {
-        era.C = 0.5 * (era.C + era.C.transpose());
-        era.C += 1e-12 * Eigen::MatrixXd::Identity(era.C.rows(), era.C.cols());
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> retry(era.C);
-        if (retry.info() != Eigen::Success) {
-            era.C = Eigen::MatrixXd::Identity(era.C.rows(), era.C.cols());
-            era.B = Eigen::MatrixXd::Identity(era.B.rows(), era.B.cols());
-            era.D = Eigen::MatrixXd::Identity(era.D.rows(), era.D.cols());
-            era.eigvals_C = Eigen::VectorXd::Ones(era.eigvals_C.size());
-            era.C_invsqrt = Eigen::MatrixXd::Identity(era.C_invsqrt.rows(), era.C_invsqrt.cols());
-            return;
-        }
-        solver = std::move(retry);
+        throw std::runtime_error("Eigen decomposition failed in ACMAES");
     }
     Eigen::VectorXd evals = solver.eigenvalues();
     for (Eigen::Index i = 0; i < evals.size(); ++i) {
@@ -514,6 +434,10 @@ void ACMAES::recordHistory(double relRange) {
     if (callback != nullptr) {
         callback(&minionResult);
     }
+
+    if (success) {
+        should_stop = true;
+    }
 }
 
 MinionResult ACMAES::optimize() {
@@ -531,130 +455,39 @@ MinionResult ACMAES::optimize() {
         Nevals = 0;
         generation = 0;
         should_stop = false;
-        no_improve_generations = 0;
-        no_improve_restarts = 0;
 
-        size_t lambda_current = lambda;
-        Eigen::VectorXd restart_mean = initialMean;
-        bool first_run = true;
+        era.reinit(lambda, std::max<size_t>(mu, 1), dimension, initialMean, sigma0);
 
-        while (!should_stop && Nevals < maxevals) {
-            const double best_before_restart = best_fitness;
-            if (lambda_current < 4) lambda_current = 4;
-            size_t mu_current = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
-            if (mu_current < 1) mu_current = 1;
-            if (mu_current > lambda_current) mu_current = lambda_current;
-
-            if (lambda_current > era.n_offsprings_reserve || mu_current > era.n_parents_reserve) {
-                era.reserve(lambda_current, mu_current, dimension);
-            }
-            auto lhs_init = latin_hypercube_sampling(bounds, lambda_current);
-            if (!lhs_init.empty()) {
-                Eigen::VectorXd mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
-                for (const auto& sample : lhs_init) {
-                    mean += Eigen::Map<const Eigen::VectorXd>(sample.data(), static_cast<Eigen::Index>(sample.size()));
-                }
-                mean /= static_cast<double>(lhs_init.size());
-                restart_mean = mean;
-            }
-            era.reinit(lambda_current, mu_current, dimension, restart_mean, sigma0, Nevals, best_fitness);
-
-            bool restart = false;
-            bool use_lhs = true;
-            while (!should_stop && !restart && era.i_iteration < maxIterations) {
-                double inner_progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
-                if (inner_progress > 1.0) inner_progress = 1.0;
-                const double A_inner = double(lambda);
-                const double C_inner = lambda_default;
-                const double pp_inner = 1.0;
-                const double t_inner = inner_progress;
-                double inner_value = A_inner - (A_inner - C_inner) * (1.0 - std::pow(1.0 - t_inner, pp_inner));
-                size_t lambda_target = static_cast<size_t>(std::round(inner_value));
-                if (lambda_target < lambda_default) lambda_target = lambda_default;
-                if (lambda_target < 4) lambda_target = 4;
-                if (lambda_target != lambda_current) {
-                    lambda_current = lambda_target;
-                    size_t mu_target = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
-                    if (mu_target < 1) mu_target = 1;
-                    if (mu_target > lambda_current) mu_target = lambda_current;
-                    if (lambda_current > era.n_offsprings_reserve || mu_target > era.n_parents_reserve) {
-                        era.reserve(lambda_current, mu_target, dimension);
-                    }
-                    era.resize(lambda_current, mu_target, dimension);
-                }
-
-                if (use_lhs) {
-                    for (size_t j = 0; j < era.n_offsprings; ++j) {
-                        Eigen::VectorXd candidate = Eigen::Map<const Eigen::VectorXd>(lhs_init[j].data(),
-                                                                                     static_cast<Eigen::Index>(lhs_init[j].size()));
-                        era.x_offsprings.col(static_cast<Eigen::Index>(j)) = candidate;
-                        era.y_offsprings.col(static_cast<Eigen::Index>(j)) = (candidate - era.x_mean) / era.sigma;
-                    }
-                    if (!best.empty()) {
-                        Eigen::VectorXd elite = Eigen::Map<const Eigen::VectorXd>(best.data(), static_cast<Eigen::Index>(best.size()));
-                        era.x_offsprings.col(0) = elite;
-                        era.y_offsprings.col(0) = (elite - era.x_mean) / era.sigma;
-                    }
-                    use_lhs = false;
-                } else {
-                    sampleOffsprings();
-                }
-                size_t evaluated = evaluatePopulation();
-                if (evaluated == 0) {
-                    should_stop = true;
-                    break;
-                }
-
-                rankAndSort();
-                const double prev_best = best_fitness;
-                updateBest();
-                if (best_fitness < prev_best) {
-                    no_improve_generations = 0;
-                } else {
-                    ++no_improve_generations;
-                }
-                assignNewMean();
-                updateEvolutionPaths();
-                updateWeights();
-                updateCovarianceMatrix();
-                updateEigenDecomposition();
-                updateStepsize();
-
-                double fmax = *std::max_element(currentFitness.begin(), currentFitness.end());
-                double fmin = *std::min_element(currentFitness.begin(), currentFitness.end());
-                double fmean = std::accumulate(currentFitness.begin(), currentFitness.end(), 0.0) /
-                               static_cast<double>(currentFitness.size());
-                double relRange = 0.0;
-                if (std::fabs(fmean) > 1e-12) {
-                    relRange = (fmax - fmin) / std::fabs(fmean);
-                }
-                diversity.push_back(relRange);
-                recordHistory(relRange);
-                //std::cout << "Generation " << generation << "Population " << lambda_current << " Eval " << Nevals << " Best fitness: " << best_fitness  << "\n";
-                          
-                if (relRange < 1e-8 || no_improve_generations >= restart_no_improve_tol) {
-                    restart = true;
-                    no_improve_generations = 0;
-                }
-
-                ++era.i_iteration;
-                ++generation;
-            }
-
-            if (should_stop || Nevals >= maxevals) {
+        while (!should_stop && Nevals < maxevals && era.i_iteration < maxIterations) {
+            sampleOffsprings();
+            size_t evaluated = evaluatePopulation();
+            if (evaluated == 0) {
                 break;
             }
 
-            if (!restart) {
-                restart = true;
-            }
+            rankAndSort();
+            updateBest();
+            assignNewMean();
+            updateEvolutionPaths();
+            updateWeights();
+            updateCovarianceMatrix();
+            updateEigenDecomposition();
+            updateStepsize();
 
-            if (best_fitness < best_before_restart) {
-                no_improve_restarts = 0;
-            } else {
-                ++no_improve_restarts;
+            double fmax = *std::max_element(currentFitness.begin(), currentFitness.end());
+            double fmin = *std::min_element(currentFitness.begin(), currentFitness.end());
+            double fmean = std::accumulate(currentFitness.begin(), currentFitness.end(), 0.0) /
+                           static_cast<double>(currentFitness.size());
+            double relRange = 0.0;
+            if (std::fabs(fmean) > 1e-12) {
+                relRange = (fmax - fmin) / std::fabs(fmean);
             }
-            first_run = false;
+            diversity.push_back(relRange);
+            recordHistory(relRange);
+
+            checkStoppingCriteria();
+            ++era.i_iteration;
+            ++generation;
         }
 
         if (history.empty()) {

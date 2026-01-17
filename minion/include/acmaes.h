@@ -11,7 +11,7 @@ namespace minion {
 
 /**
  * @class ACMAES
- * @brief Active CMA-ES without restarts or bi-population.
+ * @brief Active CMA-ES without restarts.
  */
 class ACMAES : public MinimizerBase {
 public:
@@ -71,15 +71,7 @@ private:
         bool h_sig = false;
 
         void reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_);
-        void reinit(
-            size_t n_offsprings_,
-            size_t n_parents_,
-            size_t n_params_,
-            const Eigen::VectorXd& x_mean_,
-            double sigma_,
-            size_t nevals,
-            double best_fitness);
-        void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
+        void reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_);
     };
 
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;
@@ -104,9 +96,7 @@ private:
     std::string boundStrategy = "reflect-random";
 
     size_t lambda = 0;
-    size_t lambda_default = 0;
     size_t mu = 0;
-    double mu_ratio = 0.5;
     size_t maxIterations = 0;
 
     double sigma0 = 0.0;
@@ -123,10 +113,6 @@ private:
 
     bool support_tol = true;
     bool should_stop = false;
-
-    size_t no_improve_generations = 0;
-    size_t restart_no_improve_tol = 1000;
-    size_t no_improve_restarts = 0;
 };
 
 }

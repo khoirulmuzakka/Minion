@@ -466,6 +466,9 @@ MinionResult BIPOP_aCMAES::optimize() {
     auto runRegime = [&](const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambda) {
             era.reinit(lambda, std::max<size_t>(lambda / 2, 1), dimension, startMean, startSigma);
             should_stop_run = false;
+            std::cout << "Starting BIPOP aCMA-ES regime: lambda = " << lambda
+                      << ", sigma = " << startSigma << ", starting fitness = "
+                      << best_fitness << std::endl;
 
             while (!should_stop_run && !should_stop_optimization && era.i_iteration < maxIterations) {
                 sampleOffsprings();
