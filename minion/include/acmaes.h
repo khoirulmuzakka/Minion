@@ -108,7 +108,6 @@ private:
     size_t lambda_min = 0;
     size_t mu = 0;
     double mu_ratio = 0.5;
-    size_t maxIterations = 0;
 
     double sigma0 = 0.0;
 

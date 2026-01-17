@@ -239,8 +239,6 @@ void ACMAES::initialize() {
     lambda = std::min(size_t(2000), std::max<size_t>(lambda, 4));
     mu_ratio = 0.5;
     mu = std::max<size_t>(static_cast<size_t>(std::ceil(mu_ratio * static_cast<double>(lambda))), 1);
-
-    maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
     support_tol = false;
 
     sigma0 = options.get<double>("initial_step", 0.3);
