@@ -188,6 +188,23 @@ std::vector<double> ACMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
+void ACMAES::applyCovarianceScale() {
+    if (cov_scale.empty()) {
+        return;
+    }
+    const size_t dim = cov_scale.size();
+    Eigen::VectorXd diag(dim);
+    for (size_t i = 0; i < dim; ++i) {
+        diag(static_cast<Eigen::Index>(i)) = cov_scale[i];
+    }
+    era.B.setIdentity();
+    era.D = diag.asDiagonal();
+    era.C = era.D * era.D;
+    Eigen::VectorXd inv = diag.cwiseInverse();
+    era.C_invsqrt = inv.asDiagonal();
+    era.eigvals_C = diag.cwiseProduct(diag);
+}
+
 void ACMAES::initialize() {
     auto defaults = DefaultSettings().getDefaultSettings("ACMAES");
     for (const auto& item : optionMap) {
@@ -211,14 +228,9 @@ void ACMAES::initialize() {
     if (lambda == 0) {
         lambda = 20 * dimension;
     }
-    lambda = std::max<size_t>(lambda, 4);
-
-    mu = static_cast<size_t>(options.get<int>("mu", 0));
-    if (mu == 0) {
-        mu = std::max<size_t>(lambda / 2, 1);
-    }
-    mu = std::min(mu, lambda);
-    mu_ratio = lambda > 0 ? static_cast<double>(mu) / static_cast<double>(lambda) : 0.5;
+    lambda = std::min(size_t(2000), std::max<size_t>(lambda, 4));
+    mu_ratio = 0.5;
+    mu = std::max<size_t>(static_cast<size_t>(std::ceil(mu_ratio * static_cast<double>(lambda))), 1);
 
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
     support_tol = true;
@@ -229,11 +241,21 @@ void ACMAES::initialize() {
     }
 
     double avgRange = 0.0;
+    cov_scale.clear();
+    cov_scale.reserve(dimension);
     for (const auto& b : bounds) {
-        avgRange += (b.second - b.first);
+        double range = b.second - b.first;
+        avgRange += range;
+        cov_scale.push_back(range);
     }
     avgRange = dimension > 0 ? avgRange / static_cast<double>(dimension) : 1.0;
     sigma0 *= avgRange;
+    if (avgRange > 0.0) {
+        for (double& v : cov_scale) {
+            v /= avgRange;
+            if (v <= 0.0) v = 1.0;
+        }
+    }
 
     initialMean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
     if (!x0.empty()) {
@@ -530,6 +552,7 @@ MinionResult ACMAES::optimize() {
         size_t lambda_current = lambda;
         size_t mu_current = std::max<size_t>(mu, 1);
         era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0);
+        applyCovarianceScale();
 
         while (!should_stop && Nevals < maxevals && era.i_iteration < maxIterations) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;

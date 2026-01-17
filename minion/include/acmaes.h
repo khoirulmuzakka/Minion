@@ -89,6 +89,7 @@ private:
     void checkStoppingCriteria();
     void recordHistory(double relRange);
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
+    void applyCovarianceScale();
 
     Parameter era;
 
@@ -105,6 +106,7 @@ private:
     double sigma0 = 0.0;
 
     Eigen::VectorXd initialMean;
+    std::vector<double> cov_scale;
 
     std::vector<double> best;
     double best_fitness = std::numeric_limits<double>::infinity();
