@@ -49,7 +49,14 @@ void ACMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_r
     keys_offsprings.resize(n_offsprings_reserve);
 }
 
-void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_) {
+void ACMAES::Parameter::reinit(
+    size_t n_offsprings_,
+    size_t n_parents_,
+    size_t n_params_,
+    const Eigen::VectorXd& x_mean_,
+    double sigma_,
+    size_t nevals,
+    double best_fitness) {
     n_params = n_params_;
     n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
     n_parents = std::min(n_parents_, n_parents_reserve);
@@ -118,6 +125,7 @@ void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n
     D.setIdentity();
     eigvals_C.setOnes();
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
+    //std::cout << "Nevals : " << nevals << "  ACMAES initialized with " << n_offsprings  << " offsprings, " << n_parents << " parents, "  << "Best fitness: " << best_fitness << "\n";
 }
 
 std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) const {
@@ -154,7 +162,7 @@ void ACMAES:: initialize() {
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        lambda = lambda_default;
+        lambda = 16*bounds.size();
     }
     lambda = std::max<size_t>(lambda, 4);
 
@@ -467,12 +475,15 @@ MinionResult ACMAES::optimize() {
         Nevals = 0;
         generation = 0;
         should_stop = false;
+        no_improve_generations = 0;
+        no_improve_restarts = 0;
 
         size_t lambda_current = lambda;
         Eigen::VectorXd restart_mean = initialMean;
         bool first_run = true;
 
         while (!should_stop && Nevals < maxevals) {
+            const double best_before_restart = best_fitness;
             if (lambda_current < 4) lambda_current = 4;
             size_t mu_current = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
             if (mu_current < 1) mu_current = 1;
@@ -490,7 +501,7 @@ MinionResult ACMAES::optimize() {
                 mean /= static_cast<double>(lhs_init.size());
                 restart_mean = mean;
             }
-            era.reinit(lambda_current, mu_current, dimension, restart_mean, sigma0);
+            era.reinit(lambda_current, mu_current, dimension, restart_mean, sigma0, Nevals, best_fitness);
 
             bool restart = false;
             bool use_lhs = true;
@@ -518,7 +529,13 @@ MinionResult ACMAES::optimize() {
                 }
 
                 rankAndSort();
+                const double prev_best = best_fitness;
                 updateBest();
+                if (best_fitness < prev_best) {
+                    no_improve_generations = 0;
+                } else {
+                    ++no_improve_generations;
+                }
                 assignNewMean();
                 updateEvolutionPaths();
                 updateWeights();
@@ -539,7 +556,7 @@ MinionResult ACMAES::optimize() {
               //  std::cout << "Generation " << generation
                //           << ", Best Fitness = " << best_fitness << "\n";
 
-                if (relRange < 1e-8) {
+                if (relRange < 1e-8 || no_improve_generations >= restart_no_improve_tol) {
                     restart = true;
                 }
 
@@ -555,6 +572,11 @@ MinionResult ACMAES::optimize() {
                 restart = true;
             }
 
+            if (best_fitness < best_before_restart) {
+                no_improve_restarts = 0;
+            } else {
+                ++no_improve_restarts;
+            }
             lambda_current += lambda_default;
             first_run = false;
         }
