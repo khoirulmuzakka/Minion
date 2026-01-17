@@ -48,7 +48,14 @@ void ACMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_r
     keys_offsprings.resize(n_offsprings_reserve);
 }
 
-void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_) {
+void ACMAES::Parameter::reinit(
+    size_t n_offsprings_,
+    size_t n_parents_,
+    size_t n_params_,
+    const Eigen::VectorXd& x_mean_,
+    double sigma_,
+    size_t nevals,
+    double best_fitness) {
     n_params = n_params_;
     n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
     n_parents = std::min(n_parents_, n_parents_reserve);
@@ -117,6 +124,7 @@ void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n
     D.setIdentity();
     eigvals_C.setOnes();
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
+    //std::cout << "Nevals " << nevals << " Population " << n_offsprings << " Best fitness " << best_fitness << "\n";
 }
 
 void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
@@ -551,7 +559,9 @@ MinionResult ACMAES::optimize() {
 
         size_t lambda_current = lambda;
         size_t mu_current = std::max<size_t>(mu, 1);
-        era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0);
+        bool use_lhs = false;
+        std::vector<std::vector<double>> lhs_init;
+        era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0, Nevals, best_fitness);
         applyCovarianceScale();
 
         while (!should_stop && Nevals < maxevals && era.i_iteration < maxIterations) {
@@ -575,7 +585,17 @@ MinionResult ACMAES::optimize() {
                 }
                 era.resize(lambda_current, mu_current, dimension);
             }
-            sampleOffsprings();
+            if (use_lhs) {
+                for (size_t j = 0; j < era.n_offsprings; ++j) {
+                    Eigen::VectorXd candidate = Eigen::Map<const Eigen::VectorXd>(lhs_init[j].data(),
+                                                                                 static_cast<Eigen::Index>(lhs_init[j].size()));
+                    era.x_offsprings.col(static_cast<Eigen::Index>(j)) = candidate;
+                    era.y_offsprings.col(static_cast<Eigen::Index>(j)) = (candidate - era.x_mean) / era.sigma;
+                }
+                use_lhs = false;
+            } else {
+                sampleOffsprings();
+            }
             size_t evaluated = evaluatePopulation();
             if (evaluated == 0) {
                 break;
@@ -601,7 +621,26 @@ MinionResult ACMAES::optimize() {
             diversity.push_back(relRange);
             recordHistory(relRange);
 
-            checkStoppingCriteria();
+            if (relRange < 1e-8) {
+                lhs_init = latin_hypercube_sampling(bounds, lambda_current);
+                if (!lhs_init.empty()) {
+                    if (!best.empty()) {
+                        //lhs_init[0] = best;
+                    }
+                    Eigen::VectorXd mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
+                    for (const auto& sample : lhs_init) {
+                        mean += Eigen::Map<const Eigen::VectorXd>(sample.data(),
+                                                                  static_cast<Eigen::Index>(sample.size()));
+                    }
+                    mean /= static_cast<double>(lhs_init.size());
+                    era.reinit(lambda_current, mu_current, dimension, mean, sigma0, Nevals, best_fitness);
+                    applyCovarianceScale();
+                    use_lhs = true;
+                }
+            }
+            
+
+            //checkStoppingCriteria();
             ++era.i_iteration;
             ++generation;
         }

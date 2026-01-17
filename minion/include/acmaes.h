@@ -71,7 +71,14 @@ private:
         bool h_sig = false;
 
         void reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_);
-        void reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_);
+        void reinit(
+            size_t n_offsprings_,
+            size_t n_parents_,
+            size_t n_params_,
+            const Eigen::VectorXd& x_mean_,
+            double sigma_,
+            size_t nevals,
+            double best_fitness);
         void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
     };
 
