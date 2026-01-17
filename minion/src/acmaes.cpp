@@ -148,10 +148,13 @@ void ACMAES:: initialize() {
     useBounds = !bounds.empty();
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
 
+    double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
+    lambda_default = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
+    lambda_default = std::max<size_t>(lambda_default, 4);
+
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
-        lambda = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
+        lambda = lambda_default;
     }
     lambda = std::max<size_t>(lambda, 4);
 
@@ -465,13 +468,11 @@ MinionResult ACMAES::optimize() {
         generation = 0;
         should_stop = false;
 
-        size_t restart_factor = 1;
-        const size_t lambda_base = lambda;
+        size_t lambda_current = lambda;
         Eigen::VectorXd restart_mean = initialMean;
         bool first_run = true;
 
         while (!should_stop && Nevals < maxevals) {
-            size_t lambda_current = lambda_base * restart_factor;
             if (lambda_current < 4) lambda_current = 4;
             size_t mu_current = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
             if (mu_current < 1) mu_current = 1;
@@ -554,7 +555,7 @@ MinionResult ACMAES::optimize() {
                 restart = true;
             }
 
-            ++restart_factor;
+            lambda_current += lambda_default;
             first_run = false;
         }
 

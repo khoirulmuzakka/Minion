@@ -96,6 +96,7 @@ private:
     std::string boundStrategy = "reflect-random";
 
     size_t lambda = 0;
+    size_t lambda_default = 0;
     size_t mu = 0;
     double mu_ratio = 0.5;
     size_t maxIterations = 0;
