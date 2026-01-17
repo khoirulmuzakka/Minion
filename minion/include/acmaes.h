@@ -72,6 +72,7 @@ private:
 
         void reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_);
         void reinit(size_t n_offsprings_, size_t n_parents_, size_t n_params_, const Eigen::VectorXd& x_mean_, double sigma_);
+        void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
     };
 
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;
@@ -96,7 +97,9 @@ private:
     std::string boundStrategy = "reflect-random";
 
     size_t lambda = 0;
+    size_t lambda_min = 0;
     size_t mu = 0;
+    double mu_ratio = 0.5;
     size_t maxIterations = 0;
 
     double sigma0 = 0.0;

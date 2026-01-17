@@ -119,6 +119,62 @@ void ACMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, size_t n
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
 }
 
+void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
+    n_params = n_params_;
+    n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
+    n_parents = std::min(n_parents_, n_parents_reserve);
+
+    double w_neg_sum = 0.0;
+    double w_pos_sum = 0.0;
+    for (size_t i = 0; i < n_offsprings; ++i) {
+        double wi = std::log((static_cast<double>(n_offsprings) + 1.0) / 2.0) - std::log(static_cast<double>(i) + 1.0);
+        w(static_cast<Eigen::Index>(i)) = wi;
+        if (wi >= 0.0) {
+            w_pos_sum += wi;
+        } else {
+            w_neg_sum += wi;
+        }
+    }
+
+    double w_sum_parent = 0.0;
+    double w_sq_sum_parent = 0.0;
+    for (size_t i = 0; i < n_parents; ++i) {
+        double wi = w(static_cast<Eigen::Index>(i));
+        w_sum_parent += wi;
+        w_sq_sum_parent += wi * wi;
+    }
+    double denom = w_sq_sum_parent <= 0.0 ? 1e-12 : w_sq_sum_parent;
+    n_mu_eff = (w_sum_parent * w_sum_parent) / denom;
+
+    double dim = static_cast<double>(n_params);
+    c_s = (n_mu_eff + 2.0) / (dim + n_mu_eff + 5.0);
+    c_c = (4.0 + n_mu_eff / dim) / (dim + 4.0 + 2.0 * n_mu_eff / dim);
+    c_1 = 2.0 / (std::pow(dim + 1.3, 2.0) + n_mu_eff);
+    c_mu = 2.0 * (n_mu_eff - 2.0 + 1.0 / n_mu_eff) / (std::pow(dim + 2.0, 2.0) + n_mu_eff);
+    c_mu = std::min(1.0 - c_1, c_mu);
+    d_s = 1.0 + c_s + 2.0 * std::max(0.0, std::sqrt((n_mu_eff - 1.0) / (dim + 1.0)) - 1.0);
+    chi = std::sqrt(dim) * (1.0 - 1.0 / (4.0 * dim) + 1.0 / (21.0 * dim * dim));
+    p_s_fact = std::sqrt(c_s * (2.0 - c_s) * n_mu_eff);
+    p_c_fact = std::sqrt(c_c * (2.0 - c_c) * n_mu_eff);
+
+    double a_mu = 1.0 + c_1 / std::max(1e-12, c_mu);
+    double a_mueff = 1.0 + 2.0 * n_mu_eff;
+    double a_posdef = (1.0 - c_1 - c_mu) / (dim * std::max(1e-12, c_mu));
+    double a_min = std::min({a_mu, a_mueff, a_posdef});
+    for (size_t i = 0; i < n_offsprings; ++i) {
+        double wi = w(static_cast<Eigen::Index>(i));
+        if (wi >= 0.0) {
+            w(static_cast<Eigen::Index>(i)) = wi / std::max(1e-12, w_pos_sum);
+        } else {
+            w(static_cast<Eigen::Index>(i)) = a_min * wi / std::max(1e-12, std::abs(w_neg_sum));
+        }
+    }
+
+    w_var.head(static_cast<Eigen::Index>(n_offsprings)) = w.head(static_cast<Eigen::Index>(n_offsprings));
+    y_mean.setZero();
+    f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
+}
+
 std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) const {
     if (!useBounds) {
         return candidate;
@@ -147,10 +203,13 @@ void ACMAES::initialize() {
     useBounds = !bounds.empty();
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
 
+    double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
+    lambda_min = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
+    lambda_min = std::max<size_t>(lambda_min, 4);
+
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
-        lambda = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
+        lambda = 20 * dimension;
     }
     lambda = std::max<size_t>(lambda, 4);
 
@@ -159,6 +218,7 @@ void ACMAES::initialize() {
         mu = std::max<size_t>(lambda / 2, 1);
     }
     mu = std::min(mu, lambda);
+    mu_ratio = lambda > 0 ? static_cast<double>(mu) / static_cast<double>(lambda) : 0.5;
 
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
     support_tol = true;
@@ -364,7 +424,18 @@ void ACMAES::updateStepsize() {
 void ACMAES::updateEigenDecomposition() {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(era.C);
     if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigen decomposition failed in ACMAES");
+        era.C = 0.5 * (era.C + era.C.transpose());
+        era.C += 1e-12 * Eigen::MatrixXd::Identity(era.C.rows(), era.C.cols());
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> retry(era.C);
+        if (retry.info() != Eigen::Success) {
+            era.C = Eigen::MatrixXd::Identity(era.C.rows(), era.C.cols());
+            era.B = Eigen::MatrixXd::Identity(era.B.rows(), era.B.cols());
+            era.D = Eigen::MatrixXd::Identity(era.D.rows(), era.D.cols());
+            era.eigvals_C = Eigen::VectorXd::Ones(era.eigvals_C.size());
+            era.C_invsqrt = Eigen::MatrixXd::Identity(era.C_invsqrt.rows(), era.C_invsqrt.cols());
+            return;
+        }
+        solver = std::move(retry);
     }
     Eigen::VectorXd evals = solver.eigenvalues();
     for (Eigen::Index i = 0; i < evals.size(); ++i) {
@@ -456,9 +527,31 @@ MinionResult ACMAES::optimize() {
         generation = 0;
         should_stop = false;
 
-        era.reinit(lambda, std::max<size_t>(mu, 1), dimension, initialMean, sigma0);
+        size_t lambda_current = lambda;
+        size_t mu_current = std::max<size_t>(mu, 1);
+        era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0);
 
         while (!should_stop && Nevals < maxevals && era.i_iteration < maxIterations) {
+            double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
+            if (progress > 1.0) progress = 1.0;
+            const double A = double(lambda);
+            const double C = double(lambda_min);
+            const double pp = 1.5;
+            const double t = progress;
+            double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
+            size_t lambda_target = static_cast<size_t>(std::round(value));
+            if (lambda_target < lambda_min) lambda_target = lambda_min;
+            if (lambda_target < 4) lambda_target = 4;
+            if (lambda_target != lambda_current) {
+                lambda_current = lambda_target;
+                mu_current = static_cast<size_t>(std::round(mu_ratio * static_cast<double>(lambda_current)));
+                if (mu_current < 1) mu_current = 1;
+                if (mu_current > lambda_current) mu_current = lambda_current;
+                if (lambda_current > era.n_offsprings_reserve || mu_current > era.n_parents_reserve) {
+                    era.reserve(lambda_current, mu_current, dimension);
+                }
+                era.resize(lambda_current, mu_current, dimension);
+            }
             sampleOffsprings();
             size_t evaluated = evaluatePopulation();
             if (evaluated == 0) {
