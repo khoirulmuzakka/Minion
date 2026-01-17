@@ -241,7 +241,7 @@ void ACMAES::initialize() {
     mu = std::max<size_t>(static_cast<size_t>(std::ceil(mu_ratio * static_cast<double>(lambda))), 1);
 
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
-    support_tol = true;
+    support_tol = false;
 
     sigma0 = options.get<double>("initial_step", 0.3);
     if (sigma0 <= 0.0) {
@@ -564,7 +564,7 @@ MinionResult ACMAES::optimize() {
         era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0, Nevals, best_fitness);
         applyCovarianceScale();
 
-        while (!should_stop && Nevals < maxevals && era.i_iteration < maxIterations) {
+        while ( Nevals < maxevals) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
             if (progress > 1.0) progress = 1.0;
             const double A = double(lambda);
@@ -598,6 +598,7 @@ MinionResult ACMAES::optimize() {
             }
             size_t evaluated = evaluatePopulation();
             if (evaluated == 0) {
+                std::cout << "Nevals : " << Nevals << " iteration: " << era.i_iteration << "\n";
                 break;
             }
 
@@ -639,8 +640,6 @@ MinionResult ACMAES::optimize() {
                 }
             }
             
-
-            //checkStoppingCriteria();
             ++era.i_iteration;
             ++generation;
         }

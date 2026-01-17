@@ -189,7 +189,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"max_restarts", 8},
-            {"max_iterations", 5000},
+            {"max_iterations", 500000},
             {"initial_step", 0.3},
             {"bound_strategy", std::string("reflect-random")}
         };
