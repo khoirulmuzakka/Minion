@@ -7,6 +7,68 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <random>
+
+namespace {
+
+std::vector<std::pair<double, double>> merge_intervals_1d(std::vector<std::pair<double, double>> intervals) {
+    if (intervals.empty()) {
+        return intervals;
+    }
+    std::sort(intervals.begin(), intervals.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    std::vector<std::pair<double, double>> merged;
+    merged.reserve(intervals.size());
+    double currentLow = intervals.front().first;
+    double currentHigh = intervals.front().second;
+    for (size_t i = 1; i < intervals.size(); ++i) {
+        const auto& interval = intervals[i];
+        if (interval.first <= currentHigh) {
+            currentHigh = std::max(currentHigh, interval.second);
+        } else {
+            merged.emplace_back(currentLow, currentHigh);
+            currentLow = interval.first;
+            currentHigh = interval.second;
+        }
+    }
+    merged.emplace_back(currentLow, currentHigh);
+    return merged;
+}
+
+double sample_outside_local_bounds(double low,
+                                   double high,
+                                   const std::vector<std::pair<double, double>>& local_bounds) {
+    std::vector<std::pair<double, double>> merged = merge_intervals_1d(local_bounds);
+    std::vector<std::pair<double, double>> valid_intervals;
+    double previous_high = low;
+    for (const auto& bound : merged) {
+        if (bound.first > previous_high) {
+            valid_intervals.emplace_back(previous_high, bound.first);
+        }
+        previous_high = std::min(bound.second, high);
+    }
+    if (previous_high < high) {
+        valid_intervals.emplace_back(previous_high, high);
+    }
+
+    std::vector<double> lengths;
+    lengths.reserve(valid_intervals.size());
+    for (const auto& interval : valid_intervals) {
+        lengths.push_back(interval.second - interval.first);
+    }
+
+    if (lengths.empty()) {
+        valid_intervals.emplace_back(low, high);
+        lengths.push_back(high - low);
+    }
+
+    std::discrete_distribution<size_t> interval_dist(lengths.begin(), lengths.end());
+    const size_t chosen_interval = interval_dist(minion::get_rng());
+    return minion::rand_gen(valid_intervals[chosen_interval].first, valid_intervals[chosen_interval].second);
+}
+
+} // namespace
 
 namespace minion {
 
@@ -667,15 +729,31 @@ MinionResult RCMAES::optimize() {
                     restart_bests.push_back(best);
                     exclusion_boxes.push_back(buildExclusionBox(best));
                 }
+                std::vector<std::vector<std::pair<double, double>>> locals(bounds.size());
+                for (const auto& box : exclusion_boxes) {
+                    for (size_t dim = 0; dim < bounds.size(); ++dim) {
+                        locals[dim].emplace_back(box.low[dim], box.high[dim]);
+                    }
+                }
+    
+                for (size_t dim = 0; dim < bounds.size(); ++dim) {
+                    auto merged = merge_intervals_1d(locals[dim]);
+                    if (false ) {
+                        std::cout << "Restart exclusion intervals dim " << dim << ":";
+                        for (const auto& interval : merged) {
+                            std::cout << " [" << interval.first << ", " << interval.second << "]";
+                        }
+                        std::cout << "\n";
+                    };
+                }
                 lhs_init.clear();
                 lhs_init.reserve(lambda_current);
                 for (size_t j = 0; j < lambda_current; ++j) {
-                    std::vector<double> candidate;
-                    for (size_t attempt = 0; attempt < exclusion_max_attempts; ++attempt) {
-                        candidate = random_sampling(bounds, 1).front();
-                        if (!isExcludedPoint(candidate)) {
-                            break;
-                        }
+                    std::vector<double> candidate(bounds.size(), 0.0);
+                    for (size_t dim = 0; dim < bounds.size(); ++dim) {
+                        candidate[dim] = sample_outside_local_bounds(bounds[dim].first,
+                                                                     bounds[dim].second,
+                                                                     locals[dim]);
                     }
                     lhs_init.push_back(candidate);
                 }

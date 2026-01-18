@@ -196,7 +196,7 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
-            {"initial_step", 0.3},
+            {"initial_step", 0.2},
             {"bound_strategy", std::string("reflect-random")}
         };
 
