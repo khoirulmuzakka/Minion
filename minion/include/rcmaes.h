@@ -82,6 +82,11 @@ private:
         void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
     };
 
+    struct ExclusionBox {
+        std::vector<double> low;
+        std::vector<double> high;
+    };
+
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;
     void sampleOffsprings();
     size_t evaluatePopulation();
@@ -97,6 +102,8 @@ private:
     void recordHistory(double relRange);
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
     void applyCovarianceScale();
+    ExclusionBox buildExclusionBox(const std::vector<double>& best) const;
+    bool isExcludedPoint(const std::vector<double>& candidate) const;
 
     Parameter era;
 
@@ -124,6 +131,10 @@ private:
 
     bool support_tol = true;
     bool should_stop = false;
+
+    std::vector<std::vector<double>> restart_bests;
+    std::vector<ExclusionBox> exclusion_boxes;
+    size_t exclusion_max_attempts = 50;
 };
 
 }

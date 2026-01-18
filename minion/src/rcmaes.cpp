@@ -243,6 +243,7 @@ void RCMAES::initialize() {
         } else {
             multiplier = 2.0;
         };
+        //if (multiplier >20) multiplier=20;
         const double suggested_popsize   = std::clamp(dimension*multiplier, double(lambda_min), 2000.0);
         lambda = suggested_popsize;
     }
@@ -549,6 +550,34 @@ void RCMAES::recordHistory(double relRange) {
     }
 }
 
+RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& best) const {
+    ExclusionBox box;
+    const size_t dim = bounds.size();
+    box.low.resize(dim);
+    box.high.resize(dim);
+    for (size_t i = 0; i < dim; ++i) {
+        const double range = bounds[i].second - bounds[i].first;
+        const double delta = 0.05 * range;
+        box.low[i] = std::max(bounds[i].first, best[i] - delta);
+        box.high[i] = std::min(bounds[i].second, best[i] + delta);
+    }
+    return box;
+}
+
+bool RCMAES::isExcludedPoint(const std::vector<double>& candidate) const {
+    for (const auto& box : exclusion_boxes) {
+        bool inside = true;
+        for (size_t i = 0; i < candidate.size(); ++i) {
+            if (candidate[i] < box.low[i] || candidate[i] > box.high[i]) {
+                inside = false;
+                break;
+            }
+        }
+        if (inside) return true;
+    }
+    return false;
+}
+
 MinionResult RCMAES::optimize() {
     if (!hasInitialized) {
         initialize();
@@ -564,6 +593,8 @@ MinionResult RCMAES::optimize() {
         Nevals = 0;
         generation = 0;
         should_stop = false;
+        restart_bests.clear();
+        exclusion_boxes.clear();
 
         size_t lambda_current = lambda;
         size_t mu_current = std::max<size_t>(mu, 1);
@@ -578,7 +609,7 @@ MinionResult RCMAES::optimize() {
             const double A = double(lambda);
             const double C = double(lambda_min);
             double dim = double(bounds.size());
-            const double pp = 1+2*exp(-0.0567*dim)  ; //1.17+2.075*exp(-0.0567*dim) ;;
+            const double pp = 1.05+2*exp(-0.0567*dim)  ; //1.17+2.075*exp(-0.0567*dim) ;;
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
@@ -632,11 +663,24 @@ MinionResult RCMAES::optimize() {
             recordHistory(relRange);
 
             if (relRange < 1e-8) {
-                lhs_init = latin_hypercube_sampling(bounds, lambda_current);
-                if (!lhs_init.empty()) {
-                    if (!best.empty()) {
-                        //lhs_init[0] = best;
+                if (!best.empty()) {
+                    restart_bests.push_back(best);
+                    exclusion_boxes.push_back(buildExclusionBox(best));
+                }
+                lhs_init.clear();
+                lhs_init.reserve(lambda_current);
+                for (size_t j = 0; j < lambda_current; ++j) {
+                    std::vector<double> candidate;
+                    for (size_t attempt = 0; attempt < exclusion_max_attempts; ++attempt) {
+                        candidate = random_sampling(bounds, 1).front();
+                        if (!isExcludedPoint(candidate)) {
+                            break;
+                        }
                     }
+                    lhs_init.push_back(candidate);
+                }
+
+                if (!lhs_init.empty()) {
                     Eigen::VectorXd mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
                     for (const auto& sample : lhs_init) {
                         mean += Eigen::Map<const Eigen::VectorXd>(sample.data(),
