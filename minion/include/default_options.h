@@ -47,7 +47,7 @@ class DefaultSettings{
             {"population_size", 0},  
             {"tau1", 0.1},
             {"tau2" , 0.1} , 
-            {"myEqs", 0.25},
+            {"myEqs", 0.4},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -193,7 +193,7 @@ class DefaultSettings{
             {"bound_strategy", std::string("reflect-random")}
         };
 
-        std::map<std::string, ConfigValue> default_settings_ACMAES = {
+        std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
             {"initial_step", 0.25},
             {"bound_strategy", std::string("reflect-random")}
@@ -263,7 +263,7 @@ class DefaultSettings{
                 {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
                 {"CMAES", default_settings_CMAES}, 
                 {"BIPOP_aCMAES", default_settings_BIPOP_aCMAES}, 
-                {"ACMAES", default_settings_ACMAES},
+                {"RCMAES", default_settings_RCMAES},
                 {"DA", default_settings_DA}, 
                 {"L_BFGS_B", default_settings_LBFGSB}, 
                 {"L_BFGS", default_settings_LBFGS}

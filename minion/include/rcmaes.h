@@ -1,5 +1,5 @@
-#ifndef ACMAES_H
-#define ACMAES_H
+#ifndef RCMAES_H
+#define RCMAES_H
 
 #include "minimizer_base.h"
 
@@ -10,12 +10,12 @@
 namespace minion {
 
 /**
- * @class ACMAES
+ * @class RCMAES
  * @brief Active CMA-ES without restarts.
  */
-class ACMAES : public MinimizerBase {
+class RCMAES : public MinimizerBase {
 public:
-    ACMAES(
+    RCMAES(
         MinionFunction func,
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},

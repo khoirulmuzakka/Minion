@@ -1,4 +1,4 @@
-#include "acmaes.h"
+#include "rcmaes.h"
 
 #include "default_options.h"
 #include "utility.h"
@@ -10,7 +10,7 @@
 
 namespace minion {
 
-ACMAES::ACMAES(
+RCMAES::RCMAES(
     MinionFunction func,
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
@@ -22,7 +22,7 @@ ACMAES::ACMAES(
     std::map<std::string, ConfigValue> options)
     : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
 
-void ACMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
+void RCMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
     n_params = n_params_;
     n_offsprings_reserve = n_offsprings_reserve_;
     n_parents_reserve = n_parents_reserve_;
@@ -48,7 +48,7 @@ void ACMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_r
     keys_offsprings.resize(n_offsprings_reserve);
 }
 
-void ACMAES::Parameter::reinit(
+void RCMAES::Parameter::reinit(
     size_t n_offsprings_,
     size_t n_parents_,
     size_t n_params_,
@@ -127,7 +127,7 @@ void ACMAES::Parameter::reinit(
     //std::cout << "Nevals " << nevals << " Population " << n_offsprings << " Best fitness " << best_fitness << "\n";
 }
 
-void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
+void RCMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_) {
     n_params = n_params_;
     n_offsprings = std::min(n_offsprings_, n_offsprings_reserve);
     n_parents = std::min(n_parents_, n_parents_reserve);
@@ -183,7 +183,7 @@ void ACMAES::Parameter::resize(size_t n_offsprings_, size_t n_parents_, size_t n
     f_offsprings.head(static_cast<Eigen::Index>(n_offsprings)) = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(n_offsprings), std::numeric_limits<double>::infinity());
 }
 
-std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) const {
+std::vector<double> RCMAES::applyBounds(const std::vector<double>& candidate) const {
     if (!useBounds) {
         return candidate;
     }
@@ -192,11 +192,11 @@ std::vector<double> ACMAES::applyBounds(const std::vector<double>& candidate) co
     return wrapper.front();
 }
 
-std::vector<double> ACMAES::eigenToStd(const Eigen::VectorXd& vec) const {
+std::vector<double> RCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
-void ACMAES::applyCovarianceScale() {
+void RCMAES::applyCovarianceScale() {
     if (cov_scale.empty()) {
         return;
     }
@@ -213,8 +213,8 @@ void ACMAES::applyCovarianceScale() {
     era.eigvals_C = diag.cwiseProduct(diag);
 }
 
-void ACMAES::initialize() {
-    auto defaults = DefaultSettings().getDefaultSettings("ACMAES");
+void RCMAES::initialize() {
+    auto defaults = DefaultSettings().getDefaultSettings("RCMAES");
     for (const auto& item : optionMap) {
         defaults[item.first] = item.second;
     }
@@ -222,7 +222,7 @@ void ACMAES::initialize() {
 
     dimension = bounds.size();
     if (dimension == 0) {
-        throw std::runtime_error("ACMAES requires bounded variables");
+        throw std::runtime_error("RCMAES requires bounded variables");
     }
 
     useBounds = !bounds.empty();
@@ -302,7 +302,7 @@ void ACMAES::initialize() {
     hasInitialized = true;
 }
 
-void ACMAES::sampleOffsprings() {
+void RCMAES::sampleOffsprings() {
     for (size_t j = 0; j < era.n_offsprings; ++j) {
         for (size_t i = 0; i < era.n_params; ++i) {
             era.z_offsprings(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = rand_norm(0.0, 1.0);
@@ -322,7 +322,7 @@ void ACMAES::sampleOffsprings() {
     }
 }
 
-size_t ACMAES::evaluatePopulation() {
+size_t RCMAES::evaluatePopulation() {
     currentFitness.assign(era.n_offsprings, std::numeric_limits<double>::infinity());
     if (Nevals >= maxevals) {
         should_stop = true;
@@ -368,7 +368,7 @@ size_t ACMAES::evaluatePopulation() {
     return evalCount;
 }
 
-void ACMAES::rankAndSort() {
+void RCMAES::rankAndSort() {
     std::vector<double> fitness(era.n_offsprings);
     for (size_t i = 0; i < era.n_offsprings; ++i) {
         fitness[i] = era.f_offsprings(static_cast<Eigen::Index>(i));
@@ -391,7 +391,7 @@ void ACMAES::rankAndSort() {
     currentFitness = fitness;
 }
 
-void ACMAES::updateBest() {
+void RCMAES::updateBest() {
     if (era.keys_offsprings.empty()) {
         return;
     }
@@ -406,14 +406,14 @@ void ACMAES::updateBest() {
     }
 }
 
-void ACMAES::assignNewMean() {
+void RCMAES::assignNewMean() {
     era.x_mean_old = era.x_mean;
     Eigen::VectorXd weights = era.w.head(static_cast<Eigen::Index>(era.n_parents));
     era.y_mean = era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_parents)) * weights;
     era.x_mean = era.x_mean + era.sigma * era.y_mean;
 }
 
-void ACMAES::updateEvolutionPaths() {
+void RCMAES::updateEvolutionPaths() {
     Eigen::VectorXd CinvSqrt_y = era.C_invsqrt * era.y_mean;
     era.p_s = (1.0 - era.c_s) * era.p_s + era.p_s_fact * CinvSqrt_y;
 
@@ -426,7 +426,7 @@ void ACMAES::updateEvolutionPaths() {
     era.p_c = (1.0 - era.c_c) * era.p_c + era.h_sig * era.p_c_fact * era.y_mean;
 }
 
-void ACMAES::updateWeights() {
+void RCMAES::updateWeights() {
     for (size_t i = 0; i < era.n_offsprings; ++i) {
         if (era.w(static_cast<Eigen::Index>(i)) < 0.0) {
             Eigen::VectorXd adjusted = era.C_invsqrt * era.y_offsprings_ranked.col(static_cast<Eigen::Index>(i));
@@ -440,7 +440,7 @@ void ACMAES::updateWeights() {
     }
 }
 
-void ACMAES::updateCovarianceMatrix() {
+void RCMAES::updateCovarianceMatrix() {
     double h1 = (1.0 - era.h_sig) * era.c_c * (2.0 - era.c_c);
     double w_sum = era.w.head(static_cast<Eigen::Index>(era.n_offsprings)).sum();
 
@@ -454,12 +454,12 @@ void ACMAES::updateCovarianceMatrix() {
     era.C = 0.5 * (era.C + era.C.transpose());
 }
 
-void ACMAES::updateStepsize() {
+void RCMAES::updateStepsize() {
     double norm_ps = era.p_s.norm();
     era.sigma *= std::exp(era.c_s / era.d_s * (norm_ps / era.chi - 1.0));
 }
 
-void ACMAES::updateEigenDecomposition() {
+void RCMAES::updateEigenDecomposition() {
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(era.C);
     if (solver.info() != Eigen::Success) {
         era.C = 0.5 * (era.C + era.C.transpose());
@@ -489,7 +489,7 @@ void ACMAES::updateEigenDecomposition() {
     era.C_invsqrt = era.B * invSqrt.asDiagonal() * era.B.transpose();
 }
 
-void ACMAES::checkStoppingCriteria() {
+void RCMAES::checkStoppingCriteria() {
     if (era.eigvals_C.size() == 0) {
         return;
     }
@@ -536,7 +536,7 @@ void ACMAES::checkStoppingCriteria() {
     }
 }
 
-void ACMAES::recordHistory(double relRange) {
+void RCMAES::recordHistory(double relRange) {
     bool success = support_tol && relRange <= stoppingTol;
     minionResult = MinionResult(best, best_fitness, generation, Nevals, success, success ? "stopping tolerance reached" : "");
     history.push_back(minionResult);
@@ -549,7 +549,7 @@ void ACMAES::recordHistory(double relRange) {
     }
 }
 
-MinionResult ACMAES::optimize() {
+MinionResult RCMAES::optimize() {
     if (!hasInitialized) {
         initialize();
     }
