@@ -234,7 +234,17 @@ void ACMAES::initialize() {
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        lambda = 20 * dimension;
+        const auto dimension = bounds.size();
+        const double eta = double(maxevals)/double(dimension);
+        double logeta = log10(eta);
+        double multiplier; 
+        if (logeta>2.) {
+            multiplier = 2.0+ 8.0 * std::pow(logeta-2.0, 1.17);
+        } else {
+            multiplier = 2.0;
+        };
+        const double suggested_popsize   = std::clamp(dimension*multiplier, double(lambda_min), 2000.0);
+        lambda = suggested_popsize;
     }
     lambda = std::min(size_t(2000), std::max<size_t>(lambda, 4));
     mu_ratio = 0.5;
@@ -567,7 +577,8 @@ MinionResult ACMAES::optimize() {
             if (progress > 1.0) progress = 1.0;
             const double A = double(lambda);
             const double C = double(lambda_min);
-            const double pp = 1.5;
+            double dim = double(bounds.size());
+            const double pp = 1+2*exp(-0.0567*dim)  ; //1.17+2.075*exp(-0.0567*dim) ;;
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));

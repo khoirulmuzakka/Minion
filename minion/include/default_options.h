@@ -195,8 +195,7 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue> default_settings_ACMAES = {
             {"population_size", 0},
-            {"max_iterations", 5000},
-            {"initial_step", 0.3},
+            {"initial_step", 0.25},
             {"bound_strategy", std::string("reflect-random")}
         };
 
