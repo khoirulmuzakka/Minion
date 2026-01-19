@@ -738,7 +738,7 @@ MinionResult RCMAES::optimize() {
     
                 for (size_t dim = 0; dim < bounds.size(); ++dim) {
                     auto merged = merge_intervals_1d(locals[dim]);
-                    if (false ) {
+                    if (false) {
                         std::cout << "Restart exclusion intervals dim " << dim << ":";
                         for (const auto& interval : merged) {
                             std::cout << " [" << interval.first << ", " << interval.second << "]";

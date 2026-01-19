@@ -96,6 +96,7 @@ private:
     void checkStoppingCriteria();
     void recordHistory(double relRange);
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
+    void applyCovarianceScale();
 
     Parameter era;
 
@@ -109,6 +110,8 @@ private:
     size_t maxIterations = 0;
 
     double sigma0 = 0.0;
+    double avg_range = 1.0;
+    std::vector<double> cov_scale;
 
     Eigen::VectorXd initialMean;
 

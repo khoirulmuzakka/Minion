@@ -132,6 +132,23 @@ std::vector<double> BIPOP_aCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
+void BIPOP_aCMAES::applyCovarianceScale() {
+    if (cov_scale.empty()) {
+        return;
+    }
+    const size_t dim = cov_scale.size();
+    Eigen::VectorXd diag(dim);
+    for (size_t i = 0; i < dim; ++i) {
+        diag(static_cast<Eigen::Index>(i)) = cov_scale[i];
+    }
+    era.B.setIdentity();
+    era.D = diag.asDiagonal();
+    era.C = era.D * era.D;
+    Eigen::VectorXd inv = diag.cwiseInverse();
+    era.C_invsqrt = inv.asDiagonal();
+    era.eigvals_C = diag.cwiseProduct(diag);
+}
+
 void BIPOP_aCMAES::initialize() {
     auto defaults = DefaultSettings().getDefaultSettings("BIPOP_aCMAES");
     for (const auto& item : optionMap) {
@@ -155,7 +172,6 @@ void BIPOP_aCMAES::initialize() {
     lambda0 = std::max<size_t>(lambda0, 4);
     mu0 = std::max<size_t>(lambda0 / 2, 1);
 
-    maxRestarts = static_cast<size_t>(options.get<int>("max_restarts", 8));
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
     support_tol = true;
 
@@ -165,11 +181,21 @@ void BIPOP_aCMAES::initialize() {
     }
 
     double avgRange = 0.0;
+    cov_scale.clear();
+    cov_scale.reserve(dimension);
     for (const auto& b : bounds) {
-        avgRange += (b.second - b.first);
+        double range = b.second - b.first;
+        avgRange += range;
+        cov_scale.push_back(range);
     }
-    avgRange = dimension > 0 ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma0 *= avgRange;
+    avg_range = dimension > 0 ? avgRange / static_cast<double>(dimension) : 1.0;
+    sigma0 *= avg_range;
+    if (avg_range > 0.0) {
+        for (double& v : cov_scale) {
+            v /= avg_range;
+            if (v <= 0.0) v = 1.0;
+        }
+    }
 
     initialMean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
     if (!x0.empty()) {
@@ -192,14 +218,7 @@ void BIPOP_aCMAES::initialize() {
         }
     }
 
-    size_t lambda_max = lambda0;
-    if (maxRestarts > 0) {
-        size_t limit = std::min<size_t>(maxRestarts, 20);
-        lambda_max = lambda0 * (1ull << limit);
-    }
-    lambda_max = std::max<size_t>(lambda_max, lambda0);
-    size_t mu_max = std::max<size_t>(lambda_max / 2, 1);
-    era.reserve(lambda_max, mu_max, dimension);
+    era.reserve(lambda0, mu0, dimension);
 
     best = eigenToStd(initialMean);
     best_fitness = std::numeric_limits<double>::infinity();
@@ -401,12 +420,6 @@ void BIPOP_aCMAES::checkStoppingCriteria() {
         return;
     }
 
-    if (best_fitness < 1e-10) {
-        should_stop_run = true;
-        should_stop_optimization = true;
-        return;
-    }
-
     double sigma_fac = sigma0 > 0.0 ? era.sigma / sigma0 : era.sigma;
     double sigma_up_thresh = 1e20 * std::sqrt(eigval_max);
     if (sigma_fac > sigma_up_thresh) {
@@ -435,15 +448,11 @@ void BIPOP_aCMAES::checkStoppingCriteria() {
 }
 
 void BIPOP_aCMAES::recordHistory(double relRange) {
-    bool success = support_tol && relRange <= stoppingTol;
-    minionResult = MinionResult(best, best_fitness, globalGeneration, Nevals, success, success ? "stopping tolerance reached" : "");
+    bool success = false;
+    minionResult = MinionResult(best, best_fitness, globalGeneration, Nevals, success, "");
     history.push_back(minionResult);
     if (callback != nullptr) {
         callback(&minionResult);
-    }
-
-    if (success) {
-        should_stop_optimization = true;
     }
 }
 
@@ -464,7 +473,12 @@ MinionResult BIPOP_aCMAES::optimize() {
         should_stop_optimization = false;
 
     auto runRegime = [&](const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambda) {
-            era.reinit(lambda, std::max<size_t>(lambda / 2, 1), dimension, startMean, startSigma);
+            size_t mu = std::max<size_t>(lambda / 2, 1);
+            if (lambda > era.n_offsprings_reserve || mu > era.n_parents_reserve) {
+                era.reserve(lambda, mu, dimension);
+            }
+            era.reinit(lambda, mu, dimension, startMean, startSigma);
+            applyCovarianceScale();
             should_stop_run = false;
            // std::cout << "Starting BIPOP aCMA-ES regime: lambda = " << lambda
            //           << ", sigma = " << startSigma << ", starting fitness = "
@@ -510,8 +524,20 @@ MinionResult BIPOP_aCMAES::optimize() {
 
         budgetLarge += runRegime(initialMean, sigma0, lambda0);
 
-        for (size_t restart = 1; restart <= maxRestarts && !should_stop_optimization; ++restart) {
-            size_t lambdaLarge = lambda0 * (1ull << restart);
+        size_t restart = 1;
+        while (!should_stop_optimization) {
+            size_t lambdaLarge = 0;
+            if (restart >= (8 * sizeof(size_t))) {
+                lambdaLarge = std::numeric_limits<size_t>::max() / 2;
+            } else {
+                lambdaLarge = lambda0 * (1ull << restart);
+            }
+            if (lambdaLarge < lambda0) {
+                lambdaLarge = std::numeric_limits<size_t>::max() / 2;
+            }
+            if (maxevals > 0) {
+                lambdaLarge = std::min(lambdaLarge, maxevals);
+            }
             while (budgetLarge > budgetSmall && !should_stop_optimization) {
                 double u1 = rand_gen(0.0, 1.0);
                 double u2 = rand_gen(0.0, 1.0);
@@ -532,6 +558,7 @@ MinionResult BIPOP_aCMAES::optimize() {
 
             size_t evals = runRegime(initialMean, sigma0, lambdaLarge);
             budgetLarge += evals;
+            ++restart;
         }
 
         if (history.empty()) {
