@@ -301,7 +301,7 @@ void RCMAES::initialize() {
         double logeta = log10(eta);
         double multiplier; 
         if (logeta>2.) {
-            multiplier = 2.0+ 8.0 * std::pow(logeta-2.0, 1.17);
+            multiplier = 2.0+ 8.0 * std::pow(logeta-2.0, 1.2);
         } else {
             multiplier = 2.0;
         };
@@ -619,7 +619,7 @@ RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& best) 
     box.high.resize(dim);
     for (size_t i = 0; i < dim; ++i) {
         const double range = bounds[i].second - bounds[i].first;
-        const double delta = 0.05 * range;
+        const double delta = 0.1 * range;
         box.low[i] = std::max(bounds[i].first, best[i] - delta);
         box.high[i] = std::min(bounds[i].second, best[i] + delta);
     }
@@ -662,16 +662,17 @@ MinionResult RCMAES::optimize() {
         size_t mu_current = std::max<size_t>(mu, 1);
         bool use_lhs = false;
         std::vector<std::vector<double>> lhs_init;
-        era.reinit(lambda_current, mu_current, dimension, initialMean, sigma0, Nevals, best_fitness);
+        double sigma_eff = sigma0;
+        era.reinit(lambda_current, mu_current, dimension, initialMean, sigma_eff, Nevals, best_fitness);
         applyCovarianceScale();
 
         while ( Nevals < maxevals) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
             if (progress > 1.0) progress = 1.0;
-            const double A = double(lambda);
-            const double C = double(lambda_min);
             double dim = double(bounds.size());
-            const double pp = 1.05+2*exp(-0.0567*dim)  ; //1.17+2.075*exp(-0.0567*dim) ;;
+            const double A = double(lambda);
+            const double C = std::max(double(lambda_min), double(dim));
+            const double pp = 1.2+2*exp(-0.0567*dim)  ; //1.17+2.075*exp(-0.0567*dim) ;;
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
@@ -765,7 +766,9 @@ MinionResult RCMAES::optimize() {
                                                                   static_cast<Eigen::Index>(sample.size()));
                     }
                     mean /= static_cast<double>(lhs_init.size());
-                    era.reinit(lambda_current, mu_current, dimension, mean, std::max(0.01*sigma0, sigma0/1.6), Nevals, best_fitness);
+                    if (sigma_eff == sigma0) sigma_eff = 0.5*sigma0; 
+                    else sigma_eff = sigma0; 
+                    era.reinit(lambda_current, mu_current, dimension, mean, sigma_eff, Nevals, best_fitness);
                     applyCovarianceScale();
                     use_lhs = true;
                 }
