@@ -765,7 +765,7 @@ MinionResult RCMAES::optimize() {
                                                                   static_cast<Eigen::Index>(sample.size()));
                     }
                     mean /= static_cast<double>(lhs_init.size());
-                    era.reinit(lambda_current, mu_current, dimension, mean, sigma0, Nevals, best_fitness);
+                    era.reinit(lambda_current, mu_current, dimension, mean, std::max(0.01*sigma0, sigma0/1.6), Nevals, best_fitness);
                     applyCovarianceScale();
                     use_lhs = true;
                 }
