@@ -18,8 +18,8 @@ namespace minion {
 #define E  2.7182818284590452353602874713526625
 #define PI 3.1415926535897932384626433832795029
 
-extern double  *OShift,*M,*y,*z,*x_bound;
-extern int ini_flag,n_flag,func_flag,*SS;
+extern thread_local double  *OShift,*M,*y,*z,*x_bound;
+extern thread_local int ini_flag,n_flag,func_flag,*SS;
 extern const std::string dirPath;
 
 using CECTestFunc = void (*)(double*, double*, int, int, int);

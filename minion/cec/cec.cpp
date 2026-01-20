@@ -25,8 +25,8 @@
 
 namespace minion {
 
-double *OShift,*M,*y,*z,*x_bound;
-int ini_flag=0,n_flag,func_flag,*SS;
+thread_local double *OShift,*M,*y,*z,*x_bound;
+thread_local int ini_flag=0,n_flag,func_flag,*SS;
 
 std::string getLibraryPath() {
     char path[1024];

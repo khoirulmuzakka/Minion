@@ -520,7 +520,8 @@ namespace CEC2019{
 
         long double sum = 0;
 
-        static long double hilbert[10][10], y[10][10];			// Increase matrix size if D > 100
+        long double hilbert[10][10];			// Increase matrix size if D > 100
+        long double hilbert_y[10][10];
 
         b = (int)sqrt((double)D);
 
@@ -537,10 +538,10 @@ namespace CEC2019{
         {
             for (k = 0; k < b; k++)
             {
-                y[j][k] = 0;
+                hilbert_y[j][k] = 0;
                 for (i = 0; i < b; i++)
                 {
-                    y[j][k] += hilbert[j][i] * x[k + b * i];		// Compute matrix product H*x
+                    hilbert_y[j][k] += hilbert[j][i] * x[k + b * i];		// Compute matrix product H*x
                 }
             }
         }
@@ -550,8 +551,8 @@ namespace CEC2019{
         {
             for (j = 0; j < b; j++)
             {
-                if (i == j) sum += fabs(y[i][j] - 1);				// Sum absolute value of deviations
-                else sum += fabs(y[i][j]);
+                if (i == j) sum += fabs(hilbert_y[i][j] - 1);				// Sum absolute value of deviations
+                else sum += fabs(hilbert_y[i][j]);
             }
         }
         
@@ -571,9 +572,9 @@ namespace CEC2019{
 
         f[0] = 0.0;
         int i, j;
-        static int sample;
+        int sample;
         long double a = 1., b = 1.2, px, y = -1, sum = 0;
-        static long double dx, dy;
+        long double dx, dy;
         
         for (j = 0; j < D - 2; j++)
             {
