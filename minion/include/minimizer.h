@@ -5,7 +5,6 @@
 #include "exception"
 #include "j2020.h"
 #include "jade.h"
-#include "algotest.h"
 #include "jso.h"
 #include "lsrtde.h"
 #include "nelder_mead.h"
@@ -78,7 +77,6 @@ class Minimizer {
             else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "AGSK") optimizer = new AGSK(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
-            else if (algoUpper == "NJADE") optimizer = new NJADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
@@ -133,7 +131,6 @@ class Minimizer {
             else if (algoUpper == "LSHADE") optimizer = new LSHADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "AGSK") optimizer = new AGSK(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
-            else if (algoUpper == "NJADE") optimizer = new NJADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);

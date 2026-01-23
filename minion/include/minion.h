@@ -19,7 +19,6 @@
 #include "jade.h"
 #include "jso.h"
 #include "lsrtde.h"
-#include "algotest.h"
 #include "nelder_mead.h"
 #include "default_options.h"
 #include "minimizer.h"
