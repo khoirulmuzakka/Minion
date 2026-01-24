@@ -37,6 +37,7 @@ Minion also serves as a **research platform** for developing and testing new opt
     - Canonical PSO, SPSO-2011, and Dynamic Multi-Swarm PSO (DMS-PSO)  
     - CMA-ES *(Covariance Matrix Adaptation Evolution Strategy)*  
     - BIPOP-aCMAES 
+    - RCMAES (Restart aCMAES)
   - **Classical optimization algorithms:**
     - Nelder-Mead  
     - Generalized Simulated Annealing (Dual Annealing) 

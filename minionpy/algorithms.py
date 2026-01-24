@@ -30,6 +30,7 @@ from minionpycpp import SPSO2011 as cppSPSO2011
 from minionpycpp import DMSPSO as cppDMSPSO
 from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
 from minionpycpp import CMAES as cppCMAES
+from minionpycpp import RCMAES as cppRCMAES
 from minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
 
 
@@ -1099,6 +1100,72 @@ class CMAES(MinimizerBase):
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
         self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
+
+class RCMAES(MinimizerBase):
+    """
+    Implementation of the Restarting CMA-ES variant (RCMAES).
+
+    This class inherits from `MinimizerBase`.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 relTol: float = 0.0001,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the RCMAES algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            Vectorised objective function returning a list of objective values.
+        bounds : list of tuple
+            Bounds for each decision variable.
+        x0 : list[list[float]], optional
+            Optional collection of initial guesses. When multiple candidates are
+            supplied, the best according to ``func`` seeds the initial mean.
+        relTol : float, optional
+            Relative tolerance used by the stopping criterion. Default ``1e-4``.
+        maxevals : int, optional
+            Maximum number of function evaluations. Default ``100000``.
+        callback : callable, optional
+            User callback receiving intermediate :class:`MinionResult` objects.
+        seed : int, optional
+            Seed for the pseudo-random number generator. ``None`` keeps the
+            global RNG state.
+        options : dict, optional
+            Additional RCMAES configuration. If ``None`` the following defaults
+            are applied::
+
+                options = {
+                    "population_size"  : 0,
+                    "initial_step"     : 0.2,
+                    "bound_strategy"   : "reflect-random"
+                }
+        """
+        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        self.optimizer = cppRCMAES(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            relTol,
+            maxevals,
+            self.seed,
+            self.options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
     
 
@@ -2508,6 +2575,13 @@ class Minimizer(MinimizerBase):
             - `"DA"` (dual annealing)
             - `"L_BFGS_B"` 
             - `"L_BFGS"` 
+            - `"CMAES"`
+            - `"RCMAES"`
+            - `"BIPOP_aCMAES"`
+            - `"PSO"`
+            - `"SPSO2011"`
+            - `"DMSPSO"`
+            - `"LSHADE_cnEpSin"`
 
         relTol : float, optional
             Relative tolerance for convergence. The optimization stops if the relative 
@@ -2533,7 +2607,7 @@ class Minimizer(MinimizerBase):
             "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
             "imode", "agsk",
             "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
-            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "bipop_acmaes"
+            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "rcmaes", "bipop_acmaes"
         ]
 
         algo_lower = algo.lower()
