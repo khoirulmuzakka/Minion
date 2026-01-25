@@ -101,7 +101,7 @@ private:
     void checkStoppingCriteria();
     void recordHistory(double relRange);
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
-    void applyCovarianceScale();
+    std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
     ExclusionBox buildExclusionBox(const std::vector<double>& best) const;
     bool isExcludedPoint(const std::vector<double>& candidate) const;
 
@@ -119,7 +119,7 @@ private:
     double sigma0 = 0.0;
 
     Eigen::VectorXd initialMean;
-    std::vector<double> cov_scale;
+    std::vector<std::pair<double, double>> original_bounds;
 
     std::vector<double> best;
     double best_fitness = std::numeric_limits<double>::infinity();

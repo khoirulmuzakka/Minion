@@ -11,6 +11,77 @@
 
 namespace {
 
+std::vector<std::pair<double, double>> unit_bounds_for(const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return bounds;
+    }
+    return std::vector<std::pair<double, double>>(bounds.size(), {0.0, 1.0});
+}
+
+std::vector<double> normalize_point(const std::vector<double>& point,
+                                    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return point;
+    }
+    std::vector<double> normalized(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        if (range <= 0.0) {
+            normalized[i] = 0.0;
+        } else {
+            normalized[i] = std::clamp((point[i] - low) / range, 0.0, 1.0);
+        }
+    }
+    return normalized;
+}
+
+std::vector<std::vector<double>> normalize_points(const std::vector<std::vector<double>>& points,
+                                                  const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return points;
+    }
+    std::vector<std::vector<double>> normalized;
+    normalized.reserve(points.size());
+    for (const auto& point : points) {
+        normalized.push_back(normalize_point(point, bounds));
+    }
+    return normalized;
+}
+
+std::vector<double> denormalize_point(const std::vector<double>& point,
+                                      const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return point;
+    }
+    std::vector<double> actual(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        if (range <= 0.0) {
+            actual[i] = low;
+        } else {
+            actual[i] = low + point[i] * range;
+        }
+    }
+    return actual;
+}
+
+std::vector<std::vector<double>> denormalize_points(const std::vector<std::vector<double>>& points,
+                                                    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return points;
+    }
+    std::vector<std::vector<double>> actual;
+    actual.reserve(points.size());
+    for (const auto& point : points) {
+        actual.push_back(denormalize_point(point, bounds));
+    }
+    return actual;
+}
+
 std::vector<std::pair<double, double>> merge_intervals_1d(std::vector<std::pair<double, double>> intervals) {
     if (intervals.empty()) {
         return intervals;
@@ -82,7 +153,19 @@ RCMAES::RCMAES(
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+    : MinimizerBase(
+          [func, bounds](const std::vector<std::vector<double>>& candidates, void* user_data) {
+              return func(denormalize_points(candidates, bounds), user_data);
+          },
+          unit_bounds_for(bounds),
+          normalize_points(x0, bounds),
+          data,
+          callback,
+          tol,
+          maxevals,
+          seed,
+          options),
+      original_bounds(bounds) {}
 
 void RCMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
     n_params = n_params_;
@@ -258,21 +341,8 @@ std::vector<double> RCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
-void RCMAES::applyCovarianceScale() {
-    if (cov_scale.empty()) {
-        return;
-    }
-    const size_t dim = cov_scale.size();
-    Eigen::VectorXd diag(dim);
-    for (size_t i = 0; i < dim; ++i) {
-        diag(static_cast<Eigen::Index>(i)) = cov_scale[i];
-    }
-    era.B.setIdentity();
-    era.D = diag.asDiagonal();
-    era.C = era.D * era.D;
-    Eigen::VectorXd inv = diag.cwiseInverse();
-    era.C_invsqrt = inv.asDiagonal();
-    era.eigvals_C = diag.cwiseProduct(diag);
+std::vector<double> RCMAES::denormalizePoint(const std::vector<double>& candidate) const {
+    return denormalize_point(candidate, original_bounds);
 }
 
 void RCMAES::initialize() {
@@ -317,23 +387,6 @@ void RCMAES::initialize() {
     sigma0 = options.get<double>("initial_step", 0.3);
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
-    }
-
-    double avgRange = 0.0;
-    cov_scale.clear();
-    cov_scale.reserve(dimension);
-    for (const auto& b : bounds) {
-        double range = b.second - b.first;
-        avgRange += range;
-        cov_scale.push_back(range);
-    }
-    avgRange = dimension > 0 ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma0 *= avgRange;
-    if (avgRange > 0.0) {
-        for (double& v : cov_scale) {
-            v /= avgRange;
-            if (v <= 0.0) v = 1.0;
-        }
     }
 
     initialMean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
@@ -601,7 +654,8 @@ void RCMAES::checkStoppingCriteria() {
 
 void RCMAES::recordHistory(double relRange) {
     bool success = support_tol && relRange <= stoppingTol;
-    minionResult = MinionResult(best, best_fitness, generation, Nevals, success, success ? "stopping tolerance reached" : "");
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, success,
+                                success ? "stopping tolerance reached" : "");
     history.push_back(minionResult);
     if (callback != nullptr) {
         callback(&minionResult);
@@ -664,15 +718,14 @@ MinionResult RCMAES::optimize() {
         std::vector<std::vector<double>> lhs_init;
         double sigma_eff = sigma0;
         era.reinit(lambda_current, mu_current, dimension, initialMean, sigma_eff, Nevals, best_fitness);
-        applyCovarianceScale();
 
         while ( Nevals < maxevals) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
             if (progress > 1.0) progress = 1.0;
             double dim = double(bounds.size());
             const double A = double(lambda);
-            const double C = std::max(double(lambda_min), double(dim));
-            double pp = 1.0+ 1.2*exp(-0.034*dim);
+            const double C =double(lambda_min);
+            double pp =  1.0+ exp(-0.02*dim);
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
@@ -766,10 +819,9 @@ MinionResult RCMAES::optimize() {
                                                                   static_cast<Eigen::Index>(sample.size()));
                     }
                     mean /= static_cast<double>(lhs_init.size());
-                    if (sigma_eff == sigma0) sigma_eff = 0.5*sigma0; 
+                    if (sigma_eff == sigma0) sigma_eff =0.5*sigma0; 
                     else sigma_eff = sigma0; 
                     era.reinit(lambda_current, mu_current, dimension, mean, sigma_eff, Nevals, best_fitness);
-                    applyCovarianceScale();
                     use_lhs = true;
                 }
             }
