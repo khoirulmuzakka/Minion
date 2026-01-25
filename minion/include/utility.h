@@ -11,7 +11,7 @@
 #include <iostream>
 
 namespace minion {
-extern unsigned int global_seed;
+extern thread_local unsigned int global_seed;
 
 /**
  * @typedef MinionFunction

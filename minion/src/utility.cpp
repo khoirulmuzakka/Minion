@@ -2,8 +2,8 @@
 
 namespace minion {
 
-unsigned int global_seed = std::random_device{}();
-static std::mt19937 rng(global_seed);
+thread_local unsigned int global_seed = std::random_device{}();
+static thread_local std::mt19937 rng(global_seed);
 
 void set_global_seed(unsigned int seed) {
     global_seed = seed;
