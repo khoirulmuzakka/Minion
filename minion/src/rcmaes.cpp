@@ -361,7 +361,7 @@ void RCMAES::initialize() {
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
 
     double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
-    lambda_min = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
+    lambda_min = static_cast<size_t>(4.0 + std::ceil(3.0 * logDim));
     lambda_min = std::max<size_t>(lambda_min, 4);
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
@@ -718,14 +718,14 @@ MinionResult RCMAES::optimize() {
         std::vector<std::vector<double>> lhs_init;
         double sigma_eff = sigma0;
         era.reinit(lambda_current, mu_current, dimension, initialMean, sigma_eff, Nevals, best_fitness);
-
+        double rel_range_threshold = 1e-8;
         while ( Nevals < maxevals) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
             if (progress > 1.0) progress = 1.0;
             double dim = double(bounds.size());
             const double A = double(lambda);
-            const double C =double(lambda_min);
-            double pp =  1.0+ exp(-0.02*dim);
+            const double C = std::max(double(lambda_min), double(dim)/2);
+            double pp =  1.0+ 1.2*exp(-0.034*dim);
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
@@ -778,7 +778,7 @@ MinionResult RCMAES::optimize() {
             diversity.push_back(relRange);
             recordHistory(relRange);
 
-            if (relRange < 1e-8) {
+            if (relRange < rel_range_threshold) {
                 if (!best.empty()) {
                     restart_bests.push_back(best);
                     exclusion_boxes.push_back(buildExclusionBox(best));
