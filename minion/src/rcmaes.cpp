@@ -724,7 +724,7 @@ MinionResult RCMAES::optimize() {
             if (progress > 1.0) progress = 1.0;
             double dim = double(bounds.size());
             const double A = double(lambda);
-            const double C = std::max(double(lambda_min), double(dim)/2);
+            const double C = std::max(double(lambda_min), double(dim));
             double pp =  1.0+ 1.2*exp(-0.034*dim);
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
