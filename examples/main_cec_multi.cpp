@@ -10,6 +10,8 @@
 #include <cmath>
 #include <thread>
 #include <algorithm>
+#include <limits>
+#include <filesystem>
 
 namespace {
 
@@ -272,19 +274,83 @@ std::vector <double> objective_function (const std::vector<std::vector<double>> 
     return func->operator()(x); // Call the operator with a single vector
 }
 
+struct MinEvLogger {
+    size_t step = 0;
+    size_t evals = 0;
+    size_t next_index = 0;
+    double best = std::numeric_limits<double>::infinity();
+    std::vector<double> samples;
+
+    MinEvLogger(size_t dimension, size_t max_evals) {
+        step = std::max<size_t>(1, 10 * dimension);
+        size_t count = max_evals / step + 1;
+        samples.assign(count, std::numeric_limits<double>::infinity());
+    }
+
+    void update(const std::vector<double>& values) {
+        for (double v : values) {
+            if (v < best) {
+                best = v;
+            }
+            ++evals;
+            while (next_index < samples.size() && evals >= next_index * step) {
+                samples[next_index] = best;
+                ++next_index;
+            }
+        }
+    }
+
+    void finalize() {
+        while (next_index < samples.size()) {
+            samples[next_index] = best;
+            ++next_index;
+        }
+    }
+};
+
+struct LogContext {
+    minion::CECBase* func = nullptr;
+    MinEvLogger* logger = nullptr;
+};
+
+std::vector<double> objective_function_logged(const std::vector<std::vector<double>>& x, void* data) {
+    auto* ctx = static_cast<LogContext*>(data);
+    auto values = ctx->func->operator()(x);
+    if (ctx->logger) {
+        ctx->logger->update(values);
+    }
+    return values;
+}
+
 void callBack(minion::MinionResult* res) {
     //std::cout << "Best fitness " << res->fun << "\n";
 };
 
-double minimize_cec_functions(int function_number, int dimension, int population_size, int max_evals, int year=2022, std::string algo="ARRDE", int seed=-1) {
+int get_effective_dimension(int function_number, int dimension, int year) {
+    if (year == 2019) { 
+        if (function_number == 1) return 9;
+        if (function_number == 2) return 16;
+        if (function_number == 3) return 18;
+        return 10;
+    }
+    if (year == 2011) {
+        return get_cec2011_problem(function_number).dimension;
+    }
+    return dimension;
+}
+
+double minimize_cec_functions(int function_number,
+                              int dimension,
+                              int population_size,
+                              int max_evals,
+                              int year = 2022,
+                              std::string algo = "ARRDE",
+                              int seed = -1,
+                              MinEvLogger* logger = nullptr) {
     minion::CECBase* cecfunc;
     std::vector<std::pair<double, double>> bounds;
-    int effective_dimension = dimension;
+    int effective_dimension = get_effective_dimension(function_number, dimension, year);
     if (year==2019) { 
-        if (function_number ==1) effective_dimension =9; 
-        else if (function_number==2) effective_dimension =16; 
-        else if (function_number==3) effective_dimension =18;
-        else effective_dimension=10;
         for (int i=0; i<effective_dimension; i++) {
             if (function_number ==1) bounds.push_back(std::make_pair(-8192, 8192)); 
             else if (function_number==2) bounds.push_back(std::make_pair(-16384, 16384)); 
@@ -316,7 +382,17 @@ double minimize_cec_functions(int function_number, int dimension, int population
         x0 = {x00};
     };
 
-    minion::Minimizer optimizer (objective_function,  bounds, x0, cecfunc, callBack, algo, 0.0, max_evals,  seed, settings);
+    LogContext ctx{cecfunc, logger};
+    minion::Minimizer optimizer(logger ? objective_function_logged : objective_function,
+                                bounds,
+                                x0,
+                                logger ? static_cast<void*>(&ctx) : static_cast<void*>(cecfunc),
+                                callBack,
+                                algo,
+                                0.0,
+                                max_evals,
+                                seed,
+                                settings);
     // Optimize and get the result
     minion::MinionResult result = optimizer();
     double ret = result.fun;
@@ -327,6 +403,9 @@ double minimize_cec_functions(int function_number, int dimension, int population
     std::cout << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
 
     delete cecfunc;
+    if (logger) {
+        logger->finalize();
+    }
     return ret;
 }
 
@@ -352,6 +431,25 @@ void dumpResultsToFile(const std::vector<std::vector<double>>& results, const st
     file.close();
 }
 
+void dumpMatrixToFile(const std::vector<std::vector<double>>& matrix, const std::string& filename) {
+    std::ofstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+        return;
+    }
+
+    for (const auto& row : matrix) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            file << row[i];
+            if (i < row.size() - 1) {
+                file << "\t";
+            }
+        }
+        file << "\n";
+    }
+    file.close();
+}
 
 int main(int argc, char* argv[]) {
     int numRuns= 1;
@@ -361,6 +459,7 @@ int main(int argc, char* argv[]) {
     int year = 2017;
     int Nmaxevals = int(1e+4*dimension);
     int Nthreads = 1;
+    int log_min_ev = 0;
     if (argc > 1) {
         numRuns = std::atoi(argv[1]); // Convert first argument to integer for numRuns
     }
@@ -384,6 +483,9 @@ int main(int argc, char* argv[]) {
     if (argc > 7) {
         Nthreads = std::atoi(argv[7]); // Number of worker threads for parallel runs
     }
+    if (argc > 8) {
+        log_min_ev = std::atoi(argv[8]);
+    }
 
     Nthreads = std::max(1, Nthreads);
     if (numRuns > 0) {
@@ -399,6 +501,15 @@ int main(int argc, char* argv[]) {
     else throw std::runtime_error("Year invalid.");
 
     std::vector<std::vector<double>> results(numRuns);
+    std::unordered_map<int, std::vector<std::vector<double>>> min_ev_logs;
+    if (log_min_ev) {
+        for (int func : funcnums) {
+            int eff_dim = get_effective_dimension(func, dimension, year);
+            size_t step = std::max<size_t>(1, 10 * static_cast<size_t>(eff_dim));
+            size_t count = static_cast<size_t>(Nmaxevals) / step + 1;
+            min_ev_logs.emplace(func, std::vector<std::vector<double>>(count, std::vector<double>(numRuns, std::numeric_limits<double>::infinity())));
+        }
+    }
     std::vector<std::thread> workers;
     workers.reserve(static_cast<size_t>(Nthreads));
 
@@ -417,7 +528,20 @@ int main(int argc, char* argv[]) {
                 std::vector<double> result_per_run;
                 for (auto& num : funcnums) {
                     try {
-                        result_per_run.push_back(minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i));
+                        MinEvLogger logger(static_cast<size_t>(get_effective_dimension(num, dimension, year)),
+                                           static_cast<size_t>(Nmaxevals));
+                        double fval = minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i,
+                                                             log_min_ev ? &logger : nullptr);
+                        result_per_run.push_back(fval);
+                        if (log_min_ev) {
+                            auto it = min_ev_logs.find(num);
+                            if (it != min_ev_logs.end()) {
+                                auto& matrix = it->second;
+                                for (size_t row = 0; row < logger.samples.size(); ++row) {
+                                    matrix[row][static_cast<size_t>(i)] = logger.samples[row];
+                                }
+                            }
+                        }
                     } catch (const std::exception& e) {
                         std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
                         continue;
@@ -439,6 +563,15 @@ int main(int argc, char* argv[]) {
         }
     }
     dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
+    if (log_min_ev) {
+        const std::string out_dir = "bin/" + algo;
+        std::filesystem::create_directories(out_dir);
+        for (const auto& entry : min_ev_logs) {
+            const int func = entry.first;
+            const auto& matrix = entry.second;
+            dumpMatrixToFile(matrix, out_dir + "/" + algo + "_F" + std::to_string(func) + "_Min_EV.txt");
+        }
+    }
 
     return 0;
 }
