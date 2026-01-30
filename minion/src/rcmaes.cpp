@@ -371,7 +371,7 @@ void RCMAES::initialize() {
         double logeta = log10(eta);
         double multiplier; 
         if (logeta>2.) {
-            multiplier = 2.0+ 8.0 * std::pow(logeta-2.0, 1.2);
+            multiplier = 10*logeta -20; 
         } else {
             multiplier = 2.0;
         };
@@ -725,7 +725,7 @@ MinionResult RCMAES::optimize() {
             double dim = double(bounds.size());
             const double A = double(lambda);
             const double C = std::max(double(lambda_min), double(dim));
-            double pp =  1.0 + exp(-0.03*dim);
+            double pp =  std::max(0.5, -0.01*dim + 1.7);
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
