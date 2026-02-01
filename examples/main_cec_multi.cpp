@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <filesystem>
+#include <iomanip>
 
 namespace {
 
@@ -279,10 +280,12 @@ struct MinEvLogger {
     size_t evals = 0;
     size_t next_index = 0;
     double best = std::numeric_limits<double>::infinity();
+    double optimum = 0.0;
     std::vector<double> samples;
 
-    MinEvLogger(size_t dimension, size_t max_evals) {
+    MinEvLogger(size_t dimension, size_t max_evals, double global_optimum) {
         step = std::max<size_t>(1, 10 * dimension);
+        optimum = global_optimum;
         size_t count = max_evals / step + 1;
         samples.assign(count, std::numeric_limits<double>::infinity());
     }
@@ -294,7 +297,7 @@ struct MinEvLogger {
             }
             ++evals;
             while (next_index < samples.size() && evals >= next_index * step) {
-                samples[next_index] = best;
+                samples[next_index] = best - optimum;
                 ++next_index;
             }
         }
@@ -302,7 +305,7 @@ struct MinEvLogger {
 
     void finalize() {
         while (next_index < samples.size()) {
-            samples[next_index] = best;
+            samples[next_index] = best - optimum;
             ++next_index;
         }
     }
@@ -337,6 +340,27 @@ int get_effective_dimension(int function_number, int dimension, int year) {
         return get_cec2011_problem(function_number).dimension;
     }
     return dimension;
+}
+
+double get_global_optimum(int function_number, int year) {
+    if (year == 2022) {
+        static const std::array<double, 12> kCEC2022 = {300, 400, 600, 800, 900, 1800, 2000, 2200, 2300, 2400, 2600, 2700};
+        if (function_number >= 1 && function_number <= static_cast<int>(kCEC2022.size())) {
+            return kCEC2022[static_cast<size_t>(function_number - 1)];
+        }
+    } else if (year == 2020) {
+        static const std::array<double, 10> kCEC2020 = {100, 1100, 700, 1900, 1700, 1600, 2100, 2200, 2400, 2500};
+        if (function_number >= 1 && function_number <= static_cast<int>(kCEC2020.size())) {
+            return kCEC2020[static_cast<size_t>(function_number - 1)];
+        }
+    } else if (year == 2017 || year == 2014) {
+        if (function_number >= 1 && function_number <= 30) {
+            return 100.0 * static_cast<double>(function_number);
+        }
+    } else if (year == 2019) {
+        return 1.0;
+    }
+    throw std::runtime_error("Global optimum not defined for the given function number and year.");
 }
 
 double minimize_cec_functions(int function_number,
@@ -416,6 +440,7 @@ void dumpResultsToFile(const std::vector<std::vector<double>>& results, const st
         std::cerr << "Error: Unable to open file " << filename << std::endl;
         return;
     }
+    //file << std::scientific << std::setprecision(7);
 
     // Iterate through the 2D vector and write to the file
     for (const auto& row : results) {
@@ -438,6 +463,7 @@ void dumpMatrixToFile(const std::vector<std::vector<double>>& matrix, const std:
         std::cerr << "Error: Unable to open file " << filename << std::endl;
         return;
     }
+    file << std::scientific << std::setprecision(7);
 
     for (const auto& row : matrix) {
         for (size_t i = 0; i < row.size(); ++i) {
@@ -529,7 +555,8 @@ int main(int argc, char* argv[]) {
                 for (auto& num : funcnums) {
                     try {
                         MinEvLogger logger(static_cast<size_t>(get_effective_dimension(num, dimension, year)),
-                                           static_cast<size_t>(Nmaxevals));
+                                           static_cast<size_t>(Nmaxevals),
+                                           get_global_optimum(num, year));
                         double fval = minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i,
                                                              log_min_ev ? &logger : nullptr);
                         result_per_run.push_back(fval);
@@ -564,7 +591,7 @@ int main(int argc, char* argv[]) {
     }
     dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
     if (log_min_ev) {
-        const std::string out_dir = "bin/" + algo;
+        const std::string out_dir =  algo;
         std::filesystem::create_directories(out_dir);
         for (const auto& entry : min_ev_logs) {
             const int func = entry.first;

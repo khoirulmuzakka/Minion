@@ -121,6 +121,15 @@ if(NOT SKBUILD)
         set_target_properties(main_cec_multi PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
     endif()
 
+     #------------------------
+    add_executable(main_complexity examples/main_complexity.cpp)
+    target_link_libraries(main_complexity PRIVATE minion)
+    if (MSVC)
+        set_target_properties(main_complexity PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
+    else()
+        set_target_properties(main_complexity PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+    endif()
+
 
     # 2. example/main_minimizer.cpp
     #------------------------

@@ -725,7 +725,7 @@ MinionResult RCMAES::optimize() {
             double dim = double(bounds.size());
             const double A = double(lambda);
             const double C = std::max(double(lambda_min), double(dim));
-            double pp =  std::max(0.5, 0.0000357143*dim*dim-0.0153571*dim+1.87857);
+            double pp =  std::max(0.5, 1.7-0.01*dim);
             const double t = progress;
             double value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
             size_t lambda_target = static_cast<size_t>(std::round(value));
