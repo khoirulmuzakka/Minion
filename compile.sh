@@ -49,4 +49,25 @@ fi
 echo "Compiling Minion..."
 cmake --build .  --config ${build_type} -- -j$(nproc)
 # Move back to root
-cd ..           
+cd ..
+
+# Run Doxygen if installed
+if command -v doxygen &> /dev/null; then
+    echo "Generating documentation with Doxygen..."
+    doxygen Doxyfile
+else
+    echo "Warning: Doxygen not found. Skipping documentation generation."
+fi
+
+# Build HTML documentation
+if [ -d "docs" ]; then
+    echo "Building HTML documentation..."
+    cd docs
+    make clean
+    make html
+    cd ..
+else
+    echo "Warning: 'docs' folder not found. Skipping HTML documentation."
+fi
+
+echo "Build complete!"
