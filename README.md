@@ -61,6 +61,81 @@ pip install --upgrade minionpy
 
 For compiling the C++ version, please refer to the official Minion documentation.
 
+### C++ Compilation (Quick)
+Build with helper scripts:
+
+- Windows: `compile.bat`
+- Linux/macOS: `compile.sh`
+
+Or with CMake manually:
+
+```sh
+cmake -S . -B build -DMINION_BUILD_CEC=OFF -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF
+cmake --build build --config Release
+```
+
+Enable all components (CEC, Python extension, examples):
+
+```sh
+cmake -S . -B build -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_EXAMPLES=ON
+cmake --build build --config Release
+```
+
+### Use Minion in Another C++ Project
+Install Minion first:
+
+```sh
+cmake -S . -B build
+cmake --install build --prefix /path/to/minion/install
+```
+
+Then in your project CMake:
+
+```cmake
+find_package(Minion CONFIG REQUIRED)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE minion)
+# Optional CEC:
+# target_link_libraries(my_app PRIVATE Minion_cec)
+```
+
+Find Minion with fallback download:
+
+```cmake
+include(FetchContent)
+
+find_package(Minion QUIET CONFIG)
+if(NOT Minion_FOUND)
+    FetchContent_Declare(
+        minion
+        GIT_REPOSITORY https://github.com/khoirulmuzakka/Minion.git
+        GIT_TAG main
+        GIT_SHALLOW TRUE
+    )
+    # Typical dependency mode: algorithms only
+    set(MINION_BUILD_CEC OFF CACHE BOOL "Disable CEC" FORCE)
+    set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
+    set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
+    FetchContent_MakeAvailable(minion)
+endif()
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE minion)
+```
+
+In exactly one translation unit:
+
+```cpp
+#define MINION_ALGORITHMS_IMPLEMENTATION
+#include <minion/minion.h>
+```
+
+In all other translation units:
+
+```cpp
+#include <minion/minion.h>
+```
+
 ## 📖 Documentation
 For full usage instructions, API reference, and examples, visit the official documentation:
 

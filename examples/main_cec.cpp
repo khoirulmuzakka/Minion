@@ -4,8 +4,8 @@
 #include <array>
 #include <unordered_map>
 #include "minion.h"
+#include "minion_cec.h"
 #include "utility.h"
-#include "cec2011.h"
 #include <fstream>
 #include <cmath>
 

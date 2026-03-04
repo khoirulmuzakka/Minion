@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "minion.h"
+#include "minion_cec.h"
 #include "utility.h"
 #include <fstream>
 

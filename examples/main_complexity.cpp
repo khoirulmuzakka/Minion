@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "minion.h"
+#include "minion_cec.h"
 #include "utility.h"
 
 namespace {

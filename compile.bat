@@ -11,7 +11,11 @@ rem Navigate to the build directory
 cd build
 
 rem Run CMake to configure the project with Visual Studio 2022 generator
-cmake -G "Visual Studio 17 2022" ..
+cmake -G "Visual Studio 17 2022" ^
+  -DMINION_BUILD_CEC=ON ^
+  -DMINION_BUILD_EXAMPLES=ON ^
+  -DMINION_BUILD_PYTHON=ON ^
+  ..
 
 rem Build the project using MSBuild
 set CONFIG=Release
