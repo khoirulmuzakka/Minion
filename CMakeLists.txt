@@ -91,7 +91,7 @@ if(MINION_BUILD_CEC)
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:include/minion>
     )
-    target_link_libraries(minion_cec PUBLIC minion Eigen3::Eigen)
+    target_link_libraries(minion_cec PUBLIC Eigen3::Eigen)
     set_target_properties(minion_cec PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     # Keep CEC input data available next to build-tree binaries/libraries.

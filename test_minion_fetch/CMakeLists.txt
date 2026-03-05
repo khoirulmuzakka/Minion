@@ -12,6 +12,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 find_package(Minion QUIET CONFIG)
+#find_package(Minion REQUIRED CONFIG)
 if(NOT Minion_FOUND)
     FetchContent_Declare(
         minion
