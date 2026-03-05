@@ -31,7 +31,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy scipy build pybind11
 
-      - name: Configure CMake
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=ON
+
+      - name: Configure CMake (Non-Windows)
+        if: runner.os != 'Windows'
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=ON
 
       - name: Build C++ extension

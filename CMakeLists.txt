@@ -82,6 +82,10 @@ target_include_directories(minion PUBLIC
 )
 target_link_libraries(minion PUBLIC Eigen3::Eigen)
 set_target_properties(minion PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(WIN32)
+    # Export all symbols so MSVC generates minion.lib for downstream linking (e.g. pybind module).
+    set_target_properties(minion PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 if(MINION_BUILD_CEC)
     add_library(minion_cec SHARED ${MINION_CEC_SOURCE_FILES})
@@ -93,6 +97,9 @@ if(MINION_BUILD_CEC)
     )
     target_link_libraries(minion_cec PUBLIC Eigen3::Eigen)
     set_target_properties(minion_cec PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    if(WIN32)
+        set_target_properties(minion_cec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
 
     # Keep CEC input data available next to build-tree binaries/libraries.
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data DESTINATION ${CMAKE_BINARY_DIR})
