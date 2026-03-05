@@ -3,7 +3,6 @@
 #include <pybind11/functional.h>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
-#define MINION_ALGORITHMS_IMPLEMENTATION
 #include "minion.h"
 #include "minion_cec.h"
 #include <exception>

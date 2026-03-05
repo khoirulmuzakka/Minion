@@ -30,32 +30,4 @@
 #include "cmaes.h"
 #include "test_functions.h"
 
-#ifdef MINION_ALGORITHMS_IMPLEMENTATION
-#include "utility.cpp"
-#include "test_functions.cpp"
-#include "de.cpp"
-#include "gwo_de.cpp"
-#include "lshade.cpp"
-#include "agsk.cpp"
-#include "arrde.cpp"
-#include "nlshadersp.cpp"
-#include "j2020.cpp"
-#include "jade.cpp"
-#include "jso.cpp"
-#include "lsrtde.cpp"
-#include "imode.cpp"
-#include "abc.cpp"
-#include "dual_annealing.cpp"
-#include "l_bfgs_b.cpp"
-#include "l_bfgs.cpp"
-#include "nelder_mead.cpp"
-#include "pso.cpp"
-#include "spso2011.cpp"
-#include "dmspso.cpp"
-#include "lshadecnepsin.cpp"
-#include "cmaes.cpp"
-#include "bipop_acmaes.cpp"
-#include "rcmaes.cpp"
-#endif
-
 #endif // MINION_H

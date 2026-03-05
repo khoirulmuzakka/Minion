@@ -95,8 +95,6 @@ Then in your project CMake:
 find_package(Minion CONFIG REQUIRED)
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE minion)
-# Optional CEC:
-# target_link_libraries(my_app PRIVATE Minion_cec)
 ```
 
 Find Minion with fallback download:
@@ -123,14 +121,7 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE minion)
 ```
 
-In exactly one translation unit:
-
-```cpp
-#define MINION_ALGORITHMS_IMPLEMENTATION
-#include <minion/minion.h>
-```
-
-In all other translation units:
+Use Minion headers in your source:
 
 ```cpp
 #include <minion/minion.h>

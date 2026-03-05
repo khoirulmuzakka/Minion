@@ -35,7 +35,7 @@ Build with helper scripts:
 
 Or build manually with CMake.
 
-Minimal C++ setup (headers + interface target):
+Minimal C++ setup (compiled library):
 
 .. code-block:: shell
 
@@ -73,8 +73,9 @@ Install Minion so downstream projects can use ``find_package(Minion CONFIG REQUI
 This installs:
 
 - headers under ``include/``
+- compiled Minion library under ``lib/`` (for example ``libminion.so`` on Linux)
 - CMake package files under ``lib/cmake/Minion``
-- optional ``Minion_cec`` static library when ``MINION_BUILD_CEC=ON``
+- if ``MINION_BUILD_CEC=ON``, CEC support is compiled into the main ``minion`` library
 
 
 Use Minion in Your CMake Project
@@ -98,19 +99,9 @@ Use Minion in Your CMake Project
    add_executable(my_app src/main.cpp src/solver.cpp)
    target_link_libraries(my_app PRIVATE minion)
 
-   # Optional: only if you use CEC benchmarks
-   # target_link_libraries(my_app PRIVATE Minion_cec)
-
    target_compile_features(my_app PRIVATE cxx_std_17)
 
-3. In exactly one translation unit, define the implementation macro:
-
-.. code-block:: cpp
-
-   #define MINION_ALGORITHMS_IMPLEMENTATION
-   #include <minion/minion.h>
-
-In all other translation units, include the header without the macro:
+3. Include Minion headers in your source:
 
 .. code-block:: cpp
 

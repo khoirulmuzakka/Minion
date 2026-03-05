@@ -30,6 +30,7 @@ option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
+file(GLOB MINION_CEC_SOURCE_FILES minion/cec/*.cpp)
 
 include(FetchContent)
 option(MINION_FETCH_EIGEN "Fetch Eigen headers when Eigen3 package is not found" ON)
@@ -63,48 +64,24 @@ if(NOT Eigen3_FOUND)
 endif()
 
 # + ----------------------------------------- +
-# | Header-only algorithms public target      |
+# | Compiled algorithms core target           |
 # + ----------------------------------------- +
-add_library(minion INTERFACE)
-target_include_directories(minion INTERFACE
+set(MINION_SOURCE_FILES
+    ${MINION_ALGO_IMPL_SOURCES}
+    ${MINION_CEC_SOURCE_FILES}
+)
+
+add_library(minion SHARED ${MINION_SOURCE_FILES})
+
+target_include_directories(minion PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include>
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/minion>
-    $<INSTALL_INTERFACE:include/minion/src>
 )
-target_link_libraries(minion INTERFACE
-    Eigen3::Eigen
-)
-
-# + -------------------------- +
-# | Optional compiled CEC lib  |
-# + -------------------------- +
-if(MINION_BUILD_CEC OR MINION_BUILD_PYTHON OR MINION_BUILD_EXAMPLES)
-    file(GLOB MINION_CEC_SOURCE_FILES minion/cec/*.cpp)
-    add_library(Minion_cec STATIC ${MINION_CEC_SOURCE_FILES})
-    target_include_directories(Minion_cec PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
-        $<INSTALL_INTERFACE:include>
-    )
-    target_link_libraries(Minion_cec PUBLIC Eigen3::Eigen)
-
-    if (MSVC)
-        set_target_properties(Minion_cec PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-            ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/$<0:>
-            WINDOWS_EXPORT_ALL_SYMBOLS TRUE
-        )
-    else()
-        set_target_properties(Minion_cec PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib
-        )
-    endif()
-endif()
+target_link_libraries(minion PUBLIC Eigen3::Eigen)
+set_target_properties(minion PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # + -------------------------- +
 # | Optional C++ examples      |
@@ -112,23 +89,18 @@ endif()
 if(MINION_BUILD_EXAMPLES)
     add_executable(main_mini examples/main_minimizer.cpp)
     target_link_libraries(main_mini PRIVATE minion)
-    target_compile_definitions(main_mini PRIVATE MINION_ALGORITHMS_IMPLEMENTATION)
 
     add_executable(main_cec examples/main_cec.cpp)
-    target_link_libraries(main_cec PRIVATE minion Minion_cec)
-    target_compile_definitions(main_cec PRIVATE MINION_ALGORITHMS_IMPLEMENTATION)
+    target_link_libraries(main_cec PRIVATE minion)
 
     add_executable(main_cec_2 examples/main_cec_2.cpp)
-    target_link_libraries(main_cec_2 PRIVATE minion Minion_cec)
-    target_compile_definitions(main_cec_2 PRIVATE MINION_ALGORITHMS_IMPLEMENTATION)
+    target_link_libraries(main_cec_2 PRIVATE minion)
 
     add_executable(main_cec_multi examples/main_cec_multi.cpp)
-    target_link_libraries(main_cec_multi PRIVATE minion Minion_cec)
-    target_compile_definitions(main_cec_multi PRIVATE MINION_ALGORITHMS_IMPLEMENTATION)
+    target_link_libraries(main_cec_multi PRIVATE minion)
 
     add_executable(main_complexity examples/main_complexity.cpp)
-    target_link_libraries(main_complexity PRIVATE minion Minion_cec)
-    target_compile_definitions(main_complexity PRIVATE MINION_ALGORITHMS_IMPLEMENTATION)
+    target_link_libraries(main_complexity PRIVATE minion)
 
     if (MSVC)
         set_target_properties(main_mini main_cec main_cec_2 main_cec_multi main_complexity
@@ -158,15 +130,9 @@ if(MINION_BUILD_PYTHON)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 
     set(MINION_PYBIND_SOURCES minion/src/bindings.cpp)
-    if(TARGET Minion_cec)
-        list(APPEND MINION_PYBIND_SOURCES ${MINION_CEC_SOURCE_FILES})
-    endif()
 
     pybind11_add_module(minionpycpp ${MINION_PYBIND_SOURCES})
     target_link_libraries(minionpycpp PRIVATE minion Eigen3::Eigen)
-    if(TARGET Minion_cec)
-        target_link_libraries(minionpycpp PRIVATE Minion_cec)
-    endif()
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/include
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
@@ -188,52 +154,54 @@ endif()
 # + -------------------------- +
 # | Install + CMake package    |
 # + -------------------------- +
-include(CMakePackageConfigHelpers)
+if(DEFINED SKBUILD AND SKBUILD)
+    if(TARGET minionpycpp)
+        install(TARGETS minionpycpp
+            LIBRARY DESTINATION minionpy/lib
+        )
+    endif()
+else()
+    include(CMakePackageConfigHelpers)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
-install(FILES ${MINION_ALGO_IMPL_SOURCES} DESTINATION include/minion/src)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include/ DESTINATION include)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include/ DESTINATION include)
 
-install(TARGETS minion
-    EXPORT MinionTargets
-)
-if(TARGET Minion_cec)
-    install(TARGETS Minion_cec
+    install(TARGETS minion
         EXPORT MinionTargets
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
     )
-endif()
-if(TARGET minionpycpp)
-    install(TARGETS minionpycpp
-        LIBRARY DESTINATION minionpy/lib
+    if(TARGET minionpycpp)
+        install(TARGETS minionpycpp
+            LIBRARY DESTINATION minionpy/lib
+        )
+    endif()
+
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/MinionConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MinionConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/MinionConfig.cmake
+        INSTALL_DESTINATION lib/cmake/Minion
+    )
+
+    install(EXPORT MinionTargets
+        FILE MinionTargets.cmake
+        DESTINATION lib/cmake/Minion
+    )
+
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/MinionConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/MinionConfigVersion.cmake
+        DESTINATION lib/cmake/Minion
     )
 endif()
-
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/MinionConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MinionConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/MinionConfig.cmake
-    INSTALL_DESTINATION lib/cmake/Minion
-)
-
-install(EXPORT MinionTargets
-    FILE MinionTargets.cmake
-    DESTINATION lib/cmake/Minion
-)
-
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/MinionConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/MinionConfigVersion.cmake
-    DESTINATION lib/cmake/Minion
-)
 
 # + -------------------------- +
 # | CPack (binary packaging)   |
