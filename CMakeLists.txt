@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(Minion VERSION 0.1.0 LANGUAGES C CXX)
+project(Minion VERSION 1.2.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,6 +71,7 @@ target_include_directories(minion INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include>
     $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:include/minion>
     $<INSTALL_INTERFACE:include/minion/src>
 )
 target_link_libraries(minion INTERFACE
