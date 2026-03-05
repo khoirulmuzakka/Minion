@@ -31,8 +31,11 @@ jobs:
         env:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *-musllinux_*"
+          CIBW_BUILD_VERBOSITY: "1"
+          # Pass options for both scikit-build classic and newer backends.
           CIBW_ENVIRONMENT: >-
-            CMAKE_ARGS="-DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=ON"
+            CMAKE_ARGS="-DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=OFF"
+            SKBUILD_CONFIGURE_OPTIONS="-DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=OFF"
 
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
