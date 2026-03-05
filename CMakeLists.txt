@@ -233,3 +233,20 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/MinionConfigVersion.cmake
     DESTINATION lib/cmake/Minion
 )
+
+# + -------------------------- +
+# | CPack (binary packaging)   |
+# + -------------------------- +
+set(CPACK_PACKAGE_NAME "minion")
+set(CPACK_PACKAGE_VENDOR "Minion")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Minion optimization library")
+if(UNIX AND NOT APPLE)
+    set(CPACK_GENERATOR "TGZ;DEB")
+    set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Khoirul Faiq Muzakka")
+elseif(APPLE)
+    set(CPACK_GENERATOR "TGZ")
+endif()
+include(CPack)

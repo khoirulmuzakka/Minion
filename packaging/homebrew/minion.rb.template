@@ -1,0 +1,25 @@
+class Minion < Formula
+  desc "Minion optimization library"
+  homepage "https://github.com/khoirulmuzakka/Minion"
+  url "https://github.com/khoirulmuzakka/Minion/archive/refs/tags/vX.Y.Z.tar.gz"
+  sha256 "REPLACE_WITH_TARBALL_SHA256"
+  license "MIT"
+
+  depends_on "cmake" => :build
+  depends_on "eigen"
+
+  def install
+    args = std_cmake_args + %W[
+      -DMINION_BUILD_CEC=ON
+      -DMINION_BUILD_PYTHON=OFF
+      -DMINION_BUILD_EXAMPLES=OFF
+    ]
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+  end
+
+  test do
+    assert_predicate include/"minion/minion.h", :exist?
+  end
+end
