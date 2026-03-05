@@ -75,7 +75,8 @@ This installs:
 - headers under ``include/``
 - compiled Minion library under ``lib/`` (for example ``libminion.so`` on Linux)
 - CMake package files under ``lib/cmake/Minion``
-- if ``MINION_BUILD_CEC=ON``, CEC support is compiled into the main ``minion`` library
+- optional compiled CEC library ``libminion_cec`` when ``MINION_BUILD_CEC=ON``
+- CEC input data under ``cec_input_data/`` when ``MINION_BUILD_CEC=ON``
 
 
 Use Minion in Your CMake Project
@@ -98,6 +99,8 @@ Use Minion in Your CMake Project
 
    add_executable(my_app src/main.cpp src/solver.cpp)
    target_link_libraries(my_app PRIVATE minion)
+   # Optional: only if you use CEC benchmarks
+   # target_link_libraries(my_app PRIVATE minion_cec)
 
    target_compile_features(my_app PRIVATE cxx_std_17)
 
@@ -105,7 +108,7 @@ Use Minion in Your CMake Project
 
 .. code-block:: cpp
 
-   #include <minion/minion.h>
+   #include <minion.h>
 
 
 Alternative: FetchContent (No System Install)

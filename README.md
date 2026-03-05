@@ -95,6 +95,8 @@ Then in your project CMake:
 find_package(Minion CONFIG REQUIRED)
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE minion)
+# Optional: CEC benchmark suite
+# target_link_libraries(my_app PRIVATE minion_cec)
 ```
 
 Find Minion with fallback download:
@@ -124,7 +126,7 @@ target_link_libraries(my_app PRIVATE minion)
 Use Minion headers in your source:
 
 ```cpp
-#include <minion/minion.h>
+#include <minion.h>
 ```
 
 ## 📖 Documentation
