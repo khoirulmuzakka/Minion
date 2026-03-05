@@ -1,4 +1,9 @@
 # Changelog
+## [1.2.0] - 2026-03-05
+### Added
+- Overhauled cmakelist
+- Added RCMAES
+
 ## [1.1.0] - 2025-11-23
 ### Added
 - Added IMODE and AGSK

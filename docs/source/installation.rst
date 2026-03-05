@@ -1,114 +1,156 @@
 Compilation and Installation
 =============================
 
-MinionPy Installation
-----------------------
+MinionPy (Python)
+-----------------
 
-MinionPy can be installed directly via PIP:
+Install from PyPI:
 
 .. code-block:: shell
 
    pip install --upgrade minionpy
 
-To verify the installation, run:
+Quick check:
 
 .. code-block:: python
 
    import minionpy as mpy
 
-If MinionPy is not installed via PIP and you want to use the locally compiled version, ensure that the correct path is added to `sys.path`:
+
+Build Minion From Source
+------------------------
+
+Build requirements:
+
+- CMake >= 3.18
+- C++17 compiler
+- pybind11 (only when building the Python extension)
+
+On Windows, use Visual C++ Build Tools.
+
+Build with helper scripts:
+
+- Linux/macOS: ``./compile.sh``
+- Windows: ``compile.bat``
+
+Or build manually with CMake.
+
+Minimal C++ setup (headers + interface target):
+
+.. code-block:: shell
+
+   cmake -S . -B build \
+     -DMINION_BUILD_CEC=OFF \
+     -DMINION_BUILD_PYTHON=OFF \
+     -DMINION_BUILD_EXAMPLES=OFF
+   cmake --build build --config Release
+
+Build all optional components:
+
+.. code-block:: shell
+
+   cmake -S . -B build \
+     -DMINION_BUILD_CEC=ON \
+     -DMINION_BUILD_PYTHON=ON \
+     -DMINION_BUILD_EXAMPLES=ON
+   cmake --build build --config Release
+
+
+Install as a CMake Package
+--------------------------
+
+Install Minion so downstream projects can use ``find_package(Minion CONFIG REQUIRED)``:
+
+.. code-block:: shell
+
+   cmake -S . -B build \
+     -DMINION_BUILD_CEC=ON \
+     -DMINION_BUILD_PYTHON=OFF \
+     -DMINION_BUILD_EXAMPLES=OFF
+   cmake --build build --config Release
+   cmake --install build --prefix /path/to/minion-install
+
+This installs:
+
+- headers under ``include/``
+- CMake package files under ``lib/cmake/Minion``
+- optional ``Minion_cec`` static library when ``MINION_BUILD_CEC=ON``
+
+
+Use Minion in Your CMake Project
+--------------------------------
+
+1. Point CMake to your Minion install prefix:
+
+.. code-block:: shell
+
+   cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/minion-install
+
+2. In your project ``CMakeLists.txt``:
+
+.. code-block:: cmake
+
+   cmake_minimum_required(VERSION 3.18)
+   project(MyApp LANGUAGES CXX)
+
+   find_package(Minion CONFIG REQUIRED)
+
+   add_executable(my_app src/main.cpp src/solver.cpp)
+   target_link_libraries(my_app PRIVATE minion)
+
+   # Optional: only if you use CEC benchmarks
+   # target_link_libraries(my_app PRIVATE Minion_cec)
+
+   target_compile_features(my_app PRIVATE cxx_std_17)
+
+3. In exactly one translation unit, define the implementation macro:
+
+.. code-block:: cpp
+
+   #define MINION_ALGORITHMS_IMPLEMENTATION
+   #include <minion/minion.h>
+
+In all other translation units, include the header without the macro:
+
+.. code-block:: cpp
+
+   #include <minion/minion.h>
+
+
+Alternative: FetchContent (No System Install)
+---------------------------------------------
+
+If you do not want to pre-install Minion:
+
+.. code-block:: cmake
+
+   include(FetchContent)
+
+   find_package(Minion QUIET CONFIG)
+   if(NOT Minion_FOUND)
+     FetchContent_Declare(
+       minion
+       GIT_REPOSITORY https://github.com/khoirulmuzakka/Minion.git
+       GIT_TAG main
+       GIT_SHALLOW TRUE
+     )
+     set(MINION_BUILD_CEC OFF CACHE BOOL "" FORCE)
+     set(MINION_BUILD_PYTHON OFF CACHE BOOL "" FORCE)
+     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+     FetchContent_MakeAvailable(minion)
+   endif()
+
+   add_executable(my_app src/main.cpp)
+   target_link_libraries(my_app PRIVATE minion)
+
+
+Use Local MinionPy Build
+------------------------
+
+If you built locally (without ``pip install``), import from the repository checkout:
 
 .. code-block:: python
 
    import sys
-   sys.path.append("/path/to/minionpy/")  # Adjust this to the correct directory
+   sys.path.append("/path/to/Minion")
    import minionpy as mpy
-
-
-Minion (C++) Compilation
-------------------------
-
-To use Minion in a C++ project, you need to compile the Minion dynamic library from source and link it to your project. The compilation process also generates the necessary library for the MinionPy Python wrapper.
-
-1. **Install Dependencies**
-
-   Before compiling Minion, install the required dependencies:
-
-   - **CMake**: A tool for managing the build process.
-   - **pybind11**: A header-only library for creating Python bindings in C++.
-
-   *Note for Windows users:*  
-   To compile the source code, you need Microsoft C++ Build Tools. Download them from:
-
-   - [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-
-2. **Compile Minion and MinionPy**
-
-   Follow these steps to compile Minion:
-
-   1. Modify the `CMakeLists.txt` if necessary (e.g., specify the location of `pybind11`).
-   2. Run the appropriate compilation script:
-      - On Linux/macOS:  
-
-        .. code-block:: shell
-
-           ./compile.sh
-
-      - On Windows:  
-
-        .. code-block:: shell
-
-           compile.bat
-
-   This will automatically build the required libraries and place them in the appropriate directories.
-
-3. **Upon Successful Compilation**
-
-   After compilation, the following files will be generated in the `./lib` directory:
-
-   - **For C++ development:**
-     - `minion.dll` (Windows) or `minion.so` (Linux/macOS)
-   
-   - **For Python development:**
-     - `minionpy*.so` (Python wrapper for Minion)
-
-   The C++ dynamic library (`minion.dll` or `minion.so`) is used in C++ applications, while `minionpy*.so` allows Python integration.  
-   The Python wrapper code can be found in the `./minionpy` directory.
-
-
-4. **Using the Minion Library in C++**
-
-   After compiling the library, you can use Minion in your C++ projects by including the necessary headers and linking against the compiled library.
-
-   Example:
-
-   .. code-block:: cpp
-
-      #include "minion/minion.h"
-
-   To properly link against Minion, modify your `CMakeLists.txt` as follows:
-
-   .. code-block:: cmake
-
-      add_executable(main_mini examples/main_minimizer.cpp)
-      target_link_libraries(main_mini PRIVATE minion)
-
-      if (MSVC)
-          set_target_properties(main_mini PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>)
-      else()
-          set_target_properties(main_mini PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-      endif()
-
-
-5. **Using MinionPy in Python**
-
-   If MinionPy is not installed via PIP but compiled locally, manually add the `minionpy` directory to `sys.path` before importing:
-
-   .. code-block:: python
-
-      import sys
-      sys.path.append("/path/to/minionpy/")  # Adjust to the correct directory
-      import minionpy as mpy
-
-   This ensures Python can find and import MinionPy.
-
