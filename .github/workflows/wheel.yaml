@@ -33,6 +33,7 @@ jobs:
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_ARCHS_WINDOWS: "AMD64"
           CIBW_BUILD_VERBOSITY: "1"
+          # No Eigen pre-download hooks are needed; CMake handles Eigen fallback.
           # Pass options for both scikit-build classic and newer backends.
           CIBW_ENVIRONMENT: >-
             CMAKE_ARGS="-DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=OFF"

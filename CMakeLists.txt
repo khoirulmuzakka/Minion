@@ -32,25 +32,34 @@ file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
 
 include(FetchContent)
+option(MINION_FETCH_EIGEN "Fetch Eigen headers when Eigen3 package is not found" ON)
 
 # + -------------------------- +
 # | Eigen (find or download)   |
 # + -------------------------- +
 find_package(Eigen3 QUIET CONFIG)
 if(NOT Eigen3_FOUND)
-    # Disable Eigen's test targets to avoid Qt AUTOGEN warnings from Eigen CMake files.
-    set(BUILD_TESTING OFF CACHE BOOL "Disable testing (Eigen dependency)" FORCE)
-    set(EIGEN_BUILD_BLAS OFF CACHE BOOL "Disable Eigen BLAS (avoids Fortran toolchain requirements)" FORCE)
-    set(EIGEN_BUILD_LAPACK OFF CACHE BOOL "Disable Eigen LAPACK (avoids Fortran toolchain requirements)" FORCE)
+    if(NOT MINION_FETCH_EIGEN)
+        message(FATAL_ERROR "Eigen3 not found. Install Eigen3 or set MINION_FETCH_EIGEN=ON.")
+    endif()
+
+    # Fetch Eigen headers only. Do not configure Eigen's CMake project:
+    # this keeps Minion's build graph clean and avoids optional Fortran/BLAS paths.
     FetchContent_Declare(
         eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG 3.4.0
         GIT_SHALLOW TRUE
     )
-    set(EIGEN_BUILD_DOC OFF CACHE BOOL "Disable Eigen docs" FORCE)
-    set(EIGEN_BUILD_TESTING OFF CACHE BOOL "Disable Eigen tests" FORCE)
-    FetchContent_MakeAvailable(eigen)
+    FetchContent_GetProperties(eigen)
+    if(NOT eigen_POPULATED)
+        FetchContent_Populate(eigen)
+    endif()
+
+    add_library(Eigen3::Eigen INTERFACE IMPORTED)
+    set_target_properties(Eigen3::Eigen PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
+    )
 endif()
 
 # + ----------------------------------------- +
