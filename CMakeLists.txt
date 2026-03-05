@@ -109,21 +109,37 @@ endif()
 # | Optional C++ examples      |
 # + -------------------------- +
 if(MINION_BUILD_EXAMPLES)
+    function(minion_copy_runtime_deps target_name)
+        if(WIN32)
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_RUNTIME_DLLS:${target_name}>
+                    $<TARGET_FILE_DIR:${target_name}>
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
+    endfunction()
+
     add_executable(main_mini examples/main_minimizer.cpp)
     target_link_libraries(main_mini PRIVATE minion)
+    minion_copy_runtime_deps(main_mini)
 
     if(MINION_BUILD_CEC)
         add_executable(main_complexity examples/main_complexity.cpp)
         target_link_libraries(main_complexity PRIVATE minion minion_cec)
+        minion_copy_runtime_deps(main_complexity)
 
         add_executable(main_cec examples/main_cec.cpp)
         target_link_libraries(main_cec PRIVATE minion minion_cec)
+        minion_copy_runtime_deps(main_cec)
 
         add_executable(main_cec_2 examples/main_cec_2.cpp)
         target_link_libraries(main_cec_2 PRIVATE minion minion_cec)
+        minion_copy_runtime_deps(main_cec_2)
 
         add_executable(main_cec_multi examples/main_cec_multi.cpp)
         target_link_libraries(main_cec_multi PRIVATE minion minion_cec)
+        minion_copy_runtime_deps(main_cec_multi)
     endif()
 
     if (MSVC)
