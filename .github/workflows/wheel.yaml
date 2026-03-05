@@ -31,6 +31,7 @@ jobs:
         env:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp* *-musllinux_*"
+          CIBW_ARCHS_WINDOWS: "AMD64"
           CIBW_BUILD_VERBOSITY: "1"
           # Pass options for both scikit-build classic and newer backends.
           CIBW_ENVIRONMENT: >-

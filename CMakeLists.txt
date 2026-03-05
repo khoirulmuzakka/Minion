@@ -40,6 +40,8 @@ find_package(Eigen3 QUIET CONFIG)
 if(NOT Eigen3_FOUND)
     # Disable Eigen's test targets to avoid Qt AUTOGEN warnings from Eigen CMake files.
     set(BUILD_TESTING OFF CACHE BOOL "Disable testing (Eigen dependency)" FORCE)
+    set(EIGEN_BUILD_BLAS OFF CACHE BOOL "Disable Eigen BLAS (avoids Fortran toolchain requirements)" FORCE)
+    set(EIGEN_BUILD_LAPACK OFF CACHE BOOL "Disable Eigen LAPACK (avoids Fortran toolchain requirements)" FORCE)
     FetchContent_Declare(
         eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
