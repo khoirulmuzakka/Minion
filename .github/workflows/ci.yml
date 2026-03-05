@@ -39,3 +39,47 @@ jobs:
 
       - name: Python build
         run: python -m build
+
+  package:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure package build
+        run: cmake -B build-pkg -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF
+
+      - name: Build package payload
+        run: cmake --build build-pkg --config Release
+
+      - name: Generate Debian package
+        if: matrix.os == 'ubuntu-latest'
+        run: cpack -G DEB --config CPackConfig.cmake
+        working-directory: build-pkg
+
+      - name: Upload Debian artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minion-deb
+          path: build-pkg/*.deb
+          overwrite: true
+          retention-days: 7
+
+      - name: Generate macOS TGZ package
+        if: matrix.os == 'macos-latest'
+        run: cpack -G TGZ --config CPackConfig.cmake
+        working-directory: build-pkg
+
+      - name: Upload macOS TGZ artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minion-macos-tgz
+          path: build-pkg/*.tar.gz
+          overwrite: true
+          retention-days: 7
