@@ -11,7 +11,7 @@
 namespace minion {
 
 /**
- * @file nlshader_sp.h
+ * @file nlshadersp.h
  * @brief Header file for the NLSHADE_RSP class, which implements a minimization algorithm.
  * 
  * This code is adapted from the original NLSHADE_RSP code from Suganthan's GitHub repository.

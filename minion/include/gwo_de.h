@@ -80,8 +80,12 @@ public:
     /**
      * @brief Updates the position of a given solution based on the GWO strategy.
      * @param X Current position of the solution.
-     * @param A Attraction coefficient vector.
-     * @param C Distance control coefficient vector.
+     * @param A1 Attraction coefficient vector for the alpha leader.
+     * @param C1 Distance control coefficient vector for the alpha leader.
+     * @param A2 Attraction coefficient vector for the beta leader.
+     * @param C2 Distance control coefficient vector for the beta leader.
+     * @param A3 Attraction coefficient vector for the delta leader.
+     * @param C3 Distance control coefficient vector for the delta leader.
      * @return New position of the solution.
      */
     std::vector<double> update_position(const std::vector<double>& X, const std::vector<double>& A1, const std::vector<double>& C1,

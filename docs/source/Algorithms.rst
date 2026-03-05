@@ -446,7 +446,7 @@ BIPOP aCMA-ES
 --------------
 BIPOP aCMA-ES is an adaptive bi-population variant of CMA-ES that alternates between runs with small and large population sizes to balance local refinement and global exploration. It includes an adaptive restart mechanism to allocate budget across these runs.
 
-*Reference: Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference Companion on Genetic and Evolutionary Computation Conference: Late Breaking Papers (GECCO '09). Association for Computing Machinery, New York, NY, USA, 2389–2396. https://doi.org/10.1145/1570256.1570333. *
+*Reference: Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference Companion on Genetic and Evolutionary Computation Conference: Late Breaking Papers (GECCO '09). Association for Computing Machinery, New York, NY, USA, 2389–2396. https://doi.org/10.1145/1570256.1570333.*
 
 Algorithm name : ``"BIPOP_aCMAES"``
 

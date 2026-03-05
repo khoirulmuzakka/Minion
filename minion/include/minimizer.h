@@ -54,7 +54,7 @@ class Minimizer {
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
          * @param algo Algorithm to use : "LSHADE", "AGSK", "DE", "JADE", "jSO", "IMODE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
-         * @param relTol The relative tolerance for convergence.
+         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -108,7 +108,7 @@ class Minimizer {
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
          * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
-         * @param relTol The relative tolerance for convergence.
+         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.

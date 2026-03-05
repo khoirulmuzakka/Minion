@@ -11,7 +11,7 @@
 namespace minion {
 
 /**
- * @class Dual Annealing
+ * @class Dual_Annealing
  * @brief A class for performing dual annealing algorithm. 
  * 
  * Reference : Tsallis C, Stariolo DA. Generalized Simulated Annealing. Physica A, 233, 395-406 (1996).

@@ -108,7 +108,7 @@ protected :
      * @param trials Generated trial vectors.
      * @param trial_fitness Fitness values of the trial vectors.
      */
-    virtual void postEvaluation(const std::vector<std::vector<double>>&, const std::vector<double>&) {}
+    virtual void postEvaluation(const std::vector<std::vector<double>>& trials, const std::vector<double>& trial_fitness) {}
 
 public : 
 

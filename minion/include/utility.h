@@ -389,7 +389,7 @@ void enforce_bounds(std::vector<std::vector<double>>& new_candidates, const std:
 
 /**
  * @brief Enforce bounds on a a candidate solution.
- * @param new_candidates The candidate solutions to enforce bounds on.
+ * @param new_candidate The candidate solution to enforce bounds on.
  * @param bounds The bounds for each dimension.
  * @param strategy The strategy for enforcing the bounds.
  */

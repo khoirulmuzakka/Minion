@@ -2286,79 +2286,23 @@ class ARRDE(MinimizerBase):
                  options: Dict[str, Any] = None
         ) : 
         """
-        Initialize the algorithm.
+        Initialize the ARRDE optimizer.
 
-        Parameters
-        ----------
-        func : callable
-            The objective function to be minimized.
+        :param func: Objective function. Expected signature is ``func(X) -> list[float]``,
+            where ``X`` is a batch (list/array) of candidate vectors.
+        :param bounds: List of ``(min, max)`` bounds for each decision variable.
+        :param x0: Optional initial guesses as ``list[list[float]]``.
+        :param relTol: Relative convergence tolerance. Default is ``1e-4``.
+        :param maxevals: Maximum number of objective evaluations. Default is ``100000``.
+        :param callback: Optional callback invoked after each iteration.
+        :param seed: Optional random seed.
+        :param options: Optional algorithm settings. Defaults to
+            ``{"population_size": 0, "bound_strategy": "reflect-random"}``.
+            Supported keys:
 
-            .. code-block:: python
-        
-                func(X) -> list[float]
-
-            where `X` is a list of lists of floats.  
-            Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats and returns a float,  
-            it can be vectorized as follows (see examples in the documentation):
-
-            .. code-block:: python 
-
-                def func(X):
-                    return [fun(x) for x in X]
-
-            
-        bounds : list of tuple
-            List of (min, max) pairs defining the bounds for each decision variable.
-        x0 :  list[list[float]], optional
-            Initial guesses for the solution. These guesses will be used to initialize the population. 
-            If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
-        maxevals : int, optional
-            Maximum number of function evaluations allowed. Default is 100000.
-        callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
-        seed : int, optional
-            Random seed for reproducibility. If None (default), the seed is not set.
-        options : dict, optional
-            Additional options for configuring the algorithm. If None (default), the 
-            following settings are used::
-
-                options = {
-                    "population_size"           :  0,  
-                    "bound_strategy"            : "reflect-random"
-                }
-
-            The available options are:
-
-            - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
-
-                .. math::
-
-                    N = \max\!\left(2D,\; \operatorname{clip}\big(D \cdot m(\eta), 4, 3000\big)\right)
-
-                where :math:`D` is dimensionality, :math:`\eta = \tfrac{N_{\text{maxevals}}}{D}`, and  
-
-                .. math::
-
-                    m(\eta) = 
-                    \begin{cases}
-                        2.0, & \log_{10} \eta \le 2,\\
-                        2.0 + 5.756 (\log_{10} \eta - 2)^{1.609}, & \text{otherwise.}
-                    \end{cases}
-
-                :math:`N_{\text{maxevals}}` is the maximum number of function evaluations. The final size is clipped to at least ``4``.
-            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
-                    ``"random"``, ``"reflect-random"``, ``"clip"``.
-
-        Notes
-        -----
-        - The optimizer is implemented in C++ and accessed via `cppARRDE`.
-        - The `callback` function can be used for logging or monitoring progress.
-        - The `options` dictionary allows fine-tuning of the optimization process.
+            - ``population_size`` (int): Initial population size.
+            - ``bound_strategy`` (str): Boundary handling strategy:
+              ``"random"``, ``"reflect-random"``, or ``"clip"``.
 
         """
 

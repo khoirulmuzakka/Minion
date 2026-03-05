@@ -11,7 +11,7 @@
 namespace minion {
 
 /**
- * @file nlshader_sp.h
+ * @file lsrtde.h
  * @brief Header file for the LSRTDE class, which implements a minimization algorithm.
  * 
  * This code is adapted from the original LSRTDE code from Suganthan's GitHub repository.
@@ -85,8 +85,6 @@ private :
      * 
      * @param newNInds Number of individuals in the initial population.
      * @param newNVars Number of variables in the optimization problem.
-     * @param NewMemSize Size of the memory for storing previous successes.
-     * @param NewArchSizeParam Parameter for determining the archive size.
      */
     void initialize_population(int newNInds, int newNVars);
 

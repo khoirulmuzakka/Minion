@@ -188,7 +188,7 @@ class MinimizerBase {
          * @param x0 The initial guesses for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param relTol The relative tolerance for convergence.
+         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -223,7 +223,7 @@ class MinimizerBase {
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param relTol The relative tolerance for convergence.
+         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.

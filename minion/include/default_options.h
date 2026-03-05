@@ -11,6 +11,10 @@
 
 namespace minion { 
 
+/**
+ * @class DefaultSettings
+ * @brief Default option presets for Minion optimizers.
+ */
 class DefaultSettings{
     public :
         static std::string normalizeName(const std::string& name) {
