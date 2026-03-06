@@ -28,11 +28,6 @@ option(MINION_BUILD_CEC "Build compiled CEC library" OFF)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 
-if(MINION_BUILD_PYTHON AND NOT MINION_BUILD_CEC)
-    message(STATUS "MINION_BUILD_PYTHON=ON requires CEC symbols from bindings; enabling MINION_BUILD_CEC.")
-    set(MINION_BUILD_CEC ON CACHE BOOL "Build compiled CEC library" FORCE)
-endif()
-
 file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
 file(GLOB MINION_CEC_SOURCE_FILES minion/cec/*.cpp)
@@ -179,19 +174,19 @@ if(MINION_BUILD_PYTHON)
     file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
 
-    set(MINION_PYBIND_SOURCES minion/src/bindings.cpp)
+    set(MINION_PYBIND_SOURCES
+        minion/src/bindings.cpp
+        ${MINION_ALGO_IMPL_SOURCES}
+        ${MINION_CEC_SOURCE_FILES}
+    )
 
     pybind11_add_module(minionpycpp ${MINION_PYBIND_SOURCES})
-    target_link_libraries(minionpycpp PRIVATE minion Eigen3::Eigen)
-    if(TARGET minion_cec)
-        target_link_libraries(minionpycpp PRIVATE minion_cec)
-    endif()
+    target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen ${CMAKE_DL_LIBS})
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include
     )
-    if(TARGET minion_cec)
-        target_include_directories(minionpycpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec)
-    endif()
 
     if (MSVC)
         set_target_properties(minionpycpp PROPERTIES
