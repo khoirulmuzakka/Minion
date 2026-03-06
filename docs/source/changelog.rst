@@ -5,7 +5,7 @@ Changelog
    :local:
    :depth: 2
 
-Version 1.3.0 - 2026-03-06
+Version 1.4.0 - 2026-03-06
 --------------------------
 
 **Changed**
