@@ -1,7 +1,7 @@
 Compilation and Installation
-=============================
+============================
 
-MinionPy (Python)
+Python (MinionPy)
 -----------------
 
 Install from PyPI:
@@ -17,106 +17,78 @@ Quick check:
    import minionpy as mpy
 
 
-Build Minion From Source
+Native Installation by Platform
+-------------------------------
+
+- **Windows**: compile Minion from source with CMake.
+- **Linux**: install the ``.deb`` package from GitHub Release assets.
+- **macOS**: install from release archive (``.tgz`` / ``tgz.zip`` asset).
+
+Linux ``.deb`` install:
+
+.. code-block:: shell
+
+   sudo dpkg -i minion_<version>_<arch>.deb
+   sudo apt-get install -f
+
+macOS ``.tgz`` / ``tgz.zip`` install:
+
+.. code-block:: shell
+
+   unzip minion-<version>-macos.tgz.zip
+   tar -xzf minion-<version>-macos.tgz -C /tmp/minion_pkg
+   sudo rsync -a /tmp/minion_pkg/ /usr/local/
+
+
+Compilation From Scratch
 ------------------------
 
 Build requirements:
 
 - CMake >= 3.18
-- C++17 compiler
-- pybind11 (only when building the Python extension)
-
-On Windows, use Visual C++ Build Tools.
+- C++17 compiler (GCC/Clang/MSVC)
+- Eigen3 (or automatic fetch through CMake)
+- Python 3 + pybind11 (only when building Python bindings)
 
 Build with helper scripts:
 
 - Linux/macOS: ``./compile.sh``
 - Windows: ``compile.bat``
 
-Or build manually with CMake.
-
-Minimal C++ setup (compiled library):
-
-.. code-block:: shell
-
-   cmake -S . -B build \
-     -DMINION_BUILD_CEC=OFF \
-     -DMINION_BUILD_PYTHON=OFF \
-     -DMINION_BUILD_EXAMPLES=OFF
-   cmake --build build --config Release
-
-Build all optional components:
+Manual build with CMake:
 
 .. code-block:: shell
 
    cmake -S . -B build \
      -DMINION_BUILD_CEC=ON \
-     -DMINION_BUILD_PYTHON=ON \
+     -DMINION_BUILD_PYTHON=OFF \
      -DMINION_BUILD_EXAMPLES=ON
    cmake --build build --config Release
 
-
-Install as a CMake Package
---------------------------
-
-Install Minion so downstream projects can use ``find_package(Minion CONFIG REQUIRED)``:
+Install:
 
 .. code-block:: shell
 
-   cmake -S . -B build \
-     -DMINION_BUILD_CEC=ON \
-     -DMINION_BUILD_PYTHON=OFF \
-     -DMINION_BUILD_EXAMPLES=OFF
-   cmake --build build --config Release
    cmake --install build --prefix /path/to/minion-install
 
-This installs:
 
-- headers under ``include/``
-- compiled Minion library under ``lib/`` (for example ``libminion.so`` on Linux)
-- CMake package files under ``lib/cmake/Minion``
-- optional compiled CEC library ``libminion_cec`` when ``MINION_BUILD_CEC=ON``
-- CEC input data under ``cec_input_data/`` when ``MINION_BUILD_CEC=ON``
+Using Minion in a C++ Project
+-----------------------------
 
+Include header:
 
-Use Minion in Your CMake Project
---------------------------------
+.. code-block:: cpp
 
-1. Point CMake to your Minion install prefix:
+   #include <minion/minion.h>
 
-.. code-block:: shell
-
-   cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/minion-install
-
-2. In your project ``CMakeLists.txt``:
+CMake setup with ``find_package`` first and ``FetchContent`` fallback:
 
 .. code-block:: cmake
 
    cmake_minimum_required(VERSION 3.18)
    project(MyApp LANGUAGES CXX)
-
-   find_package(Minion CONFIG REQUIRED)
-
-   add_executable(my_app src/main.cpp src/solver.cpp)
-   target_link_libraries(my_app PRIVATE minion)
-   # Optional: only if you use CEC benchmarks
-   # target_link_libraries(my_app PRIVATE minion_cec)
-
-   target_compile_features(my_app PRIVATE cxx_std_17)
-
-3. Include Minion headers in your source:
-
-.. code-block:: cpp
-
-   #include <minion.h>
-
-
-Alternative: FetchContent (No System Install)
----------------------------------------------
-
-If you do not want to pre-install Minion:
-
-.. code-block:: cmake
+   set(CMAKE_CXX_STANDARD 17)
+   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
    include(FetchContent)
 
@@ -128,23 +100,13 @@ If you do not want to pre-install Minion:
        GIT_TAG main
        GIT_SHALLOW TRUE
      )
-     set(MINION_BUILD_CEC OFF CACHE BOOL "" FORCE)
-     set(MINION_BUILD_PYTHON OFF CACHE BOOL "" FORCE)
-     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+     set(MINION_BUILD_CEC ON CACHE BOOL "Build CEC library" FORCE)
+     set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
+     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
      FetchContent_MakeAvailable(minion)
    endif()
 
    add_executable(my_app src/main.cpp)
    target_link_libraries(my_app PRIVATE minion)
-
-
-Use Local MinionPy Build
-------------------------
-
-If you built locally (without ``pip install``), import from the repository checkout:
-
-.. code-block:: python
-
-   import sys
-   sys.path.append("/path/to/Minion")
-   import minionpy as mpy
+   # Optional: only if you use CEC benchmark suite
+   # target_link_libraries(my_app PRIVATE minion_cec)
