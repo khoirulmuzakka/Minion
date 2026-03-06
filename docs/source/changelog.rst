@@ -5,6 +5,12 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.3.0 - 2026-03-06
+--------------------------
+
+**Changed**
+
+- Reverted back to compiled libarary style. 
 
 Version 1.2.0 - 2026-03-05
 --------------------------
@@ -13,6 +19,7 @@ Version 1.2.0 - 2026-03-05
 
 - Added RCMAES
 - Streamlined CMake usage.
+- Header only style library
 
 Version 1.1.0 - 2025-11-23
 --------------------------
