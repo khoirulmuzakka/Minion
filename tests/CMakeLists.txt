@@ -21,11 +21,14 @@ if(NOT Minion_FOUND)
         GIT_SHALLOW TRUE
     )
     # Dependency mode: algorithms only.
-    set(MINION_BUILD_CEC OFF CACHE BOOL "Disable CEC" FORCE)
+    set(MINION_BUILD_CEC ON CACHE BOOL "Disable CEC" FORCE)
     set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
     FetchContent_MakeAvailable(minion)
 endif()
 
-add_executable(test main.cpp)
-target_link_libraries(test PRIVATE minion)
+add_executable(minion_test main.cpp)
+target_link_libraries(minion_test PRIVATE minion minion_cec)
+
+enable_testing()
+add_test(NAME minion_integration COMMAND minion_test)

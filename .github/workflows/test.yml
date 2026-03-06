@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ctest:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure tests (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -G Ninja -S tests -B tests/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Configure tests (Non-Windows)
+        if: runner.os != 'Windows'
+        run: cmake -S tests -B tests/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build tests
+        run: cmake --build tests/build --config Release
+
+      - name: Run test binary (Windows)
+        if: runner.os == 'Windows'
+        run: ./tests/build/bin/minion_test.exe
+
+      - name: Run test binary (Non-Windows)
+        if: runner.os != 'Windows'
+        run: ./tests/build/bin/minion_test
