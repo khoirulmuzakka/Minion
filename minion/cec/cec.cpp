@@ -60,11 +60,40 @@ std::string getLibraryDirectory() {
     return (std::string::npos == pos) ? "" : libraryPath.substr(0, pos);
 }
 
+namespace {
+
+std::string normalize_path(const std::filesystem::path& path) {
+    std::error_code ec;
+    const std::filesystem::path normalized = std::filesystem::weakly_canonical(path, ec);
+    if (!ec) {
+        return normalized.string();
+    }
+    return path.lexically_normal().string();
+}
+
+}  // namespace
+
 std::string getResourcePath() {
-    std::string libraryDir = getLibraryDirectory();
-    std::filesystem::path resourcePath = std::filesystem::path(libraryDir) / "../cec_input_data/";
-    resourcePath = std::filesystem::canonical(resourcePath);
-    return resourcePath.string();
+    const std::filesystem::path libraryDir(getLibraryDirectory());
+    const std::vector<std::filesystem::path> candidates = {
+        libraryDir / "../cec_input_data",
+        libraryDir / "../../cec_input_data",
+        libraryDir / "cec_input_data",
+        std::filesystem::current_path() / "cec_input_data",
+        std::filesystem::current_path() / "../cec_input_data"
+    };
+
+    for (const auto& candidate : candidates) {
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec) && !ec) {
+            return normalize_path(candidate);
+        }
+    }
+
+    // Avoid exceptions during DLL initialization. If the data directory is
+    // missing, return the primary expected location and let later file-open
+    // code report the problem explicitly.
+    return normalize_path(candidates.front());
 }
 
 const std::string dirPath = getResourcePath();
