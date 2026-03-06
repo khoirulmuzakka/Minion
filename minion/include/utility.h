@@ -1,6 +1,18 @@
 #ifndef UTILITY_H
 #define UTILITY_H
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+#endif
+
 #include <vector>
 #include <random>
 #include <cmath>

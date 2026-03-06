@@ -44,23 +44,23 @@ if(NOT Eigen3_FOUND)
         message(FATAL_ERROR "Eigen3 not found. Install Eigen3 or set MINION_FETCH_EIGEN=ON.")
     endif()
 
-    # Fetch Eigen headers only. Do not configure Eigen's CMake project:
-    # this keeps Minion's build graph clean and avoids optional Fortran/BLAS paths.
+    # Fetch Eigen headers only. SOURCE_SUBDIR points to a non-project path so
+    # MakeAvailable populates the source tree without adding Eigen's CMake project.
     FetchContent_Declare(
         eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG 3.4.0
         GIT_SHALLOW TRUE
+        SOURCE_SUBDIR _minion_no_cmake_project
     )
-    FetchContent_GetProperties(eigen)
-    if(NOT eigen_POPULATED)
-        FetchContent_Populate(eigen)
-    endif()
+    FetchContent_MakeAvailable(eigen)
 
-    add_library(Eigen3::Eigen INTERFACE IMPORTED)
-    set_target_properties(Eigen3::Eigen PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
-    )
+    if(NOT TARGET Eigen3::Eigen)
+        add_library(Eigen3::Eigen INTERFACE IMPORTED)
+        set_target_properties(Eigen3::Eigen PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
+        )
+    endif()
 endif()
 
 # + ----------------------------------------- +
@@ -75,6 +75,9 @@ target_include_directories(minion PUBLIC
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/minion>
 )
+if(WIN32)
+    target_compile_definitions(minion PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
 target_link_libraries(minion PUBLIC Eigen3::Eigen)
 set_target_properties(minion PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(WIN32)
@@ -90,6 +93,9 @@ if(MINION_BUILD_CEC)
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:include/minion>
     )
+    if(WIN32)
+        target_compile_definitions(minion_cec PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+    endif()
     target_link_libraries(minion_cec PUBLIC Eigen3::Eigen)
     set_target_properties(minion_cec PROPERTIES POSITION_INDEPENDENT_CODE ON)
     if(WIN32)
@@ -187,6 +193,9 @@ if(MINION_BUILD_PYTHON)
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
         ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include
     )
+    if(WIN32)
+        target_compile_definitions(minionpycpp PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+    endif()
 
     if (MSVC)
         set_target_properties(minionpycpp PROPERTIES
