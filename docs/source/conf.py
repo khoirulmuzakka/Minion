@@ -8,9 +8,11 @@
 
 import os
 import sys
+import warnings
 sys.path.append("../../")
 sys.path.append(os.path.abspath('../minionpy'))
 import minionpy
+from sphinx.deprecation import RemovedInSphinx80Warning
 
 project = 'Minion'
 copyright = '2025, Khoirul Faiq Muzakka'
@@ -55,4 +57,6 @@ breathe_projects = {
 }
 breathe_default_project = "Minion"
 
+# Silence upstream Breathe/Sphinx compatibility deprecation noise during docs build.
+warnings.filterwarnings("ignore", category=RemovedInSphinx80Warning, module=r"breathe\.project")
 

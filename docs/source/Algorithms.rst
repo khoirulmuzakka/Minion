@@ -63,6 +63,8 @@ Below is a list of algorithms that **ignore** the ``relTol`` parameter. Even if 
 - AGSK  
 - j2020  
 - Dual Annealing  
+- RCMAES
+- BIPOP-aCMAES
 
 For these, the ``relTol`` (in Python) or ``tol`` (in C++) parameters specify the maximum allowed value for the standard deviation of the 
 function values divided by the average of the function values before the algorithm stops.
@@ -132,14 +134,14 @@ In C++, you can retrieve the default settings for an algorithm and adjust the pa
 .. code-block:: cpp
 
     minion::DefaultSettings settings;
-    // Retrieve the default settings for the ARRDE algorithm
-    std::map<std::string, minion::ConfigValue> options = settings.getDefaultSettings("ARRDE");
+    // Retrieve the default settings for the LSHADE algorithm
+    std::map<std::string, minion::ConfigValue> options = settings.getDefaultSettings("LSHADE");
 
     // Override default parameters
     options["population_size"] = 50; 
 
     // Initialize the minimizer with custom settings
-    auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "ARRDE", 0.0, max_evals, -1, options);
+    auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "LSHADE", 0.0, max_evals, -1, options);
 
     // Perform optimization
     auto min_result = min.optimize();

@@ -5,6 +5,7 @@
 </div>
 
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)
+![Tests](https://github.com/khoirulmuzakka/Minion/actions/workflows/test.yml/badge.svg)
 ![PyPI version](https://img.shields.io/pypi/v/minionpy.svg)
 ![PyPI Python Version](https://img.shields.io/pypi/pyversions/minionpy)
 ![PyPI pip downloads](https://img.shields.io/pypi/dm/minionpy.svg)

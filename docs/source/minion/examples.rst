@@ -1,152 +1,272 @@
-This section provides examples of how to use the **Minion** library to solve bound-constrained optimization problems using various algorithms.
+Examples
+========
 
-Basic Usage
-===========
+This page shows practical C++ usage patterns for Minion.
 
-This example demonstrates how to use **Minion** to optimize the Rosenbrock and Rastrigin functions using different optimization algorithms.
+Reference files in this repository:
 
-## Example: Optimizing Rosenbrock Function with Minion
-
-The following C++ example showcases how to use Minion to optimize the Rosenbrock function using multiple evolutionary algorithms.
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <vector>
-    #include "minion.h"
-
-    // Define the Rosenbrock function
-    double rosenbrock(const std::vector<double>& x) {
-        double sum = 0.0;
-        for (size_t i = 0; i < x.size() - 1; i++) {
-            sum += 100 * pow(x[i + 1] - x[i] * x[i], 2) + pow(1 - x[i], 2);
-        }
-        return sum;
-    }
-
-    // Vectorized version for Minion
-    std::vector<double> rosenbrock_vect(const std::vector<std::vector<double>>& X, void* data) {
-        std::vector<double> ret;
-        for (const auto& x : X) ret.push_back(rosenbrock(x));
-        return ret;
-    }
-
-    int main() {
-        // List of optimization algorithms to test
-        std::vector<std::string> algoList = {"ARRDE", "AGSK", "LSHADE", "LSRTDE"};
-        
-        // Define the problem dimensions and bounds
-        size_t dimension = 10;
-        std::vector<std::pair<double, double>> bounds(dimension, {-5.0, 5.0});
-        size_t max_evals = 100000;
-
-        // Iterate over each algorithm and perform optimization
-        for (const auto& algo : algoList) {
-            auto settings = minion::DefaultSettings().getDefaultSettings(algo);
-            minion::MinionResult res = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, algo, 0.0, max_evals, -1, settings).optimize();
-            std::cout << algo << " : " << res.fun << "\n";
-        }
-        return 0;
-    }
+- ``examples/main_minimizer.cpp``
+- ``examples/main_cec.cpp``
+- ``tests/main.cpp``
 
 
-Minion supports the following optimization algorithms:
+Basic Pattern
+=============
 
-- **Differential Evolution (DE) Variants:**
-
-    - ``"LSHADE"``  (Success History Adaptive DE with Linear Population Size Reduction)
-    - ``"DE"``      (The original DE)
-    - ``"JADE"``     (An adaptive DE)
-    - ``"jSO"``      (A variant of LSHADE with some improvements)
-    - ``"NLSHADE_RSP"`` (A variant of LSHADE with some improvements)
-    - ``"LSHADE_cnEpSin"`` (A variant of LSHADE with some improvements)
-    - ``"IMODE"`` (Improved Multi-operator Differential Evolution)
-    - ``"j2020"``  (A variant of jDE algorithm)
-    - ``"GWO_DE"``  (Grey Wolf-DE optimization)
-    - ``"ARRDE"``   (Adaptive restart-refine DE)
-    - ``"AGSK"``    (Adaptive gaining-sharing knowledge-based DE)
-    - ``"LSRTDE"``  (A variant of LSHADE with some improvements)
-
-- **Swarm Intelligence Algorithms:**
-
-    - ``"ABC"`` (Artificial Bee Colony)
-    - ``"PSO"`` (Particle Swarm Optimization)
-    - ``"SPSO2011"`` (Standard PSO 2011 variant)
-    - ``"DMSPSO"`` (Dynamic Multi-Swarm PSO)
-
-- **CMA-ES Variants:**
-
-    - ``"CMAES"`` (Covariance Matrix Adaptation Evolution Strategy)
-    - ``"BIPOP_aCMAES"`` (Adaptive bi-population CMA-ES with adaptive restarts)
-
-- **Classical Optimization Methods:**
-
-    - ``"NelderMead"``
-    - ``"DA"`` (Generalized Simulated Annealing or Dual Annealing)
-    - ``"L_BFGS_B"`` (Limited-memory BFGS with Bound Constraints)
-    - ``"L_BFGS"`` (Unconstrained L-BFGS)
-
-Each of these algorithms can be selected using their corresponding names when calling Minion's `Minimizer`.
-
-
-MinionResult Class
-==================
-
-The `MinionResult` class stores the result of an optimization process performed using the Minion optimization library.
-
-**Attributes :**
-
-- ``x`` (`std::vector<double>`): The solution vector containing the values for the decision variables at the optimal solution.
-- ``fun`` (`double`): The objective function value at the optimal solution.
-- ``nit`` (`size_t`): The number of iterations performed during the optimization process.
-- ``nfev`` (`size_t`): The number of function evaluations performed during the optimization process.
-- ``success`` (`bool`): A boolean flag indicating whether the optimization was successful.
-- ``message`` (`std::string`): A message providing additional information about the result of the optimization process.
-
-
-Using Class-Based Objective Functions
-======================================
-
-You can also define objective functions as class methods:
+Minion expects a **vectorized objective**:
 
 .. code-block:: cpp
 
-    class SomeObjective {
+    std::vector<double> objective(const std::vector<std::vector<double>>& X, void* data) {
+        std::vector<double> out(X.size(), 0.0);
+        for (size_t i = 0; i < X.size(); ++i) {
+            const auto& x = X[i];
+            // compute f(x)
+            out[i] = /* ... */;
+        }
+        return out;
+    }
+
+Then call ``minion::Minimizer``:
+
+.. code-block:: cpp
+
+    std::vector<std::pair<double, double>> bounds(dim, {-5.0, 5.0});
+    std::vector<double> x0(dim, 0.0);
+    std::string algo = "LSHADE";
+    auto settings = minion::DefaultSettings().getDefaultSettings(algo);
+
+    minion::MinionResult res = minion::Minimizer(
+        objective, bounds, x0, nullptr, nullptr, algo, 0.0, 100000, 42, settings
+    ).optimize();
+
+
+Understanding MinionResult
+==========================
+
+``optimize()`` returns ``minion::MinionResult`` with these fields:
+
+- ``x``: best decision vector found.
+- ``fun``: objective value at ``x``.
+- ``nit``: number of iterations/generations completed.
+- ``nfev``: number of objective evaluations.
+- ``success``: solver status flag.
+- ``message``: termination message (if provided by the algorithm).
+
+Example:
+
+.. code-block:: cpp
+
+    minion::MinionResult res = minion::Minimizer(
+        objective, bounds, x0, nullptr, nullptr, "ARRDE", 0.0, 100000, 42
+    ).optimize();
+
+    std::cout << "success: " << std::boolalpha << res.success << "\n";
+    std::cout << "fun: " << res.fun << "\n";
+    std::cout << "nit: " << res.nit << ", nfev: " << res.nfev << "\n";
+    std::cout << "x_best[0]: " << (res.x.empty() ? 0.0 : res.x[0]) << "\n";
+    if (!res.message.empty()) {
+        std::cout << "message: " << res.message << "\n";
+    }
+
+
+Using Callback
+==============
+
+You can pass a callback to monitor progress after each iteration:
+
+.. code-block:: cpp
+
+    void progress_callback(minion::MinionResult* state) {
+        std::cout << "iter=" << state->nit
+                  << " nfev=" << state->nfev
+                  << " best=" << state->fun << "\n";
+    }
+
+    minion::MinionResult res = minion::Minimizer(
+        objective, bounds, x0, nullptr, progress_callback, "LSHADE", 0.0, 100000, 42
+    ).optimize();
+
+If you need custom early stopping, a practical pattern is to throw from the callback
+when your condition is met, then catch outside:
+
+.. code-block:: cpp
+
+    struct StopNow : public std::exception {
+        const char* what() const noexcept override { return "user stop"; }
+    };
+
+    void early_stop_callback(minion::MinionResult* state) {
+        if (state->nfev >= 20000 || state->fun < 1e-8) {
+            throw StopNow();
+        }
+    }
+
+    try {
+        auto res = minion::Minimizer(
+            objective, bounds, x0, nullptr, early_stop_callback, "ARRDE", 0.0, 100000, 42
+        ).optimize();
+        (void)res;
+    } catch (const StopNow&) {
+        std::cout << "Optimization stopped by user callback.\n";
+    }
+
+
+Override Default Options
+========================
+
+Start from defaults, then override only what you need.
+
+.. code-block:: cpp
+
+    std::string algo = "DE";
+    auto settings = minion::DefaultSettings().getDefaultSettings(algo);
+
+    // Common overrides
+    settings["population_size"] = 80;
+    settings["bound_strategy"] = std::string("reflect-random");
+
+    // Algorithm-specific overrides
+    if (algo == "DE") {
+        settings["mutation_rate"] = 0.7;
+        settings["crossover_rate"] = 0.9;
+        settings["mutation_strategy"] = std::string("current_to_pbest1bin");
+    }
+
+    minion::MinionResult res = minion::Minimizer(
+        objective, bounds, x0, nullptr, nullptr, algo, 0.0, 100000, 42, settings
+    ).optimize();
+
+Notes:
+
+- Option keys are algorithm-specific. Use ``DefaultSettings`` as the source of valid keys.
+- Keep value types consistent with the expected type (``int``, ``double``, ``std::string``, ``bool``).
+
+
+Multithreading Objective Evaluation
+===================================
+
+Minion calls your objective in batches (``X``).  
+Parallelization for C++ workflows is typically implemented **inside your objective function**.
+
+
+1) Standalone Function (Thread-Safe)
+------------------------------------
+
+If each evaluation is independent, parallelize the loop over ``X``.
+
+.. code-block:: cpp
+
+    #include <omp.h>
+
+    double sphere(const std::vector<double>& x) {
+        double s = 0.0;
+        for (double v : x) s += v * v;
+        return s;
+    }
+
+    std::vector<double> sphere_batch(const std::vector<std::vector<double>>& X, void*) {
+        std::vector<double> out(X.size(), 0.0);
+        #pragma omp parallel for
+        for (int i = 0; i < static_cast<int>(X.size()); ++i) {
+            out[i] = sphere(X[i]);
+        }
+        return out;
+    }
+
+
+2) Non-Thread-Safe Class Method
+-------------------------------
+
+If the class has mutable shared state, protect access.
+
+.. code-block:: cpp
+
+    #include <mutex>
+
+    class Model {
     public:
-        double objective(std::vector<double> x) {
-            return rosenbrock(x);
+        double eval(const std::vector<double>& x) {
+            // touches mutable shared state internally
+            return /* ... */;
         }
     };
 
-    std::vector<double> objective_function(const std::vector<std::vector<double>>& X, void* data) {
-        SomeObjective* obj = static_cast<SomeObjective*>(data);
-        std::vector<double> ret;
-        for (auto& x : X) ret.push_back(obj->objective(x));
-        return ret;
+    struct ModelData {
+        Model* model;
+        std::mutex* mtx;
+    };
+
+    std::vector<double> model_batch(const std::vector<std::vector<double>>& X, void* data) {
+        auto* md = static_cast<ModelData*>(data);
+        std::vector<double> out(X.size(), 0.0);
+        #pragma omp parallel for
+        for (int i = 0; i < static_cast<int>(X.size()); ++i) {
+            std::lock_guard<std::mutex> lock(*md->mtx);
+            out[i] = md->model->eval(X[i]);
+        }
+        return out;
     }
 
-    int main() {
-        SomeObjective obj;
-        auto res = minion::Minimizer(objective_function, bounds, {}, &obj, nullptr, "LSHADE", 0.0, max_evals, -1, settings).optimize();
-        std::cout << "Result: " << res.fun << "\n";
-        return 0;
-    }
+If possible, prefer a re-entrant/stateless evaluator per thread to avoid lock contention.
 
 
-Using Callbacks
-===============
+3) Lambda Function
+------------------
 
-You can define a callback function to track optimization progress:
+Use a lambda and assign it to ``minion::MinionFunction``.
 
 .. code-block:: cpp
 
-    void callBack(minion::MinionResult* res) {
-        std::cout << "Current best fitness: " << res->fun << "\n";
+    minion::MinionFunction objective = [](const std::vector<std::vector<double>>& X, void*) {
+        std::vector<double> out(X.size(), 0.0);
+        #pragma omp parallel for
+        for (int i = 0; i < static_cast<int>(X.size()); ++i) {
+            const auto& x = X[i];
+            double f = 0.0;
+            for (size_t j = 0; j + 1 < x.size(); ++j) {
+                const double a = x[j + 1] - x[j] * x[j];
+                const double b = 1.0 - x[j];
+                f += 100.0 * a * a + b * b;
+            }
+            out[i] = f;
+        }
+        return out;
+    };
+
+
+CEC Functions
+=============
+
+Include both headers:
+
+.. code-block:: cpp
+
+    #include <minion.h>
+    #include <minion_cec.h>
+
+Wrap CEC evaluator into Minion objective signature:
+
+.. code-block:: cpp
+
+    std::vector<double> cec2017_batch(const std::vector<std::vector<double>>& X, void* data) {
+        auto* cec = static_cast<minion::CECBase*>(data);
+        return (*cec)(X);
     }
 
-    int main() {
-        auto res = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, callBack, "ARRDE", 0.0, max_evals, -1, settings).optimize();
-        return 0;
-    }
+Example (CEC2017, F1, dimension 30):
 
-These examples illustrate different ways to use Minion effectively. For more details, see the API reference and algorithm descriptions.
+.. code-block:: cpp
+
+    const int dim = 30;
+    minion::CEC2017Functions cec_f1(1, dim);
+    std::vector<std::pair<double, double>> bounds(dim, {-100.0, 100.0});
+    std::vector<double> x0(dim, 0.0);
+
+    auto settings = minion::DefaultSettings().getDefaultSettings("ARRDE");
+    minion::MinionResult res = minion::Minimizer(
+        cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", 0.0, 30000, 20250306, settings
+    ).optimize();
+
+For a larger CEC sweep (multiple functions and algorithms), see ``tests/main.cpp``.  
+For broader CEC benchmark utilities and bounds handling, see ``examples/main_cec.cpp``.
