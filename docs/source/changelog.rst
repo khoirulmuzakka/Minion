@@ -5,12 +5,13 @@ Changelog
    :local:
    :depth: 2
 
-Version 1.4.0 - 2026-03-06
+Version 1.5.0 - 2026-03-07
 --------------------------
 
 **Changed**
 
 - Reverted back to compiled libarary style. 
+- Fix compilation issue on Windows MSVC due to Minmax
 
 Version 1.2.0 - 2026-03-05
 --------------------------
