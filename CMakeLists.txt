@@ -71,7 +71,6 @@ add_library(minion SHARED ${MINION_CORE_SOURCE_FILES})
 
 target_include_directories(minion PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include>
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/minion>
 )
@@ -191,7 +190,6 @@ if(MINION_BUILD_PYTHON)
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/include
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include
     )
     if(WIN32)
         target_compile_definitions(minionpycpp PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
@@ -228,7 +226,6 @@ else()
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion
             FILES_MATCHING PATTERN "*.h" PATTERN "minion_cec.h" EXCLUDE)
     endif()
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external/lbfgspp/include/ DESTINATION include)
     if(MINION_BUILD_CEC)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/ DESTINATION cec_input_data)
