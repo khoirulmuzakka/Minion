@@ -6,7 +6,6 @@
 #include <cmath>  
 #include <algorithm>
 #include "nelder_mead.h"
-#include "LBFGS.h"
 #include "exception.h"
 #include "types.h"
 
@@ -22,7 +21,9 @@ namespace minion {
  * @brief A class for the L-BFGS optimization algorithm.
  * 
  * This class implements the Limited-memory BFGS unconstrained (L-BFGS) algorithm.
- * It inherits from the MinimizerBase class and provides methods for constrained optimization.
+ * It inherits from the MinimizerBase class and provides methods for unconstrained optimization.
+ * The implementation follows the LBFGSpp library structure, while incorporating selected
+ * line-search and finite-difference handling choices used elsewhere in Minion.
  */
 class L_BFGS : public MinimizerBase {
 public:
@@ -33,7 +34,8 @@ public:
     double func_noise_ratio =1e-10;
 
 private : 
-    LBFGSpp::LBFGSSolver<double>* solver=nullptr;
+    struct InternalState;
+    InternalState* state = nullptr;
     double epsilon =  std::numeric_limits<double>::epsilon();
     double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
@@ -76,9 +78,7 @@ public:
      * @brief Destructor
      * 
      */
-    ~L_BFGS(){  
-        if (solver!=nullptr) delete solver;
-    }
+    ~L_BFGS();
 
     /**
      * @brief Optimizes the objective function.

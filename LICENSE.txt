@@ -25,10 +25,8 @@ SOFTWARE.
 LBFGSpp Library
 ---------------
 
-Minion uses the `LBFGSpp` library (https://github.com/yixuan/LBFGSpp), 
-which is also licensed under the MIT License. The use of this library in 
-Minion follows the same licensing terms, which allow for free usage, modification, 
-and distribution, provided that the copyright notice and license are included.
+This project includes code elements derived from the `LBFGSpp` project
+(https://github.com/yixuan/LBFGSpp), which is licensed under the MIT License.
 
 For more information about the `LBFGSpp` library, please refer to its official repository.
 

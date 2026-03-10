@@ -6,7 +6,6 @@
 #include <cmath>  
 #include <algorithm>
 #include "nelder_mead.h"
-#include "LBFGSB.h"
 #include "exception.h"
 #include "types.h"
 
@@ -21,6 +20,9 @@ namespace minion {
  * 
  * This class implements the Limited-memory BFGS with Box constraints (L-BFGS-B) algorithm.
  * It inherits from the MinimizerBase class and provides methods for constrained optimization.
+ * The implementation is based primarily on the LBFGSpp library structure, with selected
+ * elements adapted from SciPy's L-BFGS-B implementation, including the dcstep-based line
+ * search and related reference workflow details.
  */
 class L_BFGS_B : public MinimizerBase {
 public:
@@ -31,7 +33,8 @@ public:
     double func_noise_ratio =1e-10;
 
 private : 
-    LBFGSpp::LBFGSBSolver<double>* solver=nullptr;
+    struct InternalState;
+    InternalState* state = nullptr;
     double epsilon =  std::numeric_limits<double>::epsilon();
     double last_f=1.0;
     double fin_diff_rel_step= sqrt(std::numeric_limits<double>::epsilon());
@@ -80,9 +83,7 @@ public:
      * @brief Destructor
      * 
      */
-    ~L_BFGS_B(){  
-        if (solver!=nullptr) delete solver;
-    }
+    ~L_BFGS_B();
 
     /**
      * @brief Optimizes the objective function.
