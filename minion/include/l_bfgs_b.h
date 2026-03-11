@@ -54,7 +54,11 @@ public:
      * @brief Constructor for L-BFGS-B.
      * @param func The objective function to minimize.
      * @param bounds_ The bounds for the variables.
-     * @param x0 The initial guesses. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. Minion will pick the best guess from x0 as the the actual initialization.
+     * @param x0 Optional initial guesses. Note that Minion assumes multiple
+     * initial guesses, thus, x0 is an std::vector<std::vector<double>>
+     * object. Minion will pick the best guess from x0 as the actual
+     * initialization. If omitted, a random point sampled from the bounds is
+     * used.
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
      * @param tol The tolerance for stopping criteria.
@@ -74,7 +78,6 @@ public:
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
         MinimizerBase(func, bounds_, x0, data, callback, tol, maxevals, seed, options) { 
-            if (x0.empty()) throw std::runtime_error("Initial guesses x0 can not be empty!");
             actual_bounds = bounds;
             for (int i=0; i<bounds.size(); i++) bounds[i] = { bounds[i].first + dist_min, bounds[i].second - dist_min };
         };
