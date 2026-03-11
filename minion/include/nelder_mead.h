@@ -19,7 +19,7 @@ public:
      * @brief Constructor for Differential_Evolution.
      * @param func The objective function to minimize.
      * @param bounds The bounds for the variables.
-     * @param x0 The initial guesses for the solution.
+     * @param x0 Optional initial guesses for the solution. If omitted, a random point sampled from the bounds is used.
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
      * @param tol The tolerance for stopping criteria.

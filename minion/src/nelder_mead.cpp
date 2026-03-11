@@ -8,10 +8,10 @@ namespace minion {
 
 void NelderMead::initialize() {
     if (x0.empty()) {
-        throw std::runtime_error("Nelder-Mead requires at least one initial guess.");
+        x0 = latin_hypercube_sampling(bounds, 1);
     }
 
-    xinit = findBestPoint(x0);
+    xinit = (x0.size() == 1) ? x0.front() : findBestPoint(x0);
 
     auto defaults = DefaultSettings().getDefaultSettings("NelderMead");
     for (const auto& entry : optionMap) {
