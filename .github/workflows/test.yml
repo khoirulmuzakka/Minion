@@ -22,19 +22,19 @@ jobs:
 
       - name: Configure tests (Windows)
         if: runner.os == 'Windows'
-        run: cmake -G Ninja -S tests -B tests/build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF -DMINION_BUILD_TESTS=ON
 
       - name: Configure tests (Non-Windows)
         if: runner.os != 'Windows'
-        run: cmake -S tests -B tests/build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF -DMINION_BUILD_TESTS=ON
 
       - name: Build tests
-        run: cmake --build tests/build --config Release
+        run: cmake --build build --target minion_test --config Release
 
       - name: Run test binary (Windows)
         if: runner.os == 'Windows'
-        run: ./tests/build/bin/minion_test.exe
+        run: ./build/bin/minion_test.exe
 
       - name: Run test binary (Non-Windows)
         if: runner.os != 'Windows'
-        run: ./tests/build/bin/minion_test
+        run: ./build/bin/minion_test

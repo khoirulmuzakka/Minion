@@ -27,6 +27,7 @@ endif()
 option(MINION_BUILD_CEC "Build compiled CEC library" OFF)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
+option(MINION_BUILD_TESTS "Build repository test targets" OFF)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
@@ -206,6 +207,14 @@ if(MINION_BUILD_PYTHON)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
         )
     endif()
+endif()
+
+# + -------------------------- +
+# | Optional repository tests  |
+# + -------------------------- +
+if(MINION_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # + -------------------------- +
