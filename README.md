@@ -95,10 +95,18 @@ Dependencies:
 - C++17 compiler (GCC/Clang/MSVC)
 - Eigen3 (or allow automatic fetch via CMake)
 - Optional for Python bindings: Python 3 + `pybind11`
+- Optional for documentation: `doxygen`, `pandoc`, Python 3, `sphinx`, `sphinx-rtd-theme`, `nbsphinx`, `breathe`
 
 Build with helper scripts:
 - Windows: `compile.bat`
 - Linux/macOS: `compile.sh`
+
+The helper scripts are intended for native C++ builds and configure:
+- `MINION_BUILD_CEC=ON`
+- `MINION_BUILD_EXAMPLES=ON`
+- `MINION_BUILD_PYTHON=OFF`
+
+If the optional documentation toolchain is already installed, the scripts also generate Doxygen and HTML docs. If any docs dependency is missing, the scripts print a warning and skip documentation generation.
 
 Manual CMake build:
 ```sh
@@ -108,6 +116,20 @@ cmake -S . -B build \
   -DMINION_BUILD_EXAMPLES=ON
 cmake --build build --config Release
 cmake --install build --prefix /usr/local
+```
+
+Manual CMake build with Python bindings:
+```sh
+cmake -S . -B build \
+  -DMINION_BUILD_CEC=ON \
+  -DMINION_BUILD_PYTHON=ON \
+  -DMINION_BUILD_EXAMPLES=ON
+cmake --build build --config Release
+```
+
+For Python usage, installing from PyPI is the recommended path:
+```sh
+pip install --upgrade minionpy
 ```
 
 ### Using Minion in a C++ Project
