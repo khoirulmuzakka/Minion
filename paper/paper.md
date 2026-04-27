@@ -28,7 +28,7 @@ bibliography: paper.bib
 
 Minion is a derivative-free optimization library for single-objective blackbox problems where gradient information is unavailable or unreliable. It provides a C++ backend with a Python interface (MinionPy), supporting applications in engineering, machine learning, and scientific computing.
 
-The library offers a centralized implementation of advanced derivative-free optimization algorithms, including state-of-the-art Differential Evolution (DE) methods that have performed strongly in IEEE CEC competitions, CMA-ES variants, and several Particle Swarm Optimization (PSO) variants. Alongside these research-grade solvers, Minion ships widely used optimizers such as Nelder–Mead, Dual Annealing (generalized simulated annealing), L-BFGS, and L-BFGS-B, allowing practitioners to combine established baselines with advanced heuristics within a single API. Many existing optimization libraries include only elementary variants of these methods and lack standardized benchmark problems. Minion addresses this by integrating multiple CEC benchmark suites (2011, 2014, 2017, 2019, 2020, and 2022) to facilitate algorithm evaluation and comparison.
+The library offers a centralized implementation of advanced derivative-free optimization algorithms, including state-of-the-art Differential Evolution (DE) methods that have performed strongly in IEEE Congress on Evolutionary Computation (CEC) competitions, Covariance Matrix Adaptation Evolution Strategy (CMA-ES) variants, and several Particle Swarm Optimization (PSO) variants. Alongside these research-grade solvers, Minion ships widely used optimizers such as Nelder–Mead, Dual Annealing (generalized simulated annealing), L-BFGS, and L-BFGS-B, allowing practitioners to combine established baselines with advanced heuristics within a single API. Many existing optimization libraries include only elementary variants of these methods and lack standardized benchmark problems. Minion addresses this by integrating multiple CEC benchmark suites (2011, 2014, 2017, 2019, 2020, and 2022) to facilitate algorithm evaluation and comparison.
 
 Compared with widely adopted toolkits such as SciPy, NLopt, and pagmo2/pygmo, Minion emphasizes a unified interface for batch-evaluated objective functions, provides native support for modern population-based methods and finite-difference quasi-Newton solvers, and bundles curated CEC benchmark suites for reproducible experimentation. These design choices serve researchers developing bespoke algorithms as well as practitioners seeking robust defaults for blackbox optimization.
 
@@ -36,7 +36,7 @@ Compared with widely adopted toolkits such as SciPy, NLopt, and pagmo2/pygmo, Mi
 
 SciPy [@2020SciPy-NMeth] underpins a large fraction of scientific computing in Python and offers a stable interface to classical optimization routines, including gradient-based methods and a handful of derivative-free heuristics such as Nelder–Mead and Powell’s method. Its design prioritizes broad accessibility and numerical reliability; consequently, coverage of recent population-based metaheuristics or fully vectorized objective evaluations is limited.
 
-NLopt [@NLopt] collects an extensive set of local and global optimizers behind a C API with bindings to multiple languages. The library provides deterministic algorithms (e.g. COBYLA, BOBYQA) and stochastic search methods (e.g. CRS, ISRES, ESCH), yet relies on single-sample objective calls. Users who require Differential Evolution or particle-swarm heuristics typically integrate third-party implementations alongside NLopt’s core offerings.
+NLopt [@NLopt] collects an extensive set of local and global optimizers behind a C API with bindings to multiple languages. The library provides deterministic algorithms (e.g. COBYLA, BOBYQA) and stochastic search methods (e.g. CRS, ISRES, ESCH), yet relies on single-sample objective calls. Users who require DE or PSO heuristics typically integrate third-party implementations alongside NLopt’s core offerings.
 
 pagmo2/pygmo [@Biscani2020] is geared towards island-based, massively parallel search. It excels at composing heterogeneous portfolios of solvers and supports sophisticated multi-objective workflows. For practitioners focused on single-objective, derivative-free problems, realizing a streamlined setup—particularly when benchmarking CEC-style test suites or coupling to noisy quasi-Newton updates—can involve additional configuration effort.
 
@@ -73,7 +73,7 @@ Finally, the benchmark code is treated as part of the software design, not as an
 # Algorithms
 Minion currently implements the following optimization algorithms:
 
-- Basic Differential Evolution (DE) [@Storn1997]
+- Basic DE [@Storn1997]
 - JADE [@5208221]
 - LSHADE [@b6900380]
 - LSHADE-cnEpSin [@Awad2017]
@@ -81,19 +81,19 @@ Minion currently implements the following optimization algorithms:
 - j2020 [@9185551]
 - NL-SHADE-RSP [@9504959]
 - LSRTDE [@10611907]
-- Adaptive Restart-Refine Differential Evolution (ARRDE) [@ARRDE]
+- Adaptive Restart-Refine DE (ARRDE) [@ARRDE]
 - Artificial Bee Colony (ABC) [@Karaboga2005]
 - Canonical PSO [@Kennedy1995]
 - SPSO-2011 [@ZambranoBigiarini2013]
 - Dynamic Multi-Swarm PSO (DMS-PSO) [@1501611]
-- Covariance Matrix Adaptation Evolution Strategy (CMA-ES) [@Hansen1996]
+- CMA-ES [@Hansen1996]
 - BI-population CMA-ES (BIPOP-ACMAES) [@bipop2009]
 - Generalized Simulated Annealing (Dual Annealing) [@XIANG1997216]
 - Nelder–Mead [@10.1093/comjnl/7.4.308]
 - L-BFGS-B [@doi:10.1137/0916069]
 - L-BFGS [@Liu1989]
 
-Additional algorithms are planned for future releases. Minion also ships benchmark suites from IEEE CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
+Additional algorithms are planned for future releases. Minion also ships benchmark suites from CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
 
 Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce derivative calculations tailored to noisy, vectorized workloads. Gradient estimates are generated from batched finite differences. The finite-difference step for each coordinate is adapted from an estimate of local curvature, obtained from L-BFGS curvature information accumulated in previous iterations, and from a multiplicative model of function noise. This follows the relation $h = 2\sqrt{\epsilon_f / |f^{(2)}|}$, where $\epsilon_f$ is the estimated function-value noise and $f^{(2)}$ is the local second derivative. Minion also supports a Lanczos-style derivative formula derived from least-squares polynomial fitting, while preserving a single batched objective call for the derivative evaluation. The accompanying benchmark notebook demonstrates the robustness of these quasi-Newton solvers on noisy CEC test suites while preserving a fully vectorized evaluation pipeline.
 
