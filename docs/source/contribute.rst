@@ -1,87 +1,104 @@
 Contributing to Minion
 ======================
 
-We welcome contributions to the **Minion** library! Whether you want to fix bugs, add new features, improve documentation, or contribute in other ways, this guide will help you get started.
+Minion is developed on GitHub at
+`https://github.com/khoirulmuzakka/Minion <https://github.com/khoirulmuzakka/Minion>`_.
+Contributions are welcome for bug fixes, new features, tests, examples, and documentation improvements.
 
 How to Contribute
 -----------------
 
-1. **Fork the Repository**  
-   - Go to the Minion GitLab repository and click **Fork**.
-   - Clone your fork to your local machine:  
-     
-     .. code-block:: shell
+1. Fork the repository on GitHub.
+2. Clone your fork locally:
 
-        git clone https://gitlab.com/yourname/Minion.git
-        cd Minion
-     
+   .. code-block:: shell
 
-2. **Set Up Your Environment**  
-   - Install dependencies:  
-     
-     .. code-block:: shell
+      git clone https://github.com/yourname/Minion.git
+      cd Minion
 
-        pip install pybind11 
-     
-   - Ensure you have a C++ compiler installed.
+3. Add the main repository as an upstream remote:
 
-3. **Create a New Branch**  
-   - Use a descriptive name for your branch:  
-     
-     .. code-block:: shell
+   .. code-block:: shell
 
-        git checkout -b feature-new-algorithm
-     
+      git remote add upstream https://github.com/khoirulmuzakka/Minion.git
 
-4. **Make Your Changes**  
-   - Modify the code or documentation as needed.
-   - Follow the existing code style and structure.
-   - Add docstrings to new functions and classes.
+4. Create a feature branch for your work:
 
-5. **Run Tests**  
-   - Ensure your changes do not break existing functionality. Most importantly, it must be compileable.  
+   .. code-block:: shell
 
-6. **Commit Your Changes**  
-   - Use meaningful commit messages:  
-     
-     .. code-block:: shell
+      git checkout -b feature-short-description
 
-      git add .
-      git commit -m "Add new optimization algorithm"
-     
+5. Make your changes.
+6. Run the relevant build or validation steps.
+7. Commit with a clear message and push your branch.
+8. Open a pull request on GitHub describing the change and any testing you performed.
 
-7. **Push Your Changes and Open a Merge Request**  
-   - Push your changes to your fork:  
+Development Setup
+-----------------
 
-     .. code-block:: shell
+For source builds, the main requirements are:
 
-        git push origin feature-new-algorithm
-     
-   - Open a **Merge Request (MR)** on GitLab.
-   - Describe your changes and request a review.
+- CMake 3.18 or newer
+- A C++17 compiler
+- Eigen3, or allow CMake to fetch dependencies as configured by the project
+- Python 3 and ``pybind11`` if you are working on the Python bindings
 
-Reporting Issues
-----------------
+If you only need the Python package for normal use, install it from PyPI instead:
 
-If you find a bug or have a feature request, please create an issue on GitLab.  
-Provide a clear description, steps to reproduce (if applicable), and any relevant logs or screenshots.
+.. code-block:: shell
 
-Code Style Guide
-----------------
+   pip install --upgrade minionpy
 
-- Follow **PEP 8** for Python code.
-- Use **Doxygen-style comments** for C++ code.
-- Write meaningful variable and function names.
+To build from source, use the helper scripts in the repository root:
+
+- Windows: ``compile.bat``
+- Linux/macOS: ``compile.sh``
+
+These scripts are the recommended starting point for local development because they configure the native build consistently with the project.
+
+What to Check Before Submitting
+-------------------------------
+
+- The project still builds successfully.
+- New or changed behavior is covered by tests or examples when practical.
+- Documentation is updated when user-facing behavior changes.
+- Code follows the existing style and naming conventions in the surrounding files.
+
+If your change affects the Python bindings, examples, packaging, or documentation, verify those areas directly instead of assuming the C++ build alone is enough.
+
+Reporting Bugs and Requesting Features
+--------------------------------------
+
+Use the GitHub issue tracker:
+
+`https://github.com/khoirulmuzakka/Minion/issues <https://github.com/khoirulmuzakka/Minion/issues>`_
+
+When opening an issue, include:
+
+- A clear description of the problem or request
+- Steps to reproduce the issue, if applicable
+- The platform, compiler, Python version, or package version when relevant
+- Any error messages, logs, or screenshots that help narrow down the cause
 
 Documentation Contributions
 ---------------------------
 
-- Minion documentation is built with **Sphinx** and **Doxygen**.
-- To build the documentation locally:
-  ```
-  cd docs
-  make html
-  ```
-- Edit `.rst` files in `docs/source/` for documentation changes.
+The documentation is written in reStructuredText under ``docs/source/`` and built with Sphinx. Doxygen output is also used by the docs build.
 
-Thank you for contributing to Minion!
+If your environment already has the required documentation dependencies installed, you can build the docs locally from the ``docs`` directory:
+
+.. code-block:: shell
+
+   make html
+
+On environments where the helper scripts are used, documentation generation may also be handled as part of the project build when the required tools are available.
+
+Pull Request Notes
+------------------
+
+- Keep pull requests focused on a single change when possible.
+- Explain the motivation for the change, not just the code diff.
+- Link related issues if there are any.
+- Call out any behavior changes that may affect existing users.
+
+Thank you for contributing to Minion.
