@@ -33,7 +33,7 @@ jobs:
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
-        run: cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_TESTS=ON
+        run: cmake -G "Visual Studio 17 2022" -B build -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_CEC=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_TESTS=ON
 
       - name: Configure CMake (Non-Windows)
         if: runner.os != 'Windows'
@@ -44,20 +44,6 @@ jobs:
 
       - name: Run C++ tests
         run: ctest --test-dir build --output-on-failure -C Release
-
-      - name: Inspect Python extension artifacts (Windows)
-        if: runner.os == 'Windows'
-        run: Get-ChildItem minionpy\lib | Format-Table Name, Length
-
-      - name: Inspect minionpycpp dependencies (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $pyd = Get-ChildItem minionpy\lib\minionpycpp*.pyd | Select-Object -First 1
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          $dumpbin = Get-ChildItem "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1
-          & $dumpbin.FullName /dependents $pyd.FullName
 
       - name: Run Python tests
         run: python tests/test_minionpy.py
