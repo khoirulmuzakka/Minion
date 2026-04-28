@@ -54,7 +54,10 @@ jobs:
         shell: pwsh
         run: |
           $pyd = Get-ChildItem minionpy\lib\minionpycpp*.pyd | Select-Object -First 1
-          dumpbin /dependents $pyd.FullName
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $dumpbin = Get-ChildItem "$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1
+          & $dumpbin.FullName /dependents $pyd.FullName
 
       - name: Run Python tests
         run: python tests/test_minionpy.py
