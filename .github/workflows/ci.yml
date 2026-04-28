@@ -87,7 +87,7 @@ jobs:
           name: minion-deb
           path: build-pkg/*.deb
           overwrite: true
-          retention-days: 7
+          retention-days: 1
 
       - name: Generate macOS TGZ package
         if: matrix.package_type == 'macos'
@@ -98,13 +98,14 @@ jobs:
         if: matrix.package_type == 'macos'
         run: |
           archive="$(ls build-pkg/*.tar.gz)"
-          mv "$archive" "build-pkg/minion-${{ matrix.package_arch }}.tar.gz"
+          renamed="$(basename "$archive" | sed "s/Darwin/macos-${{ matrix.package_arch }}/")"
+          mv "$archive" "build-pkg/$renamed"
 
       - name: Upload macOS TGZ artifact
         if: matrix.package_type == 'macos'
         uses: actions/upload-artifact@v4
         with:
           name: minion-macos-tgz-${{ matrix.package_arch }}
-          path: build-pkg/minion-${{ matrix.package_arch }}.tar.gz
+          path: build-pkg/*macos-${{ matrix.package_arch }}.tar.gz
           overwrite: true
-          retention-days: 7
+          retention-days: 1
