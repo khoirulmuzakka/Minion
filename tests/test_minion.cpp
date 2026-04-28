@@ -11,6 +11,19 @@
 
 namespace {
 
+std::vector<double> sphere_batch(const std::vector<std::vector<double>>& X, void*) {
+    std::vector<double> out(X.size(), 0.0);
+    for (size_t i = 0; i < X.size(); ++i) {
+        const auto& x = X[i];
+        double f = 0.0;
+        for (double value : x) {
+            f += value * value;
+        }
+        out[i] = f;
+    }
+    return out;
+}
+
 std::vector<double> rosenbrock_batch(const std::vector<std::vector<double>>& X, void*) {
     std::vector<double> out(X.size(), 0.0);
     for (size_t i = 0; i < X.size(); ++i) {
@@ -34,8 +47,6 @@ std::vector<double> cec2017_batch(const std::vector<std::vector<double>>& X, voi
 }  // namespace
 
 int main() {
-    minion::MinionFunction func = rosenbrock_batch;
-
     const size_t dim = 5;
     std::vector<std::pair<double, double>> bounds(dim, {-5.0, 5.0});
     std::vector<double> x0(dim, 0.5);
@@ -53,7 +64,49 @@ int main() {
     int failed_checks = 0;
     int total_checks = 0;
 
-    std::cout << "Rosenbrock minimization using all Minion algorithms\n";
+    std::cout << "Sphere minimization using all Minion algorithms\n";
+    std::cout << "dimension=" << dim << ", maxevals=" << maxevals << "\n\n";
+    std::cout << std::left << std::setw(18) << "Algorithm" << std::right << std::setw(16) << "best_f" << std::setw(12)
+              << "nfev" << '\n';
+    std::cout << std::string(46, '-') << '\n';
+
+    const std::map<std::string, double> sphere_upper = {
+        {"DE", 1e-3}, {"LSHADE", 1e-3}, {"AGSK", 1e-3}, {"JADE", 1e-3}, {"j2020", 1e-3},
+        {"NLSHADE_RSP", 1e-3}, {"LSRTDE", 1e-3}, {"jSO", 1e-3}, {"IMODE", 1e-3}, {"ARRDE", 1e-3},
+        {"GWO_DE", 1e-3}, {"NelderMead", 1e-3}, {"ABC", 1e-3}, {"PSO", 1e-3}, {"SPSO2011", 1e-3},
+        {"DMSPSO", 1e-3}, {"LSHADE_cnEpSin", 1e-3}, {"CMAES", 1e-3}, {"RCMAES", 1e-3},
+        {"BIPOP_aCMAES", 1e-3}, {"DA", 1e-3}, {"L_BFGS_B", 1e-3}, {"L_BFGS", 1e-3},
+    };
+
+    for (const auto& algo : algorithms) {
+        try {
+            minion::Minimizer opt(sphere_batch, bounds, x0, nullptr, nullptr, algo, tol, maxevals, 42);
+            minion::MinionResult res = opt.optimize();
+            std::cout << std::left << std::setw(18) << algo << std::right << std::setw(16) << std::setprecision(8)
+                      << std::scientific << res.fun << std::setw(12) << res.nfev << '\n';
+
+            ++total_checks;
+            const bool finite_ok = std::isfinite(res.fun);
+            const bool eval_ok = res.nfev <= static_cast<int>(maxevals + eval_slack);
+            const auto it = sphere_upper.find(algo);
+            const double upper = (it == sphere_upper.end()) ? std::numeric_limits<double>::infinity() : it->second;
+            const bool quality_ok = res.fun <= upper;
+            if (!(finite_ok && eval_ok && quality_ok)) {
+                ++failed_checks;
+                std::cerr << "[FAIL][Sphere] " << algo
+                          << " finite=" << finite_ok
+                          << " nfev=" << res.nfev << " (limit " << (maxevals + eval_slack) << ")"
+                          << " best_f=" << res.fun << " (limit " << upper << ")\n";
+            }
+        } catch (const std::exception& e) {
+            std::cout << std::left << std::setw(18) << algo << "FAILED: " << e.what() << '\n';
+            ++total_checks;
+            ++failed_checks;
+            std::cerr << "[FAIL][Sphere] " << algo << " exception: " << e.what() << "\n";
+        }
+    }
+
+    std::cout << "\nRosenbrock minimization using all Minion algorithms\n";
     std::cout << "dimension=" << dim << ", maxevals=" << maxevals << "\n\n";
     std::cout << std::left << std::setw(18) << "Algorithm" << std::right << std::setw(16) << "best_f" << std::setw(12)
               << "nfev" << '\n';
@@ -69,7 +122,7 @@ int main() {
 
     for (const auto& algo : algorithms) {
         try {
-            minion::Minimizer opt(func, bounds, x0, nullptr, nullptr, algo, tol, maxevals, 42);
+            minion::Minimizer opt(rosenbrock_batch, bounds, x0, nullptr, nullptr, algo, tol, maxevals, 42);
             minion::MinionResult res = opt.optimize();
             std::cout << std::left << std::setw(18) << algo << std::right << std::setw(16) << std::setprecision(8)
                       << std::scientific << res.fun << std::setw(12) << res.nfev << '\n';

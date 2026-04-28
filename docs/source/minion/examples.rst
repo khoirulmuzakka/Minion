@@ -7,7 +7,7 @@ Reference files in this repository:
 
 - ``examples/main_minimizer.cpp``
 - ``examples/main_cec.cpp``
-- ``tests/main.cpp``
+- ``tests/test_minion.cpp``
 
 
 Basic Pattern
@@ -268,5 +268,5 @@ Example (CEC2017, F1, dimension 30):
         cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", 0.0, 30000, 20250306, settings
     ).optimize();
 
-For a larger CEC sweep (multiple functions and algorithms), see ``tests/main.cpp``.  
+For a larger CEC sweep (multiple functions and algorithms), see ``tests/test_minion.cpp``.  
 For broader CEC benchmark utilities and bounds handling, see ``examples/main_cec.cpp``.

@@ -2,7 +2,7 @@ if(NOT TARGET minion)
     message(FATAL_ERROR "tests/ must be added from the top-level Minion build.")
 endif()
 
-add_executable(minion_test main.cpp)
+add_executable(minion_test test_minion.cpp)
 target_link_libraries(minion_test PRIVATE minion)
 
 if(TARGET minion_cec)
