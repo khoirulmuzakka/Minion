@@ -48,9 +48,6 @@ jobs:
       - name: Python build
         run: python -m build
 
-      - name: Install package for Python tests
-        run: python -m pip install . --no-build-isolation
-
       - name: Run Python tests
         run: python tests/test_minionpy.py
 
