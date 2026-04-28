@@ -210,16 +210,22 @@ The Python package code is in the ``minionpy`` directory. The compiled Python
 extension is written to ``minionpy/lib``. After the build, import MinionPy from
 the repository root:
 
-.. code-block:: shell
+.. code-block:: python
 
-   python3 -c "import minionpy; print(minionpy.__version__)"
+   import minionpy
+   print(minionpy.__version__)
 
-If you run Python from another directory, add the repository root to
-``PYTHONPATH``:
+If you run Python from another directory, add the repository root
+(the parent directory of ``minionpy``) to ``sys.path`` before importing
+``minionpy``:
 
-.. code-block:: shell
+.. code-block:: python
 
-   PYTHONPATH=/path/to/Minion python3 -c "import minionpy; print(minionpy.__version__)"
+   import sys
+   sys.path.insert(0, "/path/to/Minion")
+
+   import minionpy
+   print(minionpy.__version__)
 
 To select a specific Python interpreter, pass it to CMake:
 
