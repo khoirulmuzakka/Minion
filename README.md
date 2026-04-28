@@ -53,13 +53,6 @@ Minion also serves as a **research platform** for developing and testing new opt
   - The CEC 2011 suite, containing 22 real-world optimization problems, has been completely rewritten into C++ from the MATLAB version, making it much faster than the original.
 
 ## 🚀 Installation and Usage
-
-### Quick install
-
-```sh
-pip install --upgrade minionpy
-```
-
 ### Build dependencies
 - CMake >= 3.18
 - C++17 compiler (GCC/Clang/MSVC)
