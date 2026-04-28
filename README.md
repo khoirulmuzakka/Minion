@@ -54,12 +54,6 @@ Minion also serves as a **research platform** for developing and testing new opt
 
 ## 🚀 Installation and Usage
 
-### Quick install
-
-```sh
-pip install --upgrade minionpy
-```
-
 ### Build dependencies
 - CMake >= 3.18
 - C++17 compiler (GCC/Clang/MSVC)
