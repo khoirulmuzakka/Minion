@@ -55,7 +55,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            package_type: deb
+          - os: macos-latest
+            package_type: macos
+            package_arch: arm64
+          - os: macos-15-intel
+            package_type: macos
+            package_arch: x64
 
     steps:
       - name: Checkout code
@@ -68,12 +76,12 @@ jobs:
         run: cmake --build build-pkg --config Release
 
       - name: Generate Debian package
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.package_type == 'deb'
         run: cpack -G DEB --config CPackConfig.cmake
         working-directory: build-pkg
 
       - name: Upload Debian artifact
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.package_type == 'deb'
         uses: actions/upload-artifact@v4
         with:
           name: minion-deb
@@ -82,15 +90,21 @@ jobs:
           retention-days: 7
 
       - name: Generate macOS TGZ package
-        if: matrix.os == 'macos-latest'
+        if: matrix.package_type == 'macos'
         run: cpack -G TGZ --config CPackConfig.cmake
         working-directory: build-pkg
 
+      - name: Rename macOS TGZ with architecture
+        if: matrix.package_type == 'macos'
+        run: |
+          archive="$(ls build-pkg/*.tar.gz)"
+          mv "$archive" "build-pkg/minion-${{ matrix.package_arch }}.tar.gz"
+
       - name: Upload macOS TGZ artifact
-        if: matrix.os == 'macos-latest'
+        if: matrix.package_type == 'macos'
         uses: actions/upload-artifact@v4
         with:
-          name: minion-macos-tgz
-          path: build-pkg/*.tar.gz
+          name: minion-macos-tgz-${{ matrix.package_arch }}
+          path: build-pkg/minion-${{ matrix.package_arch }}.tar.gz
           overwrite: true
           retention-days: 7
