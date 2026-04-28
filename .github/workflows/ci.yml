@@ -58,19 +58,22 @@ jobs:
         include:
           - os: ubuntu-latest
             package_type: deb
+            package_suffix: ""
           - os: macos-latest
             package_type: macos
             package_arch: arm64
+            package_suffix: macos-arm64
           - os: macos-15-intel
             package_type: macos
             package_arch: x64
+            package_suffix: macos-x64
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Configure package build
-        run: cmake -B build-pkg -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF
+        run: cmake -B build-pkg -S . -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=OFF -DMINION_BUILD_EXAMPLES=OFF -DMINION_PACKAGE_SUFFIX="${{ matrix.package_suffix }}"
 
       - name: Build package payload
         run: cmake --build build-pkg --config Release
@@ -94,18 +97,11 @@ jobs:
         run: cpack -G TGZ --config CPackConfig.cmake
         working-directory: build-pkg
 
-      - name: Rename macOS TGZ with architecture
-        if: matrix.package_type == 'macos'
-        run: |
-          archive="$(ls build-pkg/*.tar.gz)"
-          renamed="$(basename "$archive" | sed "s/Darwin/macos-${{ matrix.package_arch }}/")"
-          mv "$archive" "build-pkg/$renamed"
-
       - name: Upload macOS TGZ artifact
         if: matrix.package_type == 'macos'
         uses: actions/upload-artifact@v4
         with:
           name: minion-macos-tgz-${{ matrix.package_arch }}
-          path: build-pkg/*macos-${{ matrix.package_arch }}.tar.gz
+          path: build-pkg/*-${{ matrix.package_suffix }}.tar.gz
           overwrite: true
           retention-days: 1

@@ -63,7 +63,7 @@ directory:
 
    mkdir -p /tmp/minion_pkg "$HOME/.local/minion"
    tar -xzf minion-<version>-macos-<arch>.tar.gz -C /tmp/minion_pkg
-   rsync -a /tmp/minion_pkg/minion-*/ "$HOME/.local/minion/"
+   rsync -a /tmp/minion_pkg/minion-<version>-macos-<arch>/ "$HOME/.local/minion/"
 
 For a system-wide installation, extract into a temporary directory and then
 copy into the system prefix:
@@ -72,7 +72,7 @@ copy into the system prefix:
 
    mkdir -p /tmp/minion_pkg
    tar -xzf minion-<version>-macos-<arch>.tar.gz -C /tmp/minion_pkg
-   sudo rsync -a /tmp/minion_pkg/minion-*/ /usr/local/
+   sudo rsync -a /tmp/minion_pkg/minion-<version>-macos-<arch>/ /usr/local/
 
 This native package installs headers, shared libraries, CMake package files,
 and the CEC input-data directory. It does not install the Python package
