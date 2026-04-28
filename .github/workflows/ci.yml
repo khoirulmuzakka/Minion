@@ -45,11 +45,15 @@ jobs:
       - name: Run C++ tests
         run: ctest --test-dir build --output-on-failure -C Release
 
-      - name: Python build
-        run: python -m build
+      - name: Inspect Python extension artifacts (Windows)
+        if: runner.os == 'Windows'
+        run: Get-ChildItem minionpy\lib | Format-Table Name, Length
 
       - name: Run Python tests
         run: python tests/test_minionpy.py
+
+      - name: Python build
+        run: python -m build
 
   package:
     runs-on: ${{ matrix.os }}
