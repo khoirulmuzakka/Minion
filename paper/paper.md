@@ -99,8 +99,6 @@ Additional algorithms are planned for future releases. Minion also ships benchma
 
 Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce derivative calculations tailored to noisy, vectorized workloads. Gradient estimates are generated from batched finite differences. The finite-difference step for each coordinate is adapted from an estimate of local curvature, obtained from L-BFGS curvature information accumulated in previous iterations, and from a multiplicative model of function noise. This follows the relation $h = 2\sqrt{\epsilon_f / |f^{(2)}|}$, where $\epsilon_f$ is the estimated function-value noise and $f^{(2)}$ is the local second derivative. Minion also supports a Lanczos-style derivative formula derived from least-squares fitting, while preserving a single batched objective call for the derivative evaluation. The accompanying benchmark notebook demonstrates the robustness of these quasi-Newton solvers on noisy CEC test suites while preserving a fully vectorized evaluation pipeline.
 
-# Availability and documentation
-MinionPy can be installed from PyPI using `pip`, while the C++ library can be built from source. The source code is available at https://github.com/khoirulmuzakka/Minion. Documentation for both interfaces, including installation instructions, API references, and examples, is available at https://minion-py.readthedocs.io/.
 
 # Research Impact Statement
 
@@ -109,6 +107,12 @@ Minion supports reproducible research in single-objective blackbox optimization 
 Minion is particularly relevant for optimization studies where objective evaluations are expensive, noisy, or naturally parallel, including simulation calibration, experimental data fitting, machine-learning hyperparameter tuning, and engineering design studies. It has already been used beyond its own benchmark examples, including in applied ion beam analysis software [@MUZAKKA2026166076] and in the development and evaluation of new optimization methods [@ARRDE].
 
 The project also provides community-readiness signals and reusable research materials. MinionPy is packaged on PyPI, the source repository provides continuous-integration and test workflows, documentation is hosted on Read the Docs, and the software is archived with a Zenodo DOI [@muzakka_2025_14893994]. The repository includes C++ examples, Python examples, notebooks, benchmark comparison scripts, and stored CEC result files covering multiple algorithms, dimensions, and evaluation budgets. These materials make it possible for users to reproduce benchmark-style studies, inspect optimizer behavior, and extend the software with new methods.
+
+
+# Availability and documentation
+
+MinionPy can be installed from PyPI using `pip`, while the C++ library can be built from source. The source code is available at https://github.com/khoirulmuzakka/Minion. Documentation for both interfaces, including installation instructions, API references, and examples, is available at https://minion-py.readthedocs.io/.
+
 
 # AI usage disclosure
 
