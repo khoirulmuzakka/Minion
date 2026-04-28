@@ -49,6 +49,13 @@ jobs:
         if: runner.os == 'Windows'
         run: Get-ChildItem minionpy\lib | Format-Table Name, Length
 
+      - name: Inspect minionpycpp dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $pyd = Get-ChildItem minionpy\lib\minionpycpp*.pyd | Select-Object -First 1
+          dumpbin /dependents $pyd.FullName
+
       - name: Run Python tests
         run: python tests/test_minionpy.py
 
