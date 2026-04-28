@@ -1,11 +1,13 @@
 ---
-title: 'Minion: A C++ and Python Library for Single-Objective Optimization Algorithms'
+title: 'Minion: A C++ and Python Library for Single-Objective Optimization'
 tags:
-  - C++ 
-  - Python 
-  - Optimization
+  - Blackbox Optimization
+  - Derivative-Free Optimization
+  - Evolutionary Algorithms
   - Differential Evolution
   - CEC Benchmark Problems
+  - Python
+  - C++
 authors:
   - name: Khoirul Faiq Muzakka
     orcid: 0000-0002-3888-1697
@@ -26,7 +28,7 @@ bibliography: paper.bib
 
 # Summary
 
-Minion is a derivative-free optimization library for single-objective blackbox problems where gradient information is unavailable or unreliable. It provides a C++ backend with a Python interface (MinionPy), supporting applications in engineering, machine learning, and scientific computing.
+Minion is a derivative-free optimization library for unconstrained and bound-constrained single-objective blackbox problems, where users provide objective-function evaluations rather than analytic gradients. It provides a C++ backend with a Python interface (MinionPy), supporting applications in engineering, machine learning, and scientific computing.
 
 The library offers a centralized implementation of advanced derivative-free optimization algorithms, including state-of-the-art Differential Evolution (DE) methods that have performed strongly in IEEE Congress on Evolutionary Computation (CEC) competitions, Covariance Matrix Adaptation Evolution Strategy (CMA-ES) variants, and several Particle Swarm Optimization (PSO) variants. Alongside these research-grade solvers, Minion ships widely used optimizers such as Nelder–Mead, Dual Annealing (generalized simulated annealing), L-BFGS, and L-BFGS-B, allowing practitioners to combine established baselines with advanced heuristics within a single API. Many existing optimization libraries include only elementary variants of these methods and lack standardized benchmark problems. Minion addresses this by integrating multiple CEC benchmark suites (2011, 2014, 2017, 2019, 2020, and 2022) to facilitate algorithm evaluation and comparison.
 
@@ -93,9 +95,9 @@ Minion currently implements the following optimization algorithms:
 - L-BFGS-B [@doi:10.1137/0916069]
 - L-BFGS [@Liu1989]
 
-Additional algorithms are planned for future releases. Minion also ships benchmark suites from CEC competitions spanning 2011, 2014, 2017, 2019, 2020, and 2022. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
+Additional algorithms are planned for future releases. Minion also ships benchmark suites from CEC competitions spanning 2011 [@cec2011], 2014 [@cec2014], 2017 [@cec2017], 2019 [@cec2019], 2020 [@cec2020], and 2022 [@cec2022]. The library further bundles classic analytic test functions—such as sphere, Rosenbrock, and Rastrigin—for quick experimentation and unit testing.
 
-Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce derivative calculations tailored to noisy, vectorized workloads. Gradient estimates are generated from batched finite differences. The finite-difference step for each coordinate is adapted from an estimate of local curvature, obtained from L-BFGS curvature information accumulated in previous iterations, and from a multiplicative model of function noise. This follows the relation $h = 2\sqrt{\epsilon_f / |f^{(2)}|}$, where $\epsilon_f$ is the estimated function-value noise and $f^{(2)}$ is the local second derivative. Minion also supports a Lanczos-style derivative formula derived from least-squares polynomial fitting, while preserving a single batched objective call for the derivative evaluation. The accompanying benchmark notebook demonstrates the robustness of these quasi-Newton solvers on noisy CEC test suites while preserving a fully vectorized evaluation pipeline.
+Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce derivative calculations tailored to noisy, vectorized workloads. Gradient estimates are generated from batched finite differences. The finite-difference step for each coordinate is adapted from an estimate of local curvature, obtained from L-BFGS curvature information accumulated in previous iterations, and from a multiplicative model of function noise. This follows the relation $h = 2\sqrt{\epsilon_f / |f^{(2)}|}$, where $\epsilon_f$ is the estimated function-value noise and $f^{(2)}$ is the local second derivative. Minion also supports a Lanczos-style derivative formula derived from least-squares fitting, while preserving a single batched objective call for the derivative evaluation. The accompanying benchmark notebook demonstrates the robustness of these quasi-Newton solvers on noisy CEC test suites while preserving a fully vectorized evaluation pipeline.
 
 # Availability and documentation
 MinionPy can be installed from PyPI using `pip`, while the C++ library can be built from source. The source code is available at https://github.com/khoirulmuzakka/Minion. Documentation for both interfaces, including installation instructions, API references, and examples, is available at https://minion-py.readthedocs.io/.
@@ -104,13 +106,13 @@ MinionPy can be installed from PyPI using `pip`, while the C++ library can be bu
 
 Minion supports reproducible research in single-objective blackbox optimization by combining advanced optimizers, batched objective evaluation, and standardized CEC benchmark suites in one C++/Python package. It can also serve as a research platform where researchers can implement and experiment with new methods while comparing them directly against state-of-the-art baselines. This reduces the friction involved in comparing algorithms whose original implementations often differ in language, objective-function convention, stopping criteria, and benchmark setup.
 
-The project already provides community-readiness signals and reusable research materials. MinionPy is packaged on PyPI, the source repository provides continuous-integration and test workflows, documentation is hosted on Read the Docs, and the software is archived with a Zenodo DOI [@muzakka_2025_14893994]. The repository includes C++ examples, Python examples, notebooks, benchmark comparison scripts, and stored CEC result files covering multiple algorithms, dimensions, and evaluation budgets. These materials make it possible for users to reproduce benchmark-style studies, inspect optimizer behavior, and extend the software with new methods.
+Minion is particularly relevant for optimization studies where objective evaluations are expensive, noisy, or naturally parallel, including simulation calibration, experimental data fitting, machine-learning hyperparameter tuning, and engineering design studies. It has already been used beyond its own benchmark examples, including in applied ion beam analysis software [@MUZAKKA2026166076] and in the development and evaluation of new optimization methods [@ARRDE].
 
-Minion is particularly relevant for optimization studies where objective evaluations are expensive, noisy, or naturally parallel, including simulation calibration, experimental data fitting, machine-learning hyperparameter tuning, and engineering design studies. 
+The project also provides community-readiness signals and reusable research materials. MinionPy is packaged on PyPI, the source repository provides continuous-integration and test workflows, documentation is hosted on Read the Docs, and the software is archived with a Zenodo DOI [@muzakka_2025_14893994]. The repository includes C++ examples, Python examples, notebooks, benchmark comparison scripts, and stored CEC result files covering multiple algorithms, dimensions, and evaluation budgets. These materials make it possible for users to reproduce benchmark-style studies, inspect optimizer behavior, and extend the software with new methods.
 
 # AI usage disclosure
 
-Generative AI tools were used to assist with drafting and language editing of this paper. The authors reviewed and edited the resulting text and remain responsible for the scientific claims, software description, citations, and final manuscript. Generative AI was not used as an autonomous contributor to the software's algorithmic implementation.
+Generative AI tools were used to assist with drafting and language editing of this paper, generating some parts of the documentation, and coding assistance. The authors reviewed and edited the resulting text and code and remain responsible for the scientific claims, software description, citations, implementation, and final manuscript. Generative AI was not used as an autonomous contributor to the software implementation.
 
 
 # References
