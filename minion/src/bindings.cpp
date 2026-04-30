@@ -204,6 +204,46 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("stdF", &jSO::stdF)
         .def_readonly("diversity", &jSO::diversity);
 
+    py::class_<jSO_1, Differential_Evolution>(m, "jSO_1")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &jSO_1::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &jSO_1::meanCR)
+        .def_readonly("meanF", &jSO_1::meanF)
+        .def_readonly("stdCR", &jSO_1::stdCR)
+        .def_readonly("stdF", &jSO_1::stdF)
+        .def_readonly("diversity", &jSO_1::diversity);
+
+    py::class_<jSO_2, Differential_Evolution>(m, "jSO_2")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
+                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("tol") = 0.0001,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def("optimize", &jSO_2::optimize, py::call_guard<py::gil_scoped_release>())
+        .def_readonly("meanCR", &jSO_2::meanCR)
+        .def_readonly("meanF", &jSO_2::meanF)
+        .def_readonly("stdCR", &jSO_2::stdCR)
+        .def_readonly("stdF", &jSO_2::stdF)
+        .def_readonly("diversity", &jSO_2::diversity);
+
     py::class_<JADE, Differential_Evolution>(m, "JADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,

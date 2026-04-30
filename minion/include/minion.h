@@ -13,6 +13,7 @@
 #include "j2020.h"
 #include "jade.h"
 #include "jso.h"
+#include "jso_ablation.h"
 #include "lsrtde.h"
 #include "nelder_mead.h"
 #include "minimizer.h"
