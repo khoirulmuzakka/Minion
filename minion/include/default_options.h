@@ -70,6 +70,14 @@ class DefaultSettings{
             {"bound_strategy" , std::string("reflect-random")}
         };
 
+        std::map<std::string, ConfigValue>  default_settings_NLSHADE_LBC = {
+            {"population_size", 0},
+            {"minimum_population_size", 4},
+            {"memory_size", 0},
+            {"archive_size_ratio", 1.0},
+            {"bound_strategy", std::string("midpoint-target")}
+        };
+
         std::map<std::string, ConfigValue> default_settings_JADE  = {
             {"population_size", 0},  
             {"c", 0.1}, 
@@ -253,6 +261,7 @@ class DefaultSettings{
                 {"NJADE", default_settings_NJADE}, 
                 {"j2020", default_settings_j2020}, 
                 {"NLSHADE_RSP", default_settings_NLSHADE_RSP}, 
+                {"NLSHADE_LBC", default_settings_NLSHADE_LBC},
                 {"LSRTDE", default_settings_LSRTDE}, 
                 {"ARRDE", default_settings_ARRDE}, 
                 {"jSO", default_settings_jSO}, 

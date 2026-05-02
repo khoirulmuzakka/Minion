@@ -15,6 +15,7 @@
 #include "de.h"
 #include "gwo_de.h"
 #include "nlshadersp.h"
+#include "nl_shade_lbc.h"
 #include "abc.h"
 #include "pso.h"
 #include "spso2011.h"
@@ -53,7 +54,7 @@ class Minimizer {
          * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization in the population-population based algorithms, or minion will pick teh best one in L-BFGS or NelderMead.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param algo Algorithm to use : "LSHADE", "AGSK", "DE", "JADE", "jSO", "IMODE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
+         * @param algo Algorithm to use : "LSHADE", "AGSK", "DE", "JADE", "jSO", "IMODE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
@@ -79,6 +80,7 @@ class Minimizer {
             else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, x0, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NLSHADE_LBC") optimizer = new NLSHADE_LBC(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, x0, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "IMODE") optimizer = new IMODE(func, bounds, x0, data, callback, tol, maxevals, seed, options);
@@ -107,7 +109,7 @@ class Minimizer {
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
+         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
@@ -133,6 +135,7 @@ class Minimizer {
             else if (algoUpper == "JADE") optimizer = new JADE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "J2020") optimizer = new j2020(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "NLSHADE_RSP") optimizer = new NLSHADE_RSP(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
+            else if (algoUpper == "NLSHADE_LBC") optimizer = new NLSHADE_LBC(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "LSRTDE") optimizer = new LSRTDE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "JSO") optimizer = new jSO (func, bounds, {x0}, data, callback, tol, maxevals, seed, options);
             else if (algoUpper == "IMODE") optimizer = new IMODE(func, bounds, {x0}, data, callback, tol, maxevals, seed, options);

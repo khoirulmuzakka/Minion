@@ -10,6 +10,7 @@
 #include "agsk.h"
 #include "arrde.h"
 #include "nlshadersp.h"
+#include "nl_shade_lbc.h"
 #include "j2020.h"
 #include "jade.h"
 #include "jso.h"
