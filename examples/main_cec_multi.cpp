@@ -13,6 +13,7 @@
 #include <limits>
 #include <filesystem>
 #include <iomanip>
+#include <memory>
 
 namespace {
 
@@ -554,18 +555,22 @@ int main(int argc, char* argv[]) {
                 std::vector<double> result_per_run;
                 for (auto& num : funcnums) {
                     try {
-                        MinEvLogger logger(static_cast<size_t>(get_effective_dimension(num, dimension, year)),
-                                           static_cast<size_t>(Nmaxevals),
-                                           get_global_optimum(num, year));
+                        std::unique_ptr<MinEvLogger> logger;
+                        if (log_min_ev) {
+                            logger = std::make_unique<MinEvLogger>(
+                                static_cast<size_t>(get_effective_dimension(num, dimension, year)),
+                                static_cast<size_t>(Nmaxevals),
+                                get_global_optimum(num, year));
+                        }
                         double fval = minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i,
-                                                             log_min_ev ? &logger : nullptr);
+                                                             logger ? logger.get() : nullptr);
                         result_per_run.push_back(fval);
                         if (log_min_ev) {
                             auto it = min_ev_logs.find(num);
                             if (it != min_ev_logs.end()) {
                                 auto& matrix = it->second;
-                                for (size_t row = 0; row < logger.samples.size(); ++row) {
-                                    matrix[row][static_cast<size_t>(i)] = logger.samples[row];
+                                for (size_t row = 0; row < logger->samples.size(); ++row) {
+                                    matrix[row][static_cast<size_t>(i)] = logger->samples[row];
                                 }
                             }
                         }
