@@ -77,6 +77,99 @@ std::array<double, N> rk4Integrate(std::array<double, N> state, double t0, doubl
     return state;
 }
 
+template <size_t N, typename Deriv>
+std::vector<std::array<double, N>> rk45Integrate(std::array<double, N> state, double t0,
+                                                 double t1, Deriv &&deriv,
+                                                 double relTol = 1e-1,
+                                                 double absTol = 1e-6) {
+    std::vector<std::array<double, N>> trajectory;
+    trajectory.push_back(state);
+    double t = t0;
+    double h = std::max(1e-6, (t1 - t0) / 40.0);
+    const double maxStep = std::max(1e-6, (t1 - t0) / 9.0);
+    constexpr int refine = 4;
+
+    while (t < t1) {
+        h = std::min(h, maxStep);
+        if (t + h > t1) {
+            h = t1 - t;
+        }
+
+        const auto startState = state;
+        std::array<double, N> k1{}, k2{}, k3{}, k4{}, k5{}, k6{}, k7{}, temp{};
+        deriv(t, state, k1);
+
+        for (size_t i = 0; i < N; ++i) {
+            temp[i] = state[i] + h * (1.0 / 5.0) * k1[i];
+        }
+        deriv(t + h * (1.0 / 5.0), temp, k2);
+
+        for (size_t i = 0; i < N; ++i) {
+            temp[i] = state[i] + h * ((3.0 / 40.0) * k1[i] + (9.0 / 40.0) * k2[i]);
+        }
+        deriv(t + h * (3.0 / 10.0), temp, k3);
+
+        for (size_t i = 0; i < N; ++i) {
+            temp[i] = state[i] + h * ((44.0 / 45.0) * k1[i] + (-56.0 / 15.0) * k2[i] + (32.0 / 9.0) * k3[i]);
+        }
+        deriv(t + h * (4.0 / 5.0), temp, k4);
+
+        for (size_t i = 0; i < N; ++i) {
+            temp[i] = state[i] +
+                      h * ((19372.0 / 6561.0) * k1[i] + (-25360.0 / 2187.0) * k2[i] + (64448.0 / 6561.0) * k3[i] +
+                           (-212.0 / 729.0) * k4[i]);
+        }
+        deriv(t + h * (8.0 / 9.0), temp, k5);
+
+        for (size_t i = 0; i < N; ++i) {
+            temp[i] = state[i] +
+                      h * ((9017.0 / 3168.0) * k1[i] + (-355.0 / 33.0) * k2[i] + (46732.0 / 5247.0) * k3[i] +
+                           (49.0 / 176.0) * k4[i] + (-5103.0 / 18656.0) * k5[i]);
+        }
+        deriv(t + h, temp, k6);
+
+        std::array<double, N> y5{};
+        for (size_t i = 0; i < N; ++i) {
+            y5[i] = state[i] +
+                    h * ((35.0 / 384.0) * k1[i] + (500.0 / 1113.0) * k3[i] + (125.0 / 192.0) * k4[i] +
+                         (-2187.0 / 6784.0) * k5[i] + (11.0 / 84.0) * k6[i]);
+        }
+        deriv(t + h, y5, k7);
+
+        std::array<double, N> y4{};
+        for (size_t i = 0; i < N; ++i) {
+            y4[i] = state[i] +
+                    h * ((5179.0 / 57600.0) * k1[i] + (7571.0 / 16695.0) * k3[i] + (393.0 / 640.0) * k4[i] +
+                         (-92097.0 / 339200.0) * k5[i] + (187.0 / 2100.0) * k6[i] + (1.0 / 40.0) * k7[i]);
+        }
+
+        double errorNorm = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            const double scale = absTol + relTol * std::max(std::abs(state[i]), std::abs(y5[i]));
+            errorNorm = std::max(errorNorm, std::abs(y5[i] - y4[i]) / scale);
+        }
+
+        if (errorNorm <= 1.0) {
+            state = y5;
+            t += h;
+            for (int refineStep = 1; refineStep <= refine; ++refineStep) {
+                const double alpha = static_cast<double>(refineStep) / static_cast<double>(refine);
+                std::array<double, N> interpolated{};
+                for (size_t i = 0; i < N; ++i) {
+                    interpolated[i] = (1.0 - alpha) * startState[i] + alpha * state[i];
+                }
+                trajectory.push_back(interpolated);
+            }
+        }
+
+        const double safeError = std::max(errorNorm, 1e-10);
+        const double factor = std::clamp(0.9 * std::pow(1.0 / safeError, 0.2), 0.2, 5.0);
+        h = std::max(1e-6, h * factor);
+    }
+
+    return trajectory;
+}
+
 std::array<double, 10> buildProblem3Rates(double u) {
     const double u2 = u * u;
     const double u3 = u2 * u;
@@ -247,7 +340,7 @@ constexpr std::array<double, 6> kProblem10UpperBoundsAmplitude = {1.0, 1.0, 1.0,
 constexpr std::array<double, 6> kProblem10LowerBoundsPhase = {-180.0, -180.0, -180.0, -180.0, -180.0, -180.0};
 constexpr std::array<double, 6> kProblem10UpperBoundsPhase = {180.0, 180.0, 180.0, 180.0, 180.0, 180.0};
 constexpr std::array<double, 2> kProblem10NullAngles = {50.0, 120.0};
-constexpr double kProblem10PhiDesired = 18.0; // degrees
+constexpr double kProblem10PhiDesired = 180.0; // degrees
 constexpr double kProblem10Spacing = 0.5;
 
 static constexpr double kELD13Data1[13][7] = {
@@ -659,6 +752,21 @@ static constexpr double kELD140Poz[4][7] = {
     {32, 220, 250, 320, 350, 390, 420},
     {74, 230, 255, 365, 395, 430, 455},
     {136, 50, 75, 85, 95, 0, 0},
+};
+
+static constexpr double kELD140ValvePoint[][3] = {
+    {5, 700, 0.080},
+    {10, 600, 0.055},
+    {15, 800, 0.060},
+    {22, 600, 0.050},
+    {33, 600, 0.043},
+    {40, 600, 0.043},
+    {52, 1100, 0.043},
+    {70, 1200, 0.030},
+    {72, 1000, 0.050},
+    {84, 1000, 0.050},
+    {119, 600, 0.070},
+    {121, 1200, 0.043},
 };
 
 struct ProhibitedZone {
@@ -1381,7 +1489,7 @@ std::array<double, 6> ic2par(const Eigen::Vector3d &r0, const Eigen::Vector3d &v
     Eigen::Vector3d eVec = (v0.cross(h) / mu) - (r0 / rNorm);
     const double e = eVec.norm();
     std::array<double, 6> elements{};
-    elements[0] = p / (1.0 - e);
+    elements[0] = p / (1.0 - e * e);
     elements[1] = e;
     const double i = std::acos(clampCos(h.z() / hNorm));
     elements[2] = i;
@@ -1492,7 +1600,7 @@ void plephAn(double mjd2000, int planet, Eigen::Vector3d &r, Eigen::Vector3d &v)
              0.0,
              0.0,
              101.22083333333333 + 1.719175 * T + 0.0004527777777777778 * TT + 3.3333333333333335e-06 * TTT,
-             358.47584444444445 + (35990.4975 - 0.00015027777777777778 * T - 3.3333333333333335e-06 * TT) * T};
+             358.47584444444445 + (35999.04975 - 0.00015027777777777778 * T - 3.3333333333333335e-06 * TT) * T};
         break;
     case 4:
         E = {1.523688399,
@@ -1707,14 +1815,10 @@ double evaluateProblem4(const double *x, int nx) {
         dstate[1] = 0.5 - state[1] - (state[1] + 0.5) * exp_term;
     };
     std::array<double, 2> state = {0.09, 0.09};
-    const int steps = 400;
-    const double dt = 0.78 / static_cast<double>(steps);
     double cost = 0.0;
-    double t = 0.0;
-    for (int i = 0; i < steps; ++i) {
-        cost += state[0] * state[0] + state[1] * state[1] + 0.1 * u * u;
-        rk4Step(state, t, dt, deriv);
-        t += dt;
+    const auto trajectory = rk45Integrate(state, 0.0, 0.78, deriv, 1e-1);
+    for (const auto &sample : trajectory) {
+        cost += sample[0] * sample[0] + sample[1] * sample[1] + 0.1 * u * u;
     }
     return cost;
 }
@@ -2478,6 +2582,14 @@ const ELDProblem &getELD140() {
                 }
             }
         }
+        for (const auto &row : kELD140ValvePoint) {
+            const int idx = static_cast<int>(row[0]) - 1;
+            if (idx < 0 || idx >= prob.units) {
+                continue;
+            }
+            prob.unitData[idx].e = row[1];
+            prob.unitData[idx].f = row[2];
+        }
         prob.loss.B1.assign(prob.units * prob.units, 0.0);
         prob.loss.B2.assign(prob.units, 0.0);
         prob.loss.B3 = 0.0;
@@ -2539,7 +2651,11 @@ const HydroThermalProblem &getHydroThermalCase2() {
 }
 
 const HydroThermalProblem &getHydroThermalCase3() {
-    static const HydroThermalProblem problem = buildHydroThermalProblem(0.0, true, true);
+    // Match the original MATLAB objective in fn_HT_ELD_Case_3.m.
+    // Although the file comment mentions valve-point loading, the actual
+    // cost expression leaves that term commented out, so case 3 should not
+    // add the extra sinusoidal thermal cost term here.
+    static const HydroThermalProblem problem = buildHydroThermalProblem(0.0, true, false);
     return problem;
 }
 
