@@ -392,6 +392,7 @@ constexpr std::array<double, 6> kProblem10UpperBoundsPhase = {180.0, 180.0, 180.
 constexpr std::array<double, 2> kProblem10NullAngles = {50.0, 120.0};
 constexpr double kProblem10PhiDesired = 180.0; // degrees
 constexpr double kProblem10Spacing = 0.5;
+constexpr double kProblem10Pi = 3.141592654;
 
 static constexpr double kELD13Data1[13][7] = {
     {0.000000, 680.000000, 0.000280, 8.100000, 550.000000, 300.000000, 0.035000},
@@ -2165,23 +2166,23 @@ double evaluateProblem9(const double *x, int nx) {
 
 double arrayFactorCircular(const double *x, int dim, double phiRad, double phiDesiredDeg, double spacing) {
     const int half = dim / 2;
-    const double phiDesiredRad = phiDesiredDeg * PI / 180.0;
+    const double phiDesiredRad = phiDesiredDeg * kProblem10Pi / 180.0;
     double realSum = 0.0;
     double imagSum = 0.0;
 
     for (int i = 0; i < half; ++i) {
-        const double delphi = 2.0 * PI * static_cast<double>(i) / dim;
+        const double delphi = 2.0 * kProblem10Pi * static_cast<double>(i) / dim;
         const double shi = (std::cos(phiRad - delphi) - std::cos(phiDesiredRad - delphi)) * dim * spacing;
         const double amplitude = x[i];
-        const double phase = x[half + i] * PI / 180.0;
+        const double phase = x[half + i] * kProblem10Pi / 180.0;
         realSum += amplitude * std::cos(shi + phase);
         imagSum += amplitude * std::sin(shi + phase);
     }
     for (int i = half; i < dim; ++i) {
-        const double delphi = 2.0 * PI * static_cast<double>(i) / dim;
+        const double delphi = 2.0 * kProblem10Pi * static_cast<double>(i) / dim;
         const double shi = (std::cos(phiRad - delphi) - std::cos(phiDesiredRad - delphi)) * dim * spacing;
         const double amplitude = x[i - half];
-        const double phase = x[i] * PI / 180.0;
+        const double phase = x[i] * kProblem10Pi / 180.0;
         realSum += amplitude * std::cos(shi - phase);
         imagSum += amplitude * std::sin(shi - phase);
     }
@@ -2195,7 +2196,7 @@ double trapezoidalCircular(const double *x, int dim, double lower, double upper,
     for (int i = 0; i <= segments; ++i) {
         const double phi = lower + h * i;
         const double af = arrayFactorCircular(x, dim, phi, phiDesiredDeg, spacing);
-        const double value = std::abs(af * af * std::sin(phi - PI / 2.0));
+        const double value = std::abs(af * af * std::sin(phi - kProblem10Pi / 2.0));
         if (i == 0 || i == segments) {
             sum += value;
         } else {
@@ -2219,12 +2220,13 @@ double evaluateProblem10(const double *x, int nx) {
     }
 
     std::array<double, numSamples> yax{};
-    double maxi = arrayFactorCircular(x, dim, phiDeg[0] * PI / 180.0, kProblem10PhiDesired, kProblem10Spacing);
+    double maxi = arrayFactorCircular(x, dim, phiDeg[0] * kProblem10Pi / 180.0, kProblem10PhiDesired, kProblem10Spacing);
     yax[0] = maxi;
     double phiZero = phiDeg[0];
     int phiRef = 0;
     for (int i = 1; i < numSamples; ++i) {
-        const double val = arrayFactorCircular(x, dim, phiDeg[i] * PI / 180.0, kProblem10PhiDesired, kProblem10Spacing);
+        const double val =
+            arrayFactorCircular(x, dim, phiDeg[i] * kProblem10Pi / 180.0, kProblem10PhiDesired, kProblem10Spacing);
         yax[i] = val;
         if (val > maxi) {
             maxi = val;
