@@ -1,2 +1,5 @@
-recursive-include minionpy/lib *
-recursive-include minionpy/cec_input_data *
+include LICENSE.txt
+include minionpy.md
+recursive-include minion/include *.h
+recursive-include minion/cec *.h *.cpp *.inl
+recursive-include cec_input_data *

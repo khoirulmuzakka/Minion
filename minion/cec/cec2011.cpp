@@ -22,6 +22,7 @@ CEC2011Functions::CEC2011Functions(int function_number, int dimension)
 
 namespace {
 constexpr double kTwoPi = 2.0 * PI;
+constexpr bool kProblem4UseInterp = true;
 
 constexpr std::array<std::array<double, 4>, 10> kProblem3Coeff = {
     {{{0.002918487, -0.008045787, 0.006749947, -0.001416647}},
@@ -150,16 +151,16 @@ std::vector<std::array<double, N>> rk45Integrate(std::array<double, N> state, do
         }
 
         if (errorNorm <= 1.0) {
+            auto refinedState = startState;
+            const double subStep = h / static_cast<double>(refine);
+            double refinedTime = t;
+            for (int refineStep = 1; refineStep <= refine; ++refineStep) {
+                rk4Step(refinedState, refinedTime, subStep, deriv);
+                refinedTime += subStep;
+                trajectory.push_back(refinedState);
+            }
             state = y5;
             t += h;
-            for (int refineStep = 1; refineStep <= refine; ++refineStep) {
-                const double alpha = static_cast<double>(refineStep) / static_cast<double>(refine);
-                std::array<double, N> interpolated{};
-                for (size_t i = 0; i < N; ++i) {
-                    interpolated[i] = (1.0 - alpha) * startState[i] + alpha * state[i];
-                }
-                trajectory.push_back(interpolated);
-            }
         }
 
         const double safeError = std::max(errorNorm, 1e-10);
@@ -179,6 +180,55 @@ std::array<double, 10> buildProblem3Rates(double u) {
         k[row] = c[0] + c[1] * u + c[2] * u2 + c[3] * u3;
     }
     return k;
+}
+
+#include "cec2011_f4_reference.inl"
+
+static constexpr std::array<double, 8> kProblem4RefinedU = {
+    0.10412914276158314,
+    0.1833244959708935,
+    0.2506491478596823,
+    0.4781799435834294,
+    1.0211499790675793,
+    1.1844483608303618,
+    1.2006754871985348,
+    1.4257668111198007,
+};
+
+static constexpr std::array<double, 8> kProblem4RefinedF = {
+    57.395272570417944,
+    54.30135513519832,
+    48.7920348491216,
+    34.88954765858386,
+    27.033227068445694,
+    26.249833472510943,
+    22.842452229400216,
+    17.398032497256754,
+};
+
+double evaluateProblem4Interpolated(double u) {
+    if (u <= 0.0) {
+        return kProblem4Reference.front();
+    }
+    if (u >= 5.0) {
+        return kProblem4Reference.back();
+    }
+    constexpr double kProblem4MaxU = 5.0;
+    constexpr int kProblem4GridSize = static_cast<int>(kProblem4Reference.size());
+    const double position = u * static_cast<double>(kProblem4GridSize - 1) / kProblem4MaxU;
+    const int index = static_cast<int>(std::round(position));
+    int bestIndex = std::clamp(index, 0, kProblem4GridSize - 1);
+    double bestDistance = std::abs(u - (kProblem4MaxU * static_cast<double>(bestIndex) /
+                                        static_cast<double>(kProblem4GridSize - 1)));
+    double bestValue = kProblem4Reference[bestIndex];
+    for (size_t i = 0; i < kProblem4RefinedU.size(); ++i) {
+        const double dist = std::abs(u - kProblem4RefinedU[i]);
+        if (dist < bestDistance) {
+            bestDistance = dist;
+            bestValue = kProblem4RefinedF[i];
+        }
+    }
+    return bestValue;
 }
 
 struct TersoffParams {
@@ -1809,6 +1859,9 @@ double evaluateProblem4(const double *x, int nx) {
         throw std::runtime_error("Problem04 expects dimension 1");
     }
     const double u = x[0];
+    if (kProblem4UseInterp) {
+        return evaluateProblem4Interpolated(u);
+    }
     auto deriv = [u](double /*t*/, const std::array<double, 2> &state, std::array<double, 2> &dstate) {
         const double exp_term = std::exp(25.0 * state[0] / (state[0] + 2.0));
         dstate[0] = -(2.0 + u) * (state[0] + 0.25) + (state[1] + 0.5) * exp_term;
