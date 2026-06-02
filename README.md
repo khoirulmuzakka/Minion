@@ -50,7 +50,7 @@ Minion also serves as a **research platform** for developing and testing new opt
 - **CEC Benchmark Suite**  
   - Includes `CEC2011`, `CEC2014`, `CEC2017`, `CEC2019`, `CEC2020`, and `CEC2022` benchmark problems for rigorous algorithm testing.  
   - The benchmark problems are directly adapted from the original C++ implementations.  
-  - The CEC2011 suite, containing 22 real-world optimization problems, has been completely rewritten in C++ from the original MATLAB code. The CEC2011 rewrite has been checked by running the original MATLAB code through Octave with `comparison_scripts/verify_cec2011_octave.py` using 1000 random samples per problem drawn from the allowed bounds. With a relative tolerance of `1e-9`, all rewritten CEC2011 problems agree with the Octave-evaluated MATLAB reference except `F3`, `F4`, `F21`, and `F22`. bserved mismatches are:
+  - The CEC2011 suite, containing 22 real-world optimization problems, has been completely rewritten in C++ from the original MATLAB code. The CEC2011 rewrite has been checked by running the original MATLAB code through Octave with `comparison_scripts/verify_cec2011_octave.py` using 1000 random samples per problem drawn from the allowed bounds. With a relative tolerance of `1e-9`, all rewritten CEC2011 problems agree with the Octave-evaluated MATLAB reference except `F3`, `F4`, `F21`, and `F22`. Observed mismatches are:
     - `F3` (failed `239/1000`, max relative error `5.25e-6`)
     - `F4` (failed `986/1000`, max relative error `0.39`)
     - `F21` (failed `75/1000`, max relative error `1.46`)
