@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
+import glob
 import math
 import os
 import random
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -116,16 +119,8 @@ CEC2011_METADATA = {
 }
 
 
-DEFAULT_TOLERANCES = {
-    3: (1e-2, 1e-2),
-    4: (1e-2, 1e-2),
-    21: (1e-4, 1e-4),
-    22: (1e-4, 1e-4),
-}
-
-
 def get_tolerance(problem: int):
-    return DEFAULT_TOLERANCES.get(problem, (1e-8, 1e-7))
+    return (0.0, 1e-9)
 
 
 def _build_cpp_evaluator(problem: int):
@@ -146,6 +141,65 @@ def _octave_env():
         if key.startswith("SNAP"):
             env.pop(key, None)
     return env
+
+
+def _candidate_octave_paths():
+    candidates = []
+
+    for env_key in ("OCTAVE_CLI", "OCTAVE_BIN", "OCTAVE_EXECUTABLE"):
+        value = os.environ.get(env_key)
+        if value:
+            candidates.append(value)
+
+    for name in ("octave-cli", "octave", "octave-cli.exe", "octave.exe"):
+        resolved = shutil.which(name)
+        if resolved:
+            candidates.append(resolved)
+
+    if os.name == "nt":
+        roots = []
+        for env_key in ("ProgramFiles", "ProgramFiles(x86)", "LocalAppData"):
+            root = os.environ.get(env_key)
+            if root:
+                roots.append(root)
+
+        patterns = [
+            os.path.join("GNU Octave", "Octave-*", "mingw64", "bin", "octave-cli.exe"),
+            os.path.join("GNU Octave", "Octave-*", "mingw64", "bin", "octave.exe"),
+            os.path.join("Octave", "Octave-*", "mingw64", "bin", "octave-cli.exe"),
+            os.path.join("Octave", "Octave-*", "mingw64", "bin", "octave.exe"),
+        ]
+        for root in roots:
+            for pattern in patterns:
+                candidates.extend(glob.glob(os.path.join(root, pattern)))
+
+    deduped = []
+    seen = set()
+    for candidate in candidates:
+        normalized = os.path.normcase(os.path.abspath(candidate))
+        if normalized not in seen and os.path.exists(candidate):
+            deduped.append(candidate)
+            seen.add(normalized)
+    return deduped
+
+
+def resolve_octave_binary(explicit_path: str | None = None):
+    candidates = []
+    if explicit_path:
+        candidates.append(explicit_path)
+    candidates.extend(_candidate_octave_paths())
+
+    for candidate in candidates:
+        resolved = shutil.which(candidate) if not os.path.isabs(candidate) else candidate
+        if resolved and os.path.exists(resolved):
+            return resolved
+
+    searched = ", ".join(candidates) if candidates else "PATH and standard install locations"
+    raise RuntimeError(
+        "Unable to find an Octave executable. "
+        "Install GNU Octave, add it to PATH, or pass --octave-bin / set OCTAVE_CLI. "
+        f"Searched: {searched}"
+    )
 
 
 def _octave_expression(problem: int, x_expr: str):
@@ -209,10 +263,11 @@ def _format_matrix_for_octave(matrix: list[list[float]]):
     return "[ " + " ; ".join(rows) + " ]"
 
 
-def evaluate_with_octave(problem: int, samples: list[list[float]]):
+def evaluate_with_octave(problem: int, samples: list[list[float]], octave_bin: str | None = None):
     matrix_literal = _format_matrix_for_octave(samples)
     setup = _octave_setup(problem)
     expr = _octave_expression(problem, "X(i,:)")
+    resolved_octave = resolve_octave_binary(octave_bin)
     script = f"""
     {setup}
     X = {matrix_literal};
@@ -225,7 +280,7 @@ def evaluate_with_octave(problem: int, samples: list[list[float]]):
         handle.write(script)
         script_path = handle.name
     try:
-        cmd = ["octave-cli", "--quiet", script_path]
+        cmd = [resolved_octave, "--quiet", script_path]
         proc = subprocess.run(
             cmd,
             cwd=REPO_ROOT,
@@ -277,11 +332,11 @@ def generate_samples(problem: int, sample_count: int, rng: random.Random):
     return samples
 
 
-def compare_problem(problem: int, sample_count: int, seed: int):
+def compare_problem(problem: int, sample_count: int, seed: int, octave_bin: str | None = None):
     rng = random.Random(seed + problem * 1009)
     samples = generate_samples(problem, sample_count, rng)
     cpp_values = evaluate_with_cpp(problem, samples)
-    octave_values = evaluate_with_octave(problem, samples)
+    octave_values = evaluate_with_octave(problem, samples, octave_bin)
 
     atol, rtol = get_tolerance(problem)
     max_abs = 0.0
@@ -333,15 +388,38 @@ def parse_problems(raw: str):
 def main(argv: Iterable[str] | None = None):
     parser = argparse.ArgumentParser(description="Compare CEC2011 C++ translations against the original MATLAB/Octave implementations.")
     parser.add_argument("--problems", default="1-22", help="Problem numbers to check, e.g. '1-10,21,22'.")
-    parser.add_argument("--samples", type=int, default=100, help="Number of test points per problem.")
+    parser.add_argument("--samples", type=int, default=1000, help="Number of test points per problem.")
     parser.add_argument("--seed", type=int, default=20260601, help="Random seed for reproducible sampling.")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=max(1, min(8, os.cpu_count() or 1)),
+        help="Number of problems to compare in parallel.",
+    )
+    parser.add_argument(
+        "--octave-bin",
+        default=None,
+        help="Path to the Octave executable. Overrides PATH lookup; also supports OCTAVE_CLI/OCTAVE_BIN.",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     problems = parse_problems(args.problems)
     bad = False
+    if args.workers < 1:
+        parser.error("--workers must be at least 1")
 
-    for problem in problems:
-        result = compare_problem(problem, args.samples, args.seed)
+    if args.workers == 1 or len(problems) <= 1:
+        results = [compare_problem(problem, args.samples, args.seed, args.octave_bin) for problem in problems]
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = [
+                executor.submit(compare_problem, problem, args.samples, args.seed, args.octave_bin)
+                for problem in problems
+            ]
+            results = [future.result() for future in futures]
+
+    for result in results:
+        problem = result["problem"]
         status = "PASS" if not result["failures"] else "FAIL"
         print(
             f"F{problem:02d} {status}  samples={result['samples']}  "
