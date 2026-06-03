@@ -10,7 +10,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: wheels_linux
+          - os: macos-latest
+            artifact_name: wheels_macos_arm64
+          - os: macos-15-intel
+            artifact_name: wheels_macos_x86_64
+          - os: windows-latest
+            artifact_name: wheels_windows
 
     steps:
       - name: Checkout code
@@ -19,7 +27,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: |
@@ -29,7 +37,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir dist
         env:
-          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_ARCHS_WINDOWS: "AMD64"
           CIBW_BUILD_VERBOSITY: "1"
@@ -42,7 +50,7 @@ jobs:
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wheels_${{ runner.os }}
+          name: ${{ matrix.artifact_name }}
           path: dist/*
           overwrite: true
           retention-days: 7
