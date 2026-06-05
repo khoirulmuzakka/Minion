@@ -37,7 +37,7 @@ Then call ``minion::Minimizer``:
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
 
     minion::MinionResult res = minion::Minimizer(
-        objective, bounds, x0, nullptr, nullptr, algo, 0.0, 100000, 42, settings
+        objective, bounds, x0, nullptr, nullptr, algo, 100000, 42, settings
     ).optimize();
 
 
@@ -58,7 +58,7 @@ Example:
 .. code-block:: cpp
 
     minion::MinionResult res = minion::Minimizer(
-        objective, bounds, x0, nullptr, nullptr, "ARRDE", 0.0, 100000, 42
+        objective, bounds, x0, nullptr, nullptr, "ARRDE", 100000, 42
     ).optimize();
 
     std::cout << "success: " << std::boolalpha << res.success << "\n";
@@ -84,7 +84,7 @@ You can pass a callback to monitor progress after each iteration:
     }
 
     minion::MinionResult res = minion::Minimizer(
-        objective, bounds, x0, nullptr, progress_callback, "LSHADE", 0.0, 100000, 42
+        objective, bounds, x0, nullptr, progress_callback, "LSHADE", 100000, 42
     ).optimize();
 
 If you need custom early stopping, a practical pattern is to throw from the callback
@@ -104,7 +104,7 @@ when your condition is met, then catch outside:
 
     try {
         auto res = minion::Minimizer(
-            objective, bounds, x0, nullptr, early_stop_callback, "ARRDE", 0.0, 100000, 42
+            objective, bounds, x0, nullptr, early_stop_callback, "ARRDE", 100000, 42
         ).optimize();
         (void)res;
     } catch (const StopNow&) {
@@ -124,6 +124,7 @@ Start from defaults, then override only what you need.
 
     // Common overrides
     settings["population_size"] = 80;
+    settings["convergence_tol"] = 1e-6;
     settings["bound_strategy"] = std::string("reflect-random");
 
     // Algorithm-specific overrides
@@ -134,7 +135,7 @@ Start from defaults, then override only what you need.
     }
 
     minion::MinionResult res = minion::Minimizer(
-        objective, bounds, x0, nullptr, nullptr, algo, 0.0, 100000, 42, settings
+        objective, bounds, x0, nullptr, nullptr, algo, 100000, 42, settings
     ).optimize();
 
 Notes:
@@ -265,7 +266,7 @@ Example (CEC2017, F1, dimension 30):
 
     auto settings = minion::DefaultSettings().getDefaultSettings("ARRDE");
     minion::MinionResult res = minion::Minimizer(
-        cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", 0.0, 30000, 20250306, settings
+        cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", 30000, 20250306, settings
     ).optimize();
 
 For a larger CEC sweep (multiple functions and algorithms), see ``tests/test_minion.cpp``.  

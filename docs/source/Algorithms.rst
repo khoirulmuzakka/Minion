@@ -19,7 +19,7 @@ In C++, you can retrieve the default settings for an algorithm and adjust the pa
     options["population_size"] = 50; 
 
     // Initialize the minimizer with custom settings
-    auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "LSHADE", 0.0, max_evals, -1, options);
+    auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "LSHADE", max_evals, -1, options);
 
     // Perform optimization
     auto min_result = min.optimize();
@@ -40,14 +40,13 @@ In Python, you can pass the parameters via a dictionary when creating the `Minim
     }
 
     # Use ARRDE algorithm for optimization
-    min = mpy.Minimizer(func=objective_function, 
-                        x0=x0, 
-                        bounds=[(-10, 10)] * dimension, 
-                        algo="ARRDE", 
-                        relTol=0.0, 
-                        maxevals=10000, 
-                        callback=None, 
-                        seed=None, 
+    min = mpy.Minimizer(func=objective_function,
+                        x0=x0,
+                        bounds=[(-10, 10)] * dimension,
+                        algo="ARRDE",
+                        maxevals=10000,
+                        callback=None,
+                        seed=None,
                         options=options)
 
     # Run optimization
@@ -75,6 +74,32 @@ Differential Evolution (DE) is a population-based stochastic optimization algori
 *Reference : Storn, R and Price, K, Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces, Journal of Global Optimization, 1997, 11, 341 - 359.*
 
 Algorithm name : ``"DE"``
+
+Parameters :
+
+- ``population_size``: 0
+
+  .. note:: Population size. ``0`` lets the solver choose its heuristic default from problem dimension and budget.
+
+- ``mutation_rate``: 0.5
+
+  .. note:: Differential weight :math:`F` used to scale mutation steps.
+
+- ``crossover_rate``: 0.8
+
+  .. note:: Binomial or exponential crossover probability :math:`CR`.
+
+- ``mutation_strategy``: ``best1bin``
+
+  .. note:: Mutation / crossover strategy. Available strategies include ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``, ``"current_to_best1bin"``, ``"current_to_best1exp"``, ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``, ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``, ``"current_to_pbest_AW_1bin"``, and ``"current_to_pbest_AW_1exp"``.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance. Optimization stops when the population fitness spread falls below this threshold.
+
+- ``bound_strategy``: ``reflect-random``
+
+  .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 Particle Swarm Optimization (PSO)
@@ -106,6 +131,10 @@ Parameters :
 - ``velocity_clamp``: 0.2  
 
   .. note:: Fraction of the search range used as a velocity limit. ``0`` disables clamping.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on swarm fitness values. Smaller values require the swarm to contract more before stopping.
 
 - ``bound_strategy``: ``reflect-random``  
 
@@ -162,6 +191,10 @@ Parameters :
 
   .. note:: Whether to transform search vectors into a normalised unit hypercube before mapping back to bounds.
 
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on swarm fitness values.
+
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
@@ -210,6 +243,10 @@ Parameters :
 - ``velocity_clamp``: 0.2  
 
   .. note:: Fraction of the search range that caps particle velocities. ``0`` disables clamping.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on swarm fitness values.
 
 - ``bound_strategy``: ``reflect-random``  
 
@@ -270,6 +307,10 @@ Parameters :
 
   .. note:: Small constant used to stabilise probability updates.
 
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on population fitness values.
+
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
@@ -317,6 +358,10 @@ Parameters :
 
   .. note:: Damping parameter controlling how aggressively the step size adapts.
 
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on offspring fitness values.
+
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
@@ -336,11 +381,7 @@ Parameters :
 
   .. note:: Number of offspring sampled each generation. ``0`` derives the default value based on the dimensionality of the problem.
 
-- ``max_restarts``: 8
-
-  .. note:: Maximum number of adaptive restarts the algorithm will perform.
-
-- ``max_iterations``: 5000
+- ``max_iterations``: 100000
 
   .. note:: Maximum number of iterations (generations) allowed per run.
 
@@ -442,7 +483,7 @@ Parameters :
 
   .. note:: The value of *tau1* variable. The value must be between 0 and 1. 
 
-- ``myEqs``: 0.25  
+- ``myEqs``: 0.4  
 
   .. note:: The value of *myEqs* variable. The value must be between 0 and 1. 
 
@@ -479,7 +520,7 @@ Parameters :
 
   .. note:: The success rate required for selecting an individual for the next generation.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``bound_strategy``: ``random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
@@ -559,6 +600,10 @@ Parameters :
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on population fitness values.
+
 - ``bound_strategy``: ``reflect-random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
@@ -599,7 +644,11 @@ Parameters :
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on population fitness values.
+
+- ``bound_strategy``: ``random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -646,7 +695,7 @@ Parameters :
 
   .. note:: The strategy for reducing the population size over time. Options include linear, exponential, or agsk.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``bound_strategy``: ``random``  
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -735,9 +784,13 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``mutation_strategy``: ``rand1``  
+- ``limit``: 100  
 
-  .. note::  Mutation strategy, default is "rand1", available : ``"rand1"``, ``"best1"``.
+  .. note:: Scout trigger threshold. A food source is reinitialised after this many unsuccessful trials.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Diversity-based convergence tolerance on colony fitness values.
 
 - ``bound_strategy``: ``reflect-random``  
 
@@ -777,9 +830,17 @@ Parameters :
 
   .. note:: The local search algorithm to be used. Available : ``"NelderMead"`` and ``"L_BFGS_B"``
 
-- ``finite_diff_rel_step``: 1e-10 
+- ``func_noise_ratio``: 1e-16
 
-  .. note:: The relative step size for finite difference computations. The default value 0.0 means that the relative step is given by the square root of machine epsilon.
+  .. note:: Relative noise level used by the local-search derivative approximation.
+
+- ``N_points_derivative``: 3
+
+  .. note:: Number of sample points used by the local-search derivative approximation. Even values are rounded up internally.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Objective-space convergence tolerance used by the annealing routine.
 
 - ``bound_strategy``: ``periodic``  
 
@@ -795,9 +856,13 @@ Algorithm name : ``"NelderMead"``
 
 Parameters : 
 
-- ``locality_factor``: 1.0  
+- ``locality_factor``: 0.05  
 
   .. note:: The factor controlling the step size for reflection and expansion during optimization.
+
+- ``convergence_tol``: 1e-4
+
+  .. note:: Simplex-size / function-spread convergence tolerance used by the Nelder-Mead stopping test.
 
 - ``bound_strategy``: ``reflect-random``  
 
@@ -818,15 +883,15 @@ Algorithm Name : ``"L_BFGS_B"``
 
 Parameters
 
-- **``max_iterations``**: *15000*  
+- **``max_iterations``**: *100000*  
 
   .. note:: The maximum number of iterations allowed for the algorithm.
 
-- **``m``**: *15*  
+- **``m``**: *10*  
 
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
-- **``g_epsilon``**: *1e-8*  
+- **``g_epsilon``**: *1e-5*  
 
   .. note:: The absolute gradient convergence tolerance.
 
@@ -834,7 +899,7 @@ Parameters
 
   .. note:: The relative gradient convergence tolerance.
 
-- **``f_reltol``**: *1e-8*  
+- **``f_reltol``**: *1e-9*  
 
   .. note:: The function value convergence tolerance.
 
@@ -850,7 +915,7 @@ Parameters
 
   .. note:: The second Wolfe condition parameter for line search.
 
-- **``func_noise_ratio``**: *1e-16*  
+- **``func_noise_ratio``**: *0.0*  
 
   .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
@@ -877,15 +942,15 @@ Algorithm Name : ``"L_BFGS"``
 
 Parameters
 
-- **``max_iterations``**: *15000*  
+- **``max_iterations``**: *100000*  
 
   .. note:: The maximum number of iterations allowed for the algorithm.
 
-- **``m``**: *15*  
+- **``m``**: *10*  
 
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
-- **``g_epsilon``**: *1e-8*  
+- **``g_epsilon``**: *1e-5*  
 
   .. note:: The absolute gradient convergence tolerance.
 
@@ -893,7 +958,7 @@ Parameters
 
   .. note:: The relative gradient convergence tolerance.
 
-- **``f_reltol``**: *1e-8*  
+- **``f_reltol``**: *1e-9*  
 
   .. note:: The function value convergence tolerance.
 
@@ -909,7 +974,7 @@ Parameters
 
   .. note:: The second Wolfe condition parameter for line search.
 
-- **``func_noise_ratio``**: *1e-16*  
+- **``func_noise_ratio``**: *0.0*  
 
   .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
