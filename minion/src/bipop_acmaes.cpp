@@ -16,11 +16,10 @@ BIPOP_aCMAES::BIPOP_aCMAES(
     const std::vector<std::vector<double>>& x0,
     void* data,
     std::function<void(MinionResult*)> callback,
-    double tol,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+    : MinimizerBase(func, bounds, x0, data, callback, maxevals, seed, options) {}
 
 void BIPOP_aCMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_) {
     n_params = n_params_;

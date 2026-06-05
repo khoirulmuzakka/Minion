@@ -36,6 +36,7 @@ void jSO::initialize  (){
 
     minPopSize = options.get<int>("minimum_population_size", 4);
     reduction_strategy="exponential";
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     if (populationSize == minPopSize) popreduce = false; 
     else popreduce = true;
     hasInitialized=true;

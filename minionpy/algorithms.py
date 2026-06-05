@@ -152,7 +152,6 @@ class MinimizerBase:
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -168,9 +167,6 @@ class MinimizerBase:
             List of `(lower, upper)` bounds for each decision variable.
         x0 : list[list[float]], optional
             Initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is a list[list[float]] object. These guesses will be used for population initialization.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops when the relative improvement falls below this value. 
-            Default is `1e-4`.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is `100000`.
         callback : callable, optional
@@ -194,8 +190,6 @@ class MinimizerBase:
             raise TypeError("bounds must be a list of tuples (float, float)")
         #if x0 is not None and not all(isinstance(x, list) for x in x0):
         #    raise TypeError("x0 must be a list of list of floats or None")
-        if not isinstance(relTol, float):
-            raise TypeError("relTol must be a float")
         if not isinstance(maxevals, int):
             raise TypeError("maxevals must be an int")
         if callback is not None and not callable(callback):
@@ -227,12 +221,12 @@ class MinimizerBase:
         self._func_for_cpp = _gil_protected(self.func)
         self._callback_for_cpp = _gil_protected(self.cppCallback) if self.cppCallback is not None else None
 
-        self.relTol = relTol
         self.maxevals = maxevals
         self.seed = seed if seed is not None else -1
         self.history = []
         self.minionResult = None
-        self.options= options if options is not None else {}
+        self.options = options.copy() if options is not None else {}
+        self.cpp_options = self.options.copy()
 
     def func(self, xmat, data) : 
         """
@@ -290,7 +284,6 @@ class GWO_DE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -323,9 +316,6 @@ class GWO_DE(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -361,8 +351,8 @@ class GWO_DE(MinimizerBase):
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppGWO_DE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppGWO_DE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -393,7 +383,6 @@ class NelderMead(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -427,9 +416,6 @@ class NelderMead(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -458,10 +444,10 @@ class NelderMead(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         if x0 is None : 
             raise Exception("Initial guesses x0 must not be none nor empty for Nelder-Mead to work!")
-        self.optimizer = cppNelderMead(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppNelderMead(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
 
     def optimize(self):
         """
@@ -505,7 +491,6 @@ class PSO(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -523,9 +508,6 @@ class PSO(MinimizerBase):
         x0 : list[list[float]], optional
             Optional particle positions used to seed the swarm.  When ``None``
             (default) the swarm is initialised within the supplied bounds.
-        relTol : float, optional
-            Relative tolerance used by the diversity-based stopping criterion.
-            Default is ``1e-4``.
         maxevals : int, optional
             Maximum number of objective evaluations allowed. Default ``100000``.
         callback : callable, optional
@@ -554,17 +536,16 @@ class PSO(MinimizerBase):
             - **velocity_clamp** (*float*): Fraction of the search range used as the velocity limit (``0`` disables).
             - **bound_strategy** (*str*): Boundary handling policy.
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppPSO(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -608,7 +589,6 @@ class SPSO2011(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -622,21 +602,20 @@ class SPSO2011(MinimizerBase):
             Objective function to be minimised (vectorised, see :class:`PSO`).
         bounds : list of tuple
             Search-space bounds for each variable.
-        x0, relTol, maxevals, callback, seed, options :
+        x0, maxevals, callback, seed, options :
             Same semantics as :class:`PSO`.
 
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppSPSO2011(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -666,7 +645,6 @@ class DMSPSO(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -676,7 +654,7 @@ class DMSPSO(MinimizerBase):
 
         Parameters
         ----------
-        func, bounds, x0, relTol, maxevals, callback, seed, options :
+        func, bounds, x0, maxevals, callback, seed, options :
             See :class:`PSO` for the base semantics.
 
         Notes
@@ -690,17 +668,16 @@ class DMSPSO(MinimizerBase):
         - **subswarm_count** (*int*): Number of concurrent sub-swarms.
         - **regroup_period** (*int*): Iterations between sub-swarm reshuffles.
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppDMSPSO(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -723,7 +700,6 @@ class LSHADE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -757,9 +733,6 @@ class LSHADE(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -809,8 +782,8 @@ class LSHADE(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppLSHADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppLSHADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -868,14 +841,13 @@ class AGSK(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) :
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppAGSK(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppAGSK(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
 
     def optimize(self):
         """
@@ -923,22 +895,20 @@ class IMODE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppIMODE(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -966,7 +936,6 @@ class LSHADE_cnEpSin(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -983,7 +952,7 @@ class LSHADE_cnEpSin(MinimizerBase):
         x0 : list[list[float]], optional
             Optional initial population.  When ``None`` the population is drawn
             uniformly within the supplied bounds.
-        relTol, maxevals, callback, seed :
+        maxevals, callback, seed :
             Same semantics as :class:`LSHADE`.
         options : dict, optional
             Additional configuration.  If ``None`` the following defaults are
@@ -1004,17 +973,16 @@ class LSHADE_cnEpSin(MinimizerBase):
                     "bound_strategy"         : "reflect-random"
                 }
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppLSHADE_cnEpSin(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -1042,7 +1010,6 @@ class CMAES(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1059,8 +1026,6 @@ class CMAES(MinimizerBase):
         x0 : list[list[float]], optional
             Optional collection of initial guesses. When multiple candidates are
             supplied, the best according to ``func`` seeds the initial mean.
-        relTol : float, optional
-            Relative tolerance used by the stopping criterion. Default ``1e-4``.
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
@@ -1084,17 +1049,16 @@ class CMAES(MinimizerBase):
                     "bound_strategy"   : "reflect-random"
                 }
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppCMAES(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -1113,7 +1077,6 @@ class RCMAES(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1130,8 +1093,6 @@ class RCMAES(MinimizerBase):
         x0 : list[list[float]], optional
             Optional collection of initial guesses. When multiple candidates are
             supplied, the best according to ``func`` seeds the initial mean.
-        relTol : float, optional
-            Relative tolerance used by the stopping criterion. Default ``1e-4``.
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
@@ -1149,17 +1110,16 @@ class RCMAES(MinimizerBase):
                     "bound_strategy"   : "reflect-random"
                 }
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppRCMAES(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -1181,7 +1141,6 @@ class BIPOP_aCMAES(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1198,8 +1157,6 @@ class BIPOP_aCMAES(MinimizerBase):
         x0 : list[list[float]], optional
             Optional collection of initial guesses. When multiple candidates are
             supplied, the best according to ``func`` seeds the initial mean.
-        relTol : float, optional
-            Relative tolerance used by the stopping criterion. Default ``1e-4``.
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
@@ -1219,17 +1176,16 @@ class BIPOP_aCMAES(MinimizerBase):
                     "bound_strategy"  : "reflect-random" # Boundary handling
                 }
         """
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppBIPOP_aCMAES(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
             self.data,
             self._callback_for_cpp,
-            relTol,
             maxevals,
             self.seed,
-            self.options,
+            self.cpp_options,
         )
 
     def optimize(self) -> MinionResult:
@@ -1250,7 +1206,6 @@ class jSO(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                 x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1285,9 +1240,6 @@ class jSO(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1333,8 +1285,8 @@ class jSO(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppjSO(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppjSO(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1373,7 +1325,6 @@ class JADE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1408,9 +1359,6 @@ class JADE(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1462,8 +1410,8 @@ class JADE(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppJADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppJADE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1502,7 +1450,6 @@ class NLSHADE_RSP(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1536,9 +1483,6 @@ class NLSHADE_RSP(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1578,8 +1522,8 @@ class NLSHADE_RSP(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppNLSHADE_RSP(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppNLSHADE_RSP(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1610,7 +1554,6 @@ class ABC(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1644,9 +1587,6 @@ class ABC(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1684,8 +1624,8 @@ class ABC(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppABC(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppABC(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1719,7 +1659,6 @@ class Dual_Annealing(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1752,9 +1691,6 @@ class Dual_Annealing(MinimizerBase):
             List of (min, max) pairs defining the bounds for each decision variable.
         x0 : list[list[float]]
             Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1797,9 +1733,9 @@ class Dual_Annealing(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppDual_Annealing(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppDual_Annealing(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1830,7 +1766,6 @@ class L_BFGS_B(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1863,9 +1798,6 @@ class L_BFGS_B(MinimizerBase):
             List of (min, max) pairs defining the bounds for each decision variable.
         x0 : list[list[float]]
             Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -1911,9 +1843,9 @@ class L_BFGS_B(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppL_BFGS_B(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppL_BFGS_B(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -1943,7 +1875,6 @@ class L_BFGS(MinimizerBase):
     
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  x0: List[List[float]],
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -1974,9 +1905,6 @@ class L_BFGS(MinimizerBase):
             
         x0 : list[list[float]]
             Initial guesses for the solution. If more than one initial guesses are provided, the code will pick the best one as the true initial guess.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -2022,9 +1950,9 @@ class L_BFGS(MinimizerBase):
 
         """
         bounds = [(-10,10)]*len(x0[0])
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         if x0 is None : raise RuntimeError("x0 can not be none or empty.")
-        self.optimizer = cppL_BFGS(self._func_for_cpp, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        self.optimizer = cppL_BFGS(self._func_for_cpp, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -2057,7 +1985,6 @@ class j2020(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -2091,9 +2018,6 @@ class j2020(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -2137,8 +2061,8 @@ class j2020(MinimizerBase):
         """
 
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppj2020(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppj2020(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -2169,7 +2093,6 @@ class LSRTDE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                 x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -2203,9 +2126,6 @@ class LSRTDE(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -2248,8 +2168,8 @@ class LSRTDE(MinimizerBase):
         """
 
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppLSRTDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppLSRTDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -2279,7 +2199,6 @@ class ARRDE(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -2292,8 +2211,7 @@ class ARRDE(MinimizerBase):
             where ``X`` is a batch (list/array) of candidate vectors.
         :param bounds: List of ``(min, max)`` bounds for each decision variable.
         :param x0: Optional initial guesses as ``list[list[float]]``.
-        :param relTol: Relative convergence tolerance. Default is ``1e-4``.
-        :param maxevals: Maximum number of objective evaluations. Default is ``100000``.
+                :param maxevals: Maximum number of objective evaluations. Default is ``100000``.
         :param callback: Optional callback invoked after each iteration.
         :param seed: Optional random seed.
         :param options: Optional algorithm settings. Defaults to
@@ -2306,8 +2224,8 @@ class ARRDE(MinimizerBase):
 
         """
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppARRDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppARRDE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -2344,7 +2262,6 @@ class Differential_Evolution(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -2378,9 +2295,6 @@ class Differential_Evolution(MinimizerBase):
         x0 :  list[list[float]], optional
             Initial guesses for the solution. These guesses will be used to initialize the population. 
             If None (default), a random initialization within the given bounds is used.
-        relTol : float, optional
-            Relative tolerance for convergence. The algorithm stops if the relative 
-            improvement in the objective function is below this value. Default is 1e-4.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
@@ -2425,8 +2339,8 @@ class Differential_Evolution(MinimizerBase):
         """
 
 
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppDifferential_Evolution(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppDifferential_Evolution(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """
@@ -2466,7 +2380,6 @@ class Minimizer(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  algo : str = "ARRDE",
-                 relTol: float = 0.0001,
                  maxevals: int = 100000,
                  callback: Optional[Callable[[Any], None]] = None,
                  seed: Optional[int] = None,
@@ -2526,10 +2439,6 @@ class Minimizer(MinimizerBase):
             - `"SPSO2011"`
             - `"DMSPSO"`
             - `"LSHADE_cnEpSin"`
-
-        relTol : float, optional
-            Relative tolerance for convergence. The optimization stops if the relative 
-            improvement in the objective function is below this threshold. Default is `1e-4`.
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is `100000`.
         callback : callable, optional
@@ -2562,8 +2471,8 @@ class Minimizer(MinimizerBase):
         if algo_lower in ["neldermead", "da", "l_bfgs", "l_bfgs_b"] and (x0 is None):
             raise RuntimeError("x0 must not be None or empty for Nelder-Mead to work!")
         
-        super().__init__(func, bounds, x0, relTol, maxevals, callback, seed, options)
-        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo_lower, relTol, maxevals, self.seed, self.options)
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo_lower, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """

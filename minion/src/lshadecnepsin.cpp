@@ -49,6 +49,7 @@ void LSHADE_cnEpSin::initialize() {
     memorySize = static_cast<size_t>(std::max<int>(options.get<int>("memory_size", 5), 1));
     learningPeriod = static_cast<size_t>(std::max<int>(options.get<int>("learning_period", 20), 1));
     epsilon = options.get<double>("epsilon", 1e-8);
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
 
     memorySF.assign(memorySize, 0.5);
     memoryCR.assign(memorySize, 0.5);

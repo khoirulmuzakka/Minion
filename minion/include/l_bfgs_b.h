@@ -61,7 +61,6 @@ public:
      * used.
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
-     * @param tol The tolerance for stopping criteria.
      * @param maxevals The maximum number of evaluations.
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
@@ -72,12 +71,11 @@ public:
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, bounds_, x0, data, callback, tol, maxevals, seed, options) { 
+        MinimizerBase(func, bounds_, x0, data, callback, maxevals, seed, options) { 
             actual_bounds = bounds;
             for (int i=0; i<bounds.size(); i++) bounds[i] = { bounds[i].first + dist_min, bounds[i].second - dist_min };
         };

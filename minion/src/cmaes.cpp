@@ -14,11 +14,10 @@ CMAES::CMAES(
     const std::vector<std::vector<double>>& x0,
     void* data,
     std::function<void(MinionResult*)> callback,
-    double tol,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
-    : MinimizerBase(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+    : MinimizerBase(func, bounds, x0, data, callback, maxevals, seed, options) {}
 
 void CMAES::initialize() {
     auto defaults = DefaultSettings().getDefaultSettings("CMAES");
@@ -62,6 +61,7 @@ void CMAES::initialize() {
     muEff = 1.0 / muEff;
 
     sigma = options.get<double>("initial_step", 0.3);
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     if (sigma <= 0.0) {
         sigma = 0.3;
     }
@@ -264,10 +264,11 @@ MinionResult CMAES::optimize() {
             double fmax = *std::max_element(fitness.begin(), fitness.end());
             double fmin = *std::min_element(fitness.begin(), fitness.end());
             double fmean = std::accumulate(fitness.begin(), fitness.end(), 0.0) / static_cast<double>(fitness.size());
-            double relRange = 0.0;
-            if (std::fabs(fmean) > 1e-12) {
-                relRange = (fmax - fmin) / std::fabs(fmean);
+            double denom = std::fabs(fmean);
+            if (denom <= 1e-12) {
+                denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
             }
+            double relRange = (fmax - fmin) / denom;
             diversity.push_back(relRange);
 
             minionResult = MinionResult(best, best_fitness, generation, Nevals, false, "");

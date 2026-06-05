@@ -149,7 +149,6 @@ RCMAES::RCMAES(
     const std::vector<std::vector<double>>& x0,
     void* data,
     std::function<void(MinionResult*)> callback,
-    double tol,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
@@ -161,7 +160,6 @@ RCMAES::RCMAES(
           normalize_points(x0, bounds),
           data,
           callback,
-          tol,
           maxevals,
           seed,
           options),

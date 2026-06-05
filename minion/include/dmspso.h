@@ -19,7 +19,6 @@ public:
      * @param x0 Optional set of initial particles.
      * @param data User payload forwarded to the objective.
      * @param callback Per-iteration callback receiving the best solution.
-     * @param tol Diversity tolerance used by the base stop criterion.
      * @param maxevals Maximum number of objective evaluations.
      * @param seed RNG seed (negative -> random seed).
      * @param options Configuration map (sub-swarm count, regroup period, etc.).
@@ -30,12 +29,11 @@ public:
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        PSO(func, bounds, x0, data, callback, tol, maxevals, seed, options) {}
+        PSO(func, bounds, x0, data, callback, maxevals, seed, options) {}
 
     void initialize() override;
 

@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
     for (auto& algo : algoList) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;  // Let Minion decide the best population size
-        auto res = minion::Minimizer(rosenbrock_vect, bounds, x0, nullptr, callBack, algo, 0.0, max_evals, -1, settings).optimize();
+        auto res = minion::Minimizer(rosenbrock_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun << "\n";
     };
 
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     for (auto& algo : algoList) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;
-        auto res = minion::Minimizer(rastrigin_vect, bounds, x0, nullptr, callBack, algo, 0.0, max_evals, -1, settings).optimize();
+        auto res = minion::Minimizer(rastrigin_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun << "\n";
     };
 
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     for (auto& algo : algoList) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;
-        auto res = minion::Minimizer(objective_function, bounds, x0, so, callBack, algo, 0.0, max_evals, -1, settings).optimize();
+        auto res = minion::Minimizer(objective_function, bounds, x0, so, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun << "\n";
     };
 

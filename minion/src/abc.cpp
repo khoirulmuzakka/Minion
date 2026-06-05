@@ -43,6 +43,7 @@ void ABC::initialize() {
     }
 
     limit = static_cast<size_t>(std::max<int>(options.get<int>("limit", 100), 1));
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     hasInitialized = true;
 }
 
@@ -66,10 +67,18 @@ void ABC::init() {
     history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
 }
 
+bool ABC::checkStopping() const {
+    if (diversity.empty()) {
+        return false;
+    }
+    return diversity.back() <= stoppingTol;
+}
+
 MinionResult ABC::optimize() {
     if (!hasInitialized) initialize();
     try {
         history.clear();
+        diversity.clear();
         Nevals = 0;
         init();
 
@@ -195,9 +204,19 @@ MinionResult ABC::optimize() {
                 best = population[best_idx];
             }
 
+            double fmax = findMax(fitness);
+            double fmin = findMin(fitness);
+            double meanFitness = calcMean(fitness);
+            double denom = std::fabs(meanFitness);
+            if (denom <= 1e-12) {
+                denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
+            }
+            diversity.push_back((fmax - fmin) / denom);
+
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
             history.push_back(minionResult);
             if (callback != nullptr) callback(&minionResult);
+            if (support_tol && checkStopping()) break;
             ++iter;
         }
 
@@ -209,4 +228,3 @@ MinionResult ABC::optimize() {
 }
 
 }
-

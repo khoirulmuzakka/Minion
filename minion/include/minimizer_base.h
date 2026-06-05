@@ -172,6 +172,29 @@ class Options {
             }
             return ret;
         }
+
+        /**
+         * @brief Retrieve a value for a given key from the settings without emitting warnings.
+         *
+         * This is useful for optional settings that may be absent for some algorithms.
+         *
+         * @tparam T The expected type of the value.
+         * @param key The key whose associated value is to be retrieved.
+         * @param defaultValue The value returned if the key is missing or has a mismatched type.
+         * @return The stored value or the provided default value.
+         */
+        template <typename T>
+        T getSilent(const std::string& key, T defaultValue) const {
+            auto it = settings.find(key);
+            if (it == settings.end()) {
+                return defaultValue;
+            }
+            try {
+                return std::get<T>(it->second);
+            } catch (const std::exception&) {
+                return defaultValue;
+            }
+        }
 };
 
 
@@ -188,7 +211,6 @@ class MinimizerBase {
          * @param x0 The initial guesses for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -199,11 +221,10 @@ class MinimizerBase {
             const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
             std::function<void(MinionResult*)> callback = nullptr,
-            double tol = 0.0001, 
             size_t maxevals = 100000, 
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
-               func(func), bounds(bounds), x0(x0), data(data), callback(callback), stoppingTol(tol), maxevals(maxevals), seed(seed)
+               func(func), bounds(bounds), x0(x0), data(data), callback(callback), maxevals(maxevals), seed(seed)
         {
             if (!bounds.empty() && bounds[0].first >= bounds[0].second) {
                 throw std::invalid_argument("Invalid bounds.");
@@ -223,7 +244,6 @@ class MinimizerBase {
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback A callback function to call after each iteration.
-         * @param tol The relative tolerance for convergence.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -233,11 +253,10 @@ class MinimizerBase {
             const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
             std::function<void(MinionResult*)> callback = nullptr,
-            double tol = 0.0001, 
             size_t maxevals = 100000, 
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
-               func(func), x0(x0), data(data), callback(callback), stoppingTol(tol), maxevals(maxevals), seed(seed)
+               func(func), x0(x0), data(data), callback(callback), maxevals(maxevals), seed(seed)
         {
             if (x0.empty()) {
                 throw std::invalid_argument("x0 must not be empty");
@@ -273,6 +292,10 @@ class MinimizerBase {
         bool hasInitialized =false;
         void* data = nullptr;
 
+        double getConvergenceTolerance(const Options& options, double defaultValue = 0.0) const {
+            return options.getSilent<double>("convergence_tol", defaultValue);
+        }
+
         MinionResult getBestFromHistory(){
             if (history.empty()) throw std::runtime_error("Result history is empty");
             auto minElementIter = std::min_element(history.begin(), history.end(), 
@@ -298,7 +321,7 @@ class MinimizerBase {
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
         std::vector<std::vector<double>> x0;
-        double stoppingTol;
+        double stoppingTol = 0.0;
         size_t maxevals;
         MinionResult minionResult;
         std::vector<MinionResult> history;

@@ -218,6 +218,7 @@ def test_optimization_noise(test_func, bounds, dimension, func_name, maxevals, s
             "population_size": 0,
             "N_points_derivative": n_points,
             "func_noise_ratio": noise_ratio,
+            "convergence_tol" : 0.0
         }
         if extra_options:
             options.update(extra_options)
@@ -226,7 +227,6 @@ def test_optimization_noise(test_func, bounds, dimension, func_name, maxevals, s
                 func_wrapper,
                 bounds_list,
                 x0=x0,
-                relTol=0.0,
                 algo=algo,
                 maxevals=maxevals,
                 callback=None,

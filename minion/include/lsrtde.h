@@ -158,7 +158,6 @@ public :
      * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization. Additional Note : LSRTDE does not support initial guesses. This argument is added for consistency purpose. 
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
-     * @param tol The tolerance for stopping criteria.
      * @param maxevals The maximum number of evaluations.
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
@@ -167,14 +166,13 @@ public :
         MinionFunction func, 
         const std::vector<std::pair<double, double>>& bounds, 
         const std::vector<std::vector<double>>& x0 = {},
-        void* data = nullptr, 
+        void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001, 
         size_t maxevals = 100000, 
         int seed=-1, 
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
         ) :  
-        MinimizerBase(func, bounds, x0, data, callback, 0.0, maxevals, seed, options){};
+        MinimizerBase(func, bounds, x0, data, callback, maxevals, seed, options){};
 
     /**
      * @brief Destructor for the LSRTDE class.

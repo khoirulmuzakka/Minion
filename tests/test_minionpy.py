@@ -74,9 +74,9 @@ def _run_case(
         bounds=bounds,
         x0=x0,
         algo=algorithm,
-        relTol=1e-8,
         maxevals=maxevals,
         seed=seed,
+        options={"convergence_tol": 1e-8},
     ).optimize()
 
     finite_ok = math.isfinite(result.fun)

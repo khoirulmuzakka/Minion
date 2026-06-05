@@ -31,6 +31,7 @@ class DefaultSettings{
             {"mutation_rate", 0.5}, 
             {"crossover_rate", 0.8}, 
             {"mutation_strategy", std::string("best1bin")}, 
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
@@ -85,13 +86,7 @@ class DefaultSettings{
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("reflect-random")} 
-        };
-
-        std::map<std::string, ConfigValue> default_settings_NJADE  = {
-            {"population_size", 0}, 
-            {"mutation_strategy", std::string("current_to_pbest_A_1bin")}, 
-            {"memory_size", 5},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
@@ -101,6 +96,7 @@ class DefaultSettings{
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("random")} 
         };
 
@@ -132,6 +128,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue>  default_settings_ABC= {
             {"population_size", 0},  
             {"limit", 100},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
@@ -141,6 +138,7 @@ class DefaultSettings{
             {"cognitive_coefficient", 1.5},
             {"social_coefficient", 1.5},
             {"velocity_clamp", 0.2},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -155,6 +153,7 @@ class DefaultSettings{
             {"informant_degree", 3},
             {"velocity_clamp", 0.0},
             {"normalize", false},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -168,6 +167,7 @@ class DefaultSettings{
             {"subswarm_count", 4},
             {"regroup_period", 5},
             {"velocity_clamp", 0.2},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
@@ -183,6 +183,7 @@ class DefaultSettings{
             {"learning_period", 20},
             {"sin_freq_base", 0.5},
             {"epsilon", 1e-8},
+            {"convergence_tol", 1e-4},
             {"bound_strategy", std::string("reflect-random")}
         };
 
@@ -195,6 +196,7 @@ class DefaultSettings{
             {"c1", 0.0},
             {"cmu", 0.0},
             {"damps", 0.0},
+            {"convergence_tol", 1e-4},
             {"bound_strategy", std::string("reflect-random")}
         };
 
@@ -220,11 +222,13 @@ class DefaultSettings{
             {"local_search_algo", "L_BFGS_B"},
             {"func_noise_ratio", 1e-16},
             {"N_points_derivative", 3},
+            {"convergence_tol", 1e-4},
             {"bound_strategy" , std::string("periodic")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
                 {"locality_factor", 0.05},
+                {"convergence_tol", 1e-4},
                 {"bound_strategy" , std::string("reflect-random")}, 
         };
 
@@ -258,7 +262,6 @@ class DefaultSettings{
                 {"DE", default_settings_DE}, 
                 {"LSHADE", default_settings_LSHADE}, 
                 {"JADE", default_settings_JADE}, 
-                {"NJADE", default_settings_NJADE}, 
                 {"j2020", default_settings_j2020}, 
                 {"NLSHADE_RSP", default_settings_NLSHADE_RSP}, 
                 {"NLSHADE_LBC", default_settings_NLSHADE_LBC},

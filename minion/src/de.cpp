@@ -26,6 +26,7 @@ void Differential_Evolution::initialize  (){
         mutation_strategy="best1bin"; 
     };
     p = std::vector<size_t>(populationSize, 1); 
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     hasInitialized=true;
 }
 
@@ -196,7 +197,12 @@ void Differential_Evolution::init (){
 bool Differential_Evolution::checkStopping(){
     double fmax = findMax(fitness); 
     double fmin = findMin(fitness);
-    double relRange = (fmax-fmin)/fabs(calcMean(fitness));
+    double meanFitness = calcMean(fitness);
+    double denom = std::fabs(meanFitness);
+    if (denom <= 1e-12) {
+        denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
+    }
+    double relRange = (fmax-fmin)/denom;
     diversity.push_back(relRange);
     bool stop = false;
     if (relRange <= stoppingTol) {

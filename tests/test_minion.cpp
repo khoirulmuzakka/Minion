@@ -58,7 +58,6 @@ int main() {
     };
 
     const size_t maxevals = 4000;
-    const double tol = 1e-8;
     const size_t eval_slack = 100;
 
     int failed_checks = 0;
@@ -80,7 +79,9 @@ int main() {
 
     for (const auto& algo : algorithms) {
         try {
-            minion::Minimizer opt(sphere_batch, bounds, x0, nullptr, nullptr, algo, tol, maxevals, 42);
+            auto settings = minion::DefaultSettings().getDefaultSettings(algo);
+            settings["convergence_tol"] = 1e-8;
+            minion::Minimizer opt(sphere_batch, bounds, x0, nullptr, nullptr, algo, maxevals, 42, settings);
             minion::MinionResult res = opt.optimize();
             std::cout << std::left << std::setw(18) << algo << std::right << std::setw(16) << std::setprecision(8)
                       << std::scientific << res.fun << std::setw(12) << res.nfev << '\n';
@@ -122,7 +123,9 @@ int main() {
 
     for (const auto& algo : algorithms) {
         try {
-            minion::Minimizer opt(rosenbrock_batch, bounds, x0, nullptr, nullptr, algo, tol, maxevals, 42);
+            auto settings = minion::DefaultSettings().getDefaultSettings(algo);
+            settings["convergence_tol"] = 1e-8;
+            minion::Minimizer opt(rosenbrock_batch, bounds, x0, nullptr, nullptr, algo, maxevals, 42, settings);
             minion::MinionResult res = opt.optimize();
             std::cout << std::left << std::setw(18) << algo << std::right << std::setw(16) << std::setprecision(8)
                       << std::scientific << res.fun << std::setw(12) << res.nfev << '\n';
@@ -171,7 +174,9 @@ int main() {
 
         for (const auto& algo : cec_algorithms) {
             try {
-                minion::Minimizer cec_opt(cec2017_batch, cec_bounds, cec_x0, &cec2017_fn, nullptr, algo, tol, cec_maxevals, cec_seed);
+                auto settings = minion::DefaultSettings().getDefaultSettings(algo);
+                settings["convergence_tol"] = 1e-8;
+                minion::Minimizer cec_opt(cec2017_batch, cec_bounds, cec_x0, &cec2017_fn, nullptr, algo, cec_maxevals, cec_seed, settings);
                 minion::MinionResult cec_res = cec_opt.optimize();
                 std::cout << std::left << std::setw(18) << algo << std::right << std::setw(16) << std::setprecision(8)
                           << std::scientific << cec_res.fun << std::setw(12) << cec_res.nfev << '\n';

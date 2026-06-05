@@ -55,7 +55,6 @@ public:
      * @param x0 The initial solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. Minion will pick the best guess from x0 as the the actual initialization.
      * @param data Additional data for the objective function.
      * @param callback Callback function for intermediate results.
-     * @param tol The tolerance for stopping criteria.
      * @param maxevals The maximum number of evaluations.
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
@@ -65,12 +64,11 @@ public:
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
     ) :
-        MinimizerBase(func, x0, data, callback, tol, maxevals, seed, options) { 
+        MinimizerBase(func, x0, data, callback, maxevals, seed, options) { 
             if (x0.empty()) throw std::runtime_error("Initial guesses x0 can not be empty!");
         };
     

@@ -30,11 +30,10 @@ public:
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
         std::function<void(MinionResult*)> callback = nullptr,
-        double tol = 0.0001,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>())
-        : Differential_Evolution(func, bounds, x0, data, callback, 0.0, maxevals, seed, options) {
+        : Differential_Evolution(func, bounds, x0, data, callback, maxevals, seed, options) {
         support_tol = false;
     }
 

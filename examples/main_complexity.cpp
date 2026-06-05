@@ -109,6 +109,7 @@ int main(int argc, char* argv[]) {
             minion::CECBase* cecfunc = create_cec_function(year, static_cast<int>(func), dimension);
             auto settings = minion::DefaultSettings().getDefaultSettings(algo);
             settings["population_size"] = popsize;
+            settings["convergence_tol"] = 0.0;
             std::vector<std::vector<double>> x0 = {};
             if (algo == "NelderMead" || algo == "L_BFGS_B" || algo == "DA") {
                 std::vector<double> x00;
@@ -126,7 +127,6 @@ int main(int argc, char* argv[]) {
                 cecfunc,
                 callback,
                 algo,
-                0.0,
                 static_cast<int>(kEvalCount),
                 seed,
                 settings);

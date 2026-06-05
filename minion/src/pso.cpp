@@ -28,6 +28,7 @@ void PSO::configureFromOptions(const Options& options) {
     cognitiveCoeff = options.get<double>("cognitive_coefficient", 1.5);
     socialCoeff = options.get<double>("social_coefficient", 1.5);
     velocityClamp = options.get<double>("velocity_clamp", 0.2);
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     if (velocityClamp < 0.0) {
         velocityClamp = 0.0;
     }
@@ -136,7 +137,10 @@ void PSO::recordMetrics() {
     double fmin = findMin(fitness);
     double mean = calcMean(fitness);
     double denom = std::fabs(mean);
-    double relRange = denom > 1e-12 ? (fmax - fmin) / denom : (fmax - fmin);
+    if (denom <= 1e-12) {
+        denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
+    }
+    double relRange = (fmax - fmin) / denom;
     diversity.push_back(relRange);
     spatialDiversity.push_back(averageEuclideanDistance(population));
 }

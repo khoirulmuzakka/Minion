@@ -27,6 +27,7 @@ void NelderMead::initialize() {
     }
 
     simplex_scale = clamp(options.get<double>("locality_factor", 0.05), 1e-10, 1.0);
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
 
     hasInitialized = true;
 }

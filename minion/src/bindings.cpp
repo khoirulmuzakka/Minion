@@ -44,7 +44,7 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<MinimizerBase>(m, "MinimizerBase")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >())
+                      size_t, int, std::map<std::string, ConfigValue> >())
         .def_readwrite("callback", &MinimizerBase::callback)
         .def_readwrite("history", &MinimizerBase::history)
         // Release the GIL while the long-running C++ optimize routine executes; pybind11 reacquires it for Python callbacks.
@@ -53,13 +53,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<Differential_Evolution, MinimizerBase>(m, "Differential_Evolution")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(), 
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -73,13 +72,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<j2020, MinimizerBase>(m, "j2020")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -89,13 +87,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<LSRTDE, MinimizerBase>(m, "LSRTDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -105,13 +102,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<LSHADE, Differential_Evolution>(m, "LSHADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -126,13 +122,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<AGSK, Differential_Evolution>(m, "AGSK")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -146,13 +141,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<IMODE, Differential_Evolution>(m, "IMODE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -166,13 +160,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<LSHADE_cnEpSin, Differential_Evolution>(m, "LSHADE_cnEpSin")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -186,13 +179,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<jSO, Differential_Evolution>(m, "jSO")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -207,13 +199,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<JADE, Differential_Evolution>(m, "JADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") =std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -228,13 +219,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<NLSHADE_RSP, MinimizerBase>(m, "NLSHADE_RSP")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -245,14 +235,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<NLSHADE_LBC, MinimizerBase>(m, "NLSHADE_LBC")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
-            py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
-            py::arg("maxevals") = 100000,
+            py::arg("callback") = nullptr,py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
 
@@ -262,13 +250,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<ABC, MinimizerBase>(m, "ABC")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -279,13 +266,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<PSO, MinimizerBase>(m, "PSO")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -297,13 +283,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<SPSO2011, PSO>(m, "SPSO2011")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -312,13 +297,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<DMSPSO, PSO>(m, "DMSPSO")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -327,13 +311,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<CMAES, MinimizerBase>(m, "CMAES")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -342,13 +325,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<RCMAES, MinimizerBase>(m, "RCMAES")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -357,13 +339,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<BIPOP_aCMAES, MinimizerBase>(m, "BIPOP_aCMAES")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"),
             py::arg("bounds"),
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr,
             py::arg("callback") = nullptr,
-            py::arg("tol") = 0.0001,
             py::arg("maxevals") = 100000,
             py::arg("seed") = -1,
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -372,13 +353,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<Dual_Annealing, MinimizerBase>(m, "Dual_Annealing")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -389,13 +369,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<L_BFGS_B, MinimizerBase>(m, "L_BFGS_B")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -405,12 +384,11 @@ PYBIND11_MODULE(minionpycpp, m) {
 
     py::class_<L_BFGS, MinimizerBase>(m, "L_BFGS")
         .def(py::init<MinionFunction, const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -421,13 +399,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -442,13 +419,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<GWO_DE, MinimizerBase>(m, "GWO_DE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -467,13 +443,12 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<NelderMead, MinimizerBase>(m, "NelderMead")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr, 
-            py::arg("tol") = 0.0001, 
+            py::arg("callback") = nullptr,
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
@@ -482,14 +457,13 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<Minimizer>(m, "Minimizer")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<void(MinionResult*)>,
-                      std::string, double, size_t, int, std::map<std::string, ConfigValue> >(),
+                      std::string, size_t, int, std::map<std::string, ConfigValue> >(),
             py::arg("func"), 
             py::arg("bounds"), 
             py::arg("x0") = std::vector<std::vector<double>>(),
             py::arg("data") = nullptr, 
             py::arg("callback") = nullptr, 
             py::arg("algo") = "ARRDE",
-            py::arg("tol") = 0.0001, 
             py::arg("maxevals") = 100000, 
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())

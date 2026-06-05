@@ -262,6 +262,10 @@ MinionResult SPSO2011::optimize() {
                 callback(&minionResult);
             }
 
+            if (support_tol && checkStopping()) {
+                break;
+            }
+
             ++iter;
             if (Nevals >= maxevals) {
                 break;

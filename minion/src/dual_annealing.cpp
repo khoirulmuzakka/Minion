@@ -22,6 +22,7 @@ void Dual_Annealing::initialize() {
     local_min_algo = options.get<std::string> ("local_search_algo", "L_BFGS_B");
     func_noise_ratio = options.get<double>("func_noise_ratio", 1e-10);
     der_N_points = options.get<int>("N_points_derivative", 3);
+    stoppingTol = getConvergenceTolerance(options, 1e-4);
     
     if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temperature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
     if ( restart_temp_ratio <= 0.0 || restart_temp_ratio > 1.0) throw std::runtime_error("restart_temp_ratio must be between 0.0 and 1.0. Found : "+ std::to_string(restart_temp_ratio));
@@ -148,7 +149,10 @@ void Dual_Annealing::step (int iter, double temp){
 
     if (best_E == best_E_save) N_no_improve++;
 
-    minionResult = MinionResult(best_cand, best_E, iter, Nevals, false, "");
+    double denom = std::max({std::fabs(best_E), std::fabs(current_E), 1.0});
+    double relGap = std::fabs(current_E - best_E) / denom;
+
+    minionResult = MinionResult(best_cand, best_E, iter, Nevals, relGap <= stoppingTol, "");
     history.push_back(minionResult);
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
@@ -156,13 +160,14 @@ void Dual_Annealing::step (int iter, double temp){
         if (local_min_algo == "NelderMead"){
             auto settings = DefaultSettings().getDefaultSettings("NelderMead");
             settings["locality_factor"] = 0.5;
-            minionResult = NelderMead(func, bounds, {best_cand}, data, callback, stoppingTol, 0.25*maxevals_ls, seed, settings).optimize();
+            settings["convergence_tol"] = stoppingTol;
+            minionResult = NelderMead(func, bounds, {best_cand}, data, callback, 0.25*maxevals_ls, seed, settings).optimize();
         } else if (local_min_algo == "L_BFGS_B"){
             auto defaultSettings = DefaultSettings().getDefaultSettings("L_BFGS_B");
             defaultSettings["max_iterations"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
             defaultSettings["func_noise_ratio"] = func_noise_ratio;
             defaultSettings["N_points_derivative"] = der_N_points;
-            minionResult = L_BFGS_B(func, bounds, {best_cand}, data, callback, stoppingTol, maxevals_ls, seed, defaultSettings).optimize();
+            minionResult = L_BFGS_B(func, bounds, {best_cand}, data, callback, maxevals_ls, seed, defaultSettings).optimize();
         } else {
             throw std::runtime_error("Unknown local search algorithm.");
         };
@@ -197,6 +202,9 @@ MinionResult Dual_Annealing::optimize() {
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
+                if (!history.empty() && history.back().success) {
+                    return getBestFromHistory();
+                }
                 if ( temperature < temperature_restart) {
                     init(false); 
                     iter=0; 
