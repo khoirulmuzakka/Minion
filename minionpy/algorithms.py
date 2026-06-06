@@ -61,6 +61,41 @@ def _gil_protected(func):
 
 
 from typing import Callable, Dict, List, Optional, Any
+
+
+def _normalize_algo_name(name: str) -> str:
+    normalized = ''.join(ch for ch in name.upper() if ch not in {'-', '_', ' '})
+    aliases = {
+        "DE": "DE",
+        "LSHADE": "LSHADE",
+        "JADE": "JADE",
+        "J2020": "j2020",
+        "NLSHADERSP": "NLSHADE_RSP",
+        "NLSHADELBC": "NLSHADE_LBC",
+        "LSRTDE": "LSRTDE",
+        "ARRDE": "ARRDE",
+        "JSO": "jSO",
+        "IMODE": "IMODE",
+        "AGSK": "AGSK",
+        "GWODE": "GWO_DE",
+        "NELDERMEAD": "NelderMead",
+        "ABC": "ABC",
+        "PSO": "PSO",
+        "SPSO2011": "SPSO2011",
+        "DMSPSO": "DMSPSO",
+        "LSHADECNEPSIN": "LSHADE_cnEpSin",
+        "CMAES": "CMAES",
+        "RCMAES": "RCMAES",
+        "BIPOPACMAES": "BIPOP_aCMAES",
+        "DA": "DA",
+        "DUALANNEALING": "DA",
+        "LBFGSB": "L_BFGS_B",
+        "LBFGS": "L_BFGS",
+    }
+    try:
+        return aliases[normalized]
+    except KeyError as exc:
+        raise ValueError(f"Unknown algorithm '{name}'") from exc
   
 class MinionResult:
     """
@@ -2456,23 +2491,13 @@ class Minimizer(MinimizerBase):
         - The `callback` function can be used for logging or monitoring progress.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
-        all_algo = [
-            "lshade", "de", "jade", "jso", "neldermead", "lsrtde",
-            "imode", "agsk",
-            "nlshade_rsp", "j2020", "gwo_de", "arrde", "abc", "da",
-            "l_bfgs_b", "l_bfgs", "lshade_cnepsin", "pso", "spso2011", "dmspso", "cmaes", "rcmaes", "bipop_acmaes"
-        ]
+        canonical_algo = _normalize_algo_name(algo)
 
-        algo_lower = algo.lower()
-
-        if algo_lower not in all_algo:
-            raise Exception("Unknown algorithm. The algorithm must be one of these:", all_algo)
-
-        if algo_lower in ["neldermead", "da", "l_bfgs", "l_bfgs_b"] and (x0 is None):
+        if canonical_algo in ["NelderMead", "DA", "L_BFGS", "L_BFGS_B"] and (x0 is None):
             raise RuntimeError("x0 must not be None or empty for Nelder-Mead to work!")
         
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
-        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, algo_lower, maxevals, self.seed, self.cpp_options)
+        self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, canonical_algo, maxevals, self.seed, self.cpp_options)
     
     def optimize(self):
         """

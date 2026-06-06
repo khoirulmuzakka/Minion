@@ -13,7 +13,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14794240.svg)](https://doi.org/10.5281/zenodo.14794240)
 
 
-MinionPy is the Python implementation of the Minion C++ library, designed for derivative-free optimization. It provides tools for solving optimization problems where gradients are unavailable or unreliable, incorporating state-of-the-art algorithms recognized in IEEE Congress on Evolutionary Computation (CEC) competitions. The library offers researchers and practitioners access to advanced optimization techniques and benchmarks for testing and evaluation.
+MinionPy is the Python interface to the Minion C++ optimization library. It focuses on single-objective, derivative-free optimization. The package includes several population-based and local optimization methods, along with CEC benchmark suites that can be used for testing and comparison.
 
 ## Features
 
@@ -21,15 +21,9 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
     - **Differential Evolution-based algorithms:**
       - Basic Differential Evolution (DE)
       - JADE  
-      - L-SHADE  
-      - LSHADE-cnEpSin
-      - jSO
-      - j2020 
-      - NL-SHADE-RSP 
-      - LSRTDE 
-      - ARRDE *(Adaptive Restart-Refine DE)*  
-      - AGSK 
-      . IMODE
+      - LSHADE  
+      - ARRDE 
+      - and other DE variants
     - **Other population-based algorithms:**
       - Artificial Bee Colony (ABC)
       - Grey Wolf DE Optimization  
@@ -57,7 +51,7 @@ MinionPy is the Python implementation of the Minion C++ library, designed for de
 
 ## Applications
 
-MinionPy is applicable in scenarios where derivative-free optimization is required, including engineering, physics, and machine learning. Its standardized benchmarks and high-performance algorithms make it suitable for developing and evaluating new optimization techniques as well as solving real-world optimization problems.
+MinionPy is applicable in scenarios where single objective, bound-constrained/unconstrauned optimization is required, including engineering, physics, and machine learning. Its standardized benchmarks and high-performance algorithms make it suitable for developing and evaluating new optimization techniques as well as solving real-world optimization problems.
 
 
 ## 📖 Documentation

@@ -6,6 +6,7 @@
 #include <cctype>
 #include <cmath>
 #include <map> 
+#include <stdexcept>
 #include <string>
 #include "minimizer_base.h"
 
@@ -20,10 +21,49 @@ class DefaultSettings{
         static std::string normalizeName(const std::string& name) {
             std::string norm = name;
             std::transform(norm.begin(), norm.end(), norm.begin(), [](unsigned char c){
-                if (c == '-' || c == ' ') return '_';
+                if (c == '-' || c == '_' || c == ' ') return '\0';
                 return static_cast<char>(std::toupper(c));
             });
+            norm.erase(std::remove(norm.begin(), norm.end(), '\0'), norm.end());
             return norm;
+        }
+
+        static std::string canonicalAlgoName(const std::string& name) {
+            const std::string normalized = normalizeName(name);
+
+            static const std::map<std::string, std::string> aliases = {
+                {"DE", "DE"},
+                {"LSHADE", "LSHADE"},
+                {"JADE", "JADE"},
+                {"J2020", "j2020"},
+                {"NLSHADERSP", "NLSHADE_RSP"},
+                {"NLSHADELBC", "NLSHADE_LBC"},
+                {"LSRTDE", "LSRTDE"},
+                {"ARRDE", "ARRDE"},
+                {"JSO", "jSO"},
+                {"IMODE", "IMODE"},
+                {"AGSK", "AGSK"},
+                {"GWODE", "GWO_DE"},
+                {"NELDERMEAD", "NelderMead"},
+                {"ABC", "ABC"},
+                {"PSO", "PSO"},
+                {"SPSO2011", "SPSO2011"},
+                {"DMSPSO", "DMSPSO"},
+                {"LSHADECNEPSIN", "LSHADE_cnEpSin"},
+                {"CMAES", "CMAES"},
+                {"RCMAES", "RCMAES"},
+                {"BIPOPACMAES", "BIPOP_aCMAES"},
+                {"DA", "DA"},
+                {"DUALANNEALING", "DA"},
+                {"LBFGSB", "L_BFGS_B"},
+                {"LBFGS", "L_BFGS"}
+            };
+
+            auto it = aliases.find(normalized);
+            if (it != aliases.end()) {
+                return it->second;
+            }
+            throw std::runtime_error("Unknown algorithm name: " + name);
         }
 
         std::map<std::string, ConfigValue> default_settings_DE = {
@@ -286,15 +326,10 @@ class DefaultSettings{
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){
-            auto it = algoToSettingsMap.find(algo);
+            const std::string canonical = canonicalAlgoName(algo);
+            auto it = algoToSettingsMap.find(canonical);
             if (it != algoToSettingsMap.end()) {
                 return it->second;
-            }
-            std::string normalized = normalizeName(algo);
-            for (const auto& entry : algoToSettingsMap) {
-                if (normalizeName(entry.first) == normalized) {
-                    return entry.second;
-                }
             }
             throw std::runtime_error("Unknown algorithm name: " + algo);
         }    
