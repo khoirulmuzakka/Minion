@@ -7,5 +7,5 @@ Minion (C++)
    :caption: Contents:
 
    examples
+   cec
    cppapi
-

@@ -269,20 +269,26 @@ class CEC2019Functions:
     Available functions: **1–10**
     """
 
-    def __init__(self, function_number):
+    def __init__(self, function_number, dimension=None):
         """
         Initialize a CEC2019Functions instance.
 
         Parameters
         ----------
         function_number : int
-            The function index (must be in the range 1–10). 
+            The function index (must be in the range 1–10).
+        dimension : int, optional
+            Accepted for API consistency with the C++ constructor. The CEC2019
+            suite uses a fixed problem dimension for each function, so this
+            argument is ignored.
         """
         if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
         if function_number==1 : dimension=9
         elif function_number==2:  dimension = 16
         elif function_number==3 : dimension=18
         else: dimension =10
+        self.function_number = function_number
+        self.dimension = int(dimension)
         self.cpp_func = cppCEC2019Functions(function_number, int(dimension))
 
     def __call__(self, X):
@@ -392,6 +398,18 @@ class CEC2011Functions:
     """
 
     def __init__(self, function_number, dimension=None):
+        """
+        Initialize a CEC2011Functions instance.
+
+        Parameters
+        ----------
+        function_number : int
+            The problem index (must be in the range 1–22).
+        dimension : int, optional
+            Accepted for API consistency with the C++ constructor. CEC2011
+            problems have fixed suite-defined dimensions, so this argument is
+            ignored.
+        """
         if function_number not in CEC2011_METADATA:
             raise Exception("Function number must be between 1 and 22.")
 

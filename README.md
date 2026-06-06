@@ -43,10 +43,10 @@ Minion also serves as a **research platform** for developing and testing new opt
     - Generalized Simulated Annealing (Dual Annealing) 
     - L-BFGS-B (vectorized & noise-robust) 
     - L-BFGS (vectorized & noise-robust) 
-- **Highly parallelized**
-  - Designed for **vectorized function evaluations**, supporting **multithreading and multiprocessing** to speed up optimization.
-- **Optimized C++ backend with Python API**
-  - Enjoy the performance of C++ with the simplicity of Python.
+- **Native Batch Evaluation**
+  - Algorithms work with **vectorized / batched objective evaluations** by default, making it straightforward to use multithreading or multiprocessing inside the objective when needed.
+- **C++ Library with Python Bindings**
+  - The core implementation is in C++, with matching Python access through `minionpy`.
 - **CEC Benchmark Suite**  
   - Includes `CEC2011`, `CEC2014`, `CEC2017`, `CEC2019`, `CEC2020`, and `CEC2022` benchmark problems for rigorous algorithm testing.  
   - The benchmark problems are directly adapted from the original C++ implementations.  
@@ -179,17 +179,19 @@ In Python, `func(X)` receives `X` as `list[list[float]]` and returns one value p
 
 ## CEC Benchmark Usage
 
-The CEC wrappers follow the same optimizer workflow as ordinary objectives. The main difference is that the benchmark evaluators already implement batch evaluation logic.
+Minion exposes the CEC suites as callable benchmark objects. The usage pattern is the same in C++ and Python:
+- Construct a benchmark evaluator such as `CEC2017Functions(function_number, dimension)`.
+- Pass that evaluator to `Minimizer` as the objective.
+- Provide `bounds` separately to `Minimizer`.
+- The benchmark evaluators are already vectorized, so in Python no wrapper is needed. In C++, a thin adapter is usually used to forward the batch to the benchmark object.
 
-### C++ Code
+Most suites use the constructor form `(function_number, dimension)`, for example `CEC2014`, `CEC2017`, `CEC2020`, and `CEC2022`. `CEC2019` and `CEC2011` also accept that form for API consistency, although their effective dimensions are suite-defined. For `CEC2011`, MinionPy additionally exposes `get_bounds()`.
 
-Minion provides CEC benchmark wrappers in C++. These already match Minion's vectorized interface, so you can pass them directly through a thin adapter:
+Example using `CEC2017` in C++:
 
 ```cpp
 #include <minion.h>
 #include <minion_cec.h>
-#include <iostream>
-#include <vector>
 
 std::vector<double> cec2017_batch(const std::vector<std::vector<double>>& X, void* data) {
     auto* cec = static_cast<minion::CECBase*>(data);
@@ -197,34 +199,34 @@ std::vector<double> cec2017_batch(const std::vector<std::vector<double>>& X, voi
 }
 
 int main() {
-    const int dim = 30;
-    minion::CEC2017Functions cec_f1(1, dim);
-    std::vector<std::pair<double, double>> bounds(dim, {-100.0, 100.0});
-    std::vector<std::vector<double>> x0 = {
-        std::vector<double>(dim, 0.0)
-    };
+    const int function_number = 1;
+    const int dimension = 30;
+    const size_t maxevals = 30000;
+    const int seed = 20250306;
 
-    auto options = minion::DefaultSettings().getDefaultSettings("ARRDE");
+    minion::CEC2017Functions cec_f1(function_number, dimension);
+    std::vector<std::pair<double, double>> bounds(dimension, {-100.0, 100.0});
+    std::vector<std::vector<double>> x0 = {std::vector<double>(dimension, 0.0)};
+
     minion::Minimizer optimizer(
-        cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", 30000, 20250306, options
+        cec2017_batch, bounds, x0, &cec_f1, nullptr, "ARRDE", maxevals, seed
     );
 
     minion::MinionResult result = optimizer.optimize();
-    std::cout << "best f = " << result.fun << "\n";
 }
 ```
 
-The CEC benchmark classes already support batch evaluation. In C++, you only need a thin adapter that forwards `X` to the benchmark object.
-
-### Python Code
-
-In Python, CEC benchmark wrappers are already vectorized, so they can be passed directly to `Minimizer`.
+Example using `CEC2017` in Python:
 
 ```python
 import minionpy as mpy
 
+function_number = 1
 dimension = 30
-cec_f1 = mpy.CEC2017Functions(function_number=1, dimension=dimension)
+maxevals = 30000
+seed = 20250306
+
+cec_f1 = mpy.CEC2017Functions(function_number=function_number, dimension=dimension)
 bounds = [(-100.0, 100.0)] * dimension
 x0 = [[0.0] * dimension]
 
@@ -233,9 +235,9 @@ optimizer = mpy.Minimizer(
     x0=x0,
     bounds=bounds,
     algo="ARRDE",
-    maxevals=30000,
+    maxevals=maxevals,
     callback=None,
-    seed=20250306,
+    seed=seed,
     options=None,
 )
 
@@ -243,7 +245,14 @@ result = optimizer.optimize()
 print("best f =", result.fun)
 ```
 
-In Python, no extra wrapper is needed because `CEC2017Functions`, `CEC2014Functions`, `CEC2019Functions`, `CEC2020Functions`, `CEC2022Functions`, and `CEC2011Functions` already evaluate batches of candidate points.
+For `CEC2011`, the pattern is the same, but the bounds are problem-specific:
+
+```python
+cec2011 = mpy.CEC2011Functions(function_number=1, dimension=6)
+bounds = cec2011.get_bounds()
+```
+
+For a fuller C++ benchmark example and suite-specific bounds handling, see `examples/main_cec.cpp`.
 
 ## 📖 Documentation
 For full usage instructions, API reference, and examples, visit the official documentation:
