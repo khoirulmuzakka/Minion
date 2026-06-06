@@ -58,7 +58,6 @@ Suppose we use the **ARRDE** algorithm. We can instantiate it using:
         func=objective_function,
         x0=None,
         bounds=[(-10, 10)] * dimension,
-        relTol=0.0,
         maxevals=10000,
         callback=None,
         seed=None,
@@ -74,7 +73,6 @@ Alternatively, you can use a **generic interface**:
         x0=None,
         bounds=[(-10, 10)] * dimension,
         algo="ARRDE",
-        relTol=0.0,
         maxevals=10000,
         callback=None,
         seed=None,
@@ -83,14 +81,41 @@ Alternatively, you can use a **generic interface**:
 
 These two approaches are **equivalent**.  
 
+``x0`` should be given as ``list[list[float]]`` when you want to provide initial guesses.
+Each inner list is one candidate starting point, so Minion supports **multiple initial guesses**.
+
+.. code-block:: python
+
+    x0 = [
+        [0.0] * dimension,
+        [1.0] * dimension,
+        [-0.5] * dimension,
+    ]
+
+    optimizer = mpy.Minimizer(
+        func=objective_function,
+        x0=x0,
+        bounds=[(-10, 10)] * dimension,
+        algo="ARRDE",
+        maxevals=10000,
+        callback=None,
+        seed=None,
+        options=None
+    )
+
+.. note::
+
+   Multiple initial guesses are **not** the same as manually defining the algorithm's full population.
+   For population-based algorithms, Minion first initializes the population according to the algorithm's own rules, then replaces some individuals with the supplied guesses.
+   For non-population-based algorithms, Minion evaluates the provided guesses and starts from the best one.
+
 Parameter Explanation:
-- `x0`: Initial guesses (list[list[float]]). Minion supports multiple initial guesses. If DE-based algorithm is used, these guesses will be used to initialize the population. 
+- `x0`: Initial guesses (`list[list[float]]`). Each entry is one candidate start. In population-based algorithms, some initialized individuals are replaced by these guesses; other algorithms evaluate them and keep the best one as the actual starting point.
 - `bounds`: Search space boundaries (list of tuples).
-- `relTol`: Relative tolerance for convergence.
 - `maxevals`: Maximum number of function evaluations.
 - `callback`: A function that receives the current optimization result.
 - `seed`: Random seed for reproducibility.
-- `options`: Additional configuration options (see **API (Python)** section).
+- `options`: Additional algorithm-specific configuration options (see **API (Python)** section). For algorithms that support tolerance-based stopping, set `options["convergence_tol"]`.
 
 **Note:** All algorithms in **minionpy** share the same constructor, so the instantiation process is identical for each one.
 

@@ -32,13 +32,24 @@ Then call ``minion::Minimizer``:
 .. code-block:: cpp
 
     std::vector<std::pair<double, double>> bounds(dim, {-5.0, 5.0});
-    std::vector<double> x0(dim, 0.0);
+    std::vector<std::vector<double>> x0 = {
+        std::vector<double>(dim, 0.0)
+    };
     std::string algo = "LSHADE";
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
 
     minion::MinionResult res = minion::Minimizer(
         objective, bounds, x0, nullptr, nullptr, algo, 100000, 42, settings
     ).optimize();
+
+``x0`` is a ``std::vector<std::vector<double>>`` because Minion accepts **multiple initial guesses**.
+Each inner vector is one candidate starting point.
+
+.. note::
+
+   Multiple initial guesses are **not** the same thing as directly specifying the full internal population.
+   For population-based algorithms, Minion first initializes the population using the algorithm's usual rules, then replaces some of those individuals with the provided guesses.
+   For single-trajectory algorithms, Minion evaluates the supplied guesses first and starts from the best one.
 
 
 Understanding MinionResult
@@ -262,7 +273,9 @@ Example (CEC2017, F1, dimension 30):
     const int dim = 30;
     minion::CEC2017Functions cec_f1(1, dim);
     std::vector<std::pair<double, double>> bounds(dim, {-100.0, 100.0});
-    std::vector<double> x0(dim, 0.0);
+    std::vector<std::vector<double>> x0 = {
+        std::vector<double>(dim, 0.0)
+    };
 
     auto settings = minion::DefaultSettings().getDefaultSettings("ARRDE");
     minion::MinionResult res = minion::Minimizer(
