@@ -4,7 +4,7 @@ CEC Benchmarks
 This page describes how to minimize CEC benchmark functions with both the **C++** and **Python** Minion APIs.
 
 General Pattern
-===============
+---------------
 
 Using a CEC benchmark follows the same overall workflow as any other objective:
 
@@ -19,7 +19,7 @@ CEC benchmark evaluators are already batch evaluators:
 
 
 Constructor Pattern
-===================
+-------------------
 
 The benchmark suites use these constructor forms:
 
@@ -43,7 +43,7 @@ The benchmark suites use these constructor forms:
 
 
 Valid Dimensions
-================
+----------------
 
 Valid dimensions by suite:
 
@@ -62,7 +62,7 @@ Some suites also have function-specific restrictions at certain dimensions.
 
 
 C++ Usage
-=========
+---------
 
 The usual C++ pattern is to adapt the CEC evaluator to ``MinionFunction``:
 
@@ -96,7 +96,7 @@ The usual C++ pattern is to adapt the CEC evaluator to ``MinionFunction``:
 
 
 Python Usage
-============
+------------
 
 In Python, no adapter is needed because the benchmark wrapper is already vectorized:
 
@@ -127,7 +127,7 @@ In Python, no adapter is needed because the benchmark wrapper is already vectori
 
 
 About Bounds
-============
+------------
 
 The benchmark object evaluates the objective, but it does **not** supply bounds to ``Minimizer`` automatically. You should still pass ``bounds`` explicitly.
 
@@ -153,7 +153,7 @@ For the full C++ per-problem bound setup, see ``examples/main_cec.cpp`` or ``exa
 
 
 Further Examples
-================
+----------------
 
 For broader benchmark examples and sweeps, see:
 
