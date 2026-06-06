@@ -28,6 +28,12 @@ This documentation covers the installation, usage, and details of both the C++ a
    changelog
    license
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Benchmarks:
+
+   cec
+
 
 
 

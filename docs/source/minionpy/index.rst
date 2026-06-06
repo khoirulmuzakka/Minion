@@ -8,5 +8,4 @@ Welcome to the MinionPy documentation! MinionPy is a Python wrapper for the Mini
 
    getting_started
    examples
-   cec
    pyapi

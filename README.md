@@ -16,21 +16,14 @@
 
 Minion also serves as a **research platform** for developing and testing new optimization algorithms. It includes benchmark functions from **CEC competitions (2011, 2014, 2017, 2019, 2020, and 2022)**, providing a robust framework for algorithm evaluation and comparison.
 
-## 🔥 Why Choose Minion?
+## 🔥 Why Minion?
 - **State-of-the-art optimization algorithms** :
   - **Differential Evolution-based algorithms:**
     - Basic Differential Evolution (DE)
     - JADE  
-    - L-SHADE  
-    - LSHADE-cnEpSin 
-    - IMODE  
-    - jSO  
-    - j2020  
-    - NL-SHADE-RSP  
-    - LSRTDE  
+    - LSHADE  
     - ARRDE *(Adaptive Restart-Refine DE)*  
-    - AGSK 
-    - IMODE
+    - other advanced DE variants
   - **Other population-based algorithms:**
     - Artificial Bee Colony (ABC)
     - Grey Wolf DE Optimization  
@@ -54,7 +47,7 @@ Minion also serves as a **research platform** for developing and testing new opt
     - `F3` (failed `239/1000`, max relative error `5.25e-6`)
     - `F4` (failed `986/1000`, max relative error `0.39`)
     - `F21` (failed `75/1000`, max relative error `1.46`)
-    - `F22` (failed `89/100`, max relative error `1.42`)
+    - `F22` (failed `89/1000`, max relative error `1.42`)
 
 ## 🚀 Installation and Usage
 
