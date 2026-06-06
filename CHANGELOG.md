@@ -1,8 +1,22 @@
 # Changelog
+## [1.6.0] - 2026-06-06
+### Changed
+- Removed `tol` / `relTol` from the Minion API.
+- Made algorithm name handling more robust across common naming variants.
+- Updated `CEC2011` to more closely mirror the original MATLAB implementation.
+- Streamlined the CEC API.
+- Added `convergence_tol` to the options of supported algorithms.
+
+## [1.5.0] - 2026-03-07
+### Changed
+- Reverted back to compiled library style.
+- Fixed compilation issue on Windows MSVC due to min/max macros.
+
 ## [1.2.0] - 2026-03-05
 ### Added
-- Overhauled cmakelist
 - Added RCMAES
+- Streamlined CMake usage.
+- Header only style library
 
 ## [1.1.0] - 2025-11-23
 ### Added
@@ -12,12 +26,11 @@
 ## [1.0.1] - 2025-11-07
 ### Changed
 - Fixed memory leaks.
+- Version 1.0.1 now instead of 0.2.9
 
 ## [0.2.8] - 2025-11-06
 ### Changed
 - More correct implementations of LSHADE_cnepsin and ARRDE.
-
-# Changelog
 ## [0.2.7] - 2025-10-10
 ### Changed
 - More correct implementations of LSHADE, jSO, JADE, DE, and ARRDE.
@@ -38,7 +51,7 @@
 ## [0.2.3] - 2025-08-21
 ### Changed
 - Classical algorithms such as L-BFGS pick the best guess from the given guesses during initialization. 
-- Stability improvements. 
+- Stability improvements in L-BFGS and L-BFGS-B.
 
 ## [0.2.2] - 2025-07-31
 ### Changed
@@ -82,11 +95,10 @@
 ## [0.1.6] - 2025-02-11
 ### Added
 - Implemented `L_BFGS_B` 
-- Improved `DA`with `L_BFGS_B`as the local search. 
+- Improved `DA` with `L_BFGS_B` as the local search.
 
 ### Changed
-- Fine tune `DA`hyperparameters
+- Fine-tuned `DA` hyperparameters.
 
 ### Fixed
-- Fixed problem with github CI for wheel generations. 
-
+- Fixed problem with GitHub CI for wheel generation.

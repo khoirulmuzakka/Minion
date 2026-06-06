@@ -5,6 +5,17 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.6.0 - 2026-06-06
+--------------------------
+
+**Changed**
+
+- Removed ``tol`` / ``relTol`` from the Minion API.
+- Made algorithm name handling more robust across common naming variants.
+- Updated ``CEC2011`` to more closely mirror the original MATLAB implementation.
+- Streamlined the CEC API.
+- Added ``convergence_tol`` to the options of supported algorithms.
+
 Version 1.5.0 - 2026-03-07
 --------------------------
 
@@ -158,4 +169,3 @@ Version 0.1.6 - 2025-02-11
 **Fixed**
 
 - Fixed problem with GitHub CI for wheel generation.
-

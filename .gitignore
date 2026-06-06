@@ -51,5 +51,6 @@ docs/source/_static/*.tmp
 docs/source/_templates/*.tmp
 eigen
 eigen.zip
+cec2011/*
 
 
