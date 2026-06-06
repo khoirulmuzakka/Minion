@@ -20,6 +20,7 @@ This documentation covers the installation, usage, and details of both the C++ a
    installation
    minion/index
    minionpy/index
+   algolist
    BFGS
    Convergence
    Vectorization

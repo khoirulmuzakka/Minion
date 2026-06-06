@@ -1,46 +1,30 @@
-
 Notes Regarding Vectorization Support
-=========================================
+====================================
 
-As mentioned, Minion requires the objective function to be vectorized. This ensures that algorithms capable of batch function calls can 
-fully utilize the parallelization implemented by the user in the vectorized function. However, some algorithms do not support batch function 
-calls natively. Population-based algorithms are generally known for their support of batch function calls, while sequential ones, 
-such as Nelder-Mead, do not.
+Minion and MinionPy expect the objective function to be **vectorized**. In other words, the objective should accept a batch of candidate points and return one objective value per point.
 
-Here is a list of algorithms implemented in Minion/MinionPy that **support** batch function calls, and therefore can fully take advantage 
-of parallelization:
+For **most algorithms**, this vectorized interface is used **natively**. That means the algorithm can submit batches with size greater than 1, so any multithreading or multiprocessing inside the objective can be used effectively.
 
-- DE  
-- LSHADE  
-- AGSK  
-- JADE  
-- jSO  
-- ARRDE  
-- NL-SHADE-RSP  
-- LSRTDE  
-- GWO-DE  
-- ABC  
-- PSO  
-- SPSO2011  
-- DMSPSO  
-- CMA-ES  
-- BIPOP-aCMAES
-- LSHADE-cnEpSin  
-- L-BFGS-B  
+Algorithms that do **not** support native batch evaluation
+==========================================================
 
-Algorithms that **do not** support batch function calls:
+The following algorithms do not use native batch evaluation. Even if the objective function is vectorized, the effective batch size is still ``1``:
 
-1) j2020  
-2) Nelder-Mead  
+- ``j2020``
+- ``Nelder-Mead``
 
-Algorithms that **partially** support batch function calls:
+For these algorithms, Minion still calls the objective through the vectorized interface, but one candidate point is evaluated at a time.
 
-1) Dual Annealing  
 
-The L-BFGS-B algorithm in Minion supports batch function calls because, in every function evaluation, 
-a derivative is also computed. Evaluations of the objective function at the evaluation point and the shifted point (for the derivative) 
-can be performed in parallel. Note that this parallelization feature is not available in other optimization library that implement L-BFGS-B such as SciPy. 
-Since Dual Annealing uses L-BFGS-B for local search, it can also benefit from this feature.
+Algorithms with partial batch support
+=====================================
 
-The j2020 algorithm, although population-based, is not written in a way that supports batch function calls. 
-This is because an update is performed after every function call.
+- ``Dual Annealing``
+
+``Dual Annealing`` is only partially batch-oriented. Its local-search stage can still benefit from batch evaluation because it uses derivative-based evaluations internally.
+
+
+L-BFGS-B and L-BFGS
+===================
+
+``L-BFGS-B`` and ``L-BFGS`` benefit from vectorization because function and finite-difference derivative evaluations can be grouped into batches. This lets Minion exploit parallel objective evaluation even though these are not population-based methods.

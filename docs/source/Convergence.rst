@@ -15,4 +15,4 @@ For supported population-based algorithms, ``"convergence_tol"`` typically contr
 derived from the spread of population fitness values. For ``NelderMead`` and ``DA``, the stopping rule is algorithm-specific
 rather than population-diversity-based.
 
-Note that L-BFGS-B has its own stopping criteria, which is specified in the algorithm options (``g_epsilon``, ``g_epsilon_rel``, ``f_reltol``).
+Note that L-BFGS and L-BFGS-B has its own stopping criteria, which is specified in the algorithm options (``g_epsilon``, ``g_epsilon_rel``, ``f_reltol``).
