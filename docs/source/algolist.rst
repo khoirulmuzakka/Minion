@@ -7,7 +7,7 @@ For detailed descriptions, parameter documentation, and default options, see :do
 
 
 Differential Evolution Family
-=============================
+-----------------------------
 
 ``DE``
     Storn, R and Price, K, *Differential Evolution - a Simple and Efficient Heuristic for Global Optimization over Continuous Spaces*, Journal of Global Optimization, 1997, 11, 341-359.
@@ -47,7 +47,7 @@ Differential Evolution Family
 
 
 Particle Swarm and Swarm-Based Methods
-======================================
+--------------------------------------
 
 ``PSO``
     J. Kennedy and R. Eberhart, *Particle Swarm Optimization*, Proc. IEEE International Conference on Neural Networks, 1995.
@@ -63,7 +63,7 @@ Particle Swarm and Swarm-Based Methods
 
 
 Evolution Strategies
-====================
+--------------------
 
 ``CMAES``
     N. Hansen and A. Ostermeier, *Adapting arbitrary normal mutation distributions in evolution strategies: the covariance matrix adaptation*, Proceedings of IEEE International Conference on Evolutionary Computation, 1996.
@@ -76,7 +76,7 @@ Evolution Strategies
 
 
 Classical and Local Search Methods
-==================================
+----------------------------------
 
 ``NelderMead``
     Nelder, John A.; R. Mead, *A simplex method for function minimization*, Computer Journal, 7(4), 308-313, 1965.

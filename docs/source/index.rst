@@ -25,15 +25,13 @@ This documentation covers the installation, usage, and details of both the C++ a
    Convergence
    Vectorization
    Algorithms
+   cec
    contribute
    changelog
    license
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Benchmarks:
 
-   cec
+   
 
 
 
