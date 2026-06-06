@@ -5,6 +5,10 @@ This page provides a compact list of the optimization algorithms currently imple
 
 For detailed descriptions, parameter documentation, and default options, see :doc:`Algorithms`.
 
+.. note::
+
+   Some algorithms, including ``AGSK`` and ``IMODE``, were originally released in MATLAB. Minion provides C++ rewrites of those methods, so implementation details may differ slightly from the original source code even when the overall algorithmic design is preserved.
+
 
 Differential Evolution Family
 -----------------------------
@@ -72,7 +76,7 @@ Evolution Strategies
     Nikolaus Hansen, *Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed*, GECCO '09 Companion, 2009.
 
 ``RCMAES``
-    Anne Auger and Nikolaus Hansen, *A Restart CMA Evolution Strategy With Increasing Population Size*, IEEE Congress on Evolutionary Computation, 2005.
+    Khoirul Faiq Muzakka, Sören Möller, Martin Finsterbusch, *RCMAES: A Robust CMA-ES Variant for CEC2026 Competition*, arXiv, 2026. https://arxiv.org/abs/2604.27138
 
 
 Classical and Local Search Methods

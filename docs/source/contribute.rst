@@ -43,12 +43,6 @@ For source builds, the main requirements are:
 - Eigen3, or allow CMake to fetch dependencies as configured by the project
 - Python 3 and ``pybind11`` if you are working on the Python bindings
 
-If you only need the Python package for normal use, install it from PyPI instead:
-
-.. code-block:: shell
-
-   pip install --upgrade minionpy
-
 To build from source, use the helper scripts in the repository root:
 
 - Windows: ``compile.bat``
