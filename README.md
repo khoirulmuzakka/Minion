@@ -12,9 +12,9 @@
 [![Documentation Status](https://readthedocs.org/projects/minion-py/badge/?version=latest)](https://minion-py.readthedocs.io/en/latest/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14794240.svg)](https://doi.org/10.5281/zenodo.14794240)
 
-**Minion/MinionPy** is an optimization library designed for solving single-objective optimization problems. It features **state-of-the-art evolutionary algorithms**, including top-performing methods from IEEE CEC competitions, which are not commonly found in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
+**Minion/MinionPy** is an optimization library designed for solving single-objective optimization problems. It features state-of-the-art evolutionary algorithms, including top-performing methods from IEEE CEC competitions, which are not commonly found in standard optimization libraries such as SciPy, NLopt, OptimLib, pyGMO, and pagmo2.
 
-Minion also serves as a **research platform** for developing and testing new optimization algorithms. It includes benchmark functions from **CEC competitions (2011, 2014, 2017, 2019, 2020, and 2022)**, providing a robust framework for algorithm evaluation and comparison.
+Minion also serves as a research platform for developing and testing new optimization algorithms. It includes benchmark functions from IEEE CEC competitions (2011, 2014, 2017, 2019, 2020, and 2022), providing a robust framework for algorithm evaluation and comparison.
 
 ## 🔥 Why Minion?
 - **State-of-the-art optimization algorithms** :
@@ -41,7 +41,7 @@ Minion also serves as a **research platform** for developing and testing new opt
 - **C++ Library with Python Bindings**
   - The core implementation is in C++, with matching Python access through `minionpy`.
 - **CEC Benchmark Suite**  
-  - Includes `CEC2011`, `CEC2014`, `CEC2017`, `CEC2019`, `CEC2020`, and `CEC2022` benchmark problems for rigorous algorithm testing.  
+  - Includes `CEC2011`, `CEC2014`, `CEC2017`, `CEC2019`, `CEC2020`, and `CEC2022` benchmark problems.  
   - The benchmark problems are directly adapted from the original C++ implementations.  
   - The CEC2011 suite, containing 22 real-world optimization problems, has been completely rewritten in C++ from the original MATLAB code. The CEC2011 rewrite has been checked by running the original MATLAB code through Octave with `comparison_scripts/verify_cec2011_octave.py` using 1000 random samples per problem drawn from the allowed bounds. With a relative tolerance of `1e-9`, all rewritten CEC2011 problems agree with the Octave-evaluated MATLAB reference except `F3`, `F4`, `F21`, and `F22`. Observed mismatches are:
     - `F3` (failed `239/1000`, max relative error `5.25e-6`)
@@ -63,14 +63,14 @@ Detailed installation, native package, C++ build, and usage instructions are ava
 ## Algorithm Usage
 
 Across both C++ and Python, Minion uses the same core model:
-- The objective must be **vectorized**: it receives a batch of candidate points and returns one objective value per point.
-- `x0` contains **multiple initial guesses**, where each inner vector/list is one candidate start.
+- The objective must be vectorized: it receives a batch of candidate points and returns one objective value per point.
+- `x0` contains multiple initial guesses, where each inner vector/list is one candidate start.
 - `x0` is not a full population specification. In population-based algorithms, Minion first initializes the population using the algorithm's normal rule, then replaces some initialized individuals with the supplied guesses. In non-population-based algorithms, Minion evaluates the guesses and starts from the best one.
 - After constructing the `Minimizer`, call `optimize()` to run the algorithm and get a result object.
 
 ### C++ Code
 
-Minion expects a **vectorized** objective function:
+Minion expects a vectorized objective function:
 
 ```cpp
 #include <minion.h>
@@ -123,7 +123,7 @@ In C++, `MinionFunction` is the vectorized entry point: it takes `std::vector<st
 
 ### Python Code
 
-MinionPy uses the same idea: the objective function should be **vectorized** and accept a batch of points.
+MinionPy uses the same idea: the objective function should be vectorized and accept a batch of points.
 
 ```python
 import minionpy as mpy
