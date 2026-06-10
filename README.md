@@ -178,7 +178,7 @@ Minion exposes the CEC suites as callable benchmark objects. The usage pattern i
 - Provide `bounds` separately to `Minimizer`.
 - The benchmark evaluators are already vectorized, so in Python no wrapper is needed. In C++, a thin adapter is usually used to forward the batch to the benchmark object.
 
-Most suites use the constructor form `(function_number, dimension)`, for example `CEC2014`, `CEC2017`, `CEC2020`, and `CEC2022`. `CEC2019` and `CEC2011` also accept that form for API consistency, although their effective dimensions are suite-defined. For `CEC2011`, MinionPy additionally exposes `get_bounds()`.
+All suites use the same constructor form `(function_number, dimension)` for API consistency, although their effective dimensions are suite-defined. For `CEC2011`, MinionPy additionally exposes `get_bounds()`.
 
 Example using `CEC2017` in C++:
 
