@@ -18,7 +18,7 @@ jobs:
             artifact_name: wheels_macos_arm64
           - os: macos-15-intel
             artifact_name: wheels_macos_x86_64
-          - os: windows-latest
+          - os: windows-2022
             artifact_name: wheels_windows
 
     steps:
