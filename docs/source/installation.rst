@@ -257,8 +257,29 @@ Build MinionPy From Source
 Use this route when no PyPI wheel is available for your platform, or when you
 want to use the Python interface from a local checkout.
 
-Building MinionPy from source is the same CMake build as the native library,
-but with ``MINION_BUILD_PYTHON=ON``:
+From the repository root, build and install MinionPy into your active Python
+environment with:
+
+.. code-block:: shell
+
+   python -m pip install .
+
+Check the installation:
+
+.. code-block:: shell
+
+   python -c "import minionpy; print(minionpy.__version__)"
+
+This command drives the same underlying CMake-based build, but installs the
+package so it can be imported from any working directory. In this repository,
+``pip install .`` builds the C++ backend for ``minionpy``, creates a wheel for
+the local checkout, and installs that wheel into the active Python
+environment. After installation, ``minionpy`` is available like any other
+package installed with ``pip``.
+
+Alternatively, if you prefer a non-``pip`` installation or need direct
+control over the CMake configuration, you can build MinionPy manually with
+``MINION_BUILD_PYTHON=ON``:
 
 .. code-block:: shell
 
@@ -270,22 +291,10 @@ but with ``MINION_BUILD_PYTHON=ON``:
    cmake --build build --config Release
 
 The Python package code is in the ``minionpy`` directory. The compiled Python
-extension is written to ``minionpy/lib``. After the build, import MinionPy from
-the repository root:
+extension is written to ``minionpy/lib``. After a manual CMake build, import
+MinionPy from the repository root:
 
 .. code-block:: python
-
-   import minionpy
-   print(minionpy.__version__)
-
-If you run Python from another directory, add the repository root
-(the parent directory of ``minionpy``) to ``sys.path`` before importing
-``minionpy``:
-
-.. code-block:: python
-
-   import sys
-   sys.path.insert(0, "/path/to/Minion")
 
    import minionpy
    print(minionpy.__version__)
