@@ -52,5 +52,6 @@ docs/source/_templates/*.tmp
 eigen
 eigen.zip
 cec2011/*
+minionpy/*.so
 
 

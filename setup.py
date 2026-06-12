@@ -12,5 +12,6 @@ def _filter_wheel_manifest(files):
 
 setup(
     include_package_data=False,
+    packages=["minionpy"],
     cmake_process_manifest_hook=_filter_wheel_manifest,
 )
