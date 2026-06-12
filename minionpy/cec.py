@@ -1,17 +1,11 @@
-import sys
-import os
 import numpy as np
 
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
-custom_path = os.path.join(current_file_directory, 'lib')
-sys.path.append(custom_path)
-
-from minionpycpp import CEC2017Functions as cppCEC2017Functions
-from minionpycpp import CEC2014Functions as cppCEC2014Functions
-from minionpycpp import CEC2019Functions as cppCEC2019Functions
-from minionpycpp import CEC2020Functions as cppCEC2020Functions
-from minionpycpp import CEC2022Functions as cppCEC2022Functions
-from minionpycpp import CEC2011Functions as cppCEC2011Functions
+from .minionpycpp import CEC2017Functions as cppCEC2017Functions
+from .minionpycpp import CEC2014Functions as cppCEC2014Functions
+from .minionpycpp import CEC2019Functions as cppCEC2019Functions
+from .minionpycpp import CEC2020Functions as cppCEC2020Functions
+from .minionpycpp import CEC2022Functions as cppCEC2022Functions
+from .minionpycpp import CEC2011Functions as cppCEC2011Functions
 
 
 def _cec2011_problem02_bounds(ndim: int):

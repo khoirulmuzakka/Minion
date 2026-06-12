@@ -5,9 +5,16 @@ import os
 import sys
 import numpy as np
 
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
+IMPORT_MODE = os.environ.get("MINIONPY_IMPORT_MODE", "local")
+if IMPORT_MODE not in {"local", "installed"}:
+    raise RuntimeError(
+        "MINIONPY_IMPORT_MODE must be either 'local' or 'installed'."
+    )
+
+if IMPORT_MODE == "local":
+    REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if REPO_ROOT not in sys.path:
+        sys.path.insert(0, REPO_ROOT)
 
 import minionpy
 

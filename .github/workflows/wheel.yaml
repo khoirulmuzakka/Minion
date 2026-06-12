@@ -35,13 +35,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install cibuildwheel
 
-      - name: Build wheels
+      - name: Build and test wheels
         run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_SKIP: "pp* *-musllinux_*"
           CIBW_ARCHS_WINDOWS: "AMD64"
           CIBW_BUILD_VERBOSITY: "1"
+          CIBW_TEST_REQUIRES: "numpy"
+          CIBW_TEST_COMMAND: >-
+            python -c "import os, runpy; os.environ['MINIONPY_IMPORT_MODE'] = 'installed';
+            runpy.run_path(r'{project}/tests/test_minionpy.py', run_name='__main__')"
           # No Eigen pre-download hooks are needed; CMake handles Eigen fallback.
           # Pass options for both scikit-build classic and newer backends.
           CIBW_ENVIRONMENT: >-

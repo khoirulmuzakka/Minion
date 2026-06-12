@@ -1,5 +1,11 @@
 include LICENSE.txt
 include minionpy.md
+
+# Exclude generated build and metadata trees from source distributions.
+prune _skbuild
+prune minionpy.egg-info
+
+# Include native sources and data in the sdist so source builds still work.
 recursive-include minion/include *.h
 recursive-include minion/cec *.h *.cpp *.inl
 recursive-include cec_input_data *

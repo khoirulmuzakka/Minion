@@ -1,11 +1,16 @@
 from skbuild import setup
 
+
+def _filter_wheel_manifest(files):
+    excluded_prefixes = (
+        "minion/include/",
+        "minion/cec/",
+        "cec_input_data/",
+    )
+    return [path for path in files if not path.startswith(excluded_prefixes)]
+
+
 setup(
-    name="minionpy",
-    version="1.6.0",
-    description="MinionPy is the Python implementation of the Minion C++ library, designed for derivative-free optimization.",
-    author="Khoirul Faiq Muzakka",
-    license="MIT",
-    packages=["minionpy"],
-    python_requires=">=3.8",
+    include_package_data=False,
+    cmake_process_manifest_hook=_filter_wheel_manifest,
 )

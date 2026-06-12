@@ -1,37 +1,31 @@
-import sys
-import os 
 import ctypes
 from functools import wraps
 
-current_file_directory = os.path.dirname(os.path.abspath(__file__))
-custom_path = os.path.join(current_file_directory, 'lib')
-sys.path.append(custom_path)
-
 import numpy as np
-from minionpycpp import LSHADE as cppLSHADE
-from minionpycpp import LSHADE as cppJADE
-from minionpycpp import IMODE as cppIMODE
-from minionpycpp import ARRDE as cppARRDE
-from minionpycpp import AGSK as cppAGSK
-from minionpycpp import NLSHADE_RSP as cppNLSHADE_RSP
-from minionpycpp import j2020 as cppj2020
-from minionpycpp import jSO as cppjSO
-from minionpycpp import LSRTDE as cppLSRTDE
-from minionpycpp import Differential_Evolution as cppDifferential_Evolution
-from minionpycpp import GWO_DE as cppGWO_DE
-from minionpycpp import Minimizer as cppMinimizer
-from minionpycpp import NelderMead as cppNelderMead 
-from minionpycpp import ABC as cppABC
-from minionpycpp import Dual_Annealing as cppDual_Annealing
-from minionpycpp import L_BFGS_B as cppL_BFGS_B
-from minionpycpp import L_BFGS as cppL_BFGS
-from minionpycpp import PSO as cppPSO
-from minionpycpp import SPSO2011 as cppSPSO2011
-from minionpycpp import DMSPSO as cppDMSPSO
-from minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
-from minionpycpp import CMAES as cppCMAES
-from minionpycpp import RCMAES as cppRCMAES
-from minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
+from .minionpycpp import LSHADE as cppLSHADE
+from .minionpycpp import LSHADE as cppJADE
+from .minionpycpp import IMODE as cppIMODE
+from .minionpycpp import ARRDE as cppARRDE
+from .minionpycpp import AGSK as cppAGSK
+from .minionpycpp import NLSHADE_RSP as cppNLSHADE_RSP
+from .minionpycpp import j2020 as cppj2020
+from .minionpycpp import jSO as cppjSO
+from .minionpycpp import LSRTDE as cppLSRTDE
+from .minionpycpp import Differential_Evolution as cppDifferential_Evolution
+from .minionpycpp import GWO_DE as cppGWO_DE
+from .minionpycpp import Minimizer as cppMinimizer
+from .minionpycpp import NelderMead as cppNelderMead 
+from .minionpycpp import ABC as cppABC
+from .minionpycpp import Dual_Annealing as cppDual_Annealing
+from .minionpycpp import L_BFGS_B as cppL_BFGS_B
+from .minionpycpp import L_BFGS as cppL_BFGS
+from .minionpycpp import PSO as cppPSO
+from .minionpycpp import SPSO2011 as cppSPSO2011
+from .minionpycpp import DMSPSO as cppDMSPSO
+from .minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
+from .minionpycpp import CMAES as cppCMAES
+from .minionpycpp import RCMAES as cppRCMAES
+from .minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
 
 
 

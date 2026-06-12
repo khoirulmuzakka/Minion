@@ -177,8 +177,7 @@ if(MINION_BUILD_PYTHON)
     set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
     find_package(pybind11 REQUIRED CONFIG)
 
-    file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy)
 
     set(MINION_PYBIND_SOURCES
         minion/src/bindings.cpp
@@ -198,13 +197,13 @@ if(MINION_BUILD_PYTHON)
 
     if (MSVC)
         set_target_properties(minionpycpp PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib/$<0:>
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib/$<0:>
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
         )
     else()
         set_target_properties(minionpycpp PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/lib
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
         )
     endif()
 endif()
@@ -223,7 +222,13 @@ endif()
 if(DEFINED SKBUILD AND SKBUILD)
     if(TARGET minionpycpp)
         install(TARGETS minionpycpp
-            LIBRARY DESTINATION minionpy/lib
+            LIBRARY DESTINATION minionpy
+            RUNTIME DESTINATION minionpy
+        )
+    endif()
+    if(MINION_BUILD_CEC)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/
+            DESTINATION minionpy/cec_input_data
         )
     endif()
 else()
@@ -256,7 +261,8 @@ else()
     endif()
     if(TARGET minionpycpp)
         install(TARGETS minionpycpp
-            LIBRARY DESTINATION minionpy/lib
+            LIBRARY DESTINATION minionpy
+            RUNTIME DESTINATION minionpy
         )
     endif()
 

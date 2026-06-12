@@ -63,6 +63,8 @@ jobs:
 
       - name: Run Python tests
         run: python tests/test_minionpy.py
+        env:
+          MINIONPY_IMPORT_MODE: local
 
       - name: Python build
         run: python -m build

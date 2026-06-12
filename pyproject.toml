@@ -7,7 +7,8 @@ name = "minionpy"
 version = "1.6.0"
 description = "MinionPy is the Python implementation of the Minion (C++) ibrary."
 readme = "minionpy.md"
-license = { file = "LICENSE.txt" }
+license = "MIT"
+license-files = ["LICENSE.txt"]
 authors = [
     { name = "Khoirul Faiq Muzakka", email = "khoirul.muzakka@gmail.com" }
 ]
@@ -17,7 +18,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: Unix",
@@ -29,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development"
 ]
@@ -41,10 +42,10 @@ dependencies = [
 include = ["minionpy"]
 
 [tool.setuptools.package-data]
-"minionpy" = ["lib/*", "cec_input_data/**/*"]
+"minionpy" = ["minionpycpp*", "cec_input_data/**/*"]
 
 [tool.setuptools]
-license-files = []
+include-package-data = false
 
 [tool.scikit-build]
 cmake_minimum_required = "3.18"
@@ -58,7 +59,7 @@ cmake-options = [
     "-DPython3_LIBRARIES=${Python3_LIBRARY}"
 ]
 cmake-verbose-makefile = "ON"
-include-package-data = true
+include-package-data = false
 
 [tool.scikit-build.find]
 include = ["minionpy"]
