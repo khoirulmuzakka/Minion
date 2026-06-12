@@ -1,5 +1,5 @@
 # Changelog
-## [1.6.0] - 2026-06-06
+## [1.6.1] - 2026-06-13
 ### Changed
 - Removed `tol` / `relTol` from the Minion API.
 - Made algorithm name handling more robust across common naming variants.
