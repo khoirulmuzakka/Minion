@@ -6,7 +6,7 @@ Minion and MinionPy expect the objective function to be **vectorized**. In other
 For **most algorithms**, this vectorized interface is used **natively**. That means the algorithm can submit batches with size greater than 1, so any multithreading or multiprocessing inside the objective can be used effectively.
 
 Algorithms that do **not** support native batch evaluation
-==========================================================
+----------------------------------------------------------
 
 The following algorithms do not use native batch evaluation. Even if the objective function is vectorized, the effective batch size is still ``1``:
 
@@ -17,7 +17,7 @@ For these algorithms, Minion still calls the objective through the vectorized in
 
 
 Algorithms with partial batch support
-=====================================
+-------------------------------------
 
 - ``Dual Annealing``
 
@@ -25,6 +25,6 @@ Algorithms with partial batch support
 
 
 L-BFGS-B and L-BFGS
-===================
+-------------------
 
 ``L-BFGS-B`` and ``L-BFGS`` benefit from vectorization because function and finite-difference derivative evaluations can be grouped into batches. This lets Minion exploit parallel objective evaluation even though these are not population-based methods.
