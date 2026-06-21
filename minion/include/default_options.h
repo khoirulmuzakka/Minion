@@ -39,6 +39,7 @@ class DefaultSettings{
                 {"NLSHADERSP", "NLSHADE_RSP"},
                 {"NLSHADELBC", "NLSHADE_LBC"},
                 {"LSRTDE", "LSRTDE"},
+                {"RDEX", "RDEX"},
                 {"ARRDE", "ARRDE"},
                 {"JSO", "jSO"},
                 {"IMODE", "IMODE"},
@@ -101,6 +102,15 @@ class DefaultSettings{
             {"memory_size", 5},
             {"success_rate" , 0.5} , 
             {"bound_strategy" , std::string("random")}
+        };
+
+        std::map<std::string, ConfigValue>   default_settings_RDEX = {
+            {"population_size", 0},
+            {"memory_size", 5},
+            {"success_rate", 0.5},
+            {"eb_hybrid_rate_init", 0.7},
+            {"perturbation_rate", 0.4},
+            {"bound_strategy", std::string("random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_NLSHADE_RSP = {
@@ -306,6 +316,7 @@ class DefaultSettings{
                 {"NLSHADE_RSP", default_settings_NLSHADE_RSP}, 
                 {"NLSHADE_LBC", default_settings_NLSHADE_LBC},
                 {"LSRTDE", default_settings_LSRTDE}, 
+                {"RDEX", default_settings_RDEX},
                 {"ARRDE", default_settings_ARRDE}, 
                 {"jSO", default_settings_jSO}, 
                 {"IMODE", default_settings_IMODE},

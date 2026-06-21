@@ -52,7 +52,7 @@ int main() {
     std::vector<double> x0(dim, 0.5);
 
     const std::vector<std::string> algorithms = {
-        "DE", "LSHADE", "AGSK", "JADE", "j2020", "NLSHADE_RSP", "LSRTDE", "jSO",
+        "DE", "LSHADE", "AGSK", "JADE", "j2020", "NLSHADE_RSP", "LSRTDE", "RDEX", "jSO",
         "IMODE", "ARRDE", "GWO_DE", "NelderMead", "ABC", "PSO", "SPSO2011", "DMSPSO",
         "LSHADE_cnEpSin", "CMAES", "RCMAES", "BIPOP_aCMAES", "DA", "L_BFGS_B", "L_BFGS"
     };
@@ -71,7 +71,7 @@ int main() {
 
     const std::map<std::string, double> sphere_upper = {
         {"DE", 1e-3}, {"LSHADE", 1e-3}, {"AGSK", 1e-3}, {"JADE", 1e-3}, {"j2020", 1e-3},
-        {"NLSHADE_RSP", 1e-3}, {"LSRTDE", 1e-3}, {"jSO", 1e-3}, {"IMODE", 1e-3}, {"ARRDE", 1e-3},
+        {"NLSHADE_RSP", 1e-3}, {"LSRTDE", 1e-3}, {"RDEX", 1e-3}, {"jSO", 1e-3}, {"IMODE", 1e-3}, {"ARRDE", 1e-3},
         {"GWO_DE", 1e-3}, {"NelderMead", 1e-3}, {"ABC", 1e-3}, {"PSO", 1e-3}, {"SPSO2011", 1e-3},
         {"DMSPSO", 1e-3}, {"LSHADE_cnEpSin", 1e-3}, {"CMAES", 1e-3}, {"RCMAES", 1e-3},
         {"BIPOP_aCMAES", 1e-3}, {"DA", 1e-3}, {"L_BFGS_B", 1e-3}, {"L_BFGS", 1e-3},
@@ -115,7 +115,7 @@ int main() {
 
     const std::map<std::string, double> rosenbrock_upper = {
         {"DE", 10.0}, {"LSHADE", 10.0}, {"AGSK", 10.0}, {"JADE", 10.0}, {"j2020", 10.0},
-        {"NLSHADE_RSP", 10.0}, {"LSRTDE", 10.0}, {"jSO", 10.0}, {"IMODE", 10.0}, {"ARRDE", 10.0},
+        {"NLSHADE_RSP", 10.0}, {"LSRTDE", 10.0}, {"RDEX", 10.0}, {"jSO", 10.0}, {"IMODE", 10.0}, {"ARRDE", 10.0},
         {"GWO_DE", 10.0}, {"NelderMead", 10.0}, {"ABC", 10.0}, {"PSO", 10.0}, {"SPSO2011", 10.0},
         {"DMSPSO", 10.0}, {"LSHADE_cnEpSin", 10.0}, {"CMAES", 10.0}, {"RCMAES", 10.0},
         {"BIPOP_aCMAES", 10.0}, {"DA", 10.0}, {"L_BFGS_B", 10.0}, {"L_BFGS", 10.0},

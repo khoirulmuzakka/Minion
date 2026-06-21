@@ -15,6 +15,7 @@
 #include "jade.h"
 #include "jso.h"
 #include "lsrtde.h"
+#include "rdex.h"
 #include "nelder_mead.h"
 #include "minimizer.h"
 #include "imode.h"

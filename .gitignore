@@ -53,5 +53,6 @@ eigen
 eigen.zip
 cec2011/*
 minionpy/*.so
+minionpy/*.pyd
 
 

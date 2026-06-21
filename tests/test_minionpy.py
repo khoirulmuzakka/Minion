@@ -27,6 +27,7 @@ ALGORITHMS = (
     "j2020",
     "NLSHADE_RSP",
     "LSRTDE",
+    "RDEX",
     "jSO",
     "IMODE",
     "ARRDE",
