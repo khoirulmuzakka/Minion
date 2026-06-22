@@ -11,6 +11,7 @@ from .minionpycpp import NLSHADE_RSP as cppNLSHADE_RSP
 from .minionpycpp import j2020 as cppj2020
 from .minionpycpp import jSO as cppjSO
 from .minionpycpp import LSRTDE as cppLSRTDE
+from .minionpycpp import RDEX as cppRDEX
 from .minionpycpp import Differential_Evolution as cppDifferential_Evolution
 from .minionpycpp import GWO_DE as cppGWO_DE
 from .minionpycpp import Minimizer as cppMinimizer
@@ -67,6 +68,7 @@ def _normalize_algo_name(name: str) -> str:
         "NLSHADERSP": "NLSHADE_RSP",
         "NLSHADELBC": "NLSHADE_LBC",
         "LSRTDE": "LSRTDE",
+        "RDEX": "RDEX",
         "ARRDE": "ARRDE",
         "JSO": "jSO",
         "IMODE": "IMODE",
@@ -2218,6 +2220,93 @@ class LSRTDE(MinimizerBase):
         return self.minionResult
 
 
+class RDEX(MinimizerBase):
+    """
+    Implementation of the RDEX algorithm.
+
+    Inherits from MinimizerBase and implements the optimization algorithm.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None
+        ) :
+        """
+        Initialize the RDEX algorithm.
+
+        Parameters
+        ----------
+        func : callable
+            The objective function to be minimized.
+
+            .. code-block:: python
+
+                func(X) -> list[float]
+
+            where `X` is a list of lists of floats.
+            Note that `func` is assumed to be vectorized. If the function instead
+            takes a single list of floats and returns a float,
+            it can be vectorized as follows (see examples in the documentation):
+
+            .. code-block:: python
+
+                def func(X):
+                    return [fun(x) for x in X]
+
+        bounds : list of tuple
+            List of (min, max) pairs defining the bounds for each decision variable.
+        x0 : list[list[float]], optional
+            Initial guesses for the solution. These guesses will be used to initialize
+            the population. If None (default), a random initialization within the
+            given bounds is used.
+        maxevals : int, optional
+            Maximum number of function evaluations allowed. Default is 100000.
+        callback : callable, optional
+            A function that is called after each iteration. It must accept a single
+            argument containing the current optimization state. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. If None (default), the seed is not set.
+        options : dict, optional
+            Additional options for configuring the algorithm. If None (default), the
+            settings are taken from the default configuration of RDEX.
+
+        Notes
+        -----
+        - The optimizer is implemented in C++ and accessed via `cppRDEX`.
+        - The `callback` function can be used for logging or monitoring progress.
+        - The `options` dictionary allows fine-tuning of the optimization process.
+        """
+
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppRDEX(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            maxevals,
+            self.seed,
+            self.cpp_options,
+        )
+
+    def optimize(self):
+        """
+        Run the optimization algorithm.
+
+        Returns
+        -------
+        MinionResult
+            The optimization result containing the best solution found.
+        """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
+
 class ARRDE(MinimizerBase):
     """
     Implementation of the Adaptive Restart Refine Differential Evolution (ARRDE) algorithm.
@@ -2453,6 +2542,7 @@ class Minimizer(MinimizerBase):
             - `"jSO"`
             - `"NelderMead"`
             - `"LSRTDE"`
+            - `"RDEX"`
             - `"NLSHADE_RSP"`
             - `"j2020"`
             - `"GWO_DE"`

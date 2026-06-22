@@ -243,6 +243,36 @@ def _check_cec2017_wrapper():
     return {"algorithm": "CEC2017_wrapper", "passed": True, "message": "ok"}
 
 
+def _check_rdex_wrapper():
+    if not hasattr(minionpy, "RDEX"):
+        return {"algorithm": "RDEX_wrapper", "passed": False, "message": "minionpy.RDEX is missing"}
+
+    objective = sphere_batch
+    bounds = [(-5.0, 5.0)] * 3
+
+    try:
+        direct_result = minionpy.RDEX(
+            func=objective,
+            bounds=bounds,
+            maxevals=60,
+            seed=7,
+        ).optimize()
+        generic_result = minionpy.Minimizer(
+            func=objective,
+            bounds=bounds,
+            algo="RDEX",
+            maxevals=60,
+            seed=7,
+        ).optimize()
+    except Exception as exc:
+        return {"algorithm": "RDEX_wrapper", "passed": False, "message": str(exc)}
+
+    if not math.isfinite(direct_result.fun) or not math.isfinite(generic_result.fun):
+        return {"algorithm": "RDEX_wrapper", "passed": False, "message": "non-finite result from RDEX"}
+
+    return {"algorithm": "RDEX_wrapper", "passed": True, "message": "ok"}
+
+
 def main():
     test_dimension = 5
     test_maxevals = 4000
@@ -267,6 +297,12 @@ def main():
     if not cec_wrapper_check["passed"]:
         failed_checks += 1
         print(f"[FAIL][Wrapper] {cec_wrapper_check['algorithm']} {cec_wrapper_check['message']}", file=sys.stderr)
+
+    rdex_wrapper_check = _check_rdex_wrapper()
+    total_checks += 1
+    if not rdex_wrapper_check["passed"]:
+        failed_checks += 1
+        print(f"[FAIL][Wrapper] {rdex_wrapper_check['algorithm']} {rdex_wrapper_check['message']}", file=sys.stderr)
 
     sphere_records = run_sphere_suite(
         dimension=test_dimension,
