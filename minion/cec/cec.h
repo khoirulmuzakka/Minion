@@ -20,6 +20,7 @@ namespace minion {
 
 extern thread_local double  *OShift,*M,*y,*z,*x_bound;
 extern thread_local int ini_flag,n_flag,func_flag,*SS;
+extern thread_local int cec_instance_count;
 extern const std::string dirPath;
 
 using CECTestFunc = void (*)(double*, double*, int, int, int);
@@ -49,7 +50,7 @@ public:
     /**
      * @brief destructor
      */
-    virtual ~CECBase() = default;
+    virtual ~CECBase();
 
     /**
      * @brief Operator to evaluate CEC2020 test functions.
@@ -64,6 +65,7 @@ public:
 std::string getLibraryDirectory();
 std::string getResourcePath(); 
 std::string getLibraryPath();
+void resetThreadLocalCECState();
 }
 
 #endif

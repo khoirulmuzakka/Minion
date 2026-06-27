@@ -34,146 +34,152 @@ void cec14_test_func(double *x, double *f, int nx, int mx,int func_num)
 
 	if (ini_flag==0)
 	{
-		FILE *fpt;
+		FILE *fpt = nullptr;
 		char FileName[256];
-		free(M);
-		free(OShift);
-		free(y);
-		free(z);
-		free(x_bound);
+		resetThreadLocalCECState();
 
-        M=nullptr; 
-        OShift=nullptr;
-
-		y=(double *)malloc(sizeof(double)  *  nx);
-		z=(double *)malloc(sizeof(double)  *  nx);
-		x_bound=(double *)malloc(sizeof(double)  *  nx);
-		for (i=0; i<nx; i++)
-			x_bound[i]=100.0;
-
-		if (!(nx==2||nx==10||nx==20||nx==30||nx==50||nx==100))
+		try
 		{
-			throw std::runtime_error("\nError: Test functions are only defined for D=2,10,20,30,50,100.\n");
-		}
-		if (nx==2&&((func_num>=17&&func_num<=22)||(func_num>=29&&func_num<=30)))
-		{
-			throw std::runtime_error("\nError: hf01,hf02,hf03,hf04,hf05,hf06,cf07&cf08 are NOT defined for D=2.\n");
-		}
-
-		/* Load Matrix M*/
-		snprintf(FileName, sizeof(FileName), "%s/input_data_2014/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
-		fpt = fopen(FileName,"r");
-		if (fpt==NULL)
-		{
-
-			throw std::runtime_error("Cannot open input file for reading");
-		}
-		if (func_num<23)
-		{
-			M=(double*)malloc(nx*nx*sizeof(double));
-			if (M==NULL)
+			y=(double *)malloc(sizeof(double)  *  nx);
+			z=(double *)malloc(sizeof(double)  *  nx);
+			x_bound=(double *)malloc(sizeof(double)  *  nx);
+			if (y==NULL || z==NULL || x_bound==NULL)
 				throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for (i=0; i<nx*nx; i++)
-			{
-				fscanf(fpt,"%lf",&M[i]);
-			}
-		}
-		else
-		{
-			M=(double*)malloc(cf_num*nx*nx*sizeof(double));
-			if (M==NULL)
-				throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for (i=0; i<cf_num*nx*nx; i++)
-			{
-				fscanf(fpt,"%lf",&M[i]);
-			}
-		}
-		fclose(fpt);
-		
-		/* Load shift_data */
-		snprintf(FileName,sizeof(FileName), "%s/input_data_2014/shift_data_%d.txt",  dirPath.c_str(), func_num);
-		fpt = fopen(FileName,"r");
-		if (fpt==NULL)
-		{
-			throw std::runtime_error("\n Error: Cannot open input file for reading \n");
-		}
+			for (i=0; i<nx; i++)
+				x_bound[i]=100.0;
 
-		if (func_num<23)
-		{
-			OShift=(double *)malloc(nx*sizeof(double));
-			if (OShift==NULL)
-			throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for(i=0;i<nx;i++)
+			if (!(nx==2||nx==10||nx==20||nx==30||nx==50||nx==100))
 			{
-				fscanf(fpt,"%lf",&OShift[i]);
+				throw std::runtime_error("\nError: Test functions are only defined for D=2,10,20,30,50,100.\n");
 			}
-			//for (int i = 0; i < nx; i++) {
-			//	throw std::runtime_error("OShift[%d] = %f\n", i, OShift[i]);
-			//}
-		}
-		else
-		{
-			OShift=(double *)malloc(nx*cf_num*sizeof(double));
-			if (OShift==NULL)
-			throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for(i=0;i<cf_num-1;i++)
+			if (nx==2&&((func_num>=17&&func_num<=22)||(func_num>=29&&func_num<=30)))
 			{
+				throw std::runtime_error("\nError: hf01,hf02,hf03,hf04,hf05,hf06,cf07&cf08 are NOT defined for D=2.\n");
+			}
+
+			/* Load Matrix M*/
+			snprintf(FileName, sizeof(FileName), "%s/input_data_2014/M_%d_D%d.txt", dirPath.c_str(), func_num,nx);
+			fpt = fopen(FileName,"r");
+			if (fpt==NULL)
+			{
+				throw std::runtime_error("Cannot open input file for reading");
+			}
+			if (func_num<23)
+			{
+				M=(double*)malloc(nx*nx*sizeof(double));
+				if (M==NULL)
+					throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for (i=0; i<nx*nx; i++)
+				{
+					fscanf(fpt,"%lf",&M[i]);
+				}
+			}
+			else
+			{
+				M=(double*)malloc(cf_num*nx*nx*sizeof(double));
+				if (M==NULL)
+					throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for (i=0; i<cf_num*nx*nx; i++)
+				{
+					fscanf(fpt,"%lf",&M[i]);
+				}
+			}
+			fclose(fpt);
+			fpt = nullptr;
+			
+			/* Load shift_data */
+			snprintf(FileName,sizeof(FileName), "%s/input_data_2014/shift_data_%d.txt",  dirPath.c_str(), func_num);
+			fpt = fopen(FileName,"r");
+			if (fpt==NULL)
+			{
+				throw std::runtime_error("\n Error: Cannot open input file for reading \n");
+			}
+
+			if (func_num<23)
+			{
+				OShift=(double *)malloc(nx*sizeof(double));
+				if (OShift==NULL)
+				throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for(i=0;i<nx;i++)
+				{
+					fscanf(fpt,"%lf",&OShift[i]);
+				}
+			}
+			else
+			{
+				OShift=(double *)malloc(nx*cf_num*sizeof(double));
+				if (OShift==NULL)
+				throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for(i=0;i<cf_num-1;i++)
+				{
+					for (j=0;j<nx;j++)
+					{
+						fscanf(fpt,"%lf",&OShift[i*nx+j]);
+					}
+					fscanf(fpt,"%*[^\n]%*c"); 
+				}
 				for (j=0;j<nx;j++)
 				{
-					fscanf(fpt,"%lf",&OShift[i*nx+j]);
+					fscanf(fpt,"%lf",&OShift[(cf_num-1)*nx+j]);
 				}
-				fscanf(fpt,"%*[^\n]%*c"); 
-			}
-			for (j=0;j<nx;j++)
-			{
-				fscanf(fpt,"%lf",&OShift[(cf_num-1)*nx+j]);
-			}
-				
-		}
-		fclose(fpt);
-
-
-		/* Load Shuffle_data */
-		
-		if (func_num>=17&&func_num<=22)
-		{
-			snprintf(FileName, sizeof(FileName), "%s/input_data_2014/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
-			fpt = fopen(FileName,"r");
-			if (fpt==NULL)
-			{
-				throw std::runtime_error("\n Error: Cannot open input file for reading \n");
-			}
-			SS=(int *)malloc(nx*sizeof(int));
-			if (SS==NULL)
-				throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for(i=0;i<nx;i++)
-			{
-				fscanf(fpt,"%d",&SS[i]);
-			}	
-			fclose(fpt);
-		}
-		else if (func_num==29||func_num==30)
-		{
-			snprintf(FileName, sizeof(FileName), "%s/input_data_2014/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
-			fpt = fopen(FileName,"r");
-			if (fpt==NULL)
-			{
-				throw std::runtime_error("\n Error: Cannot open input file for reading \n");
-			}
-			SS=(int *)malloc(nx*cf_num*sizeof(int));
-			if (SS==NULL)
-				throw std::runtime_error("\nError: there is insufficient memory available!\n");
-			for(i=0;i<nx*cf_num;i++)
-			{
-				fscanf(fpt,"%d",&SS[i]);
 			}
 			fclose(fpt);
-		}
-		
+			fpt = nullptr;
 
-		n_flag=nx;
-		func_flag=func_num;
-		ini_flag=1;
+
+			/* Load Shuffle_data */
+			
+			if (func_num>=17&&func_num<=22)
+			{
+				snprintf(FileName, sizeof(FileName), "%s/input_data_2014/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
+				fpt = fopen(FileName,"r");
+				if (fpt==NULL)
+				{
+					throw std::runtime_error("\n Error: Cannot open input file for reading \n");
+				}
+				SS=(int *)malloc(nx*sizeof(int));
+				if (SS==NULL)
+					throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for(i=0;i<nx;i++)
+				{
+					fscanf(fpt,"%d",&SS[i]);
+				}	
+				fclose(fpt);
+				fpt = nullptr;
+			}
+			else if (func_num==29||func_num==30)
+			{
+				snprintf(FileName, sizeof(FileName), "%s/input_data_2014/shuffle_data_%d_D%d.txt",  dirPath.c_str(), func_num, nx);
+				fpt = fopen(FileName,"r");
+				if (fpt==NULL)
+				{
+					throw std::runtime_error("\n Error: Cannot open input file for reading \n");
+				}
+				SS=(int *)malloc(nx*cf_num*sizeof(int));
+				if (SS==NULL)
+					throw std::runtime_error("\nError: there is insufficient memory available!\n");
+				for(i=0;i<nx*cf_num;i++)
+				{
+					fscanf(fpt,"%d",&SS[i]);
+				}
+				fclose(fpt);
+				fpt = nullptr;
+			}
+			
+
+			n_flag=nx;
+			func_flag=func_num;
+			ini_flag=1;
+		}
+		catch (...)
+		{
+			if (fpt != nullptr)
+			{
+				fclose(fpt);
+			}
+			resetThreadLocalCECState();
+			throw;
+		}
 	}
 
 

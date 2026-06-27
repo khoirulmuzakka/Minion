@@ -37,6 +37,26 @@ namespace minion {
 
 thread_local double *OShift,*M,*y,*z,*x_bound;
 thread_local int ini_flag=0,n_flag,func_flag,*SS;
+thread_local int cec_instance_count = 0;
+
+void resetThreadLocalCECState() {
+    free(M);
+    free(OShift);
+    free(y);
+    free(z);
+    free(x_bound);
+    free(SS);
+
+    M = nullptr;
+    OShift = nullptr;
+    y = nullptr;
+    z = nullptr;
+    x_bound = nullptr;
+    SS = nullptr;
+    ini_flag = 0;
+    n_flag = 0;
+    func_flag = 0;
+}
 
 std::string getLibraryPath() {
     char path[1024];
@@ -232,7 +252,16 @@ const std::string dirPath = getResourcePath();
 
 CECBase::CECBase(int function_number, int dimension) 
     : dimension_(dimension), function_number_(function_number) {
-	ini_flag = 0;
+    ++cec_instance_count;
+}
+
+CECBase::~CECBase() {
+    if (cec_instance_count > 0) {
+        --cec_instance_count;
+    }
+    if (cec_instance_count == 0) {
+        resetThreadLocalCECState();
+    }
 }
 
 std::vector<double> CECBase::operator()(const std::vector<std::vector<double>>& X) {
