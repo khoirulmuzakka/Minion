@@ -13,6 +13,8 @@
 #endif
 #endif
 
+#include <Eigen/Dense>
+
 #include <vector>
 #include <random>
 #include <cmath>
@@ -42,6 +44,32 @@ void set_global_seed(unsigned int seed);
  * @return A reference to the global random number generator.
  */
 std::mt19937& get_rng();
+
+/**
+ * @brief Safely compute the eigendecomposition of a self-adjoint covariance matrix.
+ *
+ * The matrix is symmetrized and retried with diagonal regularization if the
+ * first decomposition fails. If both attempts fail and a fallback matrix is
+ * provided, the helper retries with that matrix before finally resetting the
+ * covariance state to the identity.
+ *
+ * @param matrix Covariance matrix to decompose and repair in-place as needed.
+ * @param eigenvectors Output orthonormal basis.
+ * @param eigenvalues Output eigenvalues clamped to at least @p min_eigenvalue.
+ * @param fallback_matrix Optional alternate covariance matrix to try after the
+ *        primary matrix fails.
+ * @param min_eigenvalue Lower bound applied to eigenvalues.
+ * @param regularization Diagonal jitter applied before retrying a failed solve.
+ * @return true when a decomposition succeeds.
+ * @return false when the helper resets the state to identity.
+ */
+bool safeSelfAdjointEigenDecomposition(
+    Eigen::MatrixXd& matrix,
+    Eigen::MatrixXd& eigenvectors,
+    Eigen::VectorXd& eigenvalues,
+    const Eigen::MatrixXd* fallback_matrix = nullptr,
+    double min_eigenvalue = 1e-30,
+    double regularization = 1e-12);
 
 /**
  * @brief Select a random subset of elements from a vector.

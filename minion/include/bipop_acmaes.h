@@ -62,6 +62,7 @@ private:
         Eigen::VectorXd p_s;
         Eigen::VectorXd eigvals_C;
         Eigen::MatrixXd C;
+        Eigen::MatrixXd C_pure;
         Eigen::MatrixXd C_invsqrt;
         Eigen::MatrixXd B;
         Eigen::MatrixXd D;

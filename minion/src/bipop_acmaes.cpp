@@ -41,6 +41,7 @@ void BIPOP_aCMAES::Parameter::reserve(size_t n_offsprings_reserve_, size_t n_par
     p_s = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(n_params));
     eigvals_C = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(n_params));
     C = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(n_params), static_cast<Eigen::Index>(n_params));
+    C_pure = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(n_params), static_cast<Eigen::Index>(n_params));
     C_invsqrt = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(n_params), static_cast<Eigen::Index>(n_params));
     B = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(n_params), static_cast<Eigen::Index>(n_params));
     D = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(n_params), static_cast<Eigen::Index>(n_params));
@@ -111,6 +112,7 @@ void BIPOP_aCMAES::Parameter::reinit(size_t n_offsprings_, size_t n_parents_, si
 
     sigma = sigma_;
     C.setIdentity();
+    C_pure.setIdentity();
     C_invsqrt.setIdentity();
     B.setIdentity();
     D.setIdentity();
@@ -143,6 +145,7 @@ void BIPOP_aCMAES::applyCovarianceScale() {
     era.B.setIdentity();
     era.D = diag.asDiagonal();
     era.C = era.D * era.D;
+    era.C_pure = era.C;
     Eigen::VectorXd inv = diag.cwiseInverse();
     era.C_invsqrt = inv.asDiagonal();
     era.eigvals_C = diag.cwiseProduct(diag);
@@ -369,12 +372,23 @@ void BIPOP_aCMAES::updateWeights() {
 void BIPOP_aCMAES::updateCovarianceMatrix() {
     double h1 = (1.0 - era.h_sig) * era.c_c * (2.0 - era.c_c);
     double w_sum = era.w.head(static_cast<Eigen::Index>(era.n_offsprings)).sum();
+    double w_sum_pos = era.w.head(static_cast<Eigen::Index>(era.n_parents)).sum();
+    Eigen::MatrixXd previousC = era.C;
+
+    Eigen::MatrixXd yWeightedPure = era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_parents)) *
+                                    era.w.head(static_cast<Eigen::Index>(era.n_parents)).asDiagonal() *
+                                    era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_parents)).transpose();
 
     Eigen::MatrixXd yWeighted = era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_offsprings)) *
                                 era.w_var.head(static_cast<Eigen::Index>(era.n_offsprings)).asDiagonal() *
                                 era.y_offsprings_ranked.block(0, 0, static_cast<Eigen::Index>(era.n_params), static_cast<Eigen::Index>(era.n_offsprings)).transpose();
 
-    era.C = (1.0 + era.c_1 * h1 - era.c_1 - era.c_mu * w_sum) * era.C +
+    era.C_pure = (1.0 + era.c_1 * h1 - era.c_1 - era.c_mu * w_sum_pos) * previousC +
+                 era.c_1 * (era.p_c * era.p_c.transpose()) +
+                 era.c_mu * yWeightedPure;
+    era.C_pure = 0.5 * (era.C_pure + era.C_pure.transpose());
+
+    era.C = (1.0 + era.c_1 * h1 - era.c_1 - era.c_mu * w_sum) * previousC +
              era.c_1 * (era.p_c * era.p_c.transpose()) +
              era.c_mu * yWeighted;
     era.C = 0.5 * (era.C + era.C.transpose());
@@ -386,19 +400,8 @@ void BIPOP_aCMAES::updateStepsize() {
 }
 
 void BIPOP_aCMAES::updateEigenDecomposition() {
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(era.C);
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigen decomposition failed in BIPOP_aCMA-ES");
-    }
-    Eigen::VectorXd evals = solver.eigenvalues();
-    for (Eigen::Index i = 0; i < evals.size(); ++i) {
-        if (evals(i) < 1e-30) {
-            evals(i) = 1e-30;
-        }
-    }
-    era.eigvals_C = evals;
-    era.B = solver.eigenvectors();
-    Eigen::VectorXd sqrtVals = evals.cwiseSqrt();
+    safeSelfAdjointEigenDecomposition(era.C, era.B, era.eigvals_C, &era.C_pure);
+    Eigen::VectorXd sqrtVals = era.eigvals_C.cwiseSqrt();
     era.D = sqrtVals.asDiagonal();
     Eigen::VectorXd invSqrt = sqrtVals.cwiseInverse();
     era.C_invsqrt = era.B * invSqrt.asDiagonal() * era.B.transpose();

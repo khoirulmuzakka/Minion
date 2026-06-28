@@ -132,16 +132,8 @@ std::vector<double> CMAES::ensureBounds(std::vector<double> candidate) const {
 }
 
 void CMAES::updateEigenDecomposition() {
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(C);
-    Eigen::VectorXd evals = solver.eigenvalues();
-    Eigen::MatrixXd evecs = solver.eigenvectors();
-
-    for (Eigen::Index i = 0; i < evals.size(); ++i) {
-        if (evals(i) < 1e-30) {
-            evals(i) = 1e-30;
-        }
-    }
-    B = evecs;
+    Eigen::VectorXd evals;
+    safeSelfAdjointEigenDecomposition(C, B, evals);
     D = evals.cwiseSqrt();
     Eigen::MatrixXd Dmat = D.asDiagonal();
     C = B * Dmat * Dmat * B.transpose();

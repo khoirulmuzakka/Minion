@@ -14,6 +14,48 @@ std::mt19937& get_rng() {
     return rng;
 }
 
+bool safeSelfAdjointEigenDecomposition(
+    Eigen::MatrixXd& matrix,
+    Eigen::MatrixXd& eigenvectors,
+    Eigen::VectorXd& eigenvalues,
+    const Eigen::MatrixXd* fallback_matrix,
+    double min_eigenvalue,
+    double regularization) {
+    auto trySolve = [&](Eigen::MatrixXd& candidate) {
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(candidate);
+        if (solver.info() == Eigen::Success) {
+            return solver;
+        }
+
+        candidate = 0.5 * (candidate + candidate.transpose());
+        candidate += regularization * Eigen::MatrixXd::Identity(candidate.rows(), candidate.cols());
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> retry(candidate);
+        return retry;
+    };
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver = trySolve(matrix);
+    if (solver.info() != Eigen::Success && fallback_matrix != nullptr) {
+        matrix = *fallback_matrix;
+        solver = trySolve(matrix);
+    }
+
+    if (solver.info() != Eigen::Success) {
+        matrix = Eigen::MatrixXd::Identity(matrix.rows(), matrix.cols());
+        eigenvectors = Eigen::MatrixXd::Identity(matrix.rows(), matrix.cols());
+        eigenvalues = Eigen::VectorXd::Ones(matrix.rows());
+        return false;
+    }
+
+    eigenvalues = solver.eigenvalues();
+    for (Eigen::Index i = 0; i < eigenvalues.size(); ++i) {
+        if (eigenvalues(i) < min_eigenvalue) {
+            eigenvalues(i) = min_eigenvalue;
+        }
+    }
+    eigenvectors = solver.eigenvectors();
+    return true;
+}
+
 double rand_gen(double low, double high) {
     std::uniform_real_distribution<> dis(low, high);
     return dis(get_rng());
