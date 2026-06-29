@@ -1,5 +1,4 @@
 #include "acmaes.h"
-#include "default_options.h"
 #include "utility.h"
 
 #include <algorithm>
@@ -17,119 +16,10 @@ ACMAES::ACMAES(
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
-    : MinimizerBase(func, bounds, x0, data, callback, maxevals, seed, options) {}
+    : CMAESBase(func, bounds, x0, data, callback, maxevals, seed, std::move(options)) {}
 
 void ACMAES::initialize() {
-    auto defaults = DefaultSettings().getDefaultSettings("ACMAES");
-    for (const auto& item : optionMap) {
-        defaults[item.first] = item.second;
-    }
-    Options options(defaults);
-
-    dimension = bounds.size();
-    if (dimension == 0) {
-        throw std::runtime_error("ACMAES requires bounded variables");
-    }
-
-    useBounds = !bounds.empty();
-
-    lambda = static_cast<size_t>(options.get<int>("population_size", 0));
-    if (lambda == 0) {
-        lambda = 4 + static_cast<size_t>(std::floor(3.0 * std::log(static_cast<double>(dimension))));
-    }
-    lambda = std::max<size_t>(lambda, 5);
-
-    mu = static_cast<size_t>(options.get<int>("mu", 0));
-    if (mu == 0) {
-        mu = lambda / 2;
-    }
-    mu = std::max<size_t>(mu, 1);
-    mu = std::min(mu, lambda);
-
-    weights = makeLogWeights(mu);
-    muEff = 0.0;
-    for (double w : weights) {
-        muEff += w * w;
-    }
-    muEff = 1.0 / muEff;
-
-    sigma = options.get<double>("initial_step", 0.3);
-    if (sigma <= 0.0) {
-        sigma = 0.3;
-    }
-
-    double avgRange = 0.0;
-    for (const auto& b : bounds) {
-        avgRange += (b.second - b.first);
-    }
-    avgRange = (dimension > 0) ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma *= avgRange;
-
-    double ccDefault = (4.0 + muEff / static_cast<double>(dimension)) / (dimension + 4.0 + 2.0 * muEff / static_cast<double>(dimension));
-    double csDefault = (muEff + 2.0) / (static_cast<double>(dimension) + muEff + 5.0);
-    double c1Default = 2.0 / ((dimension + 1.3) * (dimension + 1.3) + muEff);
-    double cmuDefault = std::min(1.0 - c1Default, 2.0 * (muEff - 2.0 + 1.0 / muEff) / ((dimension + 2.0) * (dimension + 2.0) + muEff));
-
-    cc = options.get<double>("cc", ccDefault);
-    if (cc <= 0.0) cc = ccDefault;
-    cs = options.get<double>("cs", csDefault);
-    if (cs <= 0.0) cs = csDefault;
-    c1 = options.get<double>("c1", c1Default);
-    if (c1 <= 0.0) c1 = c1Default;
-    cmu = options.get<double>("cmu", cmuDefault);
-    if (cmu <= 0.0) cmu = cmuDefault;
-    damps = options.get<double>("damps", 0.0);
-    if (damps <= 0.0) {
-        damps = 1.0 + cs + 2.0 * std::max(0.0, std::sqrt((muEff - 1.0) / (dimension + 1.0)) - 1.0);
-    }
-
-    chiN = std::sqrt(static_cast<double>(dimension)) *
-           (1.0 - 1.0 / (4.0 * static_cast<double>(dimension)) +
-            1.0 / (21.0 * static_cast<double>(dimension) * static_cast<double>(dimension)));
-
-    mean = Eigen::VectorXd::Zero(dimension);
-    if (!x0.empty() && x0[0].size() == dimension) {
-        std::vector<double> initialGuess;
-        if (x0.size() > 1) {
-            initialGuess = findBestPoint(x0);
-        } else {
-            initialGuess = x0.front();
-        }
-        for (size_t i = 0; i < dimension; ++i) {
-            mean(static_cast<Eigen::Index>(i)) = initialGuess[i];
-        }
-    } else {
-        auto initial = random_sampling(bounds, 1).front();
-        for (size_t i = 0; i < dimension; ++i) {
-            mean(static_cast<Eigen::Index>(i)) = initial[i];
-        }
-    }
-
-    C = Eigen::MatrixXd::Identity(dimension, dimension);
-    B = Eigen::MatrixXd::Identity(dimension, dimension);
-    D = Eigen::VectorXd::Ones(dimension);
-    ps = Eigen::VectorXd::Zero(dimension);
-    pc = Eigen::VectorXd::Zero(dimension);
-
-    hasInitialized = true;
-}
-
-std::vector<double> ACMAES::ensureBounds(std::vector<double> candidate) const {
-    if (!useBounds) {
-        return candidate;
-    }
-    for (size_t d = 0; d < dimension; ++d) {
-        candidate[d] = clamp(candidate[d], bounds[d].first, bounds[d].second);
-    }
-    return candidate;
-}
-
-void ACMAES::updateEigenDecomposition() {
-    Eigen::VectorXd evals;
-    safeSelfAdjointEigenDecomposition(C, B, evals);
-    D = evals.cwiseSqrt();
-    Eigen::MatrixXd Dmat = D.asDiagonal();
-    C = B * Dmat * Dmat * B.transpose();
+    initializeCommon("ACMAES", 0.0);
 }
 
 MinionResult ACMAES::optimize() {
@@ -139,12 +29,8 @@ MinionResult ACMAES::optimize() {
 
     try {
         history.clear();
-        diversity.clear();
 
-        Nevals = 0;
         size_t generation = 0;
-        best = std::vector<double>(mean.data(), mean.data() + mean.size());
-        best_fitness = std::numeric_limits<double>::infinity();
 
         std::vector<std::vector<double>> population(lambda, std::vector<double>(dimension, 0.0));
         std::vector<Eigen::VectorXd> zs(lambda, Eigen::VectorXd::Zero(dimension));
@@ -220,21 +106,8 @@ MinionResult ACMAES::optimize() {
 
             updateEigenDecomposition();
 
-            double fmax = *std::max_element(fitness.begin(), fitness.end());
-            double fmin = *std::min_element(fitness.begin(), fitness.end());
-            double fmean = std::accumulate(fitness.begin(), fitness.end(), 0.0) / static_cast<double>(fitness.size());
-            double denom = std::fabs(fmean);
-            if (denom <= 1e-12) {
-                denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
-            }
-            double relRange = (fmax - fmin) / denom;
-            diversity.push_back(relRange);
-
-            minionResult = MinionResult(best, best_fitness, generation, Nevals, false, "");
-            history.push_back(minionResult);
-            if (callback != nullptr) {
-                callback(&minionResult);
-            }
+            const double relRange = computeRelativeRange(fitness);
+            recordIteration(generation, Nevals, relRange);
 
             if (support_tol && relRange <= stoppingTol) {
                 break;

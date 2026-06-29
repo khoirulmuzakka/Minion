@@ -384,7 +384,9 @@ void RCMAES::initialize() {
     mu = std::max<size_t>(static_cast<size_t>(std::ceil(mu_ratio * static_cast<double>(lambda))), 1);
     support_tol = false;
 
-    sigma0 = options.get<double>("initial_step", 0.3);
+    sigma0 = options.getSilent<double>(
+        "rel_initial_step",
+        options.get<double>("initial_step", 0.3));
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }

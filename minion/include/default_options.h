@@ -241,7 +241,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_CMAES = {
             {"population_size", 0},
             {"mu", 0},
-            {"initial_step", 0.3},
+            {"rel_initial_step", 0.3},
             {"cc", 0.0},
             {"cs", 0.0},
             {"c1", 0.0},
@@ -254,7 +254,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_ACMAES = {
             {"population_size", 0},
             {"mu", 0},
-            {"initial_step", 0.3},
+            {"rel_initial_step", 0.3},
             {"cc", 0.0},
             {"cs", 0.0},
             {"c1", 0.0},
@@ -267,13 +267,13 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"max_iterations", 100000},
-            {"initial_step", 0.3},
+            {"rel_initial_step", 0.3},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
-            {"initial_step", 0.2},
+            {"rel_initial_step", 0.2},
             {"bound_strategy", std::string("reflect-random")}
         };
 

@@ -31,9 +31,9 @@ option(MINION_BUILD_TESTS "Build repository test targets" OFF)
 option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" ON)
 option(MINION_FETCH_LIBCMAES "Fetch libcmaes when building the libcmaes example" ON)
 
-file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
+file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
-file(GLOB MINION_CEC_SOURCE_FILES minion/cec/*.cpp)
+file(GLOB MINION_CEC_SOURCE_FILES CONFIGURE_DEPENDS minion/cec/*.cpp)
 
 include(FetchContent)
 option(MINION_FETCH_EIGEN "Fetch Eigen headers when Eigen3 package is not found" ON)

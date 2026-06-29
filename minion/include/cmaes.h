@@ -1,8 +1,7 @@
 #ifndef CMAES_H
 #define CMAES_H
 
-#include "minimizer_base.h"
-#include <Eigen/Dense>
+#include "cmaes_base.h"
 
 namespace minion {
 
@@ -17,7 +16,7 @@ namespace minion {
  * covariance are adapted from successful samples, enabling efficient search in
  * non-separable, ill-conditioned landscapes.
  */
-class CMAES : public MinimizerBase {
+class CMAES : public CMAESBase {
 public:
     /**
      * @brief Construct a CMAES optimizer.
@@ -55,45 +54,6 @@ public:
     MinionResult optimize() override;
 
 private:
-    size_t lambda = 0;
-    size_t mu = 0;
-    double muEff = 0.0;
-
-    double sigma = 0.3;
-    double cc = 0.0;
-    double cs = 0.0;
-    double c1 = 0.0;
-    double cmu = 0.0;
-    double damps = 0.0;
-    double chiN = 0.0;
-
-    std::vector<double> diversity;
-    std::vector<double> best;
-    double best_fitness;
-    size_t Nevals=0;
-
-    std::vector<double> weights;
-
-    Eigen::VectorXd mean;
-    Eigen::MatrixXd C;
-    Eigen::MatrixXd B;
-    Eigen::VectorXd D;
-    Eigen::VectorXd ps;
-    Eigen::VectorXd pc;
-
-    bool useBounds = false;
-    size_t dimension = 0;
-    bool support_tol = true;
-
-    /**
-     * @brief Refresh the eigen decomposition of the covariance matrix.
-     */
-    void updateEigenDecomposition();
-
-    /**
-     * @brief Clamp a candidate to the feasible domain when bounds are used.
-     */
-    std::vector<double> ensureBounds(std::vector<double> candidate) const;
 };
 
 }

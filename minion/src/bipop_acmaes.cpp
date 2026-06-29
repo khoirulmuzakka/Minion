@@ -177,7 +177,9 @@ void BIPOP_aCMAES::initialize() {
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 5000));
     support_tol = true;
 
-    sigma0 = options.get<double>("initial_step", 0.3);
+    sigma0 = options.getSilent<double>(
+        "rel_initial_step",
+        options.get<double>("initial_step", 0.3));
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }

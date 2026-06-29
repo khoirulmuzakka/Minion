@@ -1,8 +1,7 @@
 #ifndef ACMAES_H
 #define ACMAES_H
 
-#include "minimizer_base.h"
-#include <Eigen/Dense>
+#include "cmaes_base.h"
 
 namespace minion {
 
@@ -11,7 +10,7 @@ namespace minion {
  * @brief Class implementing active CMA-ES with the libcmaes-style active
  *        covariance update, but without the restart logic.
  */
-class ACMAES : public MinimizerBase {
+class ACMAES : public CMAESBase {
 public:
     ACMAES(
         MinionFunction func,
@@ -26,39 +25,6 @@ public:
     void initialize() override;
     MinionResult optimize() override;
 
-private:
-    size_t lambda = 0;
-    size_t mu = 0;
-    double muEff = 0.0;
-
-    double sigma = 0.3;
-    double cc = 0.0;
-    double cs = 0.0;
-    double c1 = 0.0;
-    double cmu = 0.0;
-    double damps = 0.0;
-    double chiN = 0.0;
-
-    std::vector<double> diversity;
-    std::vector<double> best;
-    double best_fitness;
-    size_t Nevals = 0;
-
-    std::vector<double> weights;
-
-    Eigen::VectorXd mean;
-    Eigen::MatrixXd C;
-    Eigen::MatrixXd B;
-    Eigen::VectorXd D;
-    Eigen::VectorXd ps;
-    Eigen::VectorXd pc;
-
-    bool useBounds = false;
-    size_t dimension = 0;
-    bool support_tol = true;
-
-    void updateEigenDecomposition();
-    std::vector<double> ensureBounds(std::vector<double> candidate) const;
 };
 
 }
