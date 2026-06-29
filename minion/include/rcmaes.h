@@ -1,19 +1,21 @@
 #ifndef RCMAES_H
 #define RCMAES_H
 
-#include "minimizer_base.h"
+#include "cmaes_base.h"
 
 #include <Eigen/Dense>
+
 #include <limits>
 #include <string>
+#include <vector>
 
 namespace minion {
 
 /**
  * @class RCMAES
- * @brief Active CMA-ES without restarts.
+ * @brief Restart CMA-ES in normalized coordinates with active covariance updates.
  */
-class RCMAES : public MinimizerBase {
+class RCMAES : public CMAESBase {
 public:
     RCMAES(
         MinionFunction func,
@@ -29,114 +31,38 @@ public:
     MinionResult optimize() override;
 
 private:
-    struct Parameter {
-        size_t n_offsprings = 0;
-        size_t n_offsprings_reserve = 0;
-        size_t n_parents = 0;
-        size_t n_parents_reserve = 0;
-        size_t n_params = 0;
-        size_t i_iteration = 0;
-        size_t i_func_eval = 0;
-        double n_mu_eff = 0.0;
-
-        Eigen::MatrixXd x_offsprings;
-        Eigen::MatrixXd x_parents_ranked;
-        Eigen::MatrixXd z_offsprings;
-        Eigen::MatrixXd y_offsprings;
-        Eigen::MatrixXd y_offsprings_ranked;
-        Eigen::VectorXd f_offsprings;
-        Eigen::VectorXd w;
-        Eigen::VectorXd w_var;
-        Eigen::VectorXd y_mean;
-        Eigen::VectorXd x_mean;
-        Eigen::VectorXd x_mean_old;
-        Eigen::VectorXd p_c;
-        Eigen::VectorXd p_s;
-        Eigen::VectorXd eigvals_C;
-        Eigen::MatrixXd C;
-        Eigen::MatrixXd C_pure;
-        Eigen::MatrixXd C_invsqrt;
-        Eigen::MatrixXd B;
-        Eigen::MatrixXd D;
-        std::vector<size_t> keys_offsprings;
-        double c_c = 0.0;
-        double c_s = 0.0;
-        double c_1 = 0.0;
-        double c_mu = 0.0;
-        double d_s = 0.0;
-        double chi = 0.0;
-        double p_c_fact = 0.0;
-        double p_s_fact = 0.0;
-        double sigma = 0.0;
-        bool h_sig = false;
-
-        void reserve(size_t n_offsprings_reserve_, size_t n_parents_reserve_, size_t n_params_);
-        void reinit(
-            size_t n_offsprings_,
-            size_t n_parents_,
-            size_t n_params_,
-            const Eigen::VectorXd& x_mean_,
-            double sigma_,
-            size_t nevals,
-            double best_fitness);
-        void resize(size_t n_offsprings_, size_t n_parents_, size_t n_params_);
-    };
-
     struct ExclusionBox {
         std::vector<double> low;
         std::vector<double> high;
     };
 
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;
-    void sampleOffsprings();
-    size_t evaluatePopulation();
-    void rankAndSort();
-    void updateBest();
-    void assignNewMean();
-    void updateEvolutionPaths();
-    void updateWeights();
-    void updateCovarianceMatrix();
-    void updateStepsize();
-    void updateEigenDecomposition();
-    void checkStoppingCriteria();
-    void recordHistory(double relRange);
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
+    void configurePopulationParameters(size_t lambdaValue);
+    void resetRegimeState(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma);
+    void checkStoppingCriteria(bool& shouldStop) const;
+    void recordHistory(double relRange);
     ExclusionBox buildExclusionBox(const std::vector<double>& best) const;
     bool isExcludedPoint(const std::vector<double>& candidate) const;
 
-    Parameter era;
-
-    size_t dimension = 0;
-    bool useBounds = false;
-    std::string boundStrategy = "reflect-random";
-
-    size_t lambda = 0;
+    size_t lambda_base = 0;
     size_t lambda_min = 0;
-    size_t mu = 0;
     double mu_ratio = 0.5;
-
     double sigma0 = 0.0;
+    double avg_range = 1.0;
 
     Eigen::VectorXd initialMean;
-    std::vector<std::pair<double, double>> original_bounds;
+    std::vector<double> cov_scale;
 
-    std::vector<double> best;
-    double best_fitness = std::numeric_limits<double>::infinity();
-    size_t Nevals = 0;
     size_t generation = 0;
-
-    std::vector<double> diversity;
     std::vector<double> currentFitness;
-
-    bool support_tol = true;
-    bool should_stop = false;
 
     std::vector<std::vector<double>> restart_bests;
     std::vector<ExclusionBox> exclusion_boxes;
     size_t exclusion_max_attempts = 50;
 };
 
-}
+}  // namespace minion
 
 #endif
