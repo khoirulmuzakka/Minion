@@ -35,7 +35,7 @@ void CMAES::initialize() {
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
-        lambda = 2*(4 + static_cast<size_t>(std::floor(3.0 * std::log(static_cast<double>(dimension)))) );
+        lambda = 4 + static_cast<size_t>(std::floor(3.0 * std::log(static_cast<double>(dimension)))) ;
     }
     lambda = std::max<size_t>(lambda, 5);
 
