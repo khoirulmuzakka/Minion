@@ -72,6 +72,114 @@ bool safeSelfAdjointEigenDecomposition(
     double regularization = 1e-12);
 
 /**
+ * @brief Shared helper for active CMA-ES covariance updates.
+ *
+ * This builds the positive and negative covariance contributions using the
+ * libcmaes-style active CMA formulation, together with the cminus safeguard.
+ * It is intentionally generic so other CMA variants can reuse the same logic.
+ */
+struct ActiveCMAUpdate {
+    Eigen::MatrixXd cmu_plus;
+    Eigen::MatrixXd cmu_minus;
+    double cminus = 0.0;
+};
+
+/**
+ * @brief Build the default logarithmic recombination weights for CMA-ES.
+ *
+ * The weights are positive and normalized to sum to one.
+ */
+inline std::vector<double> makeLogWeights(size_t mu) {
+    std::vector<double> weights(mu);
+    for (size_t i = 0; i < mu; ++i) {
+        weights[i] = std::log(static_cast<double>(mu) + 0.5) - std::log(static_cast<double>(i) + 1.0);
+    }
+    double weight_sum = std::accumulate(weights.begin(), weights.end(), 0.0);
+    if (weight_sum <= 0.0) {
+        return std::vector<double>(mu, 1.0 / std::max<size_t>(mu, 1));
+    }
+    for (double& w : weights) {
+        w /= weight_sum;
+    }
+    return weights;
+}
+
+/**
+ * @brief Compute the active CMA covariance update terms.
+ *
+ * @param population Candidate solutions for the current generation.
+ * @param order Indices sorting @p population from best to worst.
+ * @param meanOld Mean before the update.
+ * @param sigma Current step size.
+ * @param weights Positive recombination weights, one per parent.
+ * @param CinvSqrt Current inverse square root of the covariance matrix.
+ * @param cmu Rank-mu covariance learning rate.
+ * @param muEff Variance-effective selection mass.
+ * @param alphacov Active CMA safeguard coefficient.
+ * @param alphaminusold Weight on the previous negative covariance contribution.
+ * @param lambdamintarget Target lower eigenvalue ratio used by the safeguard.
+ * @param alphaminusmin Lower bound on the safeguard multiplier.
+ * @return Positive and negative covariance contributions plus the cminus factor.
+ */
+inline ActiveCMAUpdate buildActiveCMAUpdate(
+    const std::vector<std::vector<double>>& population,
+    const std::vector<size_t>& order,
+    const Eigen::VectorXd& meanOld,
+    double sigma,
+    const std::vector<double>& weights,
+    const Eigen::MatrixXd& CinvSqrt,
+    double cmu,
+    double muEff,
+    double alphacov = 2.0,
+    double alphaminusold = 0.5,
+    double lambdamintarget = 0.66,
+    double alphaminusmin = 1.0) {
+    const Eigen::Index dimension = meanOld.size();
+    const size_t mu = weights.size();
+    const size_t lambda = order.size();
+
+    ActiveCMAUpdate update;
+    update.cmu_plus = Eigen::MatrixXd::Zero(dimension, dimension);
+    update.cmu_minus = Eigen::MatrixXd::Zero(dimension, dimension);
+
+    for (size_t i = 0; i < mu; ++i) {
+        Eigen::VectorXd diff(dimension);
+        const size_t idx = order[i];
+        for (Eigen::Index d = 0; d < dimension; ++d) {
+            diff(d) = population[idx][static_cast<size_t>(d)] - meanOld(d);
+        }
+        update.cmu_plus += weights[i] * (diff * diff.transpose());
+    }
+    update.cmu_plus *= 1.0 / (sigma * sigma);
+
+    for (size_t i = 0; i < mu; ++i) {
+        Eigen::VectorXd diff(dimension);
+        const size_t idx = order[lambda - i - 1];
+        for (Eigen::Index d = 0; d < dimension; ++d) {
+            diff(d) = population[idx][static_cast<size_t>(d)] - meanOld(d);
+        }
+        update.cmu_minus += weights[i] * (diff * diff.transpose());
+    }
+    update.cmu_minus *= 1.0 / (sigma * sigma);
+
+    Eigen::MatrixXd cminusdenom = CinvSqrt * update.cmu_minus * CinvSqrt;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(cminusdenom);
+    double cminusmax = lambdamintarget;
+    if (solver.info() == Eigen::Success) {
+        cminusmax = std::max(1e-12, solver.eigenvalues().maxCoeff());
+    } else {
+        cminusmax = std::max(1e-12, cminusdenom.maxCoeff());
+    }
+
+    const double cminusmin = alphaminusmin * (1.0 - cmu) * (1.0 - lambdamintarget) / cminusmax;
+    update.cminus = std::min(
+        cminusmin,
+        (1.0 - cmu) * alphacov / 8.0 *
+            (muEff / (std::pow(static_cast<double>(dimension) + 2.0, 1.5) + 2.0 * muEff)));
+    return update;
+}
+
+/**
  * @brief Select a random subset of elements from a vector.
  * @tparam T The type of the elements in the vector.
  * @param v The input vector.

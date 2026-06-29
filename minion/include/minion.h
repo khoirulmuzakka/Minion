@@ -28,6 +28,7 @@
 #include "dmspso.h"
 #include "lshadecnepsin.h"
 #include "bipop_acmaes.h"
+#include "acmaes.h"
 #include "rcmaes.h"
 #include "cmaes.h"
 #include "test_functions.h"

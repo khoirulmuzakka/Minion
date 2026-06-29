@@ -23,6 +23,7 @@
 #include "dmspso.h"
 #include "lshadecnepsin.h"
 #include "cmaes.h"
+#include "acmaes.h"
 #include "rcmaes.h"
 #include "bipop_acmaes.h"
 #include "dual_annealing.h"
@@ -88,6 +89,7 @@ class Minimizer {
             else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "CMAES") optimizer = new CMAES(func, bounds, x0, data, callback, maxevals, seed, options);
+            else if (algoUpper == "ACMAES") optimizer = new ACMAES(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "RCMAES") optimizer = new RCMAES(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "BIPOP_aCMAES") optimizer = new BIPOP_aCMAES(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, x0, data, callback, maxevals, seed, options);
@@ -142,6 +144,7 @@ class Minimizer {
             else if (algoUpper == "DMSPSO") optimizer = new DMSPSO(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "LSHADE_cnEpSin") optimizer = new LSHADE_cnEpSin(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "CMAES") optimizer = new CMAES(func, bounds, {x0}, data, callback, maxevals, seed, options);
+            else if (algoUpper == "ACMAES") optimizer = new ACMAES(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "RCMAES") optimizer = new RCMAES(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "BIPOP_aCMAES") optimizer = new BIPOP_aCMAES(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "DA") optimizer = new Dual_Annealing(func, bounds, {x0}, data, callback, maxevals, seed, options);

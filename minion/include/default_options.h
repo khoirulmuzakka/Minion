@@ -52,6 +52,7 @@ class DefaultSettings{
                 {"DMSPSO", "DMSPSO"},
                 {"LSHADECNEPSIN", "LSHADE_cnEpSin"},
                 {"CMAES", "CMAES"},
+                {"ACMAES", "ACMAES"},
                 {"RCMAES", "RCMAES"},
                 {"BIPOPACMAES", "BIPOP_aCMAES"},
                 {"DA", "DA"},
@@ -250,6 +251,19 @@ class DefaultSettings{
             {"bound_strategy", std::string("reflect-random")}
         };
 
+        std::map<std::string, ConfigValue> default_settings_ACMAES = {
+            {"population_size", 0},
+            {"mu", 0},
+            {"initial_step", 0.3},
+            {"cc", 0.0},
+            {"cs", 0.0},
+            {"c1", 0.0},
+            {"cmu", 0.0},
+            {"damps", 0.0},
+            {"convergence_tol", 1e-4},
+            {"bound_strategy", std::string("reflect-random")}
+        };
+
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"max_iterations", 100000},
@@ -329,6 +343,7 @@ class DefaultSettings{
                 {"DMSPSO", default_settings_DMSPSO}, 
                 {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
                 {"CMAES", default_settings_CMAES}, 
+                {"ACMAES", default_settings_ACMAES},
                 {"BIPOP_aCMAES", default_settings_BIPOP_aCMAES}, 
                 {"RCMAES", default_settings_RCMAES},
                 {"DA", default_settings_DA}, 
