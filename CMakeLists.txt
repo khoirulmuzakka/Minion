@@ -28,10 +28,8 @@ option(MINION_BUILD_CEC "Build compiled CEC library" OFF)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
-option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" OFF)
-
-set(MINION_LIBCMAES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/libcmaes/build" CACHE PATH
-    "Path to a built libcmaes package with libcmaes-config.cmake")
+option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" ON)
+option(MINION_FETCH_LIBCMAES "Fetch libcmaes when building the libcmaes example" ON)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
@@ -44,6 +42,23 @@ option(MINION_FETCH_EIGEN "Fetch Eigen headers when Eigen3 package is not found"
 # | Eigen (find or download)   |
 # + -------------------------- +
 find_package(Eigen3 QUIET CONFIG)
+set(_MINION_EIGEN3_PACKAGE_USABLE FALSE)
+if(Eigen3_FOUND AND TARGET Eigen3::Eigen)
+    get_target_property(_MINION_EIGEN3_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+    if(_MINION_EIGEN3_INCLUDE_DIRS)
+        foreach(_MINION_EIGEN3_INCLUDE_DIR IN LISTS _MINION_EIGEN3_INCLUDE_DIRS)
+            if(EXISTS "${_MINION_EIGEN3_INCLUDE_DIR}")
+                set(_MINION_EIGEN3_PACKAGE_USABLE TRUE)
+                break()
+            endif()
+        endforeach()
+    endif()
+endif()
+
+if(NOT _MINION_EIGEN3_PACKAGE_USABLE)
+    set(Eigen3_FOUND FALSE)
+endif()
+
 if(NOT Eigen3_FOUND)
     if(NOT MINION_FETCH_EIGEN)
         message(FATAL_ERROR "Eigen3 not found. Install Eigen3 or set MINION_FETCH_EIGEN=ON.")
@@ -62,9 +77,56 @@ if(NOT Eigen3_FOUND)
 
     if(NOT TARGET Eigen3::Eigen)
         add_library(Eigen3::Eigen INTERFACE IMPORTED)
-        set_target_properties(Eigen3::Eigen PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
+    endif()
+    set_target_properties(Eigen3::Eigen PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${eigen_SOURCE_DIR}"
+    )
+endif()
+
+if(MINION_BUILD_LIBCMAES AND NOT Eigen3_FOUND)
+    # libcmaes expects a real Eigen3 package, so provide a tiny config shim
+    # when we only have a fetched source tree.
+    set(MINION_EIGEN3_PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_eigen3_package")
+    file(MAKE_DIRECTORY "${MINION_EIGEN3_PACKAGE_DIR}")
+    file(WRITE "${MINION_EIGEN3_PACKAGE_DIR}/Eigen3Config.cmake" "
+if(NOT TARGET Eigen3::Eigen)\n
+    add_library(Eigen3::Eigen INTERFACE IMPORTED)\n
+    set_target_properties(Eigen3::Eigen PROPERTIES\n
+        INTERFACE_INCLUDE_DIRECTORIES \"${eigen_SOURCE_DIR}\")\n
+endif()\n
+set(Eigen3_FOUND TRUE)\n
+set(Eigen3_VERSION 3.4.0)\n")
+    file(WRITE "${MINION_EIGEN3_PACKAGE_DIR}/Eigen3ConfigVersion.cmake" "
+set(PACKAGE_VERSION \"3.4.0\")\n
+if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)\n
+    set(PACKAGE_VERSION_COMPATIBLE FALSE)\n
+else()\n
+    set(PACKAGE_VERSION_COMPATIBLE TRUE)\n
+    if(PACKAGE_VERSION VERSION_EQUAL PACKAGE_FIND_VERSION)\n
+        set(PACKAGE_VERSION_EXACT TRUE)\n
+    endif()\n
+endif()\n")
+    set(Eigen3_DIR "${MINION_EIGEN3_PACKAGE_DIR}" CACHE PATH "Synthetic Eigen3 package dir" FORCE)
+endif()
+
+if(MINION_BUILD_LIBCMAES)
+    set(LIBCMAES_BUILD_SHARED_LIBS ON CACHE BOOL "Build libcmaes shared library" FORCE)
+    set(LIBCMAES_BUILD_PYTHON OFF CACHE BOOL "Build libcmaes Python bindings" FORCE)
+    set(LIBCMAES_BUILD_TESTS OFF CACHE BOOL "Build libcmaes tests" FORCE)
+    set(LIBCMAES_BUILD_EXAMPLES OFF CACHE BOOL "Build libcmaes examples" FORCE)
+    set(LIBCMAES_USE_OPENMP ON CACHE BOOL "Use OpenMP in libcmaes" FORCE)
+    set(LIBCMAES_ENABLE_SURROG ON CACHE BOOL "Enable libcmaes surrogates" FORCE)
+
+    if(MINION_FETCH_LIBCMAES)
+        FetchContent_Declare(
+            libcmaes
+            GIT_REPOSITORY https://github.com/CMA-ES/libcmaes.git
+            GIT_TAG a1a3937
+            GIT_SHALLOW TRUE
         )
+        FetchContent_MakeAvailable(libcmaes)
+    else()
+        message(FATAL_ERROR "MINION_BUILD_LIBCMAES requires MINION_FETCH_LIBCMAES=ON when no external libcmaes package is provided.")
     endif()
 endif()
 
@@ -130,10 +192,6 @@ if(MINION_BUILD_EXAMPLES)
     minion_copy_runtime_deps(main_mini)
 
     if(MINION_BUILD_CEC)
-        if(MINION_BUILD_LIBCMAES)
-            find_package(libcmaes CONFIG REQUIRED PATHS "${MINION_LIBCMAES_DIR}" NO_DEFAULT_PATH)
-        endif()
-
         add_executable(main_complexity examples/main_complexity.cpp)
         target_link_libraries(main_complexity PRIVATE minion minion_cec)
         minion_copy_runtime_deps(main_complexity)
@@ -225,6 +283,26 @@ if(MINION_BUILD_PYTHON)
             LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
         )
+    endif()
+
+    if(MINION_BUILD_LIBCMAES)
+        pybind11_add_module(libcmaes_bridge external/libcmaes/python/libcmaes_bridge.cpp)
+        target_link_libraries(libcmaes_bridge PRIVATE libcmaes::cmaes)
+        if(WIN32)
+            target_compile_definitions(libcmaes_bridge PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+        endif()
+
+        if (MSVC)
+            set_target_properties(libcmaes_bridge PROPERTIES
+                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
+                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
+            )
+        else()
+            set_target_properties(libcmaes_bridge PROPERTIES
+                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
+                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
+            )
+        endif()
     endif()
 endif()
 

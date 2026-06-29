@@ -67,6 +67,7 @@ if [[ "${build_type}" == "Debug" ]]; then
     "-DCMAKE_BUILD_TYPE=${build_type}"
     -DMINION_BUILD_CEC=ON
     -DMINION_BUILD_EXAMPLES=ON
+    -DMINION_BUILD_LIBCMAES=ON
     -DMINION_BUILD_PYTHON=ON
     "-DCMAKE_CXX_FLAGS_DEBUG=-O0 -g3 -fno-omit-frame-pointer"
     "-DCMAKE_C_FLAGS_DEBUG=-O0 -g3 -fno-omit-frame-pointer"
@@ -78,6 +79,7 @@ else
     "-DCMAKE_BUILD_TYPE=${build_type}"
     -DMINION_BUILD_CEC=ON
     -DMINION_BUILD_EXAMPLES=ON
+    -DMINION_BUILD_LIBCMAES=ON
     -DMINION_BUILD_PYTHON=ON
     ..
   )
