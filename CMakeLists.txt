@@ -28,6 +28,10 @@ option(MINION_BUILD_CEC "Build compiled CEC library" OFF)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
+option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" OFF)
+
+set(MINION_LIBCMAES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/libcmaes/build" CACHE PATH
+    "Path to a built libcmaes package with libcmaes-config.cmake")
 
 file(GLOB MINION_ALGO_IMPL_SOURCES minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
@@ -126,6 +130,10 @@ if(MINION_BUILD_EXAMPLES)
     minion_copy_runtime_deps(main_mini)
 
     if(MINION_BUILD_CEC)
+        if(MINION_BUILD_LIBCMAES)
+            find_package(libcmaes CONFIG REQUIRED PATHS "${MINION_LIBCMAES_DIR}" NO_DEFAULT_PATH)
+        endif()
+
         add_executable(main_complexity examples/main_complexity.cpp)
         target_link_libraries(main_complexity PRIVATE minion minion_cec)
         minion_copy_runtime_deps(main_complexity)
@@ -141,12 +149,21 @@ if(MINION_BUILD_EXAMPLES)
         add_executable(main_cec_multi examples/main_cec_multi.cpp)
         target_link_libraries(main_cec_multi PRIVATE minion minion_cec)
         minion_copy_runtime_deps(main_cec_multi)
+
+        if(MINION_BUILD_LIBCMAES)
+            add_executable(main_cec_multi_libcmaes examples/main_cec_multi_libcmaes.cpp)
+            target_link_libraries(main_cec_multi_libcmaes PRIVATE minion minion_cec libcmaes::cmaes)
+            minion_copy_runtime_deps(main_cec_multi_libcmaes)
+        endif()
     endif()
 
     if (MSVC)
         set(_minion_example_targets main_mini)
         if(MINION_BUILD_CEC)
             list(APPEND _minion_example_targets main_complexity main_cec main_cec_2 main_cec_multi)
+            if(MINION_BUILD_LIBCMAES)
+                list(APPEND _minion_example_targets main_cec_multi_libcmaes)
+            endif()
         endif()
         set_target_properties(${_minion_example_targets}
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>
@@ -156,6 +173,9 @@ if(MINION_BUILD_EXAMPLES)
         set(_minion_example_targets main_mini)
         if(MINION_BUILD_CEC)
             list(APPEND _minion_example_targets main_complexity main_cec main_cec_2 main_cec_multi)
+            if(MINION_BUILD_LIBCMAES)
+                list(APPEND _minion_example_targets main_cec_multi_libcmaes)
+            endif()
         endif()
         set_target_properties(${_minion_example_targets}
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
