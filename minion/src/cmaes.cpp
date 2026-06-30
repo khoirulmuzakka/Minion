@@ -69,7 +69,7 @@ MinionResult CMAES::optimize() {
                     valid = true;
                 }
                 if (!valid) {
-                    candidate = ensureBounds(candidate);
+                    candidate = applyBounds(candidate);
                 }
                 population[k] = candidate;
                 zs[k] = z;

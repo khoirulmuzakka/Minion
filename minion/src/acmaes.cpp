@@ -48,9 +48,7 @@ MinionResult ACMAES::optimize() {
                 for (size_t d = 0; d < dimension; ++d) {
                     population[k][d] = x(static_cast<Eigen::Index>(d));
                 }
-                if (useBounds) {
-                    population[k] = ensureBounds(population[k]);
-                }
+                population[k] = applyBounds(population[k]);
             }
 
             auto fitVals = func(population, data);

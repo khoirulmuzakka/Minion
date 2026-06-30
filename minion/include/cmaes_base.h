@@ -27,7 +27,7 @@ protected:
     void initializeCommon(const std::string& algorithm_name, double damps_extra_term);
     void initializeMean();
     void updateEigenDecomposition();
-    std::vector<double> ensureBounds(std::vector<double> candidate) const;
+    std::vector<double> applyBounds(std::vector<double> candidate) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
     double computeRelativeRange(const std::vector<double>& fitness) const;
     void recordIteration(size_t generation, size_t evaluations, double relRange);

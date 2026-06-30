@@ -134,6 +134,14 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
     }
 
     useBounds = !bounds.empty();
+    boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
+    const std::vector<std::string> allowedBoundStrategies = {
+        "random", "reflect", "reflect-random", "clip", "periodic", "none"
+    };
+    if (std::find(allowedBoundStrategies.begin(), allowedBoundStrategies.end(), boundStrategy) ==
+        allowedBoundStrategies.end()) {
+        boundStrategy = "reflect-random";
+    }
 
     lambda = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda == 0) {
@@ -237,13 +245,13 @@ void CMAESBase::updateEigenDecomposition() {
     C = B * Dmat * Dmat * B.transpose();
 }
 
-std::vector<double> CMAESBase::ensureBounds(std::vector<double> candidate) const {
+std::vector<double> CMAESBase::applyBounds(std::vector<double> candidate) const {
     if (!useBounds) {
         return candidate;
     }
-    for (size_t d = 0; d < dimension; ++d) {
-        candidate[d] = clamp(candidate[d], bounds[d].first, bounds[d].second);
-    }
+    std::vector<std::vector<double>> wrapper = {candidate};
+    enforce_bounds(wrapper, bounds, boundStrategy);
+    candidate = wrapper.front();
     return candidate;
 }
 
