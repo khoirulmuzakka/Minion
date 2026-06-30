@@ -35,19 +35,6 @@ std::vector<double> BIPOP_aCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
-void BIPOP_aCMAES::applyCovarianceScale() {
-    if (cov_scale.empty()) {
-        return;
-    }
-
-    D = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(cov_scale.size()));
-    for (size_t i = 0; i < cov_scale.size(); ++i) {
-        D(static_cast<Eigen::Index>(i)) = cov_scale[i];
-    }
-    B = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(cov_scale.size()), static_cast<Eigen::Index>(cov_scale.size()));
-    C = D.array().square().matrix().asDiagonal();
-}
-
 void BIPOP_aCMAES::initialize() {
     const Options options = buildOptions("BIPOP_aCMAES");
 
@@ -73,25 +60,6 @@ void BIPOP_aCMAES::initialize() {
     sigma0 = options.getSilent<double>("rel_initial_step", 0.3);
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
-    }
-
-    cov_scale.clear();
-    cov_scale.reserve(dimension);
-    double avgRange = 0.0;
-    for (const auto& b : bounds) {
-        const double range = b.second - b.first;
-        avgRange += range;
-        cov_scale.push_back(range);
-    }
-    avg_range = (dimension > 0) ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma0 *= avg_range;
-    if (avg_range > 0.0) {
-        for (double& v : cov_scale) {
-            v /= avg_range;
-            if (v <= 0.0) {
-                v = 1.0;
-            }
-        }
     }
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
@@ -135,7 +103,6 @@ void BIPOP_aCMAES::configureRegime(const Eigen::Ref<const Eigen::VectorXd>& star
     B = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(dimension));
     D = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dimension));
     C = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(dimension));
-    applyCovarianceScale();
 }
 
 void BIPOP_aCMAES::checkStoppingCriteria(bool& shouldStopRun) const {

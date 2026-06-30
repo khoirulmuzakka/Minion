@@ -102,7 +102,7 @@ std::vector<double> RCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
 }
 
 std::vector<double> RCMAES::denormalizePoint(const std::vector<double>& candidate) const {
-    return candidate;
+    return CMAESBase::denormalizePoint(candidate);
 }
 
 Eigen::VectorXd RCMAES::buildCustomActiveWeights(size_t lambdaValue, size_t muValue) const {
@@ -178,10 +178,7 @@ void RCMAES::resetRegimeState(const Eigen::Ref<const Eigen::VectorXd>& startMean
     pc = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
     B = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(dimension));
     D = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dimension));
-    for (size_t i = 0; i < cov_scale.size(); ++i) {
-        D(static_cast<Eigen::Index>(i)) = cov_scale[i];
-    }
-    C = D.array().square().matrix().asDiagonal();
+    C = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(dimension));
 }
 
 void RCMAES::initialize() {
@@ -205,7 +202,7 @@ void RCMAES::initialize() {
         const double dim = static_cast<double>(bounds.size());
         const double eta = dim > 0.0 ? double(maxevals) / dim : 1.0;
         const double logeta = std::log10(std::max(eta, 1e-12));
-        const double multiplier = (logeta > 2.0) ? (10.0 * logeta - 20.0) : 2.0;
+        const double multiplier = 10.0 * logeta - 20.0;
         const double suggested = std::clamp(dim * multiplier, double(lambda_min), 2000.0);
         lambdaInit = static_cast<size_t>(suggested);
     }
@@ -219,25 +216,6 @@ void RCMAES::initialize() {
         sigma0 = 0.3;
     }
     useCustomActive = options.getSilent<bool>("useCustomActive", true);
-
-    cov_scale.clear();
-    cov_scale.reserve(dimension);
-    double avgRange = 0.0;
-    for (const auto& bound : bounds) {
-        const double range = bound.second - bound.first;
-        avgRange += range;
-        cov_scale.push_back(range);
-    }
-    avg_range = (dimension > 0) ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma0 *= avg_range;
-    if (avg_range > 0.0) {
-        for (double& value : cov_scale) {
-            value /= avg_range;
-            if (value <= 0.0) {
-                value = 1.0;
-            }
-        }
-    }
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
     initializeMean();
@@ -313,7 +291,7 @@ RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& bestPo
     box.high.resize(dim);
     for (size_t i = 0; i < dim; ++i) {
         const double range = bounds[i].second - bounds[i].first;
-        const double delta = 0.1 * range;
+        const double delta = 0.05 * range;
         box.low[i] = std::max(bounds[i].first, bestPoint[i] - delta);
         box.high[i] = std::min(bounds[i].second, bestPoint[i] + delta);
     }
@@ -366,7 +344,7 @@ MinionResult RCMAES::optimize() {
 
             const double dim = static_cast<double>(bounds.size());
             const double a = static_cast<double>(lambda_base);
-            const double c = std::max(static_cast<double>(lambda_min), dim);
+            const double c = lambda_min; // std::max(static_cast<double>(lambda_min), dim);
             const double pp = std::max(0.5, 1.7 - 0.01 * dim);
             const double value = a - (a - c) * (1.0 - std::pow(1.0 - progress, pp));
             const size_t lambdaTarget = std::max<size_t>(4, static_cast<size_t>(std::round(value)));

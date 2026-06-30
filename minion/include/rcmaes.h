@@ -51,11 +51,10 @@ private:
     size_t lambda_min = 0;
     double mu_ratio = 0.5;
     double sigma0 = 0.0;
-    double avg_range = 1.0;
-    bool useCustomActive = true;
+    bool useCustomActive = false;
 
     Eigen::VectorXd initialMean;
-    std::vector<double> cov_scale;
+    std::vector<std::pair<double, double>> original_bounds;
 
     size_t generation = 0;
     std::vector<double> currentFitness;

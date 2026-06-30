@@ -8,6 +8,89 @@
 
 namespace minion {
 
+namespace {
+
+std::vector<std::pair<double, double>> normalized_bounds_for(const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return bounds;
+    }
+    return std::vector<std::pair<double, double>>(bounds.size(), {-1.0, 1.0});
+}
+
+std::vector<double> normalize_point(
+    const std::vector<double>& point,
+    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return point;
+    }
+
+    std::vector<double> normalized(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        if (range <= 0.0) {
+            normalized[i] = 0.0;
+        } else {
+            normalized[i] = std::clamp(2.0 * (point[i] - low) / range - 1.0, -1.0, 1.0);
+        }
+    }
+    return normalized;
+}
+
+std::vector<std::vector<double>> normalize_points(
+    const std::vector<std::vector<double>>& points,
+    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return points;
+    }
+
+    std::vector<std::vector<double>> normalized;
+    normalized.reserve(points.size());
+    for (const auto& point : points) {
+        normalized.push_back(normalize_point(point, bounds));
+    }
+    return normalized;
+}
+
+std::vector<double> denormalize_point(
+    const std::vector<double>& point,
+    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return point;
+    }
+
+    std::vector<double> actual(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        if (range <= 0.0) {
+            actual[i] = low;
+        } else {
+            actual[i] = low + 0.5 * (point[i] + 1.0) * range;
+        }
+    }
+    return actual;
+}
+
+std::vector<std::vector<double>> denormalize_points(
+    const std::vector<std::vector<double>>& points,
+    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return points;
+    }
+
+    std::vector<std::vector<double>> actual;
+    actual.reserve(points.size());
+    for (const auto& point : points) {
+        actual.push_back(denormalize_point(point, bounds));
+    }
+    return actual;
+}
+
+}  // namespace
+
 CMAESBase::CMAESBase(
     MinionFunction func,
     const std::vector<std::pair<double, double>>& bounds,
@@ -17,7 +100,18 @@ CMAESBase::CMAESBase(
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
-    : MinimizerBase(func, bounds, x0, data, callback, maxevals, seed, std::move(options)) {}
+    : MinimizerBase(
+          [func, bounds](const std::vector<std::vector<double>>& candidates, void* user_data) {
+              return func(denormalize_points(candidates, bounds), user_data);
+          },
+          normalized_bounds_for(bounds),
+          normalize_points(x0, bounds),
+          data,
+          callback,
+          maxevals,
+          seed,
+          std::move(options)),
+      original_bounds(bounds) {}
 
 Options CMAESBase::buildOptions(const std::string& algorithm_name) const {
     auto defaults = DefaultSettings().getDefaultSettings(algorithm_name);
@@ -67,15 +161,6 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
         sigma = 0.3;
     }
 
-    std::vector<double> boundWidths(dimension, 1.0);
-    double avgRange = 0.0;
-    for (size_t i = 0; i < dimension; ++i) {
-        boundWidths[i] = bounds[i].second - bounds[i].first;
-        avgRange += boundWidths[i];
-    }
-    avgRange = (dimension > 0) ? avgRange / static_cast<double>(dimension) : 1.0;
-    sigma *= avgRange; // now sigma becomes absolute (not relative anymore)
-
     const double ccDefault =
         (4.0 + muEff / static_cast<double>(dimension)) /
         (dimension + 4.0 + 2.0 * muEff / static_cast<double>(dimension));
@@ -117,10 +202,6 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
     C = Eigen::MatrixXd::Zero(dimension, dimension);
     B = Eigen::MatrixXd::Identity(dimension, dimension);
     D = Eigen::VectorXd::Ones(dimension);
-    for (size_t i = 0; i < dimension; ++i) {
-        const double normalizedWidth = std::max(boundWidths[i] / std::max(avgRange, 1e-12), 1e-12);
-        D(static_cast<Eigen::Index>(i)) = normalizedWidth; //Diagonal element of C is now bound shape aware
-    }
     C = D.array().square().matrix().asDiagonal();
     ps = Eigen::VectorXd::Zero(dimension);
     pc = Eigen::VectorXd::Zero(dimension);
@@ -166,6 +247,10 @@ std::vector<double> CMAESBase::ensureBounds(std::vector<double> candidate) const
     return candidate;
 }
 
+std::vector<double> CMAESBase::denormalizePoint(const std::vector<double>& candidate) const {
+    return denormalize_point(candidate, original_bounds);
+}
+
 double CMAESBase::computeRelativeRange(const std::vector<double>& fitness) const {
     const double fmax = *std::max_element(fitness.begin(), fitness.end());
     const double fmin = *std::min_element(fitness.begin(), fitness.end());
@@ -182,7 +267,7 @@ double CMAESBase::computeRelativeRange(const std::vector<double>& fitness) const
 
 void CMAESBase::recordIteration(size_t generation, size_t evaluations, double relRange) {
     diversity.push_back(relRange);
-    minionResult = MinionResult(best, best_fitness, generation, evaluations, false, "");
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, false, "");
     history.push_back(minionResult);
     if (callback != nullptr) {
         callback(&minionResult);

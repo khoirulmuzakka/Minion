@@ -28,6 +28,7 @@ protected:
     void initializeMean();
     void updateEigenDecomposition();
     std::vector<double> ensureBounds(std::vector<double> candidate) const;
+    std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
     double computeRelativeRange(const std::vector<double>& fitness) const;
     void recordIteration(size_t generation, size_t evaluations, double relRange);
 
@@ -60,6 +61,7 @@ protected:
     bool useBounds = false;
     size_t dimension = 0;
     bool support_tol = true;
+    std::vector<std::pair<double, double>> original_bounds;
 };
 
 }  // namespace minion
