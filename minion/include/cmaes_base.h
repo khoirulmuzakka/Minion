@@ -28,6 +28,11 @@ protected:
     void initializeMean();
     void updateEigenDecomposition();
     std::vector<double> applyBounds(std::vector<double> candidate) const;
+    std::vector<double> sampleCandidate(
+        const Eigen::VectorXd& meanState,
+        const Eigen::MatrixXd& BState,
+        const Eigen::VectorXd& DState,
+        double sigmaState) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
     double computeRelativeRange(const std::vector<double>& fitness) const;
     void recordIteration(size_t generation, size_t evaluations, double relRange);

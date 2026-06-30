@@ -245,6 +245,48 @@ std::vector<double> CMAESBase::applyBounds(std::vector<double> candidate) const 
     return candidate;
 }
 
+std::vector<double> CMAESBase::sampleCandidate(
+    const Eigen::VectorXd& meanState,
+    const Eigen::MatrixXd& BState,
+    const Eigen::VectorXd& DState,
+    double sigmaState) const {
+    std::vector<double> candidate(dimension, 0.0);
+    Eigen::VectorXd z = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
+    int retries = 0;
+    bool valid = false;
+
+    while (!valid && retries < 20) {
+        for (size_t d = 0; d < dimension; ++d) {
+            z(static_cast<Eigen::Index>(d)) = rand_norm(0.0, 1.0);
+        }
+        const Eigen::VectorXd step = BState * (DState.asDiagonal() * z);
+        const Eigen::VectorXd x = meanState + sigmaState * step;
+        for (size_t d = 0; d < dimension; ++d) {
+            candidate[d] = x(static_cast<Eigen::Index>(d));
+        }
+        if (useBounds) {
+            bool inside = true;
+            for (size_t d = 0; d < dimension; ++d) {
+                if (candidate[d] < bounds[d].first || candidate[d] > bounds[d].second) {
+                    inside = false;
+                    break;
+                }
+            }
+            if (!inside) {
+                ++retries;
+                continue;
+            }
+        }
+        valid = true;
+    }
+
+    if (!valid) {
+        candidate = applyBounds(candidate);
+    }
+
+    return candidate;
+}
+
 std::vector<double> CMAESBase::denormalizePoint(const std::vector<double>& candidate) const {
     return denormalize_point(candidate, original_bounds);
 }
