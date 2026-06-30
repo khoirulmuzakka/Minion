@@ -19,7 +19,7 @@ CMAES::CMAES(
     : CMAESBase(func, bounds, x0, data, callback, maxevals, seed, std::move(options)) {}
 
 void CMAES::initialize() {
-    initializeCommon("CMAES", cs);
+    initializeCommon("CMAES", 0.0);
 }
 
 MinionResult CMAES::optimize() {

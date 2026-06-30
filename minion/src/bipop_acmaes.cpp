@@ -22,15 +22,6 @@ BIPOP_aCMAES::BIPOP_aCMAES(
     std::map<std::string, ConfigValue> options)
     : CMAESBase(func, bounds, x0, data, callback, maxevals, seed, std::move(options)) {}
 
-std::vector<double> BIPOP_aCMAES::applyBounds(const std::vector<double>& candidate) const {
-    if (!useBounds) {
-        return candidate;
-    }
-    std::vector<std::vector<double>> wrapper = {candidate};
-    enforce_bounds(wrapper, bounds, boundStrategy);
-    return wrapper.front();
-}
-
 std::vector<double> BIPOP_aCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
@@ -53,7 +44,7 @@ void BIPOP_aCMAES::initialize() {
         const double logDim = std::log(static_cast<double>(dimension));
         lambda0 = static_cast<size_t>(4.0 + std::floor(3.0 * logDim));
     }
-    lambda0 = std::max<size_t>(lambda0, 4);
+    lambda0 = std::max<size_t>(lambda0, 5);
 
     maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 100000));
 
@@ -163,14 +154,38 @@ size_t BIPOP_aCMAES::runRegime(
         ++iteration;
 
         for (size_t k = 0; k < lambda; ++k) {
+            bool valid = false;
+            std::vector<double> candidate(dimension, 0.0);
             Eigen::VectorXd z = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
-            for (size_t d = 0; d < dimension; ++d) {
-                z(static_cast<Eigen::Index>(d)) = rand_norm(0.0, 1.0);
+            int retries = 0;
+            while (!valid && retries < 20) {
+                for (size_t d = 0; d < dimension; ++d) {
+                    z(static_cast<Eigen::Index>(d)) = rand_norm(0.0, 1.0);
+                }
+                const Eigen::VectorXd step = B * (D.asDiagonal() * z);
+                const Eigen::VectorXd x = mean + sigma * step;
+                for (size_t d = 0; d < dimension; ++d) {
+                    candidate[d] = x(static_cast<Eigen::Index>(d));
+                }
+                if (useBounds) {
+                    bool inside = true;
+                    for (size_t d = 0; d < dimension; ++d) {
+                        if (candidate[d] < bounds[d].first || candidate[d] > bounds[d].second) {
+                            inside = false;
+                            break;
+                        }
+                    }
+                    if (!inside) {
+                        ++retries;
+                        continue;
+                    }
+                }
+                valid = true;
             }
-
-            const Eigen::VectorXd step = B * (D.asDiagonal() * z);
-            const Eigen::VectorXd x = mean + sigma * step;
-            population[k] = applyBounds(eigenToStd(x));
+            if (!valid) {
+                candidate = CMAESBase::applyBounds(candidate);
+            }
+            population[k] = candidate;
         }
 
         std::fill(fitness.begin(), fitness.end(), std::numeric_limits<double>::infinity());
@@ -220,12 +235,12 @@ size_t BIPOP_aCMAES::runRegime(
 
         pc = (1.0 - cc) * pc + hsig * std::sqrt(cc * (2.0 - cc) * muEff) * y_w;
 
-        const Eigen::MatrixXd CinvSqrt = B * D.cwiseInverse().asDiagonal() * B.transpose();
-        const ActiveCMAUpdate activeUpdate = buildActiveCMAUpdate(population, order, meanOld, sigma, weights, CinvSqrt, cmu, muEff);
+        Eigen::MatrixXd CinvSqrt = B * D.cwiseInverse().asDiagonal() * B.transpose();
+        ActiveCMAUpdate activeUpdate = buildActiveCMAUpdate(population, order, meanOld, sigma, weights, CinvSqrt, cmu, muEff);
 
         const double alphaminusold = 0.5;
-        const Eigen::MatrixXd previousC = C;
-        const Eigen::MatrixXd spc = pc * pc.transpose();
+        Eigen::MatrixXd previousC = C;
+        Eigen::MatrixXd spc = pc * pc.transpose();
         C = (1.0 - c1 - cmu + activeUpdate.cminus * alphaminusold) * previousC +
             c1 * spc +
             (cmu + activeUpdate.cminus * (1.0 - alphaminusold)) * activeUpdate.cmu_plus -
@@ -241,10 +256,8 @@ size_t BIPOP_aCMAES::runRegime(
         ++globalGeneration;
         recordIteration(globalGeneration, Nevals, relRange);
 
-        if (support_tol && relRange <= stoppingTol) {
+        if (relRange <= 1e-8) {
             shouldStopRun = true;
-        } else {
-            checkStoppingCriteria(shouldStopRun);
         }
 
         if (evalCount < lambda) {
@@ -290,12 +303,11 @@ MinionResult BIPOP_aCMAES::optimize() {
                 const double u1 = rand_gen(0.0, 1.0);
                 const double u2 = rand_gen(0.0, 1.0);
                 size_t lambdaSmall = static_cast<size_t>(
-                    std::round(lambda0 * std::pow(0.5 * static_cast<double>(lambdaLarge) / static_cast<double>(lambda0), u1 * u1)));
+                    std::ceil(lambda0 * std::pow(0.5 * static_cast<double>(lambdaLarge) / static_cast<double>(lambda0), u1 * u1)));
                 lambdaSmall = std::max<size_t>(lambdaSmall, 4);
                 const double sigmaSmall = sigma0 * 2.0 * std::pow(10.0, -2.0 * u2);
 
-                Eigen::Map<const Eigen::VectorXd> bestEigen(best.data(), static_cast<Eigen::Index>(best.size()));
-                budgetSmall += runRegime(bestEigen, sigmaSmall, lambdaSmall);
+                budgetSmall += runRegime(initialMean, sigmaSmall, lambdaSmall);
                 if (Nevals >= maxevals) {
                     break;
                 }

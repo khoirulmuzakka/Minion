@@ -13,7 +13,7 @@ namespace minion {
 
 /**
  * @class BIPOP_aCMAES
- * @brief BIPOP restart strategy combined with the active CMA-ES covariance update.
+ * @brief BIPOP restart strategy combined with the standard CMA-ES covariance update.
  *
  * Reference: Nikolaus Hansen. 2009. Benchmarking a BI-population CMA-ES on the
  * BBOB-2009 function testbed. In Proceedings of the 11th Annual Conference
@@ -37,7 +37,6 @@ public:
     MinionResult optimize() override;
 
 private:
-    std::vector<double> applyBounds(const std::vector<double>& candidate) const;
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
     void configureRegime(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambdaValue);
     void checkStoppingCriteria(bool& shouldStopRun) const;

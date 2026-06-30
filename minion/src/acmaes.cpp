@@ -40,15 +40,39 @@ MinionResult ACMAES::optimize() {
             ++generation;
 
             for (size_t k = 0; k < lambda; ++k) {
-                for (size_t d = 0; d < dimension; ++d) {
-                    zs[k](static_cast<Eigen::Index>(d)) = rand_norm(0.0, 1.0);
+                bool valid = false;
+                std::vector<double> candidate(dimension, 0.0);
+                Eigen::VectorXd z = Eigen::VectorXd::Zero(dimension);
+                int retries = 0;
+                while (!valid && retries < 20) {
+                    for (size_t d = 0; d < dimension; ++d) {
+                        z(static_cast<Eigen::Index>(d)) = rand_norm(0.0, 1.0);
+                    }
+                    Eigen::VectorXd step = B * (D.asDiagonal() * z);
+                    Eigen::VectorXd x = mean + sigma * step;
+                    for (size_t d = 0; d < dimension; ++d) {
+                        candidate[d] = x(static_cast<Eigen::Index>(d));
+                    }
+                    if (useBounds) {
+                        bool inside = true;
+                        for (size_t d = 0; d < dimension; ++d) {
+                            if (candidate[d] < bounds[d].first || candidate[d] > bounds[d].second) {
+                                inside = false;
+                                break;
+                            }
+                        }
+                        if (!inside) {
+                            ++retries;
+                            continue;
+                        }
+                    }
+                    valid = true;
                 }
-                Eigen::VectorXd step = B * (D.asDiagonal() * zs[k]);
-                Eigen::VectorXd x = mean + sigma * step;
-                for (size_t d = 0; d < dimension; ++d) {
-                    population[k][d] = x(static_cast<Eigen::Index>(d));
+                if (!valid) {
+                    candidate = applyBounds(candidate);
                 }
-                population[k] = applyBounds(population[k]);
+                population[k] = candidate;
+                zs[k] = z;
             }
 
             auto fitVals = func(population, data);

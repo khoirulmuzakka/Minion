@@ -149,10 +149,7 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
     }
     lambda = std::max<size_t>(lambda, 5);
 
-    mu = static_cast<size_t>(options.get<int>("mu", 0));
-    if (mu == 0) {
-        mu = lambda / 2;
-    }
+    mu = lambda / 2;
     mu = std::max<size_t>(mu, 1);
     mu = std::min(mu, lambda);
 
@@ -164,7 +161,6 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
     muEff = 1.0 / muEff;
 
     sigma = options.get<double>("rel_initial_step", 0.3);//at this point sigma is relative to the average bound width
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
     if (sigma <= 0.0) {
         sigma = 0.3;
     }
@@ -181,23 +177,17 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
         2.0 * (muEff - 2.0 + 1.0 / muEff) /
             ((dimension + 2.0) * (dimension + 2.0) + muEff));
 
-    cc = options.get<double>("cc", ccDefault);
-    if (cc <= 0.0) cc = ccDefault;
-    cs = options.get<double>("cs", csDefault);
-    if (cs <= 0.0) cs = csDefault;
-    c1 = options.get<double>("c1", c1Default);
-    if (c1 <= 0.0) c1 = c1Default;
-    cmu = options.get<double>("cmu", cmuDefault);
-    if (cmu <= 0.0) cmu = cmuDefault;
-    damps = options.get<double>("damps", 0.0);
-    if (damps <= 0.0) {
-        damps = 1.0 +
-                cs +
-                2.0 * std::max(
-                          0.0,
-                          std::sqrt((muEff - 1.0) / (dimension + 1.0)) - 1.0) +
-                damps_extra_term;
-    }
+    cc = ccDefault;
+    cs = csDefault;
+    c1 = c1Default;
+    cmu = cmuDefault;
+    damps = 1.0 +
+            cs +
+            2.0 * std::max(
+                      0.0,
+                      std::sqrt((muEff - 1.0) / (dimension + 1.0)) - 1.0) +
+            damps_extra_term;
+    stoppingTol = 1e-4;
 
     chiN = std::sqrt(static_cast<double>(dimension)) *
            (1.0 - 1.0 / (4.0 * static_cast<double>(dimension)) +
