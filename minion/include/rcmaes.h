@@ -51,7 +51,7 @@ private:
     size_t lambda_min = 0;
     double mu_ratio = 0.5;
     double sigma0 = 0.0;
-    bool useCustomActive = true;
+    bool useCustomActive = false;
 
     Eigen::VectorXd initialMean;
     std::vector<std::pair<double, double>> original_bounds;

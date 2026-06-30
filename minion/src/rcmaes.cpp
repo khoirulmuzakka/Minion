@@ -291,7 +291,7 @@ RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& bestPo
     box.high.resize(dim);
     for (size_t i = 0; i < dim; ++i) {
         const double range = bounds[i].second - bounds[i].first;
-        const double delta = 0.05 * range;
+        const double delta = 0.1 * range;
         box.low[i] = std::max(bounds[i].first, bestPoint[i] - delta);
         box.high[i] = std::min(bounds[i].second, bestPoint[i] + delta);
     }
