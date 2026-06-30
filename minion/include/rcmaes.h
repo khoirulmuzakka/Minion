@@ -39,6 +39,7 @@ private:
     std::vector<double> applyBounds(const std::vector<double>& candidate) const;
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
+    Eigen::VectorXd buildCustomActiveWeights(size_t lambdaValue, size_t muValue) const;
     void configurePopulationParameters(size_t lambdaValue);
     void resetRegimeState(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma);
     void checkStoppingCriteria(bool& shouldStop) const;
@@ -51,6 +52,7 @@ private:
     double mu_ratio = 0.5;
     double sigma0 = 0.0;
     double avg_range = 1.0;
+    bool useCustomActive = true;
 
     Eigen::VectorXd initialMean;
     std::vector<double> cov_scale;

@@ -105,6 +105,49 @@ std::vector<double> RCMAES::denormalizePoint(const std::vector<double>& candidat
     return candidate;
 }
 
+Eigen::VectorXd RCMAES::buildCustomActiveWeights(size_t lambdaValue, size_t muValue) const {
+    Eigen::VectorXd signedWeights = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(lambdaValue));
+
+    double wNegSum = 0.0;
+    double wPosSum = 0.0;
+    for (size_t i = 0; i < lambdaValue; ++i) {
+        const double wi =
+            std::log((static_cast<double>(lambdaValue) + 1.0) / 2.0) - std::log(static_cast<double>(i) + 1.0);
+        signedWeights(static_cast<Eigen::Index>(i)) = wi;
+        if (wi >= 0.0) {
+            wPosSum += wi;
+        } else {
+            wNegSum += wi;
+        }
+    }
+
+    double wSumParent = 0.0;
+    double wSqSumParent = 0.0;
+    for (size_t i = 0; i < muValue; ++i) {
+        const double wi = signedWeights(static_cast<Eigen::Index>(i));
+        wSumParent += wi;
+        wSqSumParent += wi * wi;
+    }
+    const double muEffSigned = (wSqSumParent > 0.0) ? ((wSumParent * wSumParent) / wSqSumParent) : 1.0;
+
+    const double dim = static_cast<double>(dimension);
+    const double aMu = 1.0 + c1 / std::max(1e-12, cmu);
+    const double aMueff = 1.0 + 2.0 * muEffSigned;
+    const double aPosdef = (1.0 - c1 - cmu) / (dim * std::max(1e-12, cmu));
+    const double aMin = std::min({aMu, aMueff, aPosdef});
+
+    for (size_t i = 0; i < lambdaValue; ++i) {
+        const double wi = signedWeights(static_cast<Eigen::Index>(i));
+        if (wi >= 0.0) {
+            signedWeights(static_cast<Eigen::Index>(i)) = wi / std::max(1e-12, wPosSum);
+        } else {
+            signedWeights(static_cast<Eigen::Index>(i)) = aMin * wi / std::max(1e-12, std::abs(wNegSum));
+        }
+    }
+
+    return signedWeights;
+}
+
 void RCMAES::configurePopulationParameters(size_t lambdaValue) {
     lambda = std::min<size_t>(2000, std::max<size_t>(lambdaValue, 4));
     mu = std::max<size_t>(static_cast<size_t>(std::ceil(mu_ratio * static_cast<double>(lambda))), 1);
@@ -175,6 +218,7 @@ void RCMAES::initialize() {
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }
+    useCustomActive = options.getSilent<bool>("useCustomActive", true);
 
     cov_scale.clear();
     cov_scale.reserve(dimension);
@@ -402,16 +446,62 @@ MinionResult RCMAES::optimize() {
             pc = (1.0 - cc) * pc + hsig * std::sqrt(cc * (2.0 - cc) * muEff) * y_w;
 
             const Eigen::MatrixXd CinvSqrt = B * D.cwiseInverse().asDiagonal() * B.transpose();
-            const ActiveCMAUpdate activeUpdate =
-                buildActiveCMAUpdate(population, order, meanOld, sigma, weights, CinvSqrt, cmu, muEff);
-
-            const double alphaminusold = 0.5;
             const Eigen::MatrixXd previousC = C;
             const Eigen::MatrixXd spc = pc * pc.transpose();
-            C = (1.0 - c1 - cmu + activeUpdate.cminus * alphaminusold) * previousC +
-                c1 * spc +
-                (cmu + activeUpdate.cminus * (1.0 - alphaminusold)) * activeUpdate.cmu_plus -
-                activeUpdate.cminus * activeUpdate.cmu_minus;
+            // Custom active mode uses signed rank weights over all offspring:
+            //   w_i^raw = log((lambda + 1) / 2) - log(i)
+            // with negative ranks rescaled as
+            //   w_i <- w_i * n / ||C^{-1/2} y_i||^2
+            // and then updates
+            //   C <- (1 + c1*h1 - c1 - cmu*sum_i w_i) C
+            //        + c1 * pc*pc^T
+            //        + cmu * sum_i w_i y_i y_i^T.
+            // The alternate branch matches ACMAES/libcmaes-style active CMA:
+            // it builds explicit positive and negative covariance terms,
+            //   Cmu+ from the best mu offspring and Cmu- from the worst mu,
+            // and applies
+            //   C <- (1 - c1 - cmu + cminus*alphaminusold) C
+            //        + c1 * pc*pc^T
+            //        + (cmu + cminus*(1-alphaminusold)) Cmu+
+            //        - cminus * Cmu-.
+            if (useCustomActive) {
+                const Eigen::VectorXd signedWeights = buildCustomActiveWeights(lambda, mu);
+                Eigen::VectorXd covarianceWeights = signedWeights;
+                Eigen::MatrixXd rankedSteps(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(lambda));
+
+                for (size_t rank = 0; rank < lambda; ++rank) {
+                    const size_t idx = order[rank];
+                    Eigen::VectorXd diff(static_cast<Eigen::Index>(dimension));
+                    for (size_t d = 0; d < dimension; ++d) {
+                        diff(static_cast<Eigen::Index>(d)) =
+                            (population[idx][d] - meanOld(static_cast<Eigen::Index>(d))) / sigma;
+                    }
+                    rankedSteps.col(static_cast<Eigen::Index>(rank)) = diff;
+
+                    if (signedWeights(static_cast<Eigen::Index>(rank)) < 0.0) {
+                        const Eigen::VectorXd adjusted = CinvSqrt * diff;
+                        const double denom = adjusted.squaredNorm();
+                        covarianceWeights(static_cast<Eigen::Index>(rank)) =
+                            (denom > 0.0)
+                                ? signedWeights(static_cast<Eigen::Index>(rank)) * static_cast<double>(dimension) / denom
+                                : 0.0;
+                    }
+                }
+
+                const double h1 = (1.0 - hsig) * cc * (2.0 - cc);
+                const double wSum = covarianceWeights.sum();
+                C = (1.0 + c1 * h1 - c1 - cmu * wSum) * previousC +
+                    c1 * spc +
+                    cmu * rankedSteps * covarianceWeights.asDiagonal() * rankedSteps.transpose();
+            } else {
+                const ActiveCMAUpdate activeUpdate =
+                    buildActiveCMAUpdate(population, order, meanOld, sigma, weights, CinvSqrt, cmu, muEff);
+                const double alphaminusold = 0.5;
+                C = (1.0 - c1 - cmu + activeUpdate.cminus * alphaminusold) * previousC +
+                    c1 * spc +
+                    (cmu + activeUpdate.cminus * (1.0 - alphaminusold)) * activeUpdate.cmu_plus -
+                    activeUpdate.cminus * activeUpdate.cmu_minus;
+            }
             C = 0.5 * (C + C.transpose());
 
             sigma *= std::exp(cs / damps * (psNorm / chiN - 1.0));
@@ -477,7 +567,7 @@ MinionResult RCMAES::optimize() {
                             static_cast<Eigen::Index>(sample.size()));
                     }
                     restartMean /= static_cast<double>(restartSamples.size());
-                    sigmaEff = (sigmaEff == sigma0) ? (0.5 * sigma0) : sigma0;
+                    sigmaEff = sigma0*(0.1+ 0.9*(1.0-double(Nevals)/double(maxevals))); //  (sigmaEff == sigma0) ? (0.1 * sigma0) : sigma0;
                     resetRegimeState(restartMean, sigmaEff);
                     useRestartSamples = true;
                     continue;
