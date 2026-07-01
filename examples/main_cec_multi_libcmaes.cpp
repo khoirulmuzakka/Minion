@@ -11,6 +11,20 @@
 
 namespace {
 
+double compute_initial_sigma0(const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return 0.3;
+    }
+
+    double sum_half_widths = 0.0;
+    for (const auto& bound : bounds) {
+        sum_half_widths += 0.5 * (bound.second - bound.first);
+    }
+
+    const double average_half_width = sum_half_widths / static_cast<double>(bounds.size());
+    return 0.3 * average_half_width;
+}
+
 libcmaes::CMASolutions run_libcmaes_optimizer(
     minion::CECBase* cecfunc,
     int effective_dimension,
@@ -111,7 +125,7 @@ double minimize_cec_functions(int function_number,
         max_evals,
         algo,
         seed,
-        0.3,
+        compute_initial_sigma0(bounds),
         logger);
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -191,21 +205,28 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::thread> workers;
     workers.reserve(static_cast<size_t>(Nthreads));
-
-    int base = (Nthreads > 0) ? numRuns / Nthreads : numRuns;
-    int remainder = (Nthreads > 0) ? numRuns % Nthreads : 0;
-    int start_index = 0;
+    std::atomic<int> nextRun{0};
+    std::mutex coutMutex;
 
     for (int t = 0; t < Nthreads; ++t) {
-        int count = base + (t < remainder ? 1 : 0);
-        int end_index = start_index + count;
-        workers.emplace_back([&, start_index, end_index]() {
-            for (int i = start_index; i < end_index; ++i) {
-                std::cout << "========================\n";
-                std::cout << "\nRun : " << i + 1 << "\n";
-                auto start = std::chrono::high_resolution_clock::now();
+        workers.emplace_back([&]() {
+            while (true) {
+                const int i = nextRun.fetch_add(1, std::memory_order_relaxed);
+                if (i >= numRuns) {
+                    break;
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(coutMutex);
+                    std::cout << "========================\n";
+                    std::cout << "\nRun : " << i + 1 << "\n";
+                }
+
+                const auto start = std::chrono::high_resolution_clock::now();
                 std::vector<double> result_per_run;
-                for (auto& num : funcnums) {
+                result_per_run.reserve(funcnums.size());
+
+                for (const auto& num : funcnums) {
                     try {
                         std::unique_ptr<MinEvLogger> logger;
                         if (log_min_ev) {
@@ -214,9 +235,12 @@ int main(int argc, char* argv[]) {
                                 static_cast<size_t>(Nmaxevals),
                                 get_global_optimum(num, year));
                         }
-                        double fval = minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i,
-                                                             logger ? logger.get() : nullptr);
+
+                        const double fval = minimize_cec_functions(
+                            num, dimension, popsize, Nmaxevals, year, algo, i,
+                            logger ? logger.get() : nullptr);
                         result_per_run.push_back(fval);
+
                         if (log_min_ev) {
                             auto it = min_ev_logs.find(num);
                             if (it != min_ev_logs.end()) {
@@ -227,18 +251,23 @@ int main(int argc, char* argv[]) {
                             }
                         }
                     } catch (const std::exception& e) {
+                        std::lock_guard<std::mutex> lock(coutMutex);
                         std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
                         continue;
                     }
                 }
-                auto end = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double> duration = (end - start);
-                std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
-                results[i] = std::move(result_per_run);
-                std::cout << "========================\n";
+
+                const auto end = std::chrono::high_resolution_clock::now();
+                const std::chrono::duration<double> duration = end - start;
+                {
+                    std::lock_guard<std::mutex> lock(coutMutex);
+                    std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
+                    std::cout << "========================\n";
+                }
+
+                results[static_cast<size_t>(i)] = std::move(result_per_run);
             }
         });
-        start_index = end_index;
     }
 
     for (auto& worker : workers) {

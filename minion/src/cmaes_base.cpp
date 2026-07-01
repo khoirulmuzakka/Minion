@@ -221,9 +221,10 @@ void CMAESBase::initializeMean() {
         return;
     }
 
-    const auto initial = random_sampling(bounds, 1).front();
     for (size_t i = 0; i < dimension; ++i) {
-        mean(static_cast<Eigen::Index>(i)) = initial[i];
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        mean(static_cast<Eigen::Index>(i)) = 0.5 * (low + high);
     }
 }
 

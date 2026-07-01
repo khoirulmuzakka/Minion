@@ -14,8 +14,6 @@
 #include <filesystem>
 #include <iomanip>
 #include <memory>
-#include <atomic>
-#include <mutex>
 
 namespace {
 
@@ -402,7 +400,6 @@ double minimize_cec_functions(int function_number,
 
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
     settings["population_size"] = popsize;
-    settings["convergence_tol"] = 0.0;
     std::vector<std::vector<double>> x0={};
     if (algo == "NelderMead" || algo == "L_BFGS_B" || algo == "DA"){
         std::vector<double> x00;
@@ -417,6 +414,7 @@ double minimize_cec_functions(int function_number,
                                 logger ? static_cast<void*>(&ctx) : static_cast<void*>(cecfunc),
                                 callBack,
                                 algo,
+                                0.0,
                                 max_evals,
                                 seed,
                                 settings);
@@ -486,7 +484,6 @@ int main(int argc, char* argv[]) {
     std::string algo="ARRDE";
     int popsize=0;
     int year = 2017;
-    int Nmaxevals = int(1e+4*dimension);
     int Nthreads = 1;
     int log_min_ev = 0;
     if (argc > 1) {
@@ -507,13 +504,10 @@ int main(int argc, char* argv[]) {
     }
 
     if (argc > 6) {
-        Nmaxevals = std::atoi(argv[6]); // Use third argument for algo, no conversion needed
+        Nthreads = std::atoi(argv[6]); // Number of worker threads for parallel runs
     }
     if (argc > 7) {
-        Nthreads = std::atoi(argv[7]); // Number of worker threads for parallel runs
-    }
-    if (argc > 8) {
-        log_min_ev = std::atoi(argv[8]);
+        log_min_ev = std::atoi(argv[7]);
     }
 
     Nthreads = std::max(1, Nthreads);
@@ -529,96 +523,94 @@ int main(int argc, char* argv[]) {
     else if (year==2011) funcnums = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
     else throw std::runtime_error("Year invalid.");
 
-    std::vector<std::vector<double>> results(numRuns);
-    std::unordered_map<int, std::vector<std::vector<double>>> min_ev_logs;
-    if (log_min_ev) {
-        for (int func : funcnums) {
-            int eff_dim = get_effective_dimension(func, dimension, year);
-            size_t step = std::max<size_t>(1, 10 * static_cast<size_t>(eff_dim));
-            size_t count = static_cast<size_t>(Nmaxevals) / step + 1;
-            min_ev_logs.emplace(func, std::vector<std::vector<double>>(count, std::vector<double>(numRuns, std::numeric_limits<double>::infinity())));
+    const std::vector<int> max_eval_multipliers = {
+        500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000
+    };
+
+    for (int multiplier : max_eval_multipliers) {
+        const int Nmaxevals = multiplier * dimension;
+        std::vector<std::vector<double>> results(numRuns);
+        std::unordered_map<int, std::vector<std::vector<double>>> min_ev_logs;
+        if (log_min_ev) {
+            for (int func : funcnums) {
+                int eff_dim = get_effective_dimension(func, dimension, year);
+                size_t step = std::max<size_t>(1, 10 * static_cast<size_t>(eff_dim));
+                size_t count = static_cast<size_t>(Nmaxevals) / step + 1;
+                min_ev_logs.emplace(func, std::vector<std::vector<double>>(count, std::vector<double>(numRuns, std::numeric_limits<double>::infinity())));
+            }
         }
-    }
-    std::vector<std::thread> workers;
-    workers.reserve(static_cast<size_t>(Nthreads));
-    std::atomic<int> nextRun{0};
-    std::mutex coutMutex;
 
-    for (int t = 0; t < Nthreads; ++t) {
-        workers.emplace_back([&]() {
-            while (true) {
-                const int i = nextRun.fetch_add(1, std::memory_order_relaxed);
-                if (i >= numRuns) {
-                    break;
-                }
+        std::vector<std::thread> workers;
+        workers.reserve(static_cast<size_t>(Nthreads));
 
-                {
-                    std::lock_guard<std::mutex> lock(coutMutex);
+        int base = (Nthreads > 0) ? numRuns / Nthreads : numRuns;
+        int remainder = (Nthreads > 0) ? numRuns % Nthreads : 0;
+        int start_index = 0;
+
+        std::cout << "\n========================================\n";
+        std::cout << "Running sweep for Nmaxevals = " << Nmaxevals << "\n";
+        std::cout << "========================================\n";
+
+        for (int t = 0; t < Nthreads; ++t) {
+            int count = base + (t < remainder ? 1 : 0);
+            int end_index = start_index + count;
+            workers.emplace_back([&, start_index, end_index, Nmaxevals]() {
+                for (int i = start_index; i < end_index; ++i) {
                     std::cout << "========================\n";
-                    std::cout << "\nRun : " << i + 1 << "\n";
-                }
-
-                const auto start = std::chrono::high_resolution_clock::now();
-                std::vector<double> result_per_run;
-                result_per_run.reserve(funcnums.size());
-
-                for (const auto& num : funcnums) {
-                    try {
-                        std::unique_ptr<MinEvLogger> logger;
-                        if (log_min_ev) {
-                            logger = std::make_unique<MinEvLogger>(
-                                static_cast<size_t>(get_effective_dimension(num, dimension, year)),
-                                static_cast<size_t>(Nmaxevals),
-                                get_global_optimum(num, year));
-                        }
-
-                        const double fval = minimize_cec_functions(
-                            num, dimension, popsize, Nmaxevals, year, algo, i,
-                            logger ? logger.get() : nullptr);
-                        result_per_run.push_back(fval);
-
-                        if (log_min_ev) {
-                            auto it = min_ev_logs.find(num);
-                            if (it != min_ev_logs.end()) {
-                                auto& matrix = it->second;
-                                for (size_t row = 0; row < logger->samples.size(); ++row) {
-                                    matrix[row][static_cast<size_t>(i)] = logger->samples[row];
+                    std::cout << "\nRun : "<< i+1 << "\n";
+                    auto start = std::chrono::high_resolution_clock::now();
+                    std::vector<double> result_per_run;
+                    for (auto& num : funcnums) {
+                        try {
+                            std::unique_ptr<MinEvLogger> logger;
+                            if (log_min_ev) {
+                                logger = std::make_unique<MinEvLogger>(
+                                    static_cast<size_t>(get_effective_dimension(num, dimension, year)),
+                                    static_cast<size_t>(Nmaxevals),
+                                    get_global_optimum(num, year));
+                            }
+                            double fval = minimize_cec_functions(num, dimension, popsize, Nmaxevals, year, algo, i,
+                                                                 logger ? logger.get() : nullptr);
+                            result_per_run.push_back(fval);
+                            if (log_min_ev) {
+                                auto it = min_ev_logs.find(num);
+                                if (it != min_ev_logs.end()) {
+                                    auto& matrix = it->second;
+                                    for (size_t row = 0; row < logger->samples.size(); ++row) {
+                                        matrix[row][static_cast<size_t>(i)] = logger->samples[row];
+                                    }
                                 }
                             }
+                        } catch (const std::exception& e) {
+                            std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
+                            continue;
                         }
-                    } catch (const std::exception& e) {
-                        std::lock_guard<std::mutex> lock(coutMutex);
-                        std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
-                        continue;
-                    }
-                }
-
-                const auto end = std::chrono::high_resolution_clock::now();
-                const std::chrono::duration<double> duration = end - start;
-                {
-                    std::lock_guard<std::mutex> lock(coutMutex);
+                    };
+                    auto end = std::chrono::high_resolution_clock::now();
+                    std::chrono::duration<double> duration = (end - start);
                     std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
+                    results[i] = std::move(result_per_run);
                     std::cout << "========================\n";
                 }
-
-                results[static_cast<size_t>(i)] = std::move(result_per_run);
-            }
-        });
-    }
-
-    for (auto& worker : workers) {
-        if (worker.joinable()) {
-            worker.join();
+            });
+            start_index = end_index;
         }
-    }
-    dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
-    if (log_min_ev) {
-        const std::string out_dir =  algo;
-        std::filesystem::create_directories(out_dir);
-        for (const auto& entry : min_ev_logs) {
-            const int func = entry.first;
-            const auto& matrix = entry.second;
-            dumpMatrixToFile(matrix, out_dir + "/" + algo + "_F" + std::to_string(func) + "_Min_EV.txt");
+
+        for (auto& worker : workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+
+        dumpResultsToFile(results, "results_"+std::to_string(year)+"_"+algo+"_" + std::to_string(dimension)+"_"+std::to_string(Nmaxevals)+".txt");
+        if (log_min_ev) {
+            const std::string out_dir = algo + "_" + std::to_string(Nmaxevals);
+            std::filesystem::create_directories(out_dir);
+            for (const auto& entry : min_ev_logs) {
+                const int func = entry.first;
+                const auto& matrix = entry.second;
+                dumpMatrixToFile(matrix, out_dir + "/" + algo + "_F" + std::to_string(func) + "_Min_EV.txt");
+            }
         }
     }
 
