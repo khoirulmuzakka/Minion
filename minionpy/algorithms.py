@@ -25,6 +25,7 @@ from .minionpycpp import SPSO2011 as cppSPSO2011
 from .minionpycpp import DMSPSO as cppDMSPSO
 from .minionpycpp import LSHADE_cnEpSin as cppLSHADE_cnEpSin
 from .minionpycpp import CMAES as cppCMAES
+from .minionpycpp import ACMAES as cppACMAES
 from .minionpycpp import RCMAES as cppRCMAES
 from .minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
 
@@ -81,6 +82,7 @@ def _normalize_algo_name(name: str) -> str:
         "DMSPSO": "DMSPSO",
         "LSHADECNEPSIN": "LSHADE_cnEpSin",
         "CMAES": "CMAES",
+        "ACMAES": "ACMAES",
         "RCMAES": "RCMAES",
         "BIPOPACMAES": "BIPOP_aCMAES",
         "DA": "DA",
@@ -1082,6 +1084,41 @@ class CMAES(MinimizerBase):
         """
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppCMAES(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            maxevals,
+            self.seed,
+            self.cpp_options,
+        )
+
+    def optimize(self) -> MinionResult:
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        self.history = [MinionResult(res) for res in self.optimizer.history]
+        return self.minionResult
+
+
+class ACMAES(MinimizerBase):
+    """
+    Implementation of the active Covariance Matrix Adaptation Evolution Strategy (ACMAES).
+
+    This class inherits from `MinimizerBase`.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], None]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize the ACMAES algorithm.
+        """
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppACMAES(
             self._func_for_cpp,
             self.bounds,
             self.x0cpp,
@@ -2552,6 +2589,7 @@ class Minimizer(MinimizerBase):
             - `"L_BFGS_B"` 
             - `"L_BFGS"` 
             - `"CMAES"`
+            - `"ACMAES"`
             - `"RCMAES"`
             - `"BIPOP_aCMAES"`
             - `"PSO"`

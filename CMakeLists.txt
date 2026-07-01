@@ -30,6 +30,8 @@ option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
 option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" ON)
 option(MINION_FETCH_LIBCMAES "Fetch libcmaes when building the libcmaes example" ON)
+option(MINION_BUILD_BBOB2009 "Build bbob2009 comparison example" ON)
+option(MINION_FETCH_BBOB2009 "Fetch COCO when building the bbob2009 example" ON)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
@@ -130,6 +132,71 @@ if(MINION_BUILD_LIBCMAES)
     endif()
 endif()
 
+if(MINION_BUILD_BBOB2009)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+    if(MINION_FETCH_BBOB2009)
+        FetchContent_Declare(
+            coco
+            GIT_REPOSITORY https://github.com/numbbo/coco.git
+            GIT_TAG master
+            GIT_SHALLOW TRUE
+        )
+        FetchContent_MakeAvailable(coco)
+    else()
+        message(FATAL_ERROR "MINION_BUILD_BBOB2009 requires MINION_FETCH_BBOB2009=ON when no external COCO package is provided.")
+    endif()
+
+    set(MINION_COCO_COLORAMA_SHIM_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_coco_python_shim")
+    file(MAKE_DIRECTORY "${MINION_COCO_COLORAMA_SHIM_DIR}")
+    file(WRITE "${MINION_COCO_COLORAMA_SHIM_DIR}/colorama.py" "
+def init(*args, **kwargs):
+    return None
+
+class _Ansi:
+    def __getattr__(self, name):
+        return ''
+
+Fore = _Ansi()
+Style = _Ansi()
+")
+
+    set(MINION_COCO_C_DIR "${coco_SOURCE_DIR}/code-experiments/build/c")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E env
+            PYTHONPATH=${MINION_COCO_COLORAMA_SHIM_DIR}
+            ${Python3_EXECUTABLE}
+            scripts/fabricate
+            --skip-java
+            --skip-matlab
+            --skip-octave
+            --skip-python
+            --skip-postprocessing
+            --skip-rust
+            --skip-unit-tests
+            --skip-integration-tests
+        WORKING_DIRECTORY ${coco_SOURCE_DIR}
+        RESULT_VARIABLE _minion_coco_fabricate_result
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    if(NOT _minion_coco_fabricate_result EQUAL 0)
+        message(FATAL_ERROR "Failed to run COCO fabricate step in ${coco_SOURCE_DIR}")
+    endif()
+
+    if(NOT EXISTS "${MINION_COCO_C_DIR}/coco.c")
+        message(FATAL_ERROR "COCO fabricate did not generate ${MINION_COCO_C_DIR}/coco.c")
+    endif()
+
+    add_library(coco STATIC "${MINION_COCO_C_DIR}/coco.c")
+    target_include_directories(coco PUBLIC "${MINION_COCO_C_DIR}")
+    target_compile_features(coco PUBLIC c_std_99)
+    if(UNIX AND NOT APPLE)
+        target_link_libraries(coco PUBLIC m)
+    endif()
+    set_target_properties(coco PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 # + ----------------------------------------- +
 # | Compiled algorithms core target           |
 # + ----------------------------------------- +
@@ -207,12 +274,26 @@ if(MINION_BUILD_EXAMPLES)
         add_executable(main_cec_multi examples/main_cec_multi.cpp)
         target_link_libraries(main_cec_multi PRIVATE minion minion_cec)
         minion_copy_runtime_deps(main_cec_multi)
+    endif()
 
-        if(MINION_BUILD_LIBCMAES)
-            add_executable(main_cec_multi_libcmaes examples/main_cec_multi_libcmaes.cpp)
-            target_link_libraries(main_cec_multi_libcmaes PRIVATE minion minion_cec libcmaes::cmaes)
-            minion_copy_runtime_deps(main_cec_multi_libcmaes)
-        endif()
+    if(MINION_BUILD_LIBCMAES)
+        add_executable(main_cec_multi_libcmaes examples/main_cec_multi_libcmaes.cpp)
+        target_link_libraries(main_cec_multi_libcmaes PRIVATE minion minion_cec libcmaes::cmaes)
+        minion_copy_runtime_deps(main_cec_multi_libcmaes)
+    endif()
+
+    if(MINION_BUILD_BBOB2009)
+        add_library(bbob2009 STATIC external/bbob2009/bbob2009.cpp)
+        target_include_directories(bbob2009 PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009>
+            $<INSTALL_INTERFACE:include>
+        )
+        target_link_libraries(bbob2009 PUBLIC coco)
+        set_target_properties(bbob2009 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+        add_executable(main_bbob_multi examples/main_bbob_multi.cpp)
+        target_link_libraries(main_bbob_multi PRIVATE minion bbob2009)
+        minion_copy_runtime_deps(main_bbob_multi)
     endif()
 
     if (MSVC)
@@ -222,6 +303,9 @@ if(MINION_BUILD_EXAMPLES)
             if(MINION_BUILD_LIBCMAES)
                 list(APPEND _minion_example_targets main_cec_multi_libcmaes)
             endif()
+        endif()
+        if(MINION_BUILD_BBOB2009)
+            list(APPEND _minion_example_targets main_bbob_multi)
         endif()
         set_target_properties(${_minion_example_targets}
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>
@@ -234,6 +318,9 @@ if(MINION_BUILD_EXAMPLES)
             if(MINION_BUILD_LIBCMAES)
                 list(APPEND _minion_example_targets main_cec_multi_libcmaes)
             endif()
+        endif()
+        if(MINION_BUILD_BBOB2009)
+            list(APPEND _minion_example_targets main_bbob_multi)
         endif()
         set_target_properties(${_minion_example_targets}
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
