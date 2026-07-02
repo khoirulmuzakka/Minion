@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <numeric>
 #include <stdexcept>
@@ -46,11 +47,13 @@ void BIPOP_aCMAES::initialize() {
     }
     lambda0 = std::max<size_t>(lambda0, 5);
 
-    maxIterations = static_cast<size_t>(options.get<int>("max_iterations", 100000));
-
     sigma0 = options.getSilent<double>("rel_initial_step", 0.3);
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
+    }
+    minRelStep = options.getSilent<double>("min_rel_step", 1e-8);
+    if (minRelStep <= 0.0) {
+        minRelStep = 1e-8;
     }
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
@@ -96,47 +99,6 @@ void BIPOP_aCMAES::configureRegime(const Eigen::Ref<const Eigen::VectorXd>& star
     C = Eigen::MatrixXd::Identity(static_cast<Eigen::Index>(dimension), static_cast<Eigen::Index>(dimension));
 }
 
-void BIPOP_aCMAES::checkStoppingCriteria(bool& shouldStopRun) const {
-    if (D.size() == 0) {
-        return;
-    }
-
-    const Eigen::VectorXd eigenvalues = D.array().square().matrix();
-    double eigvalMin = eigenvalues.minCoeff();
-    double eigvalMax = eigenvalues.maxCoeff();
-    if (eigvalMin <= 0.0) {
-        eigvalMin = 1e-30;
-    }
-    if (eigvalMax / eigvalMin > 1e14) {
-        shouldStopRun = true;
-        return;
-    }
-
-    const double sigmaFac = sigma0 > 0.0 ? sigma / sigma0 : sigma;
-    const double sigmaUpThresh = 1e20 * std::sqrt(eigvalMax);
-    if (sigmaFac > sigmaUpThresh) {
-        shouldStopRun = true;
-        return;
-    }
-
-    for (size_t i = 0; i < dimension; ++i) {
-        const double stepScale = 0.1 * sigma * eigenvalues(static_cast<Eigen::Index>(i));
-        const Eigen::VectorXd moved = mean + stepScale * B.col(static_cast<Eigen::Index>(i));
-        if ((moved.array() == mean.array()).all()) {
-            shouldStopRun = true;
-            return;
-        }
-    }
-
-    for (size_t i = 0; i < dimension; ++i) {
-        const double delta = 0.2 * sigma * std::sqrt(C(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(i)));
-        if (mean(static_cast<Eigen::Index>(i)) + delta == mean(static_cast<Eigen::Index>(i))) {
-            shouldStopRun = true;
-            return;
-        }
-    }
-}
-
 size_t BIPOP_aCMAES::runRegime(
     const Eigen::Ref<const Eigen::VectorXd>& startMean,
     double startSigma,
@@ -150,7 +112,7 @@ size_t BIPOP_aCMAES::runRegime(
     std::vector<std::vector<double>> population(lambda, std::vector<double>(dimension, 0.0));
     std::vector<double> fitness(lambda, std::numeric_limits<double>::infinity());
 
-    while (!shouldStopRun && Nevals < maxevals && iteration < maxIterations) {
+    while (!shouldStopRun && Nevals < maxevals) {
         ++iteration;
 
         for (size_t k = 0; k < lambda; ++k) {
@@ -225,7 +187,18 @@ size_t BIPOP_aCMAES::runRegime(
         ++globalGeneration;
         recordIteration(globalGeneration, Nevals, relRange);
 
-        if (relRange <= 1e-8) {
+        const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
+        const double effectiveStep = sigma * sqrtMaxEigenvalue;
+        if (effectiveStep < minRelStep) {
+            if (false ){
+                std::cerr << "[BIPOP_aCMAES] restart at generation " << globalGeneration
+                        << ", evals " << Nevals
+                        << ", sigma " << sigma
+                        << ", sqrt(max_eigenvalue(C)) " << sqrtMaxEigenvalue
+                        << ", effective_step " << effectiveStep
+                        << ", relRange " << relRange
+                        << std::endl;
+            }
             shouldStopRun = true;
         }
 

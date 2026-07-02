@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -215,6 +216,10 @@ void RCMAES::initialize() {
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }
+    minRelStep = options.getSilent<double>("min_rel_step", 1e-8);
+    if (minRelStep <= 0.0) {
+        minRelStep = 1e-8;
+    }
     useCustomActive = options.getSilent<bool>("useCustomActive", true);
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
@@ -226,52 +231,6 @@ void RCMAES::initialize() {
     diversity.clear();
     Nevals = 0;
     hasInitialized = true;
-}
-
-void RCMAES::checkStoppingCriteria(bool& shouldStop) const {
-    if (D.size() == 0) {
-        return;
-    }
-
-    const Eigen::VectorXd eigenvalues = D.array().square().matrix();
-    double eigvalMin = eigenvalues.minCoeff();
-    double eigvalMax = eigenvalues.maxCoeff();
-    if (eigvalMin <= 0.0) {
-        eigvalMin = 1e-30;
-    }
-    if (eigvalMax / eigvalMin > 1e14) {
-        shouldStop = true;
-        return;
-    }
-
-    if (best_fitness < 1e-10) {
-        shouldStop = true;
-        return;
-    }
-
-    const double sigmaFac = sigma0 > 0.0 ? sigma / sigma0 : sigma;
-    const double sigmaUpThresh = 1e20 * std::sqrt(eigvalMax);
-    if (sigmaFac > sigmaUpThresh) {
-        shouldStop = true;
-        return;
-    }
-
-    for (size_t i = 0; i < dimension; ++i) {
-        const double stepScale = 0.1 * sigma * eigenvalues(static_cast<Eigen::Index>(i));
-        const Eigen::VectorXd moved = mean + stepScale * B.col(static_cast<Eigen::Index>(i));
-        if ((moved.array() == mean.array()).all()) {
-            shouldStop = true;
-            return;
-        }
-    }
-
-    for (size_t i = 0; i < dimension; ++i) {
-        const double delta = 0.2 * sigma * std::sqrt(C(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(i)));
-        if (mean(static_cast<Eigen::Index>(i)) + delta == mean(static_cast<Eigen::Index>(i))) {
-            shouldStop = true;
-            return;
-        }
-    }
 }
 
 void RCMAES::recordHistory(double relRange) {
@@ -337,7 +296,6 @@ MinionResult RCMAES::optimize() {
         configurePopulationParameters(lambda_base);
         resetRegimeState(initialMean, sigmaEff);
 
-        const double relRangeThreshold = 1e-8;
         while (Nevals < maxevals) {
             double progress = (maxevals > 0) ? (double(Nevals) / double(maxevals)) : 1.0;
             progress = std::min(progress, 1.0);
@@ -487,12 +445,19 @@ MinionResult RCMAES::optimize() {
             ++generation;
             recordHistory(relRange);
 
-            bool restartRequested = relRange < relRangeThreshold;
-            if (!restartRequested && evalCount == lambda) {
-                checkStoppingCriteria(restartRequested);
-            }
-
+            const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
+            const double effectiveStep = sigma * sqrtMaxEigenvalue;
+            bool restartRequested = effectiveStep < minRelStep;
             if (restartRequested) {
+                if (false ){
+                    std::cerr << "[RCMAES] restart at generation " << generation
+                            << ", evals " << Nevals
+                            << ", sigma " << sigma
+                            << ", sqrt(max_eigenvalue(C)) " << sqrtMaxEigenvalue
+                            << ", effective_step " << effectiveStep
+                            << ", relRange " << relRange
+                            << std::endl;
+                }
                 if (!best.empty()) {
                     restart_bests.push_back(best);
                     exclusion_boxes.push_back(buildExclusionBox(best));

@@ -39,13 +39,12 @@ public:
 private:
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
     void configureRegime(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambdaValue);
-    void checkStoppingCriteria(bool& shouldStopRun) const;
     size_t runRegime(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambdaValue);
 
     size_t lambda0 = 0;
-    size_t maxIterations = 0;
 
     double sigma0 = 0.0;
+    double minRelStep = 1e-8;
 
     Eigen::VectorXd initialMean;
 

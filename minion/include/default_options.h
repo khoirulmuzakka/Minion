@@ -252,14 +252,15 @@ class DefaultSettings{
 
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
-            {"max_iterations", 100000},
             {"rel_initial_step", 0.3},
+            {"min_rel_step", 1e-8},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
+            {"min_rel_step", 1e-8},
             {"bound_strategy", std::string("reflect-random")}
         };
 

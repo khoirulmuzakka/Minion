@@ -42,7 +42,6 @@ private:
     Eigen::VectorXd buildCustomActiveWeights(size_t lambdaValue, size_t muValue) const;
     void configurePopulationParameters(size_t lambdaValue);
     void resetRegimeState(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma);
-    void checkStoppingCriteria(bool& shouldStop) const;
     void recordHistory(double relRange);
     ExclusionBox buildExclusionBox(const std::vector<double>& best) const;
     bool isExcludedPoint(const std::vector<double>& candidate) const;
@@ -51,6 +50,7 @@ private:
     size_t lambda_min = 0;
     double mu_ratio = 0.5;
     double sigma0 = 0.0;
+    double minRelStep = 1e-8;
     bool useCustomActive = false;
 
     Eigen::VectorXd initialMean;
