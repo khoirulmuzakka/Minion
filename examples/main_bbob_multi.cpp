@@ -217,8 +217,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Log min  : " << log_min_ev << "\n";
     std::cout << "\n";
 
-    std::vector<std::vector<double>> results(static_cast<size_t>(numRuns),
-                                             std::vector<double>(functions.size(), std::numeric_limits<double>::infinity()));
+    std::vector<std::vector<double>> results(static_cast<size_t>(numRuns));
     std::map<int, std::vector<std::vector<double>>> min_ev_logs;
     if (log_min_ev) {
         for (int func : functions) {
@@ -246,6 +245,9 @@ int main(int argc, char* argv[]) {
                     std::cout << "========================\n";
                     std::cout << "Run : " << (run + 1) << "\n";
                 }
+
+                std::vector<double> result_per_run;
+                result_per_run.reserve(functions.size());
 
                 if (g_stop_requested) {
                     break;
@@ -312,7 +314,7 @@ int main(int argc, char* argv[]) {
                             std::cout << "  err  = " << error << "\n";
                         }
 
-                        results[static_cast<size_t>(run)][func_idx] = result.fun;
+                        result_per_run.push_back(result.fun);
                         if (log_min_ev && logger) {
                             auto it = min_ev_logs.find(function_number);
                             if (it != min_ev_logs.end()) {
@@ -348,6 +350,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
+                results[static_cast<size_t>(run)] = std::move(result_per_run);
                 if (g_stop_requested) {
                     break;
                 }
