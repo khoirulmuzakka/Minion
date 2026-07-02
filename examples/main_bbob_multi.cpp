@@ -198,10 +198,12 @@ int main(int argc, char* argv[]) {
 
                         for (const std::string& algo : algorithms) {
                             const minion::MinionResult result = run_algorithm(problem, algo, maxevals, run, 0.3, popsize);
+                            const double error = result.fun - problem.bestValue();
 
                             {
                                 std::lock_guard<std::mutex> lock(coutMutex);
                                 std::cout << "  nfev = " << result.nfev << "\n";
+                                std::cout << "  err  = " << error << "\n";
                             }
                         }
 
