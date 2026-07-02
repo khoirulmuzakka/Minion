@@ -302,10 +302,10 @@ MinionResult RCMAES::optimize() {
 
             const double dim = static_cast<double>(bounds.size());
             const double a = static_cast<double>(lambda_base);
-            const double c = std::max(static_cast<double>(lambda_min), dim);
-            const double pp = std::max(0.5, 1.7 - 0.01 * dim);
+            const double c =  lambda_min; //std::max(static_cast<double>(lambda_min), dim);
+            const double pp = std::max(0.5, 2.5 -  0.02 * dim);
             const double value = a - (a - c) * (1.0 - std::pow(1.0 - progress, pp));
-            const size_t lambdaTarget = std::max<size_t>(4, static_cast<size_t>(std::round(value)));
+            const size_t lambdaTarget = std::max<size_t>(c, static_cast<size_t>(std::round(value)));
             if (lambdaTarget != lambda) {
                 configurePopulationParameters(lambdaTarget);
             }
@@ -447,7 +447,8 @@ MinionResult RCMAES::optimize() {
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
-            bool restartRequested = effectiveStep < minRelStep;
+            double minRelStep_eff = minRelStep + 99*minRelStep*(1.0-double(Nevals)/double(maxevals));
+            bool restartRequested = effectiveStep < minRelStep_eff ;
             if (restartRequested) {
                 if (false ){
                     std::cerr << "[RCMAES] restart at generation " << generation
@@ -504,7 +505,7 @@ MinionResult RCMAES::optimize() {
                             static_cast<Eigen::Index>(sample.size()));
                     }
                     restartMean /= static_cast<double>(restartSamples.size());
-                    sigmaEff = sigma0*(0.1+ 0.9*(1.0-double(Nevals)/double(maxevals))); //  (sigmaEff == sigma0) ? (0.1 * sigma0) : sigma0;
+                    sigmaEff = sigma0;
                     resetRegimeState(restartMean, sigmaEff);
                     useRestartSamples = true;
                     continue;
