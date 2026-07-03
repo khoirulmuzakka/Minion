@@ -294,6 +294,12 @@ if(MINION_BUILD_EXAMPLES)
         add_executable(main_bbob_multi examples/main_bbob_multi.cpp)
         target_link_libraries(main_bbob_multi PRIVATE minion bbob2009)
         minion_copy_runtime_deps(main_bbob_multi)
+
+        if(MINION_BUILD_LIBCMAES)
+            add_executable(main_bbob_multi_libcmaes examples/main_bbob_multi_libcmaes.cpp)
+            target_link_libraries(main_bbob_multi_libcmaes PRIVATE minion bbob2009 libcmaes::cmaes)
+            minion_copy_runtime_deps(main_bbob_multi_libcmaes)
+        endif()
     endif()
 
     if (MSVC)
@@ -306,6 +312,9 @@ if(MINION_BUILD_EXAMPLES)
         endif()
         if(MINION_BUILD_BBOB2009)
             list(APPEND _minion_example_targets main_bbob_multi)
+            if(MINION_BUILD_LIBCMAES)
+                list(APPEND _minion_example_targets main_bbob_multi_libcmaes)
+            endif()
         endif()
         set_target_properties(${_minion_example_targets}
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>

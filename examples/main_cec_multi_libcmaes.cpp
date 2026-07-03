@@ -11,18 +11,42 @@
 
 namespace {
 
-double compute_initial_sigma0(const std::vector<std::pair<double, double>>& bounds) {
+std::vector<std::pair<double, double>> normalized_bounds_for(size_t dimension) {
+    return std::vector<std::pair<double, double>>(dimension, std::make_pair(-1.0, 1.0));
+}
+
+std::vector<double> normalize_point(
+    const std::vector<double>& point,
+    const std::vector<std::pair<double, double>>& bounds) {
     if (bounds.empty()) {
-        return 0.3;
+        return point;
     }
 
-    double sum_half_widths = 0.0;
-    for (const auto& bound : bounds) {
-        sum_half_widths += 0.5 * (bound.second - bound.first);
+    std::vector<double> normalized(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        normalized[i] = range > 0.0 ? (2.0 * (point[i] - low) / range - 1.0) : 0.0;
+    }
+    return normalized;
+}
+
+std::vector<double> denormalize_point(
+    const std::vector<double>& point,
+    const std::vector<std::pair<double, double>>& bounds) {
+    if (bounds.empty()) {
+        return point;
     }
 
-    const double average_half_width = sum_half_widths / static_cast<double>(bounds.size());
-    return 0.3 * average_half_width;
+    std::vector<double> actual(point.size(), 0.0);
+    for (size_t i = 0; i < point.size(); ++i) {
+        const double low = bounds[i].first;
+        const double high = bounds[i].second;
+        const double range = high - low;
+        actual[i] = range > 0.0 ? (low + 0.5 * (point[i] + 1.0) * range) : low;
+    }
+    return actual;
 }
 
 libcmaes::CMASolutions run_libcmaes_optimizer(
@@ -33,28 +57,28 @@ libcmaes::CMASolutions run_libcmaes_optimizer(
     int max_evals,
     const std::string& algo,
     int seed,
-    double sigma0,
     MinEvLogger* logger) {
-    std::vector<double> x0;
-    x0.reserve(bounds.size());
-    for (const auto& bound : bounds) {
-        x0.push_back(0.5 * (bound.first + bound.second));
+    const std::vector<std::pair<double, double>> normalized_bounds = normalized_bounds_for(bounds.size());
+    std::vector<double> x0(bounds.size(), 0.0);
+    for (size_t i = 0; i < bounds.size(); ++i) {
+        x0[i] = 0.5 * (bounds[i].first + bounds[i].second);
     }
+    const std::vector<double> x0_normalized = normalize_point(x0, bounds);
 
+    using GenoPhenoT = libcmaes::GenoPheno<libcmaes::pwqBoundStrategy>;
     std::vector<double> lbounds;
     std::vector<double> ubounds;
-    lbounds.reserve(bounds.size());
-    ubounds.reserve(bounds.size());
-    for (const auto& bound : bounds) {
+    lbounds.reserve(normalized_bounds.size());
+    ubounds.reserve(normalized_bounds.size());
+    for (const auto& bound : normalized_bounds) {
         lbounds.push_back(bound.first);
         ubounds.push_back(bound.second);
     }
 
-    using GenoPhenoT = libcmaes::GenoPheno<libcmaes::pwqBoundStrategy>;
     GenoPhenoT gp(lbounds.data(), ubounds.data(), effective_dimension);
     libcmaes::CMAParameters<GenoPhenoT> params(
-        x0,
-        sigma0 > 0.0 ? sigma0 : 0.3,
+        x0_normalized,
+        0.3,
         population_size > 0 ? population_size : -1,
         static_cast<std::uint64_t>(seed),
         gp);
@@ -62,8 +86,9 @@ libcmaes::CMASolutions run_libcmaes_optimizer(
     params.set_max_fevals(max_evals);
     params.set_quiet(true);
 
-    libcmaes::FitFunc fitfunc = [cecfunc, logger](const double* x, const int& n) -> double {
-        std::vector<std::vector<double>> candidate(1, std::vector<double>(x, x + n));
+    libcmaes::FitFunc fitfunc = [cecfunc, logger, bounds](const double* x, const int& n) -> double {
+        std::vector<double> normalized_candidate(x, x + n);
+        std::vector<std::vector<double>> candidate(1, denormalize_point(normalized_candidate, bounds));
         auto values = cecfunc->operator()(candidate);
         if (logger) {
             logger->update(values);
@@ -125,7 +150,6 @@ double minimize_cec_functions(int function_number,
         max_evals,
         algo,
         seed,
-        compute_initial_sigma0(bounds),
         logger);
 
     auto end = std::chrono::high_resolution_clock::now();
