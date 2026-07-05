@@ -123,7 +123,8 @@ if(MINION_BUILD_LIBCMAES)
         FetchContent_Declare(
             libcmaes
             GIT_REPOSITORY https://github.com/CMA-ES/libcmaes.git
-            GIT_TAG a1a3937
+            # Pin to a real upstream release tag so FetchContent can resolve it reliably.
+            GIT_TAG v0.10.2
             GIT_SHALLOW TRUE
         )
         FetchContent_MakeAvailable(libcmaes)
