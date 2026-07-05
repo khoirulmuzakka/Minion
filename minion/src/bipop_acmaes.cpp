@@ -27,6 +27,14 @@ std::vector<double> BIPOP_aCMAES::eigenToStd(const Eigen::VectorXd& vec) const {
     return std::vector<double>(vec.data(), vec.data() + vec.size());
 }
 
+Eigen::VectorXd BIPOP_aCMAES::sampleRandomMean() const {
+    Eigen::VectorXd randomMean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
+    for (size_t i = 0; i < dimension; ++i) {
+        randomMean(static_cast<Eigen::Index>(i)) = rand_gen(-1.0, 1.0);
+    }
+    return randomMean;
+}
+
 void BIPOP_aCMAES::initialize() {
     const Options options = buildOptions("BIPOP_aCMAES");
 
@@ -249,7 +257,7 @@ MinionResult BIPOP_aCMAES::optimize() {
                 lambdaSmall = std::max<size_t>(lambdaSmall, 4);
                 const double sigmaSmall = sigma0 * 2.0 * std::pow(10.0, -2.0 * u2);
 
-                budgetSmall += runRegime(initialMean, sigmaSmall, lambdaSmall);
+                budgetSmall += runRegime(sampleRandomMean(), sigmaSmall, lambdaSmall);
                 if (Nevals >= maxevals) {
                     break;
                 }
@@ -259,7 +267,7 @@ MinionResult BIPOP_aCMAES::optimize() {
                 break;
             }
 
-            budgetLarge += runRegime(initialMean, sigma0, lambdaLarge);
+            budgetLarge += runRegime(sampleRandomMean(), sigma0, lambdaLarge);
             ++restart;
         }
 

@@ -38,6 +38,7 @@ public:
 
 private:
     std::vector<double> eigenToStd(const Eigen::VectorXd& vec) const;
+    Eigen::VectorXd sampleRandomMean() const;
     void configureRegime(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambdaValue);
     size_t runRegime(const Eigen::Ref<const Eigen::VectorXd>& startMean, double startSigma, size_t lambdaValue);
 
