@@ -16,6 +16,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <sstream>
 
 namespace {
 
@@ -319,6 +320,59 @@ struct LogContext {
     MinEvLogger* logger = nullptr;
 };
 
+struct Job {
+    int run_index = 0;
+    size_t function_index = 0;
+    int function_number = 0;
+};
+
+std::string format_eta(std::chrono::seconds seconds) {
+    const auto total_seconds = seconds.count();
+    const auto hours = total_seconds / 3600;
+    const auto minutes = (total_seconds % 3600) / 60;
+    const auto secs = total_seconds % 60;
+
+    std::ostringstream oss;
+    oss << std::setw(2) << std::setfill('0') << hours << ':'
+        << std::setw(2) << std::setfill('0') << minutes << ':'
+        << std::setw(2) << std::setfill('0') << secs;
+    return oss.str();
+}
+
+void render_progress_bar(
+    size_t completed,
+    size_t total,
+    const std::chrono::steady_clock::time_point& start_time) {
+    constexpr size_t kBarWidth = 40;
+    if (total == 0) {
+        std::cout << "\rProgress: [----------------------------------------] 0/0 (0%) ETA --:--:--" << std::flush;
+        return;
+    }
+
+    const double ratio = static_cast<double>(completed) / static_cast<double>(total);
+    const size_t filled = std::min(kBarWidth, static_cast<size_t>(ratio * static_cast<double>(kBarWidth)));
+    std::ostringstream percent;
+    percent << std::fixed << std::setprecision(1) << (ratio * 100.0);
+
+    std::cout << "\rProgress: [";
+    for (size_t i = 0; i < kBarWidth; ++i) {
+        std::cout << (i < filled ? '#' : '-');
+    }
+
+    std::string eta_text = "--:--:--";
+    if (completed > 0 && completed < total) {
+        const auto elapsed = std::chrono::steady_clock::now() - start_time;
+        const double elapsed_sec = std::chrono::duration<double>(elapsed).count();
+        const double sec_per_job = elapsed_sec / static_cast<double>(completed);
+        const double remaining_sec = sec_per_job * static_cast<double>(total - completed);
+        eta_text = format_eta(std::chrono::seconds(static_cast<long long>(std::max(0.0, std::ceil(remaining_sec)))));
+    } else if (completed >= total) {
+        eta_text = "00:00:00";
+    }
+
+    std::cout << "] " << completed << "/" << total << " (" << percent.str() << "%) ETA " << eta_text << std::flush;
+}
+
 std::vector<double> objective_function_logged(const std::vector<std::vector<double>>& x, void* data) {
     auto* ctx = static_cast<LogContext*>(data);
     auto values = ctx->func->operator()(x);
@@ -373,7 +427,8 @@ double minimize_cec_functions(int function_number,
                               int year = 2022,
                               std::string algo = "ARRDE",
                               int seed = -1,
-                              MinEvLogger* logger = nullptr) {
+                              MinEvLogger* logger = nullptr,
+                              std::ostream* out = &std::cout) {
     minion::CECBase* cecfunc;
     std::vector<std::pair<double, double>> bounds;
     int effective_dimension = get_effective_dimension(function_number, dimension, year);
@@ -425,9 +480,11 @@ double minimize_cec_functions(int function_number,
     double ret = result.fun;
 
     // Output the results
-    std::cout << "Optimization Results for Function " << function_number << ":\n";
-    std::cout << "\tAlgo : "<< algo << ". Best Value: " << result.fun << "\n";
-    std::cout << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
+    if (false) {
+        (*out) << "Optimization Results for Function " << function_number << ":\n";
+        (*out) << "\tAlgo : "<< algo << ". Best Value: " << result.fun << "\n";
+        (*out) << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
+    }
 
     delete cecfunc;
     if (logger) {
@@ -529,7 +586,7 @@ int main(int argc, char* argv[]) {
     else if (year==2011) funcnums = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
     else throw std::runtime_error("Year invalid.");
 
-    std::vector<std::vector<double>> results(numRuns);
+    std::vector<std::vector<double>> results(static_cast<size_t>(numRuns), std::vector<double>(funcnums.size(), std::numeric_limits<double>::infinity()));
     std::unordered_map<int, std::vector<std::vector<double>>> min_ev_logs;
     if (log_min_ev) {
         for (int func : funcnums) {
@@ -539,69 +596,87 @@ int main(int argc, char* argv[]) {
             min_ev_logs.emplace(func, std::vector<std::vector<double>>(count, std::vector<double>(numRuns, std::numeric_limits<double>::infinity())));
         }
     }
+    std::vector<Job> jobs;
+    jobs.reserve(static_cast<size_t>(numRuns) * funcnums.size());
+    for (int run = 0; run < numRuns; ++run) {
+        for (size_t func_index = 0; func_index < funcnums.size(); ++func_index) {
+            jobs.push_back(Job{run, func_index, funcnums[func_index]});
+        }
+    }
+
     std::vector<std::thread> workers;
     workers.reserve(static_cast<size_t>(Nthreads));
-    std::atomic<int> nextRun{0};
+    std::atomic<size_t> nextJob{0};
+    std::atomic<size_t> completedJobs{0};
     std::mutex coutMutex;
+    const auto progress_start = std::chrono::steady_clock::now();
 
     for (int t = 0; t < Nthreads; ++t) {
         workers.emplace_back([&]() {
             while (true) {
-                const int i = nextRun.fetch_add(1, std::memory_order_relaxed);
-                if (i >= numRuns) {
+                const size_t job_index = nextJob.fetch_add(1, std::memory_order_relaxed);
+                if (job_index >= jobs.size()) {
                     break;
                 }
 
+                const Job job = jobs[job_index];
                 {
-                    std::lock_guard<std::mutex> lock(coutMutex);
-                    std::cout << "========================\n";
-                    std::cout << "\nRun : " << i + 1 << "\n";
-                }
-
-                const auto start = std::chrono::high_resolution_clock::now();
-                std::vector<double> result_per_run;
-                result_per_run.reserve(funcnums.size());
-
-                for (const auto& num : funcnums) {
                     try {
                         std::unique_ptr<MinEvLogger> logger;
+                        std::ostringstream job_output;
                         if (log_min_ev) {
                             logger = std::make_unique<MinEvLogger>(
-                                static_cast<size_t>(get_effective_dimension(num, dimension, year)),
+                                static_cast<size_t>(get_effective_dimension(job.function_number, dimension, year)),
                                 static_cast<size_t>(Nmaxevals),
-                                get_global_optimum(num, year));
+                                get_global_optimum(job.function_number, year));
                         }
 
+                        const auto start = std::chrono::high_resolution_clock::now();
                         const double fval = minimize_cec_functions(
-                            num, dimension, popsize, Nmaxevals, year, algo, i,
-                            logger ? logger.get() : nullptr);
-                        result_per_run.push_back(fval);
+                            job.function_number,
+                            dimension,
+                            popsize,
+                            Nmaxevals,
+                            year,
+                            algo,
+                            job.run_index,
+                            logger ? logger.get() : nullptr,
+                            &job_output);
+                        const auto end = std::chrono::high_resolution_clock::now();
+                        const std::chrono::duration<double> duration = end - start;
+
+                        results[static_cast<size_t>(job.run_index)][job.function_index] = fval;
 
                         if (log_min_ev) {
-                            auto it = min_ev_logs.find(num);
-                            if (it != min_ev_logs.end()) {
+                            auto it = min_ev_logs.find(job.function_number);
+                            if (it != min_ev_logs.end() && logger) {
                                 auto& matrix = it->second;
                                 for (size_t row = 0; row < logger->samples.size(); ++row) {
-                                    matrix[row][static_cast<size_t>(i)] = logger->samples[row];
+                                    matrix[row][static_cast<size_t>(job.run_index)] = logger->samples[row];
                                 }
                             }
                         }
+
+                        std::lock_guard<std::mutex> lock(coutMutex);
+                        std::cout << job_output.str();
+                        std::cout << "  Best F" << job.function_number << " : " << fval << "\n";
+
                     } catch (const std::exception& e) {
                         std::lock_guard<std::mutex> lock(coutMutex);
-                        std::cerr << "Error optimizing function " << num << ": " << e.what() << std::endl;
-                        continue;
+                        std::cerr << "Error optimizing function F" << job.function_number
+                                  << " in run " << job.run_index + 1 << ": " << e.what() << std::endl;
+                        std::cout << "========================\n";
+                    }
+
+                    const size_t done = completedJobs.fetch_add(1, std::memory_order_relaxed) + 1;
+                    {
+                        std::lock_guard<std::mutex> lock(coutMutex);
+                        render_progress_bar(done, jobs.size(), progress_start);
+                        if (done == jobs.size()) {
+                            std::cout << std::endl;
+                        }
                     }
                 }
-
-                const auto end = std::chrono::high_resolution_clock::now();
-                const std::chrono::duration<double> duration = end - start;
-                {
-                    std::lock_guard<std::mutex> lock(coutMutex);
-                    std::cout << "Elapsed time: " << duration.count() << " seconds" << std::endl;
-                    std::cout << "========================\n";
-                }
-
-                results[static_cast<size_t>(i)] = std::move(result_per_run);
             }
         });
     }

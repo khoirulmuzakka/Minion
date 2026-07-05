@@ -204,7 +204,12 @@ void RCMAES::initialize() {
         const double eta = dim > 0.0 ? double(maxevals) / dim : 1.0;
         const double logeta = std::log10(std::max(eta, 1e-12));
         //const double multiplier = 10.0 * logeta - 20.0;
-        const double multiplier = std::min(std::pow(20.0, (logeta - 3.0)), 30.0); // Limit the multiplier to prevent excessively large population sizes
+        const double multiplier = std::min(
+            (logeta <= 4.0)
+                ? std::pow(20.0, logeta - 3.0)
+                : 10.0 * logeta - 20.0,
+            100.0
+        );
         const double suggested = std::clamp(dim * multiplier, double(lambda_min), 2000.0);
         lambdaInit = static_cast<size_t>(suggested);
     }

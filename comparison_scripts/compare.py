@@ -1,9 +1,15 @@
 import os
+import json
 import numpy as np
 import pandas as pd
 from scipy.stats import mannwhitneyu, rankdata
 import math
 import matplotlib.pyplot as plt
+
+try:
+    import cocoex  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency
+    cocoex = None
 
 
 try:
@@ -11,6 +17,10 @@ try:
 except ImportError:  # pragma: no cover - CLI fallback
     def display(obj):
         print(obj)
+
+_BBOB2009_CACHE_FILE = os.path.join(os.path.dirname(__file__), "bbob2009_optima.json")
+_RESULTS_MIN_RUNS = -1
+
 
 def MWUT(A, B, alpha=0.05, mode="ranksum"):
     """
@@ -180,9 +190,87 @@ goptimum_cec20 = np.array([100, 1100, 700, 1900, 1700, 1600, 2100, 2200, 2400, 2
 goptimum_cec17 = np.array([100 * i for i in range(1, 31)])
 goptimum_cec14 = goptimum_cec17
 goptimum_cec11 = None  # inferred from data (min over algorithms) because the official optima are unknown
-yearToMin = {2017: goptimum_cec17, 2014: goptimum_cec14, 2020: goptimum_cec20, 2022: goptimum_cec22, 2011: goptimum_cec11, 
+yearToMin = {2009: None, 2017: goptimum_cec17, 2014: goptimum_cec14, 2020: goptimum_cec20, 2022: goptimum_cec22, 2011: goptimum_cec11, 
              2019: np.ones(10)}
-yearToNfuncs = {2017:30, 2014:30, 2020:10, 2022:12, 2011:22, 2019 : 10}
+yearToNfuncs = {2009: 24, 2017:30, 2014:30, 2020:10, 2022:12, 2011:22, 2019 : 10}
+
+_bbob2009_gopt_cache = {}
+
+
+def _load_bbob2009_cache_file():
+    if not os.path.exists(_BBOB2009_CACHE_FILE):
+        return
+
+    with open(_BBOB2009_CACHE_FILE, "r", encoding="utf-8") as cache_file:
+        payload = json.load(cache_file)
+
+    if not isinstance(payload, dict):
+        raise ValueError(f"Invalid BBOB2009 cache format in {_BBOB2009_CACHE_FILE}.")
+
+    for dim_str, values in payload.items():
+        dim = int(dim_str)
+        _bbob2009_gopt_cache[dim] = np.array(values, dtype=float)
+
+
+def _write_bbob2009_cache_file():
+    if not _bbob2009_gopt_cache:
+        return
+
+    payload = {str(dim): values.tolist() for dim, values in sorted(_bbob2009_gopt_cache.items())}
+    with open(_BBOB2009_CACHE_FILE, "w", encoding="utf-8") as cache_file:
+        json.dump(payload, cache_file, indent=2, sort_keys=True)
+
+
+def bbob2009_global_optimum(dimension, n_funcs):
+    """
+    Return the BBOB-2009 best-value offsets for a given dimension.
+
+    The values are queried from COCO/Cocoex, which matches the C++ wrapper's
+    `coco_problem_get_best_value()` / `best_value()` data.
+    """
+    if not _bbob2009_gopt_cache:
+        _load_bbob2009_cache_file()
+
+    dimension = int(dimension)
+    cached = _bbob2009_gopt_cache.get(dimension)
+    if cached is not None and len(cached) >= n_funcs:
+        return cached[:n_funcs].copy()
+
+    if cocoex is None:
+        return None
+
+    values = []
+    for function_number in range(1, n_funcs + 1):
+        problem = cocoex.BareProblem(
+            suite_name="bbob",
+            function=function_number,
+            dimension=dimension,
+            instance=1,
+        )
+        values.append(float(problem.best_value()))
+
+    result = np.array(values, dtype=float)
+    _bbob2009_gopt_cache[dimension] = result
+    _write_bbob2009_cache_file()
+    return result
+
+
+def resolve_global_optimum(year, n_funcs, dims_list=None):
+    """
+    Resolve the per-function global optimum vector for a benchmark year.
+
+    For CEC years with official optima, this returns the static array.
+    For BBOB2009, it queries COCO/Cocoex. For CEC2011 it returns None so the
+    caller can infer the optimum from the loaded results.
+    """
+    if year == 2009:
+        if dims_list is None or len(dims_list) == 0:
+            raise ValueError("dims_list is required to resolve BBOB2009 optima.")
+        gopt = bbob2009_global_optimum(dims_list[0], n_funcs)
+        if gopt is None:
+            return None
+        return gopt
+    return yearToMin[year]
 
 
 def default_dim_to_year(multiplier=10000):
@@ -190,6 +278,7 @@ def default_dim_to_year(multiplier=10000):
     Helper to reproduce the DIM_MAX_EVALS maps used in notebooks/scripts.
     """
     return {
+        2009: {2: 2 * multiplier, 3: 3 * multiplier, 5: 5 * multiplier, 10: 10 * multiplier, 20: 20 * multiplier, 40: 40 * multiplier},
         2017: {10: 10*multiplier, 30: 30*multiplier, 50: 50*multiplier, 100: 100*multiplier},
         2014: {10: 10*multiplier, 30: 30*multiplier, 50: 50*multiplier, 100: 100*multiplier},
         2020: {5: 50000, 10: 1000000, 15: 3000000, 20: 10000000},
@@ -227,13 +316,33 @@ def load_results(res_folder, algos, year, dim_maxevals, max_runs=51):
     matrices[algo][idim] = array of shape (runs, n_funcs)
     dims_list[idim]      = the actual dimension value (e.g. 10, 20, 50...)
     """
+    global _RESULTS_MIN_RUNS
     matrices = {}
     dims_sorted = list(dim_maxevals.items())  # deterministic order
+    expected_runs = None
     for algo in algos:
         per_algo_dims = []
         for dim, maxevals in dims_sorted:
             filepath = _resolve_result_file(res_folder, year, algo, dim, maxevals)
-            data = np.loadtxt(filepath, delimiter="\t")[:max_runs]
+            data = np.loadtxt(filepath, delimiter="\t")
+            data = np.atleast_2d(data)
+            if max_runs is not None and max_runs > 0:
+                data = data[:max_runs]
+            run_count = int(data.shape[0])
+            if _RESULTS_MIN_RUNS > 0:
+                if run_count < _RESULTS_MIN_RUNS:
+                    raise ValueError(
+                        f"{algo} @ {dim}D has only {run_count} runs, but min_runs={_RESULTS_MIN_RUNS} was requested."
+                    )
+                data = data[:_RESULTS_MIN_RUNS]
+            elif _RESULTS_MIN_RUNS == -1:
+                if expected_runs is None:
+                    expected_runs = run_count
+                elif run_count != expected_runs:
+                    raise ValueError(
+                        f"Inconsistent run counts detected: expected {expected_runs}, got {run_count} "
+                        f"for {algo} @ {dim}D."
+                    )
             per_algo_dims.append(data)
         matrices[algo] = per_algo_dims
     return matrices, [d for d, _ in dims_sorted]
@@ -265,8 +374,8 @@ def dim_weights(num_dims, year=None):
     We only use weights for SE, SR (your scoring metrics).
     Friedman per dim, Z per dim, head2head per dim are unweighted.
     """
-    if year == 2011:
-        return [1.0] * num_dims  # CEC2011 uses uniform weights across dimensions
+    if year in (2009, 2011):
+        return [1.0] * num_dims  # BBOB2009 and CEC2011 use uniform weights across dimensions
     return [0.1 * (i + 1) for i in range(num_dims)]
 
 
@@ -717,11 +826,13 @@ def evaluate_all(
 
     # external info from your env
     n_funcs = yearToNfuncs[year]   # int
-    official_glob_min = yearToMin[year]     # np.array length n_funcs (or None for inferred years)
+    official_glob_min = resolve_global_optimum(year, n_funcs, dims_list=dims_list)     # np.array length n_funcs (or None for inferred years)
     needs_true_opt = mode_number in (0, 1, 2, 4, 5, 8)
     if official_glob_min is None:
         if needs_true_opt:
-            raise ValueError("Selected mode requires known global optima (unavailable for CEC2011).")
+            if year == 2009 and cocoex is None:
+                raise ImportError("cocoex is required to query BBOB2009 global optima.")
+            raise ValueError("Selected mode requires known global optima (unavailable for this year).")
         glob_min = infer_glob_min_from_runs(matrices, n_funcs)
     else:
         glob_min = official_glob_min
@@ -875,6 +986,7 @@ def run_report(
     mode_number=1,
     drop_index=None,
     algo_display_map=None,
+    min_runs=-1,
 ):
     """
     Convenience wrapper that mirrors the typical notebook usage pattern.
@@ -882,89 +994,95 @@ def run_report(
     n_funcs = yearToNfuncs[year]
     valid_problem_count = sum(1 for _ in valid_funcs_iter(year, n_funcs, drop_index=drop_index))
 
-    (
-        summary_df,
-        FR_per_dim_df,
-        h2h_per_dim_df,
-        SE_per_dim_df,
-        SR_per_dim_df,
-    ) = evaluate_all(
-        res_folder,
-        year,
-        algos,
-        ref_algo,
-        DIM_MAX_EVALS,
-        rank_mode=rank_mode,
-        mwut_mode=mwut_mode,
-        alpha=alpha,
-        return_se_sr_per_dim=True,
-        mode_number=mode_number,
-        drop_index=drop_index,
-    )
-
-    print("=== Weighted summary (SE, SR, scores) ===")
-    print(summary_df)
-    print()
-
-    print("=== Friedman average rank per dimension ===")
-    print(FR_per_dim_df)
-    print()
-    
-    if SR_per_dim_df is not None:
-        print("=== SR per dimension ===")
-        print(SR_per_dim_df)
-        print()
-
-    if SE_per_dim_df is not None:
-        print("=== SE per dimension ===")
-        print(SE_per_dim_df)
-        print()
-
-    print(f"=== Head-to-head per dimension ({ref_algo} vs others) ===")
-    dims_order = list(DIM_MAX_EVALS.keys())
-    if not h2h_per_dim_df.empty:
-        for opponent in h2h_per_dim_df.index:
-            for dim in dims_order:
-                wins_col = f"wins@{dim}D_{ref_algo}_vs"
-                ties_col = f"ties@{dim}D_{ref_algo}_vs"
-                loses_col = f"loses@{dim}D_{ref_algo}_vs"
-                if wins_col not in h2h_per_dim_df.columns:
-                    continue
-                wins = h2h_per_dim_df.at[opponent, wins_col]
-                ties = h2h_per_dim_df.at[opponent, ties_col]
-                loses = h2h_per_dim_df.at[opponent, loses_col]
-                score = wins - loses
-                print(f"{ref_algo} vs {opponent} @ {dim}D : {wins}/{ties}/{loses}  score={score}")
-            print()
-    else:
-        print("  (no opponents to compare)")
-
-    if SE_per_dim_df is not None and SR_per_dim_df is not None:
-        latex_table = generate_latex_table(
+    global _RESULTS_MIN_RUNS
+    previous_min_runs = _RESULTS_MIN_RUNS
+    _RESULTS_MIN_RUNS = min_runs
+    try:
+        (
             summary_df,
+            FR_per_dim_df,
+            h2h_per_dim_df,
             SE_per_dim_df,
             SR_per_dim_df,
-            h2h_per_dim_df,
-            dims_order,
-            ref_algo,
-            algo_display_map=algo_display_map,
-            n_valid_funcs=valid_problem_count,
-        )
-        tex_path = os.path.join(res_folder, "table.tex")
-        with open(tex_path, "w", encoding="utf-8") as tex_file:
-            tex_file.write(latex_table)
-        print(f"LaTeX table saved to {tex_path}")
-        _, func_path = export_function_error_tables(
+        ) = evaluate_all(
             res_folder,
             year,
             algos,
+            ref_algo,
             DIM_MAX_EVALS,
+            rank_mode=rank_mode,
+            mwut_mode=mwut_mode,
+            alpha=alpha,
+            return_se_sr_per_dim=True,
+            mode_number=mode_number,
             drop_index=drop_index,
-            algo_display_map=algo_display_map,
         )
-        print(f"Function-level LaTeX tables saved to {func_path}")
 
-    return summary_df, FR_per_dim_df, h2h_per_dim_df
+        print("=== Weighted summary (SE, SR, scores) ===")
+        print(summary_df)
+        print()
+
+        print("=== Friedman average rank per dimension ===")
+        print(FR_per_dim_df)
+        print()
+
+        if SR_per_dim_df is not None:
+            print("=== SR per dimension ===")
+            print(SR_per_dim_df)
+            print()
+
+        if SE_per_dim_df is not None:
+            print("=== SE per dimension ===")
+            print(SE_per_dim_df)
+            print()
+
+        print(f"=== Head-to-head per dimension ({ref_algo} vs others) ===")
+        dims_order = list(DIM_MAX_EVALS.keys())
+        if not h2h_per_dim_df.empty:
+            for opponent in h2h_per_dim_df.index:
+                for dim in dims_order:
+                    wins_col = f"wins@{dim}D_{ref_algo}_vs"
+                    ties_col = f"ties@{dim}D_{ref_algo}_vs"
+                    loses_col = f"loses@{dim}D_{ref_algo}_vs"
+                    if wins_col not in h2h_per_dim_df.columns:
+                        continue
+                    wins = h2h_per_dim_df.at[opponent, wins_col]
+                    ties = h2h_per_dim_df.at[opponent, ties_col]
+                    loses = h2h_per_dim_df.at[opponent, loses_col]
+                    score = wins - loses
+                    print(f"{ref_algo} vs {opponent} @ {dim}D : {wins}/{ties}/{loses}  score={score}")
+                print()
+        else:
+            print("  (no opponents to compare)")
+
+        if SE_per_dim_df is not None and SR_per_dim_df is not None:
+            latex_table = generate_latex_table(
+                summary_df,
+                SE_per_dim_df,
+                SR_per_dim_df,
+                h2h_per_dim_df,
+                dims_order,
+                ref_algo,
+                algo_display_map=algo_display_map,
+                n_valid_funcs=valid_problem_count,
+            )
+            tex_path = os.path.join(res_folder, "table.tex")
+            with open(tex_path, "w", encoding="utf-8") as tex_file:
+                tex_file.write(latex_table)
+            print(f"LaTeX table saved to {tex_path}")
+            _, func_path = export_function_error_tables(
+                res_folder,
+                year,
+                algos,
+                DIM_MAX_EVALS,
+                drop_index=drop_index,
+                algo_display_map=algo_display_map,
+            )
+            print(f"Function-level LaTeX tables saved to {func_path}")
+
+        return summary_df, FR_per_dim_df, h2h_per_dim_df
+    finally:
+        _RESULTS_MIN_RUNS = previous_min_runs
 
 
 def generate_latex_table(
@@ -1311,7 +1429,7 @@ def export_function_error_tables(
     """
     matrices, dims_list = load_results(res_folder, algos, year, DIM_MAX_EVALS)
     n_funcs = yearToNfuncs[year]
-    glob_min = yearToMin[year]
+    glob_min = resolve_global_optimum(year, n_funcs, dims_list=dims_list)
     if glob_min is None:
         glob_min = infer_glob_min_from_runs(matrices, n_funcs)
     latex = generate_function_error_stats_latex(
@@ -1376,6 +1494,7 @@ def analyze_results(
     goptimum_cec14 = goptimum_cec17
 
     year_to_geopt = {
+        2009: None,
         2011: None,
         2014: goptimum_cec14,
         2017: goptimum_cec17,
@@ -1386,8 +1505,12 @@ def analyze_results(
     if year not in year_to_geopt:
         raise ValueError(f"Unsupported CEC year: {year}")
     gopt = year_to_geopt[year]
+    if year == 2009:
+        gopt = bbob2009_global_optimum(n_dim, n_problems)
     needs_true_opt = mode_number in (0, 1, 2, 4, 5, 8)
     if gopt is None and needs_true_opt:
+        if year == 2009 and cocoex is None:
+            raise ImportError("cocoex is required to query BBOB2009 global optima.")
         raise ValueError("Selected mode requires known global optima (unavailable for this year).")
     if gopt is not None:
         gopt = np.array(gopt, dtype=float)
