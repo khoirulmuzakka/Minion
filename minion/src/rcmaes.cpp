@@ -392,7 +392,7 @@ MinionResult RCMAES::optimize() {
             //   C <- (1 + c1*h1 - c1 - cmu*sum_i w_i) C
             //        + c1 * pc*pc^T
             //        + cmu * sum_i w_i y_i y_i^T.
-            // The alternate branch matches ACMAES/libcmaes-style active CMA:
+            // The alternate branch matches the active CMA variant:
             // it builds explicit positive and negative covariance terms,
             //   Cmu+ from the best mu offspring and Cmu- from the worst mu,
             // and applies

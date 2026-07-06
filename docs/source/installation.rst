@@ -177,7 +177,7 @@ Build From Source With CMake
 Helper Scripts
 ~~~~~~~~~~~~~~
 
-The helper scripts build the C++ libraries, C++ examples, and Python extension
+The helper scripts build the C++ libraries and Python extension
 module:
 
 - Linux/macOS: ``./compile.sh``
@@ -186,7 +186,6 @@ module:
 They configure CMake with:
 
 - ``MINION_BUILD_BENCHMARK=ON``
-- ``MINION_BUILD_EXAMPLES=ON``
 - ``MINION_BUILD_PYTHON=ON``
 
 Because Python bindings are enabled by default in the helper scripts, Python
@@ -234,7 +233,6 @@ For a native C++ build without Python bindings:
      -DCMAKE_BUILD_TYPE=Release \
      -DMINION_BUILD_BENCHMARK=ON \
      -DMINION_BUILD_PYTHON=OFF \
-     -DMINION_BUILD_EXAMPLES=ON
    cmake --build build --config Release
 
 Install to a chosen prefix:
@@ -287,7 +285,6 @@ control over the CMake configuration, you can build MinionPy manually with
      -DCMAKE_BUILD_TYPE=Release \
      -DMINION_BUILD_BENCHMARK=ON \
      -DMINION_BUILD_PYTHON=ON \
-     -DMINION_BUILD_EXAMPLES=OFF
    cmake --build build --config Release
 
 The Python package code is in the ``minionpy`` directory. The compiled Python
@@ -358,12 +355,11 @@ a fallback:
      FetchContent_Declare(
        minion
        GIT_REPOSITORY https://github.com/khoirulmuzakka/Minion.git
-       GIT_TAG main
-       GIT_SHALLOW TRUE
+     GIT_TAG main
+     GIT_SHALLOW TRUE
      )
      set(MINION_BUILD_BENCHMARK ON CACHE BOOL "Build benchmark components" FORCE)
      set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
-     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
      FetchContent_MakeAvailable(minion)
    endif()
 

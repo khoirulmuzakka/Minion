@@ -7,8 +7,8 @@ namespace minion {
 
 /**
  * @class ACMAES
- * @brief Class implementing active CMA-ES with the libcmaes-style active
- *        covariance update, but without the restart logic.
+ * @brief Class implementing active CMA-ES with the active covariance update,
+ *        but without the restart logic.
  */
 class ACMAES : public CMAESBase {
 public:

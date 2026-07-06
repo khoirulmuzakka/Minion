@@ -3,10 +3,8 @@ Examples
 
 This page shows practical C++ usage patterns for Minion.
 
-Reference files in this repository:
+Reference file in this repository:
 
-- ``examples/main_minimizer.cpp``
-- ``examples/main_run_benchmark.cpp``
 - ``tests/test_minion.cpp``
 
 
@@ -245,4 +243,3 @@ Use a lambda and assign it to ``minion::MinionFunction``.
         }
         return out;
     };
-

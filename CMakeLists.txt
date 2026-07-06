@@ -28,7 +28,6 @@ option(MINION_BUILD_BENCHMARK "Build benchmark comparison components" ON)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
-option(MINION_FETCH_BBOB2009 "Fetch COCO when building the bbob2009 example" ON)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/src/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
@@ -121,17 +120,13 @@ if(MINION_BUILD_BENCHMARK)
 
     # --------------------- BBOB -------------------
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    if(MINION_FETCH_BBOB2009)
-        FetchContent_Declare(
-            coco
-            GIT_REPOSITORY https://github.com/numbbo/coco.git
-            GIT_TAG master
-            GIT_SHALLOW TRUE
-        )
-        FetchContent_MakeAvailable(coco)
-    else()
-        message(FATAL_ERROR "MINION_BUILD_BENCHMARK requires MINION_FETCH_BBOB2009=ON when no external COCO package is provided.")
-    endif()
+    FetchContent_Declare(
+        coco
+        GIT_REPOSITORY https://github.com/numbbo/coco.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(coco)
 
     set(MINION_COCO_COLORAMA_SHIM_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_coco_python_shim")
     file(MAKE_DIRECTORY "${MINION_COCO_COLORAMA_SHIM_DIR}")
@@ -271,6 +266,7 @@ if(MINION_BUILD_EXAMPLES)
     endif()
     unset(MINION_EXAMPLE_TARGETS)
 endif()
+
 
 # + -------------------------- +
 # | Optional Python extension  |

@@ -245,7 +245,7 @@ cec2011 = mpy.CEC2011Functions(function_number=1, dimension=6)
 bounds = cec2011.get_bounds()
 ```
 
-For a fuller C++ benchmark example and suite-specific bounds handling, see `examples/main_cec.cpp`.
+For a fuller C++ benchmark walk-through, see the native benchmark and test code in `minion/benchmark/benchmark.cpp` and `tests/test_minion.cpp`.
 
 ## 📖 Documentation
 For full usage instructions, API reference, and examples, visit the official documentation:

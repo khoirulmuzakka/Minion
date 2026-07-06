@@ -75,8 +75,8 @@ bool safeSelfAdjointEigenDecomposition(
  * @brief Shared helper for active CMA-ES covariance updates.
  *
  * This builds the positive and negative covariance contributions using the
- * libcmaes-style active CMA formulation, together with the cminus safeguard.
- * It is intentionally generic so other CMA variants can reuse the same logic.
+ * active CMA formulation, together with the cminus safeguard. It is
+ * intentionally generic so other CMA variants can reuse the same logic.
  */
 struct ActiveCMAUpdate {
     Eigen::MatrixXd cmu_plus;
