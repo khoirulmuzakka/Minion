@@ -214,16 +214,6 @@ std::string format_scientific(double value, int acc) {
     return oss.str();
 }
 
-struct CecLogContext {
-    minion::CECBase* func = nullptr;
-    MinEvLogger* logger = nullptr;
-};
-
-struct BbobLogContext {
-    minion::BBOB2009Problem* problem = nullptr;
-    MinEvLogger* logger = nullptr;
-};
-
 struct Job {
     int run_index = 0;
     size_t function_index = 0;
@@ -250,7 +240,7 @@ std::string format_progress_bar(
     constexpr size_t kBarWidth = 20;
     std::ostringstream oss;
     if (total == 0) {
-        oss << "Progress: [----------------------------------------] 0/0 (0%) ETA --:--:--";
+        oss << "[----------------------------------------] 0/0  0.0%  ETA --:--:--";
         return oss.str();
     }
 
@@ -285,28 +275,6 @@ std::string format_progress_bar(
         << "  ETA " << eta_text;
     return oss.str();
 }
-
-std::vector<double> objective_function_logged(const std::vector<std::vector<double>>& x, void* data) {
-    auto* ctx = static_cast<CecLogContext*>(data);
-    auto values = ctx->func->operator()(x);
-    if (ctx->logger) {
-        ctx->logger->update(values);
-    }
-    return values;
-}
-
-std::vector<double> objective_function_logged_bbob(const std::vector<std::vector<double>>& candidates, void* data) {
-    auto* ctx = static_cast<BbobLogContext*>(data);
-    auto values = ctx->problem->evaluateBatch(candidates);
-    if (ctx->logger) {
-        ctx->logger->update(values);
-    }
-    return values;
-}
-
-void callBack(minion::MinionResult* res) {
-    //std::cout << "Best fitness " << res->fun << "\n";
-};
 
 minion::Benchmark::Benchmark(minion::BenchmarkConfig config) : config_(std::move(config)) {}
 
@@ -378,9 +346,8 @@ double minimize_cec_functions(int function_number,
                               int year = 2022,
                               std::string algo = "ARRDE",
                               int seed = -1,
-                              MinEvLogger* logger = nullptr,
-                              std::ostream* out = &std::cout) {
-    minion::CECBase* cecfunc;
+                              MinEvLogger* logger = nullptr) {
+    std::unique_ptr<minion::CECBase> cecfunc;
     std::vector<std::pair<double, double>> bounds;
     int effective_dimension = get_effective_dimension(function_number, dimension, year);
     if (year==2019) { 
@@ -396,12 +363,12 @@ double minimize_cec_functions(int function_number,
         bounds = problem.bounds;
     } else bounds = std::vector<std::pair<double, double>>(effective_dimension, std::make_pair(-100.0, 100.0));
 
-    if (year==2020) cecfunc = new minion::CEC2020Functions(function_number, effective_dimension);
-    else if (year==2022) cecfunc = new minion::CEC2022Functions(function_number, effective_dimension);
-    else if (year==2017) cecfunc = new minion::CEC2017Functions(function_number, effective_dimension);
-    else if (year==2019) cecfunc = new minion::CEC2019Functions(function_number, effective_dimension);
-    else if (year==2014) cecfunc = new minion::CEC2014Functions(function_number, effective_dimension);
-    else if (year==2011) cecfunc = new minion::CEC2011Functions(function_number, effective_dimension);
+    if (year==2020) cecfunc = std::make_unique<minion::CEC2020Functions>(function_number, effective_dimension);
+    else if (year==2022) cecfunc = std::make_unique<minion::CEC2022Functions>(function_number, effective_dimension);
+    else if (year==2017) cecfunc = std::make_unique<minion::CEC2017Functions>(function_number, effective_dimension);
+    else if (year==2019) cecfunc = std::make_unique<minion::CEC2019Functions>(function_number, effective_dimension);
+    else if (year==2014) cecfunc = std::make_unique<minion::CEC2014Functions>(function_number, effective_dimension);
+    else if (year==2011) cecfunc = std::make_unique<minion::CEC2011Functions>(function_number, effective_dimension);
     else throw std::runtime_error("Invalid year.");
 
     int popsize=population_size;
@@ -416,32 +383,29 @@ double minimize_cec_functions(int function_number,
         x0 = {x00};
     };
 
-    CecLogContext ctx{cecfunc, logger};
-    minion::Minimizer optimizer(logger ? objective_function_logged : objective_function,
+    auto objective = [func = cecfunc.get(), logger](const std::vector<std::vector<double>>& x, void*) {
+        auto values = (*func)(x);
+        if (logger) {
+            logger->update(values);
+        }
+        return values;
+    };
+
+    minion::Minimizer optimizer(objective,
                                 bounds,
                                 x0,
-                                logger ? static_cast<void*>(&ctx) : static_cast<void*>(cecfunc),
-                                callBack,
+                                nullptr,
+                                nullptr,
                                 algo,
                                 max_evals,
                                 seed,
                                 settings);
-    // Optimize and get the result
+
     minion::MinionResult result = optimizer();
-    double ret = result.fun;
-
-    // Output the results
-    if (false) {
-        (*out) << "Optimization Results for Function " << function_number << ":\n";
-        (*out) << "\tAlgo : "<< algo << ". Best Value: " << result.fun << "\n";
-        (*out) << "\tReal Ncalls : " << cecfunc->Ncalls << "\n";
-    }
-
-    delete cecfunc;
     if (logger) {
         logger->finalize();
     }
-    return ret;
+    return result.fun;
 }
 
 double minimize_bbob_functions(minion::BBOB2009Problem& problem,
@@ -449,8 +413,7 @@ double minimize_bbob_functions(minion::BBOB2009Problem& problem,
                                int max_evals,
                                std::string algo = "ARRDE",
                                int seed = -1,
-                               MinEvLogger* logger = nullptr,
-                               std::ostream* out = &std::cout) {
+                               MinEvLogger* logger = nullptr) {
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
     settings["population_size"] = population_size;
     settings["rel_initial_step"] = 0.3;
@@ -459,24 +422,19 @@ double minimize_bbob_functions(minion::BBOB2009Problem& problem,
     const auto& bounds = problem.bounds();
     const std::vector<std::vector<double>> x0 = {problem.initialSolution()};
 
-    BbobLogContext ctx{&problem, logger};
-    minion::MinionFunction objective;
-    void* objective_data = nullptr;
-    if (logger) {
-        objective = objective_function_logged_bbob;
-        objective_data = &ctx;
-    } else {
-        objective = [&problem](const std::vector<std::vector<double>>& candidates, void*) {
-            return problem.evaluateBatch(candidates);
-        };
-        objective_data = nullptr;
-    }
+    auto objective = [&problem, logger](const std::vector<std::vector<double>>& candidates, void*) {
+        auto values = problem.evaluateBatch(candidates);
+        if (logger) {
+            logger->update(values);
+        }
+        return values;
+    };
 
     minion::Minimizer optimizer(
         objective,
         bounds,
         x0,
-        objective_data,
+        nullptr,
         nullptr,
         algo,
         static_cast<size_t>(max_evals),
@@ -484,16 +442,10 @@ double minimize_bbob_functions(minion::BBOB2009Problem& problem,
         settings);
 
     const minion::MinionResult result = optimizer.optimize();
-    const double ret = result.fun;
-
-    if (false) {
-        (*out) << "\tAlgo : " << algo << ". Best Value: " << result.fun << "\n";
-    }
-
     if (logger) {
         logger->finalize();
     }
-    return ret;
+    return result.fun;
 }
 
 /**
@@ -627,6 +579,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                 const Job job = jobs[job_index];
                 std::unique_ptr<MinEvLogger> logger;
                 double fval = std::numeric_limits<double>::infinity();
+                bool succeeded = false;
 
                 try {
                     if (mode == minion::BenchmarkMode::Cec) {
@@ -645,8 +598,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                             year,
                             algo,
                             job.run_index,
-                            logger ? logger.get() : nullptr,
-                            nullptr);
+                            logger ? logger.get() : nullptr);
 
                         if (log_min_ev && logger) {
                             auto it = min_ev_logs.find(job.function_number);
@@ -677,8 +629,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                             Nmaxevals,
                             algo,
                             job.run_index,
-                            logger ? logger.get() : nullptr,
-                            nullptr);
+                            logger ? logger.get() : nullptr);
 
                         if (log_min_ev && logger) {
                             auto it = min_ev_logs.find(job.function_number);
@@ -692,11 +643,11 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                     }
 
                     results[static_cast<size_t>(job.run_index)][job.function_index] = fval;
+                    succeeded = true;
                 } catch (const std::exception& e) {
                     std::lock_guard<std::mutex> lock(coutMutex);
                     std::cerr << "Error optimizing function F" << job.function_number
                               << " in run " << (job.run_index + 1) << ": " << e.what() << std::endl;
-                    std::cout << "========================\n";
                 }
 
                 const size_t done = completedJobs.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -705,7 +656,8 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                     std::cout << format_progress_bar(done, jobs.size(), progress_start)
                               << "  Best F" << std::setfill('0') << std::setw(static_cast<int>(function_label_width))
                               << std::right << job.function_number << " : "
-                              << std::setfill(' ') << format_scientific(fval, acc) << std::endl;
+                              << std::setfill(' ') << (succeeded ? format_scientific(fval, acc) : std::string("failed"))
+                              << std::endl;
                 }
             }
         });
