@@ -1,6 +1,8 @@
 from .algorithms import *
 from .test_functions import *
 from .cec import *
+from .benchmark import *
+from .bbob import *
 from .parallel import *
 from .cec import CEC2011Functions as CEC2011
 

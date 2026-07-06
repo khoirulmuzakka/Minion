@@ -82,6 +82,19 @@ if(NOT Eigen3_FOUND)
     )
 endif()
 
+# Helper to copy runtime DLLs next to Windows binaries/modules so they can be
+# loaded without requiring manual PATH edits.
+function(minion_copy_runtime_deps target_name)
+    if(WIN32)
+        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:${target_name}>
+                $<TARGET_FILE_DIR:${target_name}>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endfunction()
+
 # + ----------------------------------------- +
 # | Compiled cec and bbob           |
 # + ----------------------------------------- +
@@ -162,7 +175,7 @@ Style = _Ansi()
     endif()
 
     add_library(coco STATIC "${MINION_COCO_C_DIR}/coco.c")
-    target_include_directories(coco PUBLIC "${MINION_COCO_C_DIR}")
+    target_include_directories(coco PRIVATE "${MINION_COCO_C_DIR}")
     target_compile_features(coco PUBLIC c_std_99)
     if(UNIX AND NOT APPLE)
         target_link_libraries(coco PUBLIC m)
@@ -174,6 +187,7 @@ Style = _Ansi()
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009>
         $<INSTALL_INTERFACE:include>
     )
+    target_include_directories(bbob2009 PRIVATE "${MINION_COCO_C_DIR}")
     target_link_libraries(bbob2009 PUBLIC coco)
     set_target_properties(bbob2009 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -199,22 +213,31 @@ if(WIN32)
     set_target_properties(minion PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
+if(MINION_BUILD_BENCHMARK)
+    add_library(minion_benchmark STATIC minion/benchmark/benchmark.cpp)
+    target_include_directories(minion_benchmark PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark>
+        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/minion>
+    )
+    target_include_directories(minion_benchmark PRIVATE
+        "${MINION_COCO_C_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009"
+    )
+    if(WIN32)
+        target_compile_definitions(minion_benchmark PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+    endif()
+    target_link_libraries(minion_benchmark PUBLIC Eigen3::Eigen)
+    set_target_properties(minion_benchmark PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 
 # + -------------------------- +
 # | Optional C++ examples      |
 # + -------------------------- +
 if(MINION_BUILD_EXAMPLES)
-    function(minion_copy_runtime_deps target_name)
-        if(WIN32)
-            add_custom_command(TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    $<TARGET_RUNTIME_DLLS:${target_name}>
-                    $<TARGET_FILE_DIR:${target_name}>
-                COMMAND_EXPAND_LISTS
-            )
-        endif()
-    endfunction()
-
     function(minion_add_example target_name source_file)
         add_executable(${target_name} ${source_file})
         if(ARGC GREATER 2)
@@ -231,7 +254,7 @@ if(MINION_BUILD_EXAMPLES)
         minion_add_example(main_complexity examples/main_complexity.cpp minion minion_cec)
         list(APPEND MINION_EXAMPLE_TARGETS main_complexity)
 
-        minion_add_example(run_benchmark examples/main_run_benchmark.cpp minion minion_cec bbob2009)
+        minion_add_example(run_benchmark examples/main_run_benchmark.cpp minion_benchmark minion minion_cec bbob2009)
         list(APPEND MINION_EXAMPLE_TARGETS run_benchmark)
     endif()
 
@@ -271,11 +294,17 @@ if(MINION_BUILD_PYTHON)
     )
 
     pybind11_add_module(minionpycpp ${MINION_PYBIND_SOURCES})
-    target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen ${CMAKE_DL_LIBS})
+    target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen ${CMAKE_DL_LIBS} minion_benchmark)
+    target_compile_definitions(minionpycpp PRIVATE MINION_BENCHMARK_LIBRARY)
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/include
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
+        ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark
     )
+    if(TARGET bbob2009)
+        target_include_directories(minionpycpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009)
+        target_link_libraries(minionpycpp PRIVATE bbob2009)
+    endif()
     if(WIN32)
         target_compile_definitions(minionpycpp PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
     endif()
@@ -328,6 +357,7 @@ else()
     endif()
     if(MINION_BUILD_BENCHMARK)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/ DESTINATION cec_input_data)
     endif()
 

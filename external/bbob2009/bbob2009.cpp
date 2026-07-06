@@ -1,5 +1,7 @@
 #include "bbob2009.h"
 
+#include <coco.h>
+
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -11,14 +13,17 @@ namespace minion {
 namespace {
 
 bool is_supported_dimension(int dimension) {
-    return dimension == 2 || dimension == 3 || dimension == 5 || dimension == 10 || dimension == 20 || dimension == 40;
+    return dimension == 2 || dimension == 5 || dimension == 10 || dimension == 20 || dimension == 40;
 }
 
 }  // namespace
 
 BBOB2009Problem::BBOB2009Problem(int function_number, int dimension, int year) {
     if (!is_supported_dimension(dimension)) {
-        throw std::runtime_error("BBOB2009 supports only dimensions 2, 3, 5, 10, 20, and 40");
+        throw std::runtime_error("BBOB2009 supports only dimensions 2, 5, 10, 20, and 40");
+    }
+    if (year != 2009) {
+        throw std::runtime_error("BBOB2009 supports only year 2009");
     }
 
     const std::string suite_instance = "year: " + std::to_string(year);

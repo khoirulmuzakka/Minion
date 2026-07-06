@@ -1,18 +1,21 @@
 #ifndef BBOB2009_H
 #define BBOB2009_H
 
-#include <coco.h>
-
 #include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
 
+struct coco_suite_s;
+struct coco_problem_s;
+using coco_suite_t = coco_suite_s;
+using coco_problem_t = coco_problem_s;
+
 namespace minion {
 
 class BBOB2009Problem {
 public:
-    BBOB2009Problem(int function_number, int dimension, int year = 2018);
+    BBOB2009Problem(int function_number, int dimension, int year = 2009);
     ~BBOB2009Problem();
 
     BBOB2009Problem(const BBOB2009Problem&) = delete;

@@ -5,6 +5,8 @@
 #include <pybind11/complex.h>
 #include "minion.h"
 #include "minion_cec.h"
+#include "bbob2009.h"
+#include "benchmark.h"
 #include <exception>
 #include <pybind11/stl_bind.h>
 #include <any>
@@ -503,6 +505,51 @@ PYBIND11_MODULE(minionpycpp, m) {
     py::class_<CEC2011Functions>(m, "CEC2011Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
         .def("__call__", &CEC2011Functions::operator(), py::call_guard<py::gil_scoped_release>());
+
+    py::class_<BBOB2009Problem>(m, "BBOB2009Problem")
+        .def(py::init<int, int, int>(), py::arg("function_number"), py::arg("dimension"), py::arg("year") = 2009)
+        .def_property_readonly("dimension", &BBOB2009Problem::dimension)
+        .def_property_readonly("bounds", &BBOB2009Problem::bounds)
+        .def_property_readonly("initial_solution", &BBOB2009Problem::initialSolution)
+        .def_property_readonly("best_value", &BBOB2009Problem::bestValue)
+        .def_property_readonly("id", &BBOB2009Problem::id)
+        .def_property_readonly("name", &BBOB2009Problem::name)
+        .def("__call__", &BBOB2009Problem::evaluateBatch, py::call_guard<py::gil_scoped_release>())
+        .def("evaluate", &BBOB2009Problem::evaluate, py::call_guard<py::gil_scoped_release>())
+        .def("evaluate_batch", &BBOB2009Problem::evaluateBatch, py::call_guard<py::gil_scoped_release>())
+        .def("recommend_solution", &BBOB2009Problem::recommendSolution, py::call_guard<py::gil_scoped_release>());
+
+    py::enum_<BenchmarkMode>(m, "BenchmarkMode")
+        .value("Cec", BenchmarkMode::Cec)
+        .value("Bbob", BenchmarkMode::Bbob)
+        .export_values();
+
+    py::class_<BenchmarkConfig>(m, "BenchmarkConfig")
+        .def(py::init<>())
+        .def_readwrite("mode", &BenchmarkConfig::mode)
+        .def_readwrite("num_runs", &BenchmarkConfig::num_runs)
+        .def_readwrite("dimension", &BenchmarkConfig::dimension)
+        .def_readwrite("algo", &BenchmarkConfig::algo)
+        .def_readwrite("population_size", &BenchmarkConfig::population_size)
+        .def_readwrite("year", &BenchmarkConfig::year)
+        .def_readwrite("max_evals", &BenchmarkConfig::max_evals)
+        .def_readwrite("nthreads", &BenchmarkConfig::nthreads)
+        .def_readwrite("acc", &BenchmarkConfig::acc)
+        .def_readwrite("dump_results", &BenchmarkConfig::dump_results)
+        .def_readwrite("log_min_ev", &BenchmarkConfig::log_min_ev)
+        .def_readwrite("results_folder", &BenchmarkConfig::results_folder);
+
+    py::class_<BenchmarkResult>(m, "BenchmarkResult")
+        .def(py::init<>())
+        .def_readwrite("results", &BenchmarkResult::results)
+        .def_readwrite("results_file", &BenchmarkResult::results_file);
+
+    py::class_<Benchmark>(m, "Benchmark")
+        .def(py::init<BenchmarkConfig>(), py::arg("config"))
+        .def("run", &Benchmark::run, py::call_guard<py::gil_scoped_release>())
+        .def_property_readonly("config", &Benchmark::config);
+
+    m.def("run_benchmark", &run_benchmark, py::arg("config"), py::call_guard<py::gil_scoped_release>());
 
     py::class_<CEC2014Functions>(m, "CEC2014Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
