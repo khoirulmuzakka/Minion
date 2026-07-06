@@ -120,6 +120,8 @@ if(MINION_BUILD_BENCHMARK)
 
     # --------------------- BBOB -------------------
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    set(MINION_COCO_COLORAMA_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/coco_colorama_shim")
+
     FetchContent_Declare(
         coco
         GIT_REPOSITORY https://github.com/numbbo/coco.git
@@ -128,21 +130,10 @@ if(MINION_BUILD_BENCHMARK)
     )
     FetchContent_MakeAvailable(coco)
 
-    set(MINION_COCO_COLORAMA_SHIM_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_coco_python_shim")
-    file(MAKE_DIRECTORY "${MINION_COCO_COLORAMA_SHIM_DIR}")
-    file(WRITE "${MINION_COCO_COLORAMA_SHIM_DIR}/colorama.py" "
-def init(*args, **kwargs):
-    return None
-
-class _Ansi:
-    def __getattr__(self, name):
-        return ''
-
-Fore = _Ansi()
-Style = _Ansi()
-")
-
     set(MINION_COCO_C_DIR "${coco_SOURCE_DIR}/code-experiments/build/c")
+    set(MINION_COCO_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_coco_include")
+    file(MAKE_DIRECTORY "${MINION_COCO_INCLUDE_DIR}")
+    configure_file("${coco_SOURCE_DIR}/code-experiments/src/coco.h" "${MINION_COCO_INCLUDE_DIR}/coco.h" COPYONLY)
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E env
             PYTHONPATH=${MINION_COCO_COLORAMA_SHIM_DIR}
@@ -182,7 +173,7 @@ Style = _Ansi()
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009>
         $<INSTALL_INTERFACE:include>
     )
-    target_include_directories(bbob2009 PRIVATE "${MINION_COCO_C_DIR}")
+    target_include_directories(bbob2009 PRIVATE "${MINION_COCO_INCLUDE_DIR}")
     target_link_libraries(bbob2009 PUBLIC coco)
     set_target_properties(bbob2009 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -218,7 +209,6 @@ if(MINION_BUILD_BENCHMARK)
         $<INSTALL_INTERFACE:include/minion>
     )
     target_include_directories(minion_benchmark PRIVATE
-        "${MINION_COCO_C_DIR}"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009"
     )
     if(WIN32)
