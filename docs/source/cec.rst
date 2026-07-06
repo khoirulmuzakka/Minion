@@ -149,7 +149,7 @@ For ``CEC2011``, MinionPy exposes the suite-defined bounds directly:
     cec2011 = mpy.CEC2011Functions(function_number=1, dimension=6)
     bounds = cec2011.get_bounds()
 
-For the full C++ per-problem bound setup, see ``examples/main_cec.cpp`` or ``examples/main_cec_multi.cpp`` in the repository.
+For the full C++ per-problem bound setup, see ``examples/main_run_benchmark.cpp`` in the repository.
 
 
 Further Examples
@@ -157,6 +157,5 @@ Further Examples
 
 For broader benchmark examples and sweeps, see:
 
-- ``examples/main_cec.cpp``
-- ``examples/main_cec_multi.cpp``
+- ``examples/main_run_benchmark.cpp``
 - ``tests/test_minionpy.py``

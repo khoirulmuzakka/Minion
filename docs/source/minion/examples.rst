@@ -6,7 +6,7 @@ This page shows practical C++ usage patterns for Minion.
 Reference files in this repository:
 
 - ``examples/main_minimizer.cpp``
-- ``examples/main_cec.cpp``
+- ``examples/main_run_benchmark.cpp``
 - ``tests/test_minion.cpp``
 
 

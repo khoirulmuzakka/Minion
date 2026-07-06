@@ -62,7 +62,7 @@ The repository includes a native integration test target in ``tests/test_minion.
 
 .. code-block:: shell
 
-   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_CEC=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_TESTS=ON
+   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_BENCHMARK=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_TESTS=ON
    cmake --build build --target minion_test --config Release
 
 Run the test binary directly if you want to see the full per-algorithm output:

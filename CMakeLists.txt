@@ -24,13 +24,10 @@ if (DEFINED SKBUILD AND SKBUILD)
     set(_default_python ON)
 endif()
 
-option(MINION_BUILD_CEC "Build compiled CEC library" OFF)
+option(MINION_BUILD_BENCHMARK "Build benchmark comparison components" ON)
 option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
-option(MINION_BUILD_LIBCMAES "Build libcmaes comparison example" ON)
-option(MINION_FETCH_LIBCMAES "Fetch libcmaes when building the libcmaes example" ON)
-option(MINION_BUILD_BBOB2009 "Build bbob2009 comparison example" ON)
 option(MINION_FETCH_BBOB2009 "Fetch COCO when building the bbob2009 example" ON)
 
 file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/src/*.cpp)
@@ -85,57 +82,32 @@ if(NOT Eigen3_FOUND)
     )
 endif()
 
-if(MINION_BUILD_LIBCMAES AND NOT Eigen3_FOUND)
-    # libcmaes expects a real Eigen3 package, so provide a tiny config shim
-    # when we only have a fetched source tree.
-    set(MINION_EIGEN3_PACKAGE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_eigen3_package")
-    file(MAKE_DIRECTORY "${MINION_EIGEN3_PACKAGE_DIR}")
-    file(WRITE "${MINION_EIGEN3_PACKAGE_DIR}/Eigen3Config.cmake" "
-if(NOT TARGET Eigen3::Eigen)\n
-    add_library(Eigen3::Eigen INTERFACE IMPORTED)\n
-    set_target_properties(Eigen3::Eigen PROPERTIES\n
-        INTERFACE_INCLUDE_DIRECTORIES \"${eigen_SOURCE_DIR}\")\n
-endif()\n
-set(Eigen3_FOUND TRUE)\n
-set(Eigen3_VERSION 3.4.0)\n")
-    file(WRITE "${MINION_EIGEN3_PACKAGE_DIR}/Eigen3ConfigVersion.cmake" "
-set(PACKAGE_VERSION \"3.4.0\")\n
-if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)\n
-    set(PACKAGE_VERSION_COMPATIBLE FALSE)\n
-else()\n
-    set(PACKAGE_VERSION_COMPATIBLE TRUE)\n
-    if(PACKAGE_VERSION VERSION_EQUAL PACKAGE_FIND_VERSION)\n
-        set(PACKAGE_VERSION_EXACT TRUE)\n
-    endif()\n
-endif()\n")
-    set(Eigen3_DIR "${MINION_EIGEN3_PACKAGE_DIR}" CACHE PATH "Synthetic Eigen3 package dir" FORCE)
-endif()
-
-if(MINION_BUILD_LIBCMAES)
-    set(LIBCMAES_BUILD_SHARED_LIBS ON CACHE BOOL "Build libcmaes shared library" FORCE)
-    set(LIBCMAES_BUILD_PYTHON OFF CACHE BOOL "Build libcmaes Python bindings" FORCE)
-    set(LIBCMAES_BUILD_TESTS OFF CACHE BOOL "Build libcmaes tests" FORCE)
-    set(LIBCMAES_BUILD_EXAMPLES OFF CACHE BOOL "Build libcmaes examples" FORCE)
-    set(LIBCMAES_USE_OPENMP ON CACHE BOOL "Use OpenMP in libcmaes" FORCE)
-    set(LIBCMAES_ENABLE_SURROG ON CACHE BOOL "Enable libcmaes surrogates" FORCE)
-
-    if(MINION_FETCH_LIBCMAES)
-        FetchContent_Declare(
-            libcmaes
-            GIT_REPOSITORY https://github.com/CMA-ES/libcmaes.git
-            # Pin to a real upstream release tag so FetchContent can resolve it reliably.
-            GIT_TAG v0.10.2
-            GIT_SHALLOW TRUE
-        )
-        FetchContent_MakeAvailable(libcmaes)
-    else()
-        message(FATAL_ERROR "MINION_BUILD_LIBCMAES requires MINION_FETCH_LIBCMAES=ON when no external libcmaes package is provided.")
+# + ----------------------------------------- +
+# | Compiled cec and bbob           |
+# + ----------------------------------------- +
+if(MINION_BUILD_BENCHMARK)
+    # --------------------- CEC -------------------
+    add_library(minion_cec SHARED ${MINION_CEC_SOURCE_FILES})
+    target_include_directories(minion_cec PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
+        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/minion>
+    )
+    if(WIN32)
+        target_compile_definitions(minion_cec PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
     endif()
-endif()
+    target_link_libraries(minion_cec PUBLIC Eigen3::Eigen)
+    set_target_properties(minion_cec PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    if(WIN32)
+        set_target_properties(minion_cec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    endif()
 
-if(MINION_BUILD_BBOB2009)
+    # Keep CEC input data available next to build-tree binaries/libraries.
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data DESTINATION ${CMAKE_BINARY_DIR})
+
+    # --------------------- BBOB -------------------
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
     if(MINION_FETCH_BBOB2009)
         FetchContent_Declare(
             coco
@@ -145,7 +117,7 @@ if(MINION_BUILD_BBOB2009)
         )
         FetchContent_MakeAvailable(coco)
     else()
-        message(FATAL_ERROR "MINION_BUILD_BBOB2009 requires MINION_FETCH_BBOB2009=ON when no external COCO package is provided.")
+        message(FATAL_ERROR "MINION_BUILD_BENCHMARK requires MINION_FETCH_BBOB2009=ON when no external COCO package is provided.")
     endif()
 
     set(MINION_COCO_COLORAMA_SHIM_DIR "${CMAKE_CURRENT_BINARY_DIR}/_minion_coco_python_shim")
@@ -196,6 +168,14 @@ Style = _Ansi()
         target_link_libraries(coco PUBLIC m)
     endif()
     set_target_properties(coco PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    add_library(bbob2009 STATIC external/bbob2009/bbob2009.cpp)
+    target_include_directories(bbob2009 PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009>
+        $<INSTALL_INTERFACE:include>
+    )
+    target_link_libraries(bbob2009 PUBLIC coco)
+    set_target_properties(bbob2009 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # + ----------------------------------------- +
@@ -219,26 +199,6 @@ if(WIN32)
     set_target_properties(minion PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-if(MINION_BUILD_CEC)
-    add_library(minion_cec SHARED ${MINION_CEC_SOURCE_FILES})
-    target_include_directories(minion_cec PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
-        $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:include/minion>
-    )
-    if(WIN32)
-        target_compile_definitions(minion_cec PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
-    endif()
-    target_link_libraries(minion_cec PUBLIC Eigen3::Eigen)
-    set_target_properties(minion_cec PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    if(WIN32)
-        set_target_properties(minion_cec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    endif()
-
-    # Keep CEC input data available next to build-tree binaries/libraries.
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data DESTINATION ${CMAKE_BINARY_DIR})
-endif()
 
 # + -------------------------- +
 # | Optional C++ examples      |
@@ -255,88 +215,38 @@ if(MINION_BUILD_EXAMPLES)
         endif()
     endfunction()
 
-    add_executable(main_mini examples/main_minimizer.cpp)
-    target_link_libraries(main_mini PRIVATE minion)
-    minion_copy_runtime_deps(main_mini)
+    function(minion_add_example target_name source_file)
+        add_executable(${target_name} ${source_file})
+        if(ARGC GREATER 2)
+            target_link_libraries(${target_name} PRIVATE ${ARGN})
+        endif()
+        minion_copy_runtime_deps(${target_name})
+    endfunction()
 
-    if(MINION_BUILD_CEC)
-        add_executable(main_complexity examples/main_complexity.cpp)
-        target_link_libraries(main_complexity PRIVATE minion minion_cec)
-        minion_copy_runtime_deps(main_complexity)
+    set(MINION_EXAMPLE_TARGETS)
+    minion_add_example(main_mini examples/main_minimizer.cpp minion)
+    list(APPEND MINION_EXAMPLE_TARGETS main_mini)
 
-        add_executable(main_cec examples/main_cec.cpp)
-        target_link_libraries(main_cec PRIVATE minion minion_cec)
-        minion_copy_runtime_deps(main_cec)
+    if(MINION_BUILD_BENCHMARK)
+        minion_add_example(main_complexity examples/main_complexity.cpp minion minion_cec)
+        list(APPEND MINION_EXAMPLE_TARGETS main_complexity)
 
-        add_executable(main_cec_2 examples/main_cec_2.cpp)
-        target_link_libraries(main_cec_2 PRIVATE minion minion_cec)
-        minion_copy_runtime_deps(main_cec_2)
-
-        add_executable(main_cec_multi examples/main_cec_multi.cpp)
-        target_link_libraries(main_cec_multi PRIVATE minion minion_cec)
-        minion_copy_runtime_deps(main_cec_multi)
+        minion_add_example(run_benchmark examples/main_run_benchmark.cpp minion minion_cec bbob2009)
+        list(APPEND MINION_EXAMPLE_TARGETS run_benchmark)
     endif()
 
-    if(MINION_BUILD_LIBCMAES)
-        add_executable(main_cec_multi_libcmaes examples/main_cec_multi_libcmaes.cpp)
-        target_link_libraries(main_cec_multi_libcmaes PRIVATE minion minion_cec libcmaes::cmaes)
-        minion_copy_runtime_deps(main_cec_multi_libcmaes)
-    endif()
-
-    if(MINION_BUILD_BBOB2009)
-        add_library(bbob2009 STATIC external/bbob2009/bbob2009.cpp)
-        target_include_directories(bbob2009 PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009>
-            $<INSTALL_INTERFACE:include>
-        )
-        target_link_libraries(bbob2009 PUBLIC coco)
-        set_target_properties(bbob2009 PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-        add_executable(main_bbob_multi examples/main_bbob_multi.cpp)
-        target_link_libraries(main_bbob_multi PRIVATE minion bbob2009)
-        minion_copy_runtime_deps(main_bbob_multi)
-
-        if(MINION_BUILD_LIBCMAES)
-            add_executable(main_bbob_multi_libcmaes examples/main_bbob_multi_libcmaes.cpp)
-            target_link_libraries(main_bbob_multi_libcmaes PRIVATE minion bbob2009 libcmaes::cmaes)
-            minion_copy_runtime_deps(main_bbob_multi_libcmaes)
+    function(minion_set_example_output_dir output_dir)
+        if(ARGC GREATER 1)
+            set_target_properties(${ARGN} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${output_dir}")
         endif()
-    endif()
+    endfunction()
 
-    if (MSVC)
-        set(_minion_example_targets main_mini)
-        if(MINION_BUILD_CEC)
-            list(APPEND _minion_example_targets main_complexity main_cec main_cec_2 main_cec_multi)
-            if(MINION_BUILD_LIBCMAES)
-                list(APPEND _minion_example_targets main_cec_multi_libcmaes)
-            endif()
-        endif()
-        if(MINION_BUILD_BBOB2009)
-            list(APPEND _minion_example_targets main_bbob_multi)
-            if(MINION_BUILD_LIBCMAES)
-                list(APPEND _minion_example_targets main_bbob_multi_libcmaes)
-            endif()
-        endif()
-        set_target_properties(${_minion_example_targets}
-            PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<0:>
-        )
-        unset(_minion_example_targets)
+    if(MSVC)
+        minion_set_example_output_dir("${CMAKE_SOURCE_DIR}/bin/$<0:>" ${MINION_EXAMPLE_TARGETS})
     else()
-        set(_minion_example_targets main_mini)
-        if(MINION_BUILD_CEC)
-            list(APPEND _minion_example_targets main_complexity main_cec main_cec_2 main_cec_multi)
-            if(MINION_BUILD_LIBCMAES)
-                list(APPEND _minion_example_targets main_cec_multi_libcmaes)
-            endif()
-        endif()
-        if(MINION_BUILD_BBOB2009)
-            list(APPEND _minion_example_targets main_bbob_multi)
-        endif()
-        set_target_properties(${_minion_example_targets}
-            PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
-        )
-        unset(_minion_example_targets)
+        minion_set_example_output_dir("${CMAKE_SOURCE_DIR}/bin" ${MINION_EXAMPLE_TARGETS})
     endif()
+    unset(MINION_EXAMPLE_TARGETS)
 endif()
 
 # + -------------------------- +
@@ -382,25 +292,6 @@ if(MINION_BUILD_PYTHON)
         )
     endif()
 
-    if(MINION_BUILD_LIBCMAES)
-        pybind11_add_module(libcmaes_bridge external/libcmaes/python/libcmaes_bridge.cpp)
-        target_link_libraries(libcmaes_bridge PRIVATE libcmaes::cmaes)
-        if(WIN32)
-            target_compile_definitions(libcmaes_bridge PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
-        endif()
-
-        if (MSVC)
-            set_target_properties(libcmaes_bridge PROPERTIES
-                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
-                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy/$<0:>
-            )
-        else()
-            set_target_properties(libcmaes_bridge PROPERTIES
-                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
-                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy
-            )
-        endif()
-    endif()
 endif()
 
 # + -------------------------- +
@@ -421,7 +312,7 @@ if(DEFINED SKBUILD AND SKBUILD)
             RUNTIME DESTINATION minionpy
         )
     endif()
-    if(MINION_BUILD_CEC)
+    if(MINION_BUILD_BENCHMARK)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/
             DESTINATION minionpy/cec_input_data
         )
@@ -429,13 +320,13 @@ if(DEFINED SKBUILD AND SKBUILD)
 else()
     include(CMakePackageConfigHelpers)
 
-    if(MINION_BUILD_CEC)
+    if(MINION_BUILD_BENCHMARK)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
     else()
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion
             FILES_MATCHING PATTERN "*.h" PATTERN "minion_cec.h" EXCLUDE)
     endif()
-    if(MINION_BUILD_CEC)
+    if(MINION_BUILD_BENCHMARK)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/ DESTINATION cec_input_data)
     endif()

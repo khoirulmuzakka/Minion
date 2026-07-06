@@ -3,6 +3,8 @@
 
 #include "cec.h"
 #include <Eigen/Dense>
+#include <utility>
+#include <vector>
 
 namespace minion {
 
@@ -22,6 +24,11 @@ public:
 };
 
 namespace CEC2011 {
+    struct ProblemDefinition {
+        int dimension;
+        std::vector<std::pair<double, double>> bounds;
+    };
+
     /**
      * @brief Evaluate CEC2011 test functions.
      * @param x Flattened decision vectors (mx consecutive blocks of nx values).
@@ -31,6 +38,23 @@ namespace CEC2011 {
      * @param func_num Problem number (1-20).
      */
     void evaluate(double *x, double *f, int nx, int mx, int func_num);
+
+    /**
+     * @brief Return the special dimension and bounds for a CEC2011 problem.
+     * @param function_number Problem number (1-22).
+     * @return Problem definition including the required dimension and bounds.
+     */
+    const ProblemDefinition& problemDefinition(int function_number);
+
+    /**
+     * @brief Return the required dimension for a CEC2011 problem.
+     */
+    int problemDimension(int function_number);
+
+    /**
+     * @brief Return the required bounds for a CEC2011 problem.
+     */
+    const std::vector<std::pair<double, double>>& problemBounds(int function_number);
 }
 
 } // namespace minion

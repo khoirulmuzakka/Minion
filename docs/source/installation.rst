@@ -185,7 +185,7 @@ module:
 
 They configure CMake with:
 
-- ``MINION_BUILD_CEC=ON``
+- ``MINION_BUILD_BENCHMARK=ON``
 - ``MINION_BUILD_EXAMPLES=ON``
 - ``MINION_BUILD_PYTHON=ON``
 
@@ -232,7 +232,7 @@ For a native C++ build without Python bindings:
 
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
-     -DMINION_BUILD_CEC=ON \
+     -DMINION_BUILD_BENCHMARK=ON \
      -DMINION_BUILD_PYTHON=OFF \
      -DMINION_BUILD_EXAMPLES=ON
    cmake --build build --config Release
@@ -285,7 +285,7 @@ control over the CMake configuration, you can build MinionPy manually with
 
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
-     -DMINION_BUILD_CEC=ON \
+     -DMINION_BUILD_BENCHMARK=ON \
      -DMINION_BUILD_PYTHON=ON \
      -DMINION_BUILD_EXAMPLES=OFF
    cmake --build build --config Release
@@ -321,7 +321,7 @@ pages. The Sphinx configuration imports ``minionpy``, so build MinionPy first:
 
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
-     -DMINION_BUILD_CEC=ON \
+     -DMINION_BUILD_BENCHMARK=ON \
      -DMINION_BUILD_PYTHON=ON
    cmake --build build --config Release
    doxygen Doxyfile
@@ -361,7 +361,7 @@ a fallback:
        GIT_TAG main
        GIT_SHALLOW TRUE
      )
-     set(MINION_BUILD_CEC ON CACHE BOOL "Build CEC library" FORCE)
+     set(MINION_BUILD_BENCHMARK ON CACHE BOOL "Build benchmark components" FORCE)
      set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
      set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
      FetchContent_MakeAvailable(minion)
