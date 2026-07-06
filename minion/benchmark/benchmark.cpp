@@ -122,11 +122,6 @@ std::filesystem::path validate_results_folder(const std::string& folder) {
         if (!std::filesystem::is_directory(path, ec)) {
             throw std::runtime_error("results_folder exists but is not a directory: " + path.string());
         }
-        return path;
-    }
-
-    if (!std::filesystem::create_directories(path, ec) && ec) {
-        throw std::runtime_error("Unable to create results_folder '" + path.string() + "': " + ec.message());
     }
     return path;
 }
@@ -513,7 +508,10 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
     const int acc = std::max(0, config.acc);
     const bool dump_results = config.dump_results;
     const bool log_min_ev = config.log_min_ev;
-    const std::filesystem::path results_folder = validate_results_folder(config.results_folder);
+    const bool needs_results_folder = dump_results || log_min_ev;
+    const std::filesystem::path results_folder = needs_results_folder
+                                                    ? validate_results_folder(config.results_folder)
+                                                    : std::filesystem::path(config.results_folder);
 
     if (Nmaxevals < 0) {
         Nmaxevals = static_cast<int>(1e4 * dimension);
@@ -679,14 +677,20 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
             (results_prefix + std::to_string(year) + "_" + algo + "_" + std::to_string(dimension) + "_" +
              std::to_string(Nmaxevals) + "_popsize_" + std::to_string(popsize) + ".txt");
 
-        std::filesystem::create_directories(results_folder);
+        std::error_code ec;
+        if (!std::filesystem::create_directories(results_folder, ec) && ec) {
+            throw std::runtime_error("Unable to create results_folder '" + results_folder.string() + "': " + ec.message());
+        }
         dumpResultsToFile(results, results_path.string(), acc);
-    out.results_file = results_path.string();
+        out.results_file = results_path.string();
     }
 
     if (log_min_ev) {
         const std::filesystem::path out_dir = results_folder / algo;
-        std::filesystem::create_directories(out_dir);
+        std::error_code ec;
+        if (!std::filesystem::create_directories(out_dir, ec) && ec) {
+            throw std::runtime_error("Unable to create results_folder '" + out_dir.string() + "': " + ec.message());
+        }
         for (const auto& entry : min_ev_logs) {
             const int func = entry.first;
             const auto& matrix = entry.second;
