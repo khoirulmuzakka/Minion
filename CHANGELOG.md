@@ -1,4 +1,12 @@
 # Changelog
+## [1.7.0] - 2026-07-07
+### Added
+- Added benchmark functionality for CEC and BBOB2009 suites.
+- Added BBOB2009 benchmark support to the Python and C++ APIs.
+
+### Fixed
+- Fixed memory leaks in the CEC benchmark implementations.
+
 ## [1.6.1] - 2026-06-13
 ### Changed
 - Removed `tol` / `relTol` from the Minion API.

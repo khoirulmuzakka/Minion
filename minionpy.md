@@ -38,7 +38,7 @@ MinionPy is the Python interface to the Minion C++ optimization library. It focu
       - L-BFGS (vectorized & noise-robust) 
       
 - **Benchmark Support**  
-  The library includes benchmark functions from the CEC competitions (2011, 2014, 2017, 2019, 2020, 2022), providing a standardized environment for algorithm development, testing, and comparison.
+  The library includes benchmark functions from the CEC competitions (2011, 2014, 2017, 2019, 2020, 2022) and BBOB2009, providing a standardized environment for algorithm development, testing, and comparison.
 
 - **Performance**  
   Most implemented algorithms are population-based, making them suitable for parallelization. MinionPy is optimized for vectorized functions, enabling efficient use of multithreading and multiprocessing capabilities.
