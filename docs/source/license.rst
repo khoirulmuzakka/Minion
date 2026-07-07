@@ -47,7 +47,21 @@ Since the code was publicly available on GitHub, we assume it is available for u
 If you are concerned about the licensing of this code, we recommend contacting the author or repository owner directly for clarification.
 
 
+BBOB2009 / COCO Benchmark Support
+----------------------------------
+
+The BBOB2009 benchmark wrapper in Minion uses the COCO benchmark framework
+from the upstream repository ``https://github.com/numbbo/coco.git``.
+According to the upstream COCO license, the code is generally distributed
+under the 3-clause BSD License, apart from a few documented exceptions.
+Minion uses the ``code-experiments`` component from that repository together
+with the local ``bbob2009`` adapter code in ``external/bbob2009``. Please
+consult the COCO repository ``LICENSE`` and ``AUTHORS`` files, as well as the
+``bbob2009`` sources, for the exact license details that apply to those
+benchmark files.
+
+
 Conclusion
 ----------
 
-In summary, the Minion library is licensed under the MIT License, and we use the `lbfgspp` library, which is also under the MIT License. The algorithms based on the Sugathan GitHub repository have been modified to fit the Minion API, but their licensing terms are unclear due to the absence of a license file. We encourage users to ensure compliance with open-source licensing standards and to reach out to the original authors for clarification if needed.
+In summary, the Minion library is licensed under the MIT License, and we use the `lbfgspp` library, which is also under the MIT License. The algorithms based on the Sugathan GitHub repository have been modified to fit the Minion API, but their licensing terms are unclear due to the absence of a license file. The BBOB2009 support depends on the COCO benchmark framework and its upstream licensing terms. We encourage users to ensure compliance with open-source licensing standards and to reach out to the original authors for clarification if needed.
