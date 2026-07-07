@@ -110,12 +110,13 @@ void validate_benchmark_year(minion::BenchmarkMode mode, int year) {
     case 2011:
     case 2014:
     case 2017:
+    case 20142017:
     case 2019:
     case 2020:
     case 2022:
         return;
     default:
-        throw std::runtime_error("CEC benchmark only supports years 2011, 2014, 2017, 2019, 2020, and 2022.");
+        throw std::runtime_error("CEC benchmark only supports years 2011, 2014, 2017, 20142017, 2019, 2020, and 2022.");
     }
 }
 
@@ -145,6 +146,13 @@ void validate_dimension(minion::BenchmarkMode mode, int year, int dimension) {
         static constexpr std::array<int, 4> kDims = {10, 30, 50, 100};
         if (!is_supported_dimension(dimension, kDims)) {
             throw std::runtime_error("CEC2017 only supports dimensions 10, 30, 50, and 100.");
+        }
+        return;
+    }
+    case 20142017: {
+        static constexpr std::array<int, 4> kDims = {10, 30, 50, 100};
+        if (!is_supported_dimension(dimension, kDims)) {
+            throw std::runtime_error("CEC20142017 only supports dimensions 10, 30, 50, and 100.");
         }
         return;
     }
@@ -195,6 +203,14 @@ std::vector<int> get_function_numbers(minion::BenchmarkMode mode, int year) {
         return functions;
     }
 
+    if (year == 20142017) {
+        std::vector<int> functions;
+        functions.reserve(60);
+        for (int func = 1; func <= 60; ++func) {
+            functions.push_back(func);
+        }
+        return functions;
+    }
     if (year == 2017 || year == 2014) {
         std::vector<int> functions;
         functions.reserve(30);
@@ -383,6 +399,10 @@ double get_global_optimum(int function_number, int year) {
         if (function_number >= 1 && function_number <= static_cast<int>(kCEC2020.size())) {
             return kCEC2020[static_cast<size_t>(function_number - 1)];
         }
+    } else if (year == 20142017) {
+        if (function_number >= 1 && function_number <= 60) {
+            return 100.0;
+        }
     } else if (year == 2017 || year == 2014) {
         if (function_number >= 1 && function_number <= 30) {
             return 100.0 * static_cast<double>(function_number);
@@ -419,6 +439,7 @@ double minimize_cec_functions(int function_number,
 
     if (year==2020) cecfunc = std::make_unique<minion::CEC2020Functions>(function_number, effective_dimension);
     else if (year==2022) cecfunc = std::make_unique<minion::CEC2022Functions>(function_number, effective_dimension);
+    else if (year==20142017) cecfunc = std::make_unique<minion::CEC20142017Functions>(function_number, effective_dimension);
     else if (year==2017) cecfunc = std::make_unique<minion::CEC2017Functions>(function_number, effective_dimension);
     else if (year==2019) cecfunc = std::make_unique<minion::CEC2019Functions>(function_number, effective_dimension);
     else if (year==2014) cecfunc = std::make_unique<minion::CEC2014Functions>(function_number, effective_dimension);
