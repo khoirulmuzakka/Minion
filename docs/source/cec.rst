@@ -292,6 +292,211 @@ For ``BBOB2009``, the problem object exposes the same information:
 For a full C++ per-problem bound setup, see the benchmark implementation in ``minion/benchmark/benchmark.cpp`` and the integration test in ``tests/test_minion.cpp``.
 
 
+CEC Benchmark Function Details
+------------------------------
+
+The tables below summarize the basic benchmark families used by each numbered function in the current CEC2014 and CEC2017 implementations. In the published suite design, CEC2020 and CEC2022 are best understood as selected subsets of the CEC2017-style benchmark family. The implementation does not simply reuse the CEC2017 public function numbers one-for-one; instead, it dispatches through the shared benchmark families. The tables below therefore map each public suite function to the shared family used by the implementation.
+
+CEC2014
+^^^^^^^
+
+.. list-table:: CEC2014 function mapping
+   :header-rows: 1
+
+   * - Function number
+     - Basic functions used
+   * - 1
+     - ``ellips_func``
+   * - 2
+     - ``bent_cigar_func``
+   * - 3
+     - ``discus_func``
+   * - 4
+     - ``rosenbrock_func``
+   * - 5
+     - ``ackley_func``
+   * - 6
+     - ``weierstrass_func``
+   * - 7
+     - ``griewank_func``
+   * - 8
+     - ``rastrigin_func``
+   * - 9
+     - ``rastrigin_func``
+   * - 10
+     - ``schwefel_func``
+   * - 11
+     - ``schwefel_func``
+   * - 12
+     - ``katsuura_func``
+   * - 13
+     - ``happycat_func``
+   * - 14
+     - ``hgbat_func``
+   * - 15
+     - ``grie_rosen_func``
+   * - 16
+     - ``escaffer6_func``
+   * - 17
+     - ``hf01`` = ``schwefel_func`` + ``rastrigin_func`` + ``ellips_func``
+   * - 18
+     - ``hf02`` = ``bent_cigar_func`` + ``hgbat_func`` + ``rastrigin_func``
+   * - 19
+     - ``hf03`` = ``griewank_func`` + ``weierstrass_func`` + ``rosenbrock_func`` + ``escaffer6_func``
+   * - 20
+     - ``hf04`` = ``hgbat_func`` + ``discus_func`` + ``grie_rosen_func`` + ``rastrigin_func``
+   * - 21
+     - ``hf05`` = ``escaffer6_func`` + ``hgbat_func`` + ``rosenbrock_func`` + ``schwefel_func`` + ``ellips_func``
+   * - 22
+     - ``hf06`` = ``katsuura_func`` + ``happycat_func`` + ``grie_rosen_func`` + ``schwefel_func`` + ``ackley_func``
+   * - 23
+     - ``cf01`` = ``rosenbrock_func`` + ``ellips_func`` + ``bent_cigar_func`` + ``discus_func``
+   * - 24
+     - ``cf02`` = ``schwefel_func`` + ``rastrigin_func`` + ``hgbat_func``
+   * - 25
+     - ``cf03`` = ``schwefel_func`` + ``rastrigin_func`` + ``ellips_func``
+   * - 26
+     - ``cf04`` = ``schwefel_func`` + ``happycat_func`` + ``ellips_func`` + ``weierstrass_func`` + ``griewank_func``
+   * - 27
+     - ``cf05`` = ``hgbat_func`` + ``rastrigin_func`` + ``schwefel_func`` + ``weierstrass_func`` + ``ellips_func``
+   * - 28
+     - ``cf06`` = ``grie_rosen_func`` + ``happycat_func`` + ``schwefel_func`` + ``escaffer6_func`` + ``ellips_func``
+   * - 29
+     - ``cf07`` = ``hf01`` + ``hf02`` + ``hf03``
+   * - 30
+     - ``cf08`` = ``hf04`` + ``hf05`` + ``hf06``
+
+CEC2017
+^^^^^^^
+
+.. list-table:: CEC2017 function mapping
+   :header-rows: 1
+
+   * - Function number
+     - Basic functions used
+   * - 1
+     - ``bent_cigar_func``
+   * - 2
+     - ``sum_diff_pow_func``
+   * - 3
+     - ``zakharov_func``
+   * - 4
+     - ``rosenbrock_func``
+   * - 5
+     - ``rastrigin_func``
+   * - 6
+     - ``schaffer_F7_func``
+   * - 7
+     - ``bi_rastrigin_func``
+   * - 8
+     - ``step_rastrigin_func``
+   * - 9
+     - ``levy_func``
+   * - 10
+     - ``schwefel_func``
+   * - 11
+     - ``hf01`` = ``zakharov_func`` + ``rosenbrock_func`` + ``rastrigin_func``
+   * - 12
+     - ``hf02`` = ``ellips_func`` + ``schwefel_func`` + ``bent_cigar_func``
+   * - 13
+     - ``hf03`` = ``bent_cigar_func`` + ``rosenbrock_func`` + ``bi_rastrigin_func``
+   * - 14
+     - ``hf04`` = ``ellips_func`` + ``ackley_func`` + ``schaffer_F7_func`` + ``rastrigin_func``
+   * - 15
+     - ``hf05`` = ``bent_cigar_func`` + ``hgbat_func`` + ``rastrigin_func`` + ``rosenbrock_func``
+   * - 16
+     - ``hf06`` = ``escaffer6_func`` + ``hgbat_func`` + ``rosenbrock_func`` + ``schwefel_func``
+   * - 17
+     - ``hf07`` = ``katsuura_func`` + ``ackley_func`` + ``grie_rosen_func`` + ``schwefel_func`` + ``rastrigin_func``
+   * - 18
+     - ``hf08`` = ``ellips_func`` + ``ackley_func`` + ``rastrigin_func`` + ``hgbat_func`` + ``discus_func``
+   * - 19
+     - ``hf09`` = ``bent_cigar_func`` + ``rastrigin_func`` + ``grie_rosen_func`` + ``weierstrass_func`` + ``escaffer6_func``
+   * - 20
+     - ``hf10`` = ``hgbat_func`` + ``katsuura_func`` + ``ackley_func`` + ``rastrigin_func`` + ``schwefel_func`` + ``schaffer_F7_func``
+   * - 21
+     - ``cf01`` = ``rosenbrock_func`` + ``ellips_func`` + ``rastrigin_func``
+   * - 22
+     - ``cf02`` = ``rastrigin_func`` + ``griewank_func`` + ``schwefel_func``
+   * - 23
+     - ``cf03`` = ``rosenbrock_func`` + ``ackley_func`` + ``schwefel_func`` + ``rastrigin_func``
+   * - 24
+     - ``cf04`` = ``ackley_func`` + ``ellips_func`` + ``griewank_func`` + ``rastrigin_func``
+   * - 25
+     - ``cf05`` = ``rastrigin_func`` + ``happycat_func`` + ``ackley_func`` + ``discus_func`` + ``rosenbrock_func``
+   * - 26
+     - ``cf06`` = ``escaffer6_func`` + ``schwefel_func`` + ``griewank_func`` + ``rosenbrock_func`` + ``rastrigin_func``
+   * - 27
+     - ``cf07`` = ``hgbat_func`` + ``rastrigin_func`` + ``schwefel_func`` + ``bent_cigar_func`` + ``ellips_func`` + ``escaffer6_func``
+   * - 28
+     - ``cf08`` = ``ackley_func`` + ``griewank_func`` + ``discus_func`` + ``rosenbrock_func`` + ``happycat_func`` + ``escaffer6_func``
+   * - 29
+     - ``cf09`` = ``hf05`` + ``hf06`` + ``hf07``
+   * - 30
+     - ``cf10`` = ``hf05`` + ``hf08`` + ``hf09``
+
+CEC2020
+^^^^^^^
+
+.. list-table:: CEC2020 public function mapping
+   :header-rows: 1
+
+   * - Public function number
+     - Shared CEC2017-style family used
+   * - 1
+     - ``bent_cigar_func``
+   * - 2
+     - ``schwefel_func``
+   * - 3
+     - ``bi_rastrigin_func``
+   * - 4
+     - ``grie_rosen_func``
+   * - 5
+     - ``hf01``
+   * - 6
+     - ``hf06``
+   * - 7
+     - ``hf05``
+   * - 8
+     - ``cf02``
+   * - 9
+     - ``cf04``
+   * - 10
+     - ``cf05``
+
+CEC2022
+^^^^^^^
+
+.. list-table:: CEC2022 function mapping
+   :header-rows: 1
+
+   * - Function number
+     - Shared CEC2017-style family used
+   * - 1
+     - ``zakharov_func``
+   * - 2
+     - ``rosenbrock_func``
+   * - 3
+     - ``schaffer_F7_func``
+   * - 4
+     - ``step_rastrigin_func``
+   * - 5
+     - ``levy_func``
+   * - 6
+     - ``hf02``
+   * - 7
+     - ``hf10``
+   * - 8
+     - ``hf06``
+   * - 9
+     - ``cf01``
+   * - 10
+     - ``cf02``
+   * - 11
+     - ``cf06``
+   * - 12
+     - ``cf07``
+
 Further Examples
 ----------------
 
