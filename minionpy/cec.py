@@ -79,6 +79,45 @@ CEC2011_METADATA = {
         10: (12, np.array([0.2] * 6 + [-180.0] * 6), np.array([1.0] * 6 + [180.0] * 6)),
 }
 
+
+def _repeat_bounds(dimension: int, lower: float, upper: float):
+    return [(float(lower), float(upper)) for _ in range(int(dimension))]
+
+
+def _cec2019_bounds(function_number: int, dimension: int):
+    if function_number == 1:
+        return _repeat_bounds(dimension, -8192.0, 8192.0)
+    if function_number == 2:
+        return _repeat_bounds(dimension, -16384.0, 16384.0)
+    if function_number == 3:
+        return _repeat_bounds(dimension, -4.0, 4.0)
+    return _repeat_bounds(dimension, -100.0, 100.0)
+
+
+def _cec_global_optimum(year: int, function_number: int):
+    if year == 2022:
+        values = [300.0, 400.0, 600.0, 800.0, 900.0, 1800.0, 2000.0, 2200.0, 2300.0, 2400.0, 2600.0, 2700.0]
+        if 1 <= function_number <= len(values):
+            return values[function_number - 1]
+    elif year == 2020:
+        values = [100.0, 1100.0, 700.0, 1900.0, 1700.0, 1600.0, 2100.0, 2200.0, 2400.0, 2500.0]
+        if 1 <= function_number <= len(values):
+            return values[function_number - 1]
+    elif year in (2017, 2014):
+        if 1 <= function_number <= 30:
+            return 100.0 * float(function_number)
+    elif year == 2019:
+        return 1.0
+    return None
+
+
+class _BenchmarkMetadataMixin:
+    def get_bounds(self):
+        return list(self.bounds)
+
+    def get_f_opt(self):
+        return self.f_opt
+
 CEC2011_METADATA.update(
     {
         11: (120, np.array([10, 20, 30, 40, 50] * 24), np.array([75, 125, 175, 250, 300] * 24)),
@@ -165,7 +204,7 @@ CEC2011_METADATA.update(
         ),
     }
 )
-class CEC2014Functions:
+class CEC2014Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the CEC2014 benchmark test functions.
 
@@ -190,7 +229,11 @@ class CEC2014Functions:
         """
         if function_number not in range(1, 31) : raise Exception("Function number must be between 1-30.")
         if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
-        self.cpp_func = cppCEC2014Functions(function_number, int(dimension))
+        self.function_number = int(function_number)
+        self.dimension = int(dimension)
+        self.bounds = _repeat_bounds(self.dimension, -100.0, 100.0)
+        self.f_opt = _cec_global_optimum(2014, self.function_number)
+        self.cpp_func = cppCEC2014Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         """
@@ -207,8 +250,8 @@ class CEC2014Functions:
             A vector of function values corresponding to each input vector.
         """
         return self.cpp_func(X)
-    
-class CEC2017Functions:
+
+class CEC2017Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the CEC2014 benchmark test functions.
 
@@ -235,7 +278,11 @@ class CEC2017Functions:
         if int(dimension) not in [2, 10, 20, 30, 50, 100] : raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
         if int(dimension)==20 and function_number in range (11, 20) : raise Exception ("At dimension 20, function number 11-19 are not available")
         if int(dimension)==2 and function_number in range (11, 20) : raise Exception ("At dimension 2, function number 11-19 are not available")
-        self.cpp_func = cppCEC2017Functions(function_number, int(dimension))
+        self.function_number = int(function_number)
+        self.dimension = int(dimension)
+        self.bounds = _repeat_bounds(self.dimension, -100.0, 100.0)
+        self.f_opt = _cec_global_optimum(2017, self.function_number)
+        self.cpp_func = cppCEC2017Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         """
@@ -253,7 +300,7 @@ class CEC2017Functions:
         """
         return self.cpp_func(X)
     
-class CEC2019Functions:
+class CEC2019Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the CEC2019 benchmark test functions.
 
@@ -281,9 +328,11 @@ class CEC2019Functions:
         elif function_number==2:  dimension = 16
         elif function_number==3 : dimension=18
         else: dimension =10
-        self.function_number = function_number
+        self.function_number = int(function_number)
         self.dimension = int(dimension)
-        self.cpp_func = cppCEC2019Functions(function_number, int(dimension))
+        self.bounds = _cec2019_bounds(self.function_number, self.dimension)
+        self.f_opt = _cec_global_optimum(2019, self.function_number)
+        self.cpp_func = cppCEC2019Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         """
@@ -301,7 +350,7 @@ class CEC2019Functions:
         """
         return self.cpp_func(X)
        
-class CEC2020Functions:
+class CEC2020Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the CEC2020 benchmark test functions.
 
@@ -325,7 +374,11 @@ class CEC2020Functions:
         """
         if function_number not in range(1, 11) : raise Exception("Function number must be between 1-10.")
         if int(dimension) not in [2, 5, 10, 15, 20] : raise Exception("Dimension must be 2, 10, or 20.")
-        self.cpp_func = cppCEC2020Functions(function_number, int(dimension))
+        self.function_number = int(function_number)
+        self.dimension = int(dimension)
+        self.bounds = _repeat_bounds(self.dimension, -100.0, 100.0)
+        self.f_opt = _cec_global_optimum(2020, self.function_number)
+        self.cpp_func = cppCEC2020Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         """
@@ -343,7 +396,7 @@ class CEC2020Functions:
         """
         return self.cpp_func(X)
 
-class CEC2022Functions:
+class CEC2022Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the CEC2022 benchmark test functions.
 
@@ -367,7 +420,11 @@ class CEC2022Functions:
         """
         if function_number not in range(1, 13) : raise Exception("Function number must be between 1-12.")
         if int(dimension) not in [2, 10, 20] : raise Exception("Dimension must be 2, 10, or 20.")
-        self.cpp_func = cppCEC2022Functions(function_number, int(dimension))
+        self.function_number = int(function_number)
+        self.dimension = int(dimension)
+        self.bounds = _repeat_bounds(self.dimension, -100.0, 100.0)
+        self.f_opt = _cec_global_optimum(2022, self.function_number)
+        self.cpp_func = cppCEC2022Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         """
@@ -385,7 +442,7 @@ class CEC2022Functions:
         """
         return self.cpp_func(X)
 
-class CEC2011Functions:
+class CEC2011Functions(_BenchmarkMetadataMixin):
     """
     Provides access to the 22 real-world benchmark problems from CEC2011.
     Each problem has a fixed dimension and bound box defined by the original suite.
@@ -408,13 +465,15 @@ class CEC2011Functions:
             raise Exception("Function number must be between 1 and 22.")
 
         dim, lb, ub = CEC2011_METADATA[function_number]
-        self.function_number = function_number
+        self.function_number = int(function_number)
         self.dimension = int(dim)
         self.lb = lb.tolist() if hasattr(lb, "tolist") else list(lb)
         self.ub = ub.tolist() if hasattr(ub, "tolist") else list(ub)
         if len(self.lb) != self.dimension or len(self.ub) != self.dimension:
             raise ValueError("Bounds length does not match problem dimension.")
-        self.cpp_func = cppCEC2011Functions(function_number, self.dimension)
+        self.bounds = list(zip(self.lb, self.ub))
+        self.f_opt = None
+        self.cpp_func = cppCEC2011Functions(self.function_number, self.dimension)
 
     def __call__(self, X):
         return self.cpp_func(X)
@@ -428,4 +487,4 @@ class CEC2011Functions:
         return np.array(self.cpp_func(arr.tolist()))
 
     def get_bounds(self):
-        return list(zip(self.lb, self.ub))
+        return list(self.bounds)

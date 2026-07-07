@@ -232,7 +232,8 @@ For a native C++ build without Python bindings:
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
      -DMINION_BUILD_BENCHMARK=ON \
-     -DMINION_BUILD_PYTHON=OFF \
+     -DMINION_BUILD_EXAMPLES=ON \
+     -DMINION_BUILD_PYTHON=OFF
    cmake --build build --config Release
 
 Install to a chosen prefix:
@@ -284,7 +285,8 @@ control over the CMake configuration, you can build MinionPy manually with
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
      -DMINION_BUILD_BENCHMARK=ON \
-     -DMINION_BUILD_PYTHON=ON \
+     -DMINION_BUILD_EXAMPLES=ON \
+     -DMINION_BUILD_PYTHON=ON
    cmake --build build --config Release
 
 The Python package code is in the ``minionpy`` directory. The compiled Python
@@ -319,6 +321,7 @@ pages. The Sphinx configuration imports ``minionpy``, so build MinionPy first:
    cmake -S . -B build \
      -DCMAKE_BUILD_TYPE=Release \
      -DMINION_BUILD_BENCHMARK=ON \
+     -DMINION_BUILD_EXAMPLES=ON \
      -DMINION_BUILD_PYTHON=ON
    cmake --build build --config Release
    doxygen Doxyfile
@@ -341,6 +344,19 @@ Include the main header:
 Use ``find_package`` for an installed Minion package, with ``FetchContent`` as
 a fallback:
 
+For a typical downstream C++ project, you usually only need the core library.
+The benchmark, example, and test build targets are generally best left
+disabled unless you explicitly want to run benchmarks or build the project’s
+internal demos/tests.
+
+In the current ``CMakeLists.txt`` defaults:
+
+- ``MINION_BUILD_BENCHMARK`` is ``ON``;
+- ``MINION_BUILD_EXAMPLES`` is ``OFF``;
+- ``MINION_BUILD_TESTS`` is ``OFF``;
+- ``MINION_BUILD_PYTHON`` is ``ON`` only when building through ``scikit-build``,
+  otherwise it defaults to ``OFF``.
+
 .. code-block:: cmake
 
    cmake_minimum_required(VERSION 3.18)
@@ -358,12 +374,15 @@ a fallback:
      GIT_TAG main
      GIT_SHALLOW TRUE
      )
-     set(MINION_BUILD_BENCHMARK ON CACHE BOOL "Build benchmark components" FORCE)
+     set(MINION_BUILD_BENCHMARK OFF CACHE BOOL "Build benchmark components" FORCE)
+     set(MINION_BUILD_EXAMPLES OFF CACHE BOOL "Build example targets" FORCE)
+     set(MINION_BUILD_TESTS OFF CACHE BOOL "Build test targets" FORCE)
      set(MINION_BUILD_PYTHON OFF CACHE BOOL "Disable Python extension" FORCE)
      FetchContent_MakeAvailable(minion)
    endif()
 
    add_executable(my_app src/main.cpp)
    target_link_libraries(my_app PRIVATE minion)
-   # Optional: only if you use the CEC benchmark suite
+   # Optional: only if you use the benchmark suites
    # target_link_libraries(my_app PRIVATE minion_cec)
+   # target_link_libraries(my_app PRIVATE bbob2009)

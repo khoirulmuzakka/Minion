@@ -166,19 +166,23 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
+print("f_opt   =", cec_f1.f_opt)
 ```
 
 In Python, `func(X)` receives `X` as `list[list[float]]` and returns one value per candidate point.
 
-## CEC Benchmark Usage
+## CEC and BBOB2009 Benchmark Usage
 
-Minion exposes the CEC suites as callable benchmark objects. The usage pattern is the same in C++ and Python:
-- Construct a benchmark evaluator such as `CEC2017Functions(function_number, dimension)`.
-- Pass that evaluator to `Minimizer` as the objective.
-- Provide `bounds` separately to `Minimizer`.
-- The benchmark evaluators are already vectorized, so in Python no wrapper is needed. In C++, a thin adapter is usually used to forward the batch to the benchmark object.
+Minion exposes the CEC suites and the BBOB2009 suite through the same benchmark API.
+The general pattern is:
+- construct a benchmark evaluator,
+- pass it to `Minimizer` as a vectorized objective,
+- provide `bounds` separately to `Minimizer`.
 
-All suites use the same constructor form `(function_number, dimension)` for API consistency, although their effective dimensions are suite-defined. For `CEC2011`, MinionPy additionally exposes `get_bounds()`.
+The benchmark evaluators are already vectorized, so in Python no wrapper is needed.
+In C++, a thin adapter is usually used to forward the batch to the benchmark object.
+
+The CEC suites all use the constructor form `(function_number, dimension)` for API consistency, although their effective dimensions are suite-defined. For `CEC2011`, MinionPy additionally exposes `get_bounds()`.
 
 Example using `CEC2017` in C++:
 
@@ -236,8 +240,8 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
+print("f_opt   =", cec_f1.f_opt)
 ```
-
 For `CEC2011`, the pattern is the same, but the bounds are problem-specific:
 
 ```python
@@ -245,7 +249,88 @@ cec2011 = mpy.CEC2011Functions(function_number=1, dimension=6)
 bounds = cec2011.get_bounds()
 ```
 
-For a fuller C++ benchmark walk-through, see the native benchmark and test code in `minion/benchmark/benchmark.cpp` and `tests/test_minion.cpp`.
+Example using `BBOB2009` in Python:
+
+```python
+import minionpy as mpy
+
+function_number = 1
+dimension = 10
+maxevals = 30000
+seed = 20250306
+
+bbob = mpy.BBOB2009Problem(function_number=function_number, dimension=dimension)
+bounds = bbob.bounds
+x0 = [bbob.initial_solution]
+
+optimizer = mpy.Minimizer(
+    func=bbob,
+    x0=x0,
+    bounds=bounds,
+    algo="ARRDE",
+    maxevals=maxevals,
+    callback=None,
+    seed=seed,
+    options=None,
+)
+
+result = optimizer.optimize()
+print("best f =", result.fun)
+print("f_opt   =", bbob.f_opt)
+```
+
+### C++ Benchmark Driver
+
+For repeated benchmark runs, use `examples/main_run_benchmark.cpp`.
+It is built as the `run_benchmark` example target when `MINION_BUILD_EXAMPLES=ON` and `MINION_BUILD_BENCHMARK=ON`.
+
+Run it:
+
+```bash
+./build/bin/run_benchmark cec 1 10 ARRDE 0 2017 30000 1 8
+./build/bin/run_benchmark bbob 1 10 ARRDE 0 2009 30000 1 8
+```
+
+The command-line layout is:
+
+```text
+cec|bbob Nruns dim algo popsize year maxevals nthreads accuracy
+```
+
+If you omit the leading `cec` or `bbob`, the driver defaults to `cec`.
+
+### Python Benchmark API
+
+The Python binding exposes the same benchmark machinery through:
+- `minionpy.run_benchmark(mode="cec" | "bbob", ...)`
+- `minionpy.Benchmark`
+- `minionpy.BenchmarkConfig`
+- `minionpy.BenchmarkMode` for lower-level use
+
+Example:
+
+```python
+import minionpy as mpy
+
+result = mpy.run_benchmark(
+    mode="bbob",# "cec
+    num_runs=51,
+    dimension=10,
+    algo="ARRDE",
+    popsize=0,
+    year=2009,
+    max_evals=30000,
+    nthreads=32,
+    acc=8,
+    dump_results=True,
+    results_folder=".",
+    log_min_ev=False,
+)
+print(result.results)
+print(result.results_file)
+```
+
+If you prefer an object-oriented wrapper, `mpy.Benchmark(config).run()` is also available, and `BenchmarkConfig.mode` accepts the enum value `mpy.BenchmarkMode.Bbob`.
 
 ## 📖 Documentation
 For full usage instructions, API reference, and examples, visit the official documentation:

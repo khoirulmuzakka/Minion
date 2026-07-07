@@ -62,7 +62,7 @@ The repository includes a native integration test target in ``tests/test_minion.
 
 .. code-block:: shell
 
-   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_BENCHMARK=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_TESTS=ON
+   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_BENCHMARK=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_TESTS=ON
    cmake --build build --target minion_test --config Release
 
 Run the test binary directly if you want to see the full per-algorithm output:
@@ -92,7 +92,7 @@ This test checks that:
 - the evaluation counts stay within the configured ``maxevals`` budget (with a small slack)
 - the Sphere and Rosenbrock runs satisfy simple solution-quality thresholds
 
-The CEC2017 section is mainly an integration and stability check rather than a strict performance benchmark.
+The benchmark sections are mainly integration and stability checks rather than strict performance benchmarks.
 
 Python binding test
 ^^^^^^^^^^^^^^^^^^^
@@ -106,7 +106,7 @@ The repository also includes a Python rewrite of ``tests/test_minion.cpp`` in ``
 This script exercises the public ``minionpy`` interface and mirrors the same validation logic as the C++ integration test. In addition to the optimization checks described above, it also verifies that:
 
 - vectorized helper functions return finite outputs
-- the ``CEC2017Functions`` wrapper evaluates batched inputs correctly
+- the ``CEC2017Functions`` and ``BBOB2009Problem`` wrappers evaluate batched inputs correctly
 
 If your change only affects documentation, you do not need to run the full optimization tests, but you should still verify that the docs build locally if you changed reStructuredText, notebooks, or generated API content.
 

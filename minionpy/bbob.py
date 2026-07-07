@@ -18,7 +18,7 @@ class BBOB2009Functions:
     Available functions: **1-24**
     """
 
-    def __init__(self, function_number, dimension, year=2009):
+    def __init__(self, function_number, dimension):
         """
         Initialize a `BBOB2009Functions` instance.
 
@@ -28,16 +28,15 @@ class BBOB2009Functions:
             The function index (must be in the range 1-24).
         dimension : int
             The problem dimensionality (must be one of {2, 5, 10, 20, 40}).
-        year : int, optional
-            Must be 2009. Kept for API symmetry with the C++ constructor.
         """
-        self.cpp_func = cppBBOB2009Problem(int(function_number), int(dimension), int(year))
+        self.cpp_func = cppBBOB2009Problem(int(function_number), int(dimension), 2009)
         self.function_number = int(function_number)
         self.dimension = int(dimension)
-        self.year = int(year)
+        self.year = 2009
         self.bounds = [tuple(b) for b in self.cpp_func.bounds]
         self.initial_solution = list(self.cpp_func.initial_solution)
         self.best_value = float(self.cpp_func.best_value)
+        self.f_opt = self.best_value
         self.id = str(self.cpp_func.id)
         self.name = str(self.cpp_func.name)
 
@@ -60,6 +59,10 @@ class BBOB2009Functions:
     def get_bounds(self):
         """Return the box constraints as ``[(lb, ub), ...]``."""
         return list(self.bounds)
+
+    def get_f_opt(self):
+        """Return the known global optimum value."""
+        return self.f_opt
 
 
 BBOB2009Problem = BBOB2009Functions
