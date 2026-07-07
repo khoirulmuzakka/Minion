@@ -29,8 +29,9 @@ option(MINION_BUILD_PYTHON "Build Python extension module" ${_default_python})
 option(MINION_BUILD_EXAMPLES "Build C++ examples" OFF)
 option(MINION_BUILD_TESTS "Build repository test targets" OFF)
 
-file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/src/*.cpp)
-list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/src/bindings.cpp)
+file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/algorithms/*.cpp)
+list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms/bindings.cpp)
+file(GLOB MINION_UTILS_SOURCE_FILES CONFIGURE_DEPENDS minion/utils/*.cpp)
 file(GLOB MINION_CEC_SOURCE_FILES CONFIGURE_DEPENDS minion/cec/*.cpp)
 
 include(FetchContent)
@@ -102,9 +103,12 @@ if(MINION_BUILD_BENCHMARK)
     add_library(minion_cec SHARED ${MINION_CEC_SOURCE_FILES})
     target_include_directories(minion_cec PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/utils>
         $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:include/minion>
+        $<INSTALL_INTERFACE:include/minion/cec>
+        $<INSTALL_INTERFACE:include/minion/algorithms>
+        $<INSTALL_INTERFACE:include/minion/utils>
     )
     if(WIN32)
         target_compile_definitions(minion_cec PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
@@ -181,13 +185,15 @@ endif()
 # + ----------------------------------------- +
 # | Compiled algorithms core target           |
 # + ----------------------------------------- +
-set(MINION_CORE_SOURCE_FILES ${MINION_ALGO_IMPL_SOURCES})
+set(MINION_CORE_SOURCE_FILES ${MINION_ALGO_IMPL_SOURCES} ${MINION_UTILS_SOURCE_FILES})
 add_library(minion SHARED ${MINION_CORE_SOURCE_FILES})
 
 target_include_directories(minion PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/utils>
     $<INSTALL_INTERFACE:include>
-    $<INSTALL_INTERFACE:include/minion>
+    $<INSTALL_INTERFACE:include/minion/algorithms>
+    $<INSTALL_INTERFACE:include/minion/utils>
 )
 if(WIN32)
     target_compile_definitions(minion PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
@@ -202,11 +208,14 @@ endif()
 if(MINION_BUILD_BENCHMARK)
     add_library(minion_benchmark STATIC minion/benchmark/benchmark.cpp)
     target_include_directories(minion_benchmark PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/utils>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/cec>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark>
         $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:include/minion>
+        $<INSTALL_INTERFACE:include/minion/benchmark>
+        $<INSTALL_INTERFACE:include/minion/algorithms>
+        $<INSTALL_INTERFACE:include/minion/utils>
     )
     target_include_directories(minion_benchmark PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/bbob2009"
@@ -274,8 +283,9 @@ if(MINION_BUILD_PYTHON)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy)
 
     set(MINION_PYBIND_SOURCES
-        minion/src/bindings.cpp
+        minion/algorithms/bindings.cpp
         ${MINION_ALGO_IMPL_SOURCES}
+        ${MINION_UTILS_SOURCE_FILES}
         ${MINION_CEC_SOURCE_FILES}
     )
 
@@ -283,7 +293,8 @@ if(MINION_BUILD_PYTHON)
     target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen ${CMAKE_DL_LIBS} minion_benchmark)
     target_compile_definitions(minionpycpp PRIVATE MINION_BENCHMARK_LIBRARY)
     target_include_directories(minionpycpp PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/minion/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms
+        ${CMAKE_CURRENT_SOURCE_DIR}/minion/utils
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark
     )
@@ -336,14 +347,16 @@ else()
     include(CMakePackageConfigHelpers)
 
     if(MINION_BUILD_BENCHMARK)
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms/ DESTINATION include/minion/algorithms FILES_MATCHING PATTERN "*.h")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/utils/ DESTINATION include/minion/utils FILES_MATCHING PATTERN "*.h")
     else()
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/include/ DESTINATION include/minion
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms/ DESTINATION include/minion/algorithms
             FILES_MATCHING PATTERN "*.h" PATTERN "minion_cec.h" EXCLUDE)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/utils/ DESTINATION include/minion/utils FILES_MATCHING PATTERN "*.h")
     endif()
     if(MINION_BUILD_BENCHMARK)
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark/ DESTINATION include/minion FILES_MATCHING PATTERN "*.h")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec/ DESTINATION include/minion/cec FILES_MATCHING PATTERN "*.h")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark/ DESTINATION include/minion/benchmark FILES_MATCHING PATTERN "*.h")
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cec_input_data/ DESTINATION cec_input_data)
     endif()
 

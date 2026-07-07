@@ -16,6 +16,7 @@
 
 #include <string>
 #include <vector>
+#include "path_utils.h"
 #if defined(_WIN32)
     #ifndef NOMINMAX
         #define NOMINMAX
@@ -85,167 +86,29 @@ std::string getLibraryDirectory() {
 }
 
 namespace {
-
-char path_separator() {
-#if defined(_WIN32)
-    return '\\';
-#else
-    return '/';
-#endif
-}
-
-bool is_path_separator(char c) {
-    return c == '/' || c == '\\';
-}
-
-bool has_drive_prefix(const std::string& path) {
-    return path.size() > 1 &&
-           ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
-           path[1] == ':';
-}
-
-bool is_absolute_path(const std::string& path) {
-    return !path.empty() && (is_path_separator(path.front()) || has_drive_prefix(path));
-}
-
-std::string join_path(const std::string& base, const std::string& child) {
-    if (base.empty()) {
-        return child;
-    }
-    if (child.empty()) {
-        return base;
-    }
-    if (is_absolute_path(child)) {
-        return child;
-    }
-    if (is_path_separator(base.back())) {
-        return base + child;
-    }
-    return base + path_separator() + child;
-}
-
-std::vector<std::string> split_path(const std::string& path) {
-    std::vector<std::string> parts;
-    std::string current;
-    for (char c : path) {
-        if (is_path_separator(c)) {
-            if (!current.empty()) {
-                parts.push_back(current);
-                current.clear();
-            }
-        } else {
-            current.push_back(c);
-        }
-    }
-    if (!current.empty()) {
-        parts.push_back(current);
-    }
-    return parts;
-}
-
-std::string normalize_lexical_path(const std::string& path) {
-    if (path.empty()) {
-        return ".";
-    }
-
-    const bool absolute = is_absolute_path(path);
-    const std::string root = has_drive_prefix(path)
-        ? path.substr(0, 2) + path_separator()
-        : (absolute ? std::string(1, path_separator()) : "");
-    std::vector<std::string> normalized_parts;
-    const std::string path_without_root = has_drive_prefix(path) ? path.substr(2) : path;
-    for (const std::string& part : split_path(path_without_root)) {
-        if (part == ".") {
-            continue;
-        }
-        if (part == "..") {
-            if (!normalized_parts.empty() && normalized_parts.back() != "..") {
-                normalized_parts.pop_back();
-            } else if (!absolute) {
-                normalized_parts.push_back(part);
-            }
-            continue;
-        }
-        normalized_parts.push_back(part);
-    }
-
-    std::string normalized = root;
-    for (size_t i = 0; i < normalized_parts.size(); ++i) {
-        if (!normalized.empty() && !is_path_separator(normalized.back())) {
-            normalized.push_back(path_separator());
-        }
-        normalized += normalized_parts[i];
-    }
-
-    if (normalized.empty()) {
-        return absolute ? root : ".";
-    }
-    return normalized;
-}
-
-std::string get_current_directory() {
-    char buffer[4096];
-#if defined(_WIN32)
-    if (_getcwd(buffer, static_cast<int>(sizeof(buffer))) != nullptr) {
-        return std::string(buffer);
-    }
-#else
-    if (getcwd(buffer, sizeof(buffer)) != nullptr) {
-        return std::string(buffer);
-    }
-#endif
-    return ".";
-}
-
-bool path_exists(const std::string& path) {
-#if defined(_WIN32)
-    DWORD attributes = GetFileAttributesA(path.c_str());
-    return attributes != INVALID_FILE_ATTRIBUTES &&
-           (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-#else
-    struct stat info;
-    return stat(path.c_str(), &info) == 0 && S_ISDIR(info.st_mode);
-#endif
-}
-
-std::string normalize_path(const std::string& path) {
-#if defined(_WIN32)
-    char resolved[_MAX_PATH];
-    if (_fullpath(resolved, path.c_str(), _MAX_PATH) != nullptr) {
-        return std::string(resolved);
-    }
-#else
-    char resolved[PATH_MAX];
-    if (realpath(path.c_str(), resolved) != nullptr) {
-        return std::string(resolved);
-    }
-#endif
-    return normalize_lexical_path(path);
-}
-
 }  // namespace
 
 std::string getResourcePath() {
     const std::string libraryDir = getLibraryDirectory();
-    const std::string currentDir = get_current_directory();
+    const std::string currentDir = path_utils::get_current_directory();
     const std::vector<std::string> candidates = {
-        join_path(libraryDir, "../cec_input_data"),
-        join_path(libraryDir, "../../cec_input_data"),
-        join_path(libraryDir, "cec_input_data"),
-        join_path(currentDir, "cec_input_data"),
-        join_path(currentDir, "../cec_input_data")
+        path_utils::join_path(libraryDir, "../cec_input_data"),
+        path_utils::join_path(libraryDir, "../../cec_input_data"),
+        path_utils::join_path(libraryDir, "cec_input_data"),
+        path_utils::join_path(currentDir, "cec_input_data"),
+        path_utils::join_path(currentDir, "../cec_input_data")
     };
 
     for (const auto& candidate : candidates) {
-        if (path_exists(candidate)) {
-            return normalize_path(candidate);
+        if (path_utils::path_exists(candidate)) {
+            return path_utils::normalize_path(candidate);
         }
     }
 
     // Avoid exceptions during DLL initialization. If the data directory is
     // missing, return the primary expected location and let later file-open
     // code report the problem explicitly.
-    return normalize_path(candidates.front());
+    return path_utils::normalize_path(candidates.front());
 }
 
 const std::string dirPath = getResourcePath();

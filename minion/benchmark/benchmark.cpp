@@ -8,20 +8,29 @@
 #include <thread>
 #include <algorithm>
 #include <limits>
-#include <filesystem>
 #include <iomanip>
 #include <memory>
 #include <atomic>
 #include <mutex>
 #include <sstream>
 #include <utility>
-#include <system_error>
+#include <cerrno>
+#include <cstring>
+
+#ifdef _WIN32
+#include <direct.h>
+#include <sys/stat.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 #include "benchmark.h"
 #include "default_options.h"
 #include "minimizer.h"
 #include "minion_cec.h"
 #include "bbob2009.h"
+#include "path_utils.h"
 
 namespace {
 
@@ -38,6 +47,55 @@ std::string validate_algo_name(const std::string& algo) {
 template <size_t N>
 bool is_supported_dimension(int dimension, const std::array<int, N>& supported) {
     return std::find(supported.begin(), supported.end(), dimension) != supported.end();
+}
+
+bool is_directory(const std::string& path) {
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) {
+        return false;
+    }
+#ifdef _WIN32
+    return (info.st_mode & _S_IFMT) == _S_IFDIR;
+#else
+    return S_ISDIR(info.st_mode);
+#endif
+}
+
+std::string parent_path(const std::string& path) {
+    const auto pos = path.find_last_of("/\\");
+    if (pos == std::string::npos) {
+        return std::string();
+    }
+    if (pos == 0) {
+        return path.substr(0, 1);
+    }
+    return path.substr(0, pos);
+}
+
+bool make_directory(const std::string& path) {
+#ifdef _WIN32
+    return _mkdir(path.c_str()) == 0;
+#else
+    return mkdir(path.c_str(), 0755) == 0;
+#endif
+}
+
+void ensure_directory_exists(const std::string& path) {
+    if (path.empty()) {
+        throw std::runtime_error("results_folder must not be empty.");
+    }
+    if (is_directory(path)) {
+        return;
+    }
+
+    const std::string parent = parent_path(path);
+    if (!parent.empty() && !is_directory(parent)) {
+        ensure_directory_exists(parent);
+    }
+
+    if (!make_directory(path) && !is_directory(path)) {
+        throw std::runtime_error("Unable to create directory: " + path + " (" + std::strerror(errno) + ")");
+    }
 }
 
 void validate_benchmark_year(minion::BenchmarkMode mode, int year) {
@@ -111,19 +169,20 @@ void validate_dimension(minion::BenchmarkMode mode, int year, int dimension) {
     }
 }
 
-std::filesystem::path validate_results_folder(const std::string& folder) {
+std::string validate_results_folder(const std::string& folder) {
     if (folder.empty()) {
         throw std::runtime_error("results_folder must not be empty.");
     }
 
-    const std::filesystem::path path(folder);
-    std::error_code ec;
-    if (std::filesystem::exists(path, ec)) {
-        if (!std::filesystem::is_directory(path, ec)) {
-            throw std::runtime_error("results_folder exists but is not a directory: " + path.string());
-        }
+    if (is_directory(folder)) {
+        return folder;
     }
-    return path;
+
+    struct stat info;
+    if (stat(folder.c_str(), &info) == 0) {
+        throw std::runtime_error("results_folder exists but is not a directory: " + folder);
+    }
+    return folder;
 }
 
 std::vector<int> get_function_numbers(minion::BenchmarkMode mode, int year) {
@@ -509,9 +568,9 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
     const bool dump_results = config.dump_results;
     const bool log_min_ev = config.log_min_ev;
     const bool needs_results_folder = dump_results || log_min_ev;
-    const std::filesystem::path results_folder = needs_results_folder
-                                                    ? validate_results_folder(config.results_folder)
-                                                    : std::filesystem::path(config.results_folder);
+    const std::string results_folder = needs_results_folder
+                                           ? validate_results_folder(config.results_folder)
+                                           : config.results_folder;
 
     if (Nmaxevals < 0) {
         Nmaxevals = static_cast<int>(1e4 * dimension);
@@ -672,29 +731,23 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
 
     if (dump_results) {
         const std::string results_prefix = (mode == minion::BenchmarkMode::Bbob) ? "results_bbob_" : "results_cec_";
-        const std::filesystem::path results_path =
-            results_folder /
-            (results_prefix + std::to_string(year) + "_" + algo + "_" + std::to_string(dimension) + "_" +
-             std::to_string(Nmaxevals) + "_popsize_" + std::to_string(popsize) + ".txt");
+        const std::string results_path = path_utils::join_path(
+            results_folder,
+            results_prefix + std::to_string(year) + "_" + algo + "_" + std::to_string(dimension) + "_" +
+                std::to_string(Nmaxevals) + "_popsize_" + std::to_string(popsize) + ".txt");
 
-        std::error_code ec;
-        if (!std::filesystem::create_directories(results_folder, ec) && ec) {
-            throw std::runtime_error("Unable to create results_folder '" + results_folder.string() + "': " + ec.message());
-        }
-        dumpResultsToFile(results, results_path.string(), acc);
-        out.results_file = results_path.string();
+        ensure_directory_exists(results_folder);
+        dumpResultsToFile(results, results_path, acc);
+        out.results_file = results_path;
     }
 
     if (log_min_ev) {
-        const std::filesystem::path out_dir = results_folder / algo;
-        std::error_code ec;
-        if (!std::filesystem::create_directories(out_dir, ec) && ec) {
-            throw std::runtime_error("Unable to create results_folder '" + out_dir.string() + "': " + ec.message());
-        }
+        const std::string out_dir = path_utils::join_path(results_folder, algo);
+        ensure_directory_exists(out_dir);
         for (const auto& entry : min_ev_logs) {
             const int func = entry.first;
             const auto& matrix = entry.second;
-            dumpMatrixToFile(matrix, (out_dir / (algo + "_F" + std::to_string(func) + "_Min_EV.txt")).string(), acc);
+            dumpMatrixToFile(matrix, path_utils::join_path(out_dir, algo + "_F" + std::to_string(func) + "_Min_EV.txt"), acc);
         }
     }
 
