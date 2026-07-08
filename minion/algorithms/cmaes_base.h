@@ -35,7 +35,7 @@ protected:
         double sigmaState) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
     double computeRelativeRange(const std::vector<double>& fitness) const;
-    void recordIteration(size_t generation, size_t evaluations, double relRange);
+    void recordIteration(size_t generation, size_t evaluations, double metricValue);
 
     size_t lambda = 0;
     size_t mu = 0;

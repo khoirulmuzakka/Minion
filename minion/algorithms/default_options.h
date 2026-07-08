@@ -241,12 +241,14 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_CMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
+            {"convergence_tol", 1e-8},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_ACMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
+            {"convergence_tol", 1e-8},
             {"bound_strategy", std::string("reflect-random")}
         };
 

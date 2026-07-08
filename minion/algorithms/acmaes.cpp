@@ -96,10 +96,11 @@ MinionResult ACMAES::optimize() {
 
             updateEigenDecomposition();
 
-            const double relRange = computeRelativeRange(fitness);
-            recordIteration(generation, Nevals, relRange);
+            const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
+            const double effectiveStep = sigma * sqrtMaxEigenvalue;
+            recordIteration(generation, Nevals, effectiveStep);
 
-            if (support_tol && relRange <= stoppingTol) {
+            if (support_tol && effectiveStep <= stoppingTol) {
                 break;
             }
 

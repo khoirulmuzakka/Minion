@@ -187,7 +187,7 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
                       0.0,
                       std::sqrt((muEff - 1.0) / (dimension + 1.0)) - 1.0) +
             damps_extra_term;
-    stoppingTol = 1e-4;
+    stoppingTol = getConvergenceTolerance(options, 1e-8);
 
     chiN = std::sqrt(static_cast<double>(dimension)) *
            (1.0 - 1.0 / (4.0 * static_cast<double>(dimension)) +
@@ -306,8 +306,8 @@ double CMAESBase::computeRelativeRange(const std::vector<double>& fitness) const
     return (fmax - fmin) / denom;
 }
 
-void CMAESBase::recordIteration(size_t generation, size_t evaluations, double relRange) {
-    diversity.push_back(relRange);
+void CMAESBase::recordIteration(size_t generation, size_t evaluations, double metricValue) {
+    diversity.push_back(metricValue);
     minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, false, "");
     history.push_back(minionResult);
     if (callback != nullptr) {
