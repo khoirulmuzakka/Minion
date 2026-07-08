@@ -48,7 +48,7 @@ void GWO_DE::initialize  (){
 
 MinionResult GWO_DE::optimize() {
     try {
-        history.clear();
+        resetBestSoFar();
         if (!hasInitialized) initialize();
         size_t iter = 0;
 
@@ -102,7 +102,7 @@ MinionResult GWO_DE::optimize() {
             update_leaders();
 
             minionResult = MinionResult(alpha_pos, alpha_score, iter + 1, eval_count, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) {
                 callback(&minionResult);
             }
@@ -111,7 +111,7 @@ MinionResult GWO_DE::optimize() {
         }
 
         MinionResult result(alpha_pos, alpha_score, iter, eval_count, true, "Optimization terminated successfully.");
-        history.push_back(result);
+        updateBestSoFar(result);
         return result;
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

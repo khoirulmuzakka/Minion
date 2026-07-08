@@ -215,7 +215,7 @@ void SPSO2011::updateVelocitiesAndPositions() {
 MinionResult SPSO2011::optimize() {
     if (!hasInitialized) initialize();
     try {
-        history.clear();
+        resetBestSoFar();
         Nevals = 0;
         init();
         lastBestFitness = best_fitness;
@@ -257,7 +257,7 @@ MinionResult SPSO2011::optimize() {
             }
 
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) {
                 callback(&minionResult);
             }
@@ -272,7 +272,7 @@ MinionResult SPSO2011::optimize() {
             }
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

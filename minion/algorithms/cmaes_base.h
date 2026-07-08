@@ -34,8 +34,7 @@ protected:
         const Eigen::VectorXd& DState,
         double sigmaState) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
-    double computeRelativeRange(const std::vector<double>& fitness) const;
-    void recordIteration(size_t generation, size_t evaluations, double metricValue);
+    void recordIteration(size_t generation, size_t evaluations);
 
     size_t lambda = 0;
     size_t mu = 0;
@@ -49,7 +48,6 @@ protected:
     double damps = 0.0;
     double chiN = 0.0;
 
-    std::vector<double> diversity;
     std::vector<double> best;
     double best_fitness = std::numeric_limits<double>::infinity();
     size_t Nevals = 0;

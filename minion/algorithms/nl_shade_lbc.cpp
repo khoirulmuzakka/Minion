@@ -297,7 +297,7 @@ inline double NLSHADE_LBC::GetValue(const int index, const int curNInds, const i
 
 void NLSHADE_LBC::MainCycle() {
     double ArchProbs = 0.5;
-    history.clear();
+    resetBestSoFar();
 
     std::vector<std::vector<double>> popul_vec = convertToVector(Popul, NInds, NVars);
     auto funcRes = func(popul_vec, data);
@@ -313,7 +313,7 @@ void NLSHADE_LBC::MainCycle() {
 
     size_t initial_best_index = findArgMin(funcRes);
     minionResult = MinionResult(popul_vec[initial_best_index], funcRes[initial_best_index], Generation, NFEval, false, "");
-    history.push_back(minionResult);
+    updateBestSoFar(minionResult);
 
     do {
         double minfit = FitMass[0];
@@ -401,7 +401,7 @@ void NLSHADE_LBC::MainCycle() {
         size_t best_index = findArgMin(funcRes);
         std::vector<double> bestIndividual = popul_vec[best_index];
         minionResult = MinionResult(bestIndividual, funcRes[best_index], Generation, NFEval, false, "");
-        history.push_back(minionResult);
+        updateBestSoFar(minionResult);
 
         for (int TheChosenOne = 0; TheChosenOne != NInds; TheChosenOne++) {
             FitMassTemp[TheChosenOne] = funcRes[TheChosenOne];

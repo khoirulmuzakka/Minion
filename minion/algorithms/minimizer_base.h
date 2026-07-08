@@ -5,6 +5,7 @@
 #include <functional>
 #include <stdexcept>
 #include <cmath>
+#include <limits>
 #include "utility.h"
 #include <exception>
 #include <variant>
@@ -296,19 +297,22 @@ class MinimizerBase {
             return options.getSilent<double>("convergence_tol", defaultValue);
         }
 
-        MinionResult getBestFromHistory(){
-            if (history.empty()) throw std::runtime_error("Result history is empty");
-            auto minElementIter = std::min_element(history.begin(), history.end(), 
-                                                    [](const MinionResult& a, const MinionResult& b) {
-                                                        return a.fun < b.fun;
-                                                    });
-            if (minElementIter != history.end()) {
-                int minIndex = int(std::distance(history.begin(), minElementIter));
-                return history[minIndex];
-            } else {
-                std::cout << "Can not find the minimum in history."; 
-                return history.back();
-            };
+        void resetBestSoFar() {
+            best_so_far = MinionResult();
+            best_so_far.fun = std::numeric_limits<double>::infinity();
+            has_best_so_far = false;
+        }
+
+        void updateBestSoFar(const MinionResult& result) {
+            if (!has_best_so_far || result.fun < best_so_far.fun) {
+                best_so_far = result;
+                has_best_so_far = true;
+            }
+        }
+
+        MinionResult getBestSoFar(){
+            if (!has_best_so_far) throw std::runtime_error("Best result is not available");
+            return best_so_far;
         };
 
         std::vector<double> findBestPoint (const std::vector<std::vector<double>>& Xvec){
@@ -324,10 +328,13 @@ class MinimizerBase {
         double stoppingTol = 0.0;
         size_t maxevals;
         MinionResult minionResult;
-        std::vector<MinionResult> history;
+        MinionResult best_so_far;
         std::string boundStrategy;
         int seed;
          std::function<void(MinionResult*)> callback;
+
+    protected:
+        bool has_best_so_far = false;
 };
 
 

@@ -70,7 +70,6 @@ void BIPOP_aCMAES::initialize() {
 
     best = eigenToStd(initialMean);
     best_fitness = std::numeric_limits<double>::infinity();
-    diversity.clear();
     Nevals = 0;
     hasInitialized = true;
 }
@@ -189,11 +188,8 @@ size_t BIPOP_aCMAES::runRegime(
         sigma *= std::exp(cs / damps * (psNorm / chiN - 1.0));
         updateEigenDecomposition();
 
-        const std::vector<double> evaluatedFitness(fitness.begin(), fitness.begin() + static_cast<std::ptrdiff_t>(evalCount));
-        const double relRange = computeRelativeRange(evaluatedFitness);
-        diversity.push_back(relRange);
         ++globalGeneration;
-        recordIteration(globalGeneration, Nevals, relRange);
+        recordIteration(globalGeneration, Nevals);
 
         const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
         const double effectiveStep = sigma * sqrtMaxEigenvalue;
@@ -204,7 +200,6 @@ size_t BIPOP_aCMAES::runRegime(
                         << ", sigma " << sigma
                         << ", sqrt(max_eigenvalue(C)) " << sqrtMaxEigenvalue
                         << ", effective_step " << effectiveStep
-                        << ", relRange " << relRange
                         << std::endl;
             }
             shouldStopRun = true;
@@ -224,8 +219,7 @@ MinionResult BIPOP_aCMAES::optimize() {
     }
 
     try {
-        history.clear();
-        diversity.clear();
+        resetBestSoFar();
         best = eigenToStd(initialMean);
         best_fitness = std::numeric_limits<double>::infinity();
         Nevals = 0;
@@ -271,11 +265,11 @@ MinionResult BIPOP_aCMAES::optimize() {
             ++restart;
         }
 
-        if (history.empty()) {
-            recordIteration(globalGeneration, Nevals, 0.0);
+        if (!has_best_so_far) {
+            recordIteration(globalGeneration, Nevals);
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

@@ -256,7 +256,6 @@ class MinimizerBase:
 
         self.maxevals = maxevals
         self.seed = seed if seed is not None else -1
-        self.history = []
         self.minionResult = None
         self.options = options.copy() if options is not None else {}
         self.cpp_options = self.options.copy()
@@ -398,12 +397,10 @@ class GWO_DE(MinimizerBase):
 
         Notes
         -----
-        This method runs Nelder-Mead optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs Nelder-Mead optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 class NelderMead(MinimizerBase):
@@ -493,12 +490,10 @@ class NelderMead(MinimizerBase):
 
         Notes
         -----
-        This method runs Nelder-Mead optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs Nelder-Mead optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -583,9 +578,6 @@ class PSO(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
-        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
         return self.minionResult
 
 
@@ -653,9 +645,6 @@ class SPSO2011(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
-        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
         return self.minionResult
 
 
@@ -715,9 +704,6 @@ class DMSPSO(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
-        self.spatialDiversity = list(getattr(self.optimizer, "spatialDiversity", []))
         return self.minionResult
 
 
@@ -829,17 +815,14 @@ class LSHADE(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
 
 
@@ -887,12 +870,10 @@ class AGSK(MinimizerBase):
         Run the AGSK optimizer and capture history/statistics.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
 
 
@@ -946,12 +927,10 @@ class IMODE(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = getattr(self.optimizer, "meanCR", [])
         self.meanF = getattr(self.optimizer, "meanF", [])
         self.stdCR = getattr(self.optimizer, "stdCR", [])
         self.stdF = getattr(self.optimizer, "stdF", [])
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
 
 
@@ -1021,12 +1000,10 @@ class LSHADE_cnEpSin(MinimizerBase):
     def optimize(self) -> MinionResult:
         """Run LSHADE-cnEpSin and expose statistics captured by the C++ backend."""
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = list(getattr(self.optimizer, "meanCR", []))
         self.meanF = list(getattr(self.optimizer, "meanF", []))
         self.stdCR = list(getattr(self.optimizer, "stdCR", []))
         self.stdF = list(getattr(self.optimizer, "stdF", []))
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
 
 
@@ -1096,7 +1073,6 @@ class CMAES(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -1131,7 +1107,6 @@ class ACMAES(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -1192,8 +1167,6 @@ class RCMAES(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
-        self.diversity = list(getattr(self.optimizer, "diversity", []))
         return self.minionResult
     
 
@@ -1258,7 +1231,6 @@ class BIPOP_aCMAES(MinimizerBase):
 
     def optimize(self) -> MinionResult:
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -1367,17 +1339,14 @@ class jSO(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
     
 
@@ -1492,17 +1461,14 @@ class JADE(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
     
     
@@ -1604,12 +1570,10 @@ class NLSHADE_RSP(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
     
 class ABC(MinimizerBase):
@@ -1706,12 +1670,10 @@ class ABC(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
     
 
@@ -1816,12 +1778,10 @@ class Dual_Annealing(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 class L_BFGS_B(MinimizerBase):
@@ -1926,12 +1886,10 @@ class L_BFGS_B(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
     
 class L_BFGS(MinimizerBase):
@@ -2033,12 +1991,10 @@ class L_BFGS(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
     
 class j2020(MinimizerBase):
@@ -2340,7 +2296,6 @@ class RDEX(MinimizerBase):
             The optimization result containing the best solution found.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult
 
 
@@ -2393,17 +2348,14 @@ class ARRDE(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
 
 
@@ -2508,17 +2460,14 @@ class Differential_Evolution(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         self.meanCR = self.optimizer.meanCR
         self.meanF = self.optimizer.meanF
         self.stdCR = self.optimizer.stdCR
         self.stdF = self.optimizer.stdF
-        self.diversity = self.optimizer.diversity
         return self.minionResult
     
 class Minimizer(MinimizerBase):
@@ -2632,10 +2581,8 @@ class Minimizer(MinimizerBase):
 
         Notes
         -----
-        This method runs the optimization algorithm and stores the result 
-        in `self.minionResult`. The optimization history is also stored in 
-        `self.history`, containing intermediate results at each iteration.
+        This method runs the optimization algorithm and stores the result
+        in `self.minionResult` only.
         """
         self.minionResult = MinionResult(self.optimizer.optimize())
-        self.history = [MinionResult(res) for res in self.optimizer.history]
         return self.minionResult

@@ -205,7 +205,6 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
     pc = Eigen::VectorXd::Zero(dimension);
     best = std::vector<double>(mean.data(), mean.data() + mean.size());
     best_fitness = std::numeric_limits<double>::infinity();
-    diversity.clear();
     Nevals = 0;
     hasInitialized = true;
 }
@@ -292,24 +291,9 @@ std::vector<double> CMAESBase::denormalizePoint(const std::vector<double>& candi
     return denormalize_point(candidate, original_bounds);
 }
 
-double CMAESBase::computeRelativeRange(const std::vector<double>& fitness) const {
-    const double fmax = *std::max_element(fitness.begin(), fitness.end());
-    const double fmin = *std::min_element(fitness.begin(), fitness.end());
-    const double fmean =
-        std::accumulate(fitness.begin(), fitness.end(), 0.0) /
-        static_cast<double>(fitness.size());
-
-    double denom = std::fabs(fmean);
-    if (denom <= 1e-12) {
-        denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
-    }
-    return (fmax - fmin) / denom;
-}
-
-void CMAESBase::recordIteration(size_t generation, size_t evaluations, double metricValue) {
-    diversity.push_back(metricValue);
+void CMAESBase::recordIteration(size_t generation, size_t evaluations) {
     minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, false, "");
-    history.push_back(minionResult);
+    updateBestSoFar(minionResult);
     if (callback != nullptr) {
         callback(&minionResult);
     }

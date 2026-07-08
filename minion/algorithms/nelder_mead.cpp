@@ -62,7 +62,7 @@ MinionResult NelderMead::optimize() {
     }
 
     try {
-        history.clear();
+        resetBestSoFar();
 
         size_t n = xinit.size();
         if (n == 0) {
@@ -89,15 +89,15 @@ MinionResult NelderMead::optimize() {
         bool success = false;
         std::string message;
 
-        auto push_history = [&](bool done) {
+        auto push_result = [&](bool done) {
             minionResult = MinionResult(best, fbest, iter, nfev, done, message);
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) {
                 callback(&minionResult);
             }
         };
 
-        push_history(false);
+        push_result(false);
 
         while (nfev < maxevals) {
             std::vector<size_t> order = argsort(fvals, true);
@@ -203,7 +203,7 @@ MinionResult NelderMead::optimize() {
             }
 
             ++iter;
-            push_history(false);
+            push_result(false);
 
             if (nfev >= maxevals) {
                 break;
@@ -214,8 +214,8 @@ MinionResult NelderMead::optimize() {
             message = "Maximum number of evaluations reached.";
         }
 
-        push_history(true);
-        return history.back();
+        push_result(true);
+        return minionResult;
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

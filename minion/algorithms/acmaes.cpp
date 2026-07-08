@@ -28,7 +28,7 @@ MinionResult ACMAES::optimize() {
     }
 
     try {
-        history.clear();
+        resetBestSoFar();
 
         size_t generation = 0;
 
@@ -98,7 +98,7 @@ MinionResult ACMAES::optimize() {
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
-            recordIteration(generation, Nevals, effectiveStep);
+            recordIteration(generation, Nevals);
 
             if (support_tol && effectiveStep <= stoppingTol) {
                 break;
@@ -109,7 +109,7 @@ MinionResult ACMAES::optimize() {
             }
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

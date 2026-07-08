@@ -479,7 +479,7 @@ void LSHADE_cnEpSin::buildNeighbourCovariance(const std::vector<size_t>& sortedI
 MinionResult LSHADE_cnEpSin::optimize() {
     if (!hasInitialized) initialize();
     try {
-        history.clear();
+        resetBestSoFar();
         diversity.clear();
         meanCR.clear();
         meanF.clear();
@@ -664,7 +664,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
             }
 
             minionResult = MinionResult(best, best_fitness, generationCounter, Nevals, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) callback(&minionResult);
 
             reducePopulationIfNeeded();
@@ -677,7 +677,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
             }
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

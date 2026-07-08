@@ -837,7 +837,7 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
         best = X[best_idx];
         f_best = F[best_idx];
         minionResult = MinionResult(best, f_best, 1, Nevals, false, "");
-        history.push_back(minionResult);
+        updateBestSoFar(minionResult);
     }
 
     std::vector<double> grad_vec;
@@ -865,7 +865,7 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
 
 MinionResult L_BFGS_B::optimize() {
     try {
-        history.clear();
+        resetBestSoFar();
         auto defaultKey = DefaultSettings().getDefaultSettings("L_BFGS_B");
         for (auto el : optionMap) defaultKey[el.first] = el.second;
         Options options(defaultKey);
@@ -923,8 +923,8 @@ MinionResult L_BFGS_B::optimize() {
 
         if (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm()) {
             minionResult = MinionResult(best, f_best, 1, Nevals, true, state->core.message);
-            history.push_back(minionResult);
-            auto ret = getBestFromHistory();
+            updateBestSoFar(minionResult);
+            auto ret = getBestSoFar();
             ret.nfev = Nevals;
             return ret;
         }
@@ -1015,8 +1015,8 @@ MinionResult L_BFGS_B::optimize() {
         const bool success = !state->core.had_issue &&
             (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm());
         minionResult = MinionResult(best, f_best, k, Nevals, success, state->core.message);
-        history.push_back(minionResult);
-        auto ret = getBestFromHistory();
+        updateBestSoFar(minionResult);
+        auto ret = getBestSoFar();
         ret.nfev = Nevals;
         ret.success = success;
         ret.message = state->core.message;

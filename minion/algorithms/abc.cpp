@@ -64,7 +64,8 @@ void ABC::init() {
     best = population[best_idx];
     best_fitness = fitness[best_idx];
 
-    history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
+    minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+    updateBestSoFar(minionResult);
 }
 
 bool ABC::checkStopping() const {
@@ -77,7 +78,7 @@ bool ABC::checkStopping() const {
 MinionResult ABC::optimize() {
     if (!hasInitialized) initialize();
     try {
-        history.clear();
+        resetBestSoFar();
         diversity.clear();
         Nevals = 0;
         init();
@@ -214,13 +215,13 @@ MinionResult ABC::optimize() {
             diversity.push_back((fmax - fmin) / denom);
 
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) callback(&minionResult);
             if (support_tol && checkStopping()) break;
             ++iter;
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

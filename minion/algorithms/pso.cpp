@@ -92,7 +92,8 @@ void PSO::init() {
     spatialDiversity.clear();
     recordMetrics();
 
-    history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
+    minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+    updateBestSoFar(minionResult);
 }
 
 void PSO::updateVelocitiesAndPositions() {
@@ -157,7 +158,7 @@ MinionResult PSO::optimize() {
         initialize();
     }
     try {
-        history.clear();
+        resetBestSoFar();
         diversity.clear();
         spatialDiversity.clear();
         Nevals = 0;
@@ -187,7 +188,7 @@ MinionResult PSO::optimize() {
             recordMetrics();
 
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             if (callback != nullptr) {
                 callback(&minionResult);
             }
@@ -202,7 +203,7 @@ MinionResult PSO::optimize() {
             iter++;
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

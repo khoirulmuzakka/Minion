@@ -167,7 +167,7 @@ class Minimizer {
          */ 
         MinionResult operator () () {
             auto ret = optimizer->optimize();
-            history = optimizer->history;
+            best_so_far = optimizer->best_so_far;
             return ret;
         };
 
@@ -179,12 +179,12 @@ class Minimizer {
          */ 
         MinionResult optimize () {
             auto ret = optimizer->optimize();
-            history = optimizer->history;
+            best_so_far = optimizer->best_so_far;
             return ret;
         };
 
     public : 
-        std::vector<MinionResult> history;
+        MinionResult best_so_far;
 
 };
 

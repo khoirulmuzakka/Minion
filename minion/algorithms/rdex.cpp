@@ -216,7 +216,7 @@ void RDEX::UpdateEBHybridParam(
 }
 
 void RDEX::MainCycle() {
-    history.clear();
+    resetBestSoFar();
 
     std::vector<std::vector<double>> pop;
     pop.reserve(nIndsFront);
@@ -237,7 +237,7 @@ void RDEX::MainCycle() {
 
     size_t bestIndex = findArgMin(funPop);
     minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, false, "");
-    history.push_back(minionResult);
+    updateBestSoFar(minionResult);
 
     double minfit = fitArr[0];
     double maxfit = fitArr[0];
@@ -446,7 +446,7 @@ void RDEX::MainCycle() {
 
         bestIndex = findArgMin(funPop);
         minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, false, "");
-        history.push_back(minionResult);
+        updateBestSoFar(minionResult);
 
         for (int indIter = 0; indIter < nIndsFront; ++indIter) {
             const double tempFit = funPop[indIter];

@@ -234,16 +234,13 @@ void RCMAES::initialize() {
 
     best = eigenToStd(initialMean);
     best_fitness = std::numeric_limits<double>::infinity();
-    diversity.clear();
     Nevals = 0;
     hasInitialized = true;
 }
 
-void RCMAES::recordHistory(double relRange) {
-    const bool success = support_tol && relRange <= stoppingTol;
-    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, success,
-                                success ? "stopping tolerance reached" : "");
-    history.push_back(minionResult);
+void RCMAES::recordHistory() {
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, false, "");
+    updateBestSoFar(minionResult);
     if (callback != nullptr) {
         callback(&minionResult);
     }
@@ -285,8 +282,7 @@ MinionResult RCMAES::optimize() {
     }
 
     try {
-        history.clear();
-        diversity.clear();
+        resetBestSoFar();
         currentFitness.clear();
         best = eigenToStd(initialMean);
         best_fitness = std::numeric_limits<double>::infinity();
@@ -443,13 +439,8 @@ MinionResult RCMAES::optimize() {
             sigma *= std::exp(cs / damps * (psNorm / chiN - 1.0));
             updateEigenDecomposition();
 
-            const std::vector<double> evaluatedFitness(
-                currentFitness.begin(),
-                currentFitness.begin() + static_cast<std::ptrdiff_t>(evalCount));
-            const double relRange = computeRelativeRange(evaluatedFitness);
-            diversity.push_back(relRange);
             ++generation;
-            recordHistory(relRange);
+            recordHistory();
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
@@ -462,7 +453,6 @@ MinionResult RCMAES::optimize() {
                             << ", sigma " << sigma
                             << ", sqrt(max_eigenvalue(C)) " << sqrtMaxEigenvalue
                             << ", effective_step " << effectiveStep
-                            << ", relRange " << relRange
                             << std::endl;
                 }
                 if (!best.empty()) {
@@ -523,11 +513,11 @@ MinionResult RCMAES::optimize() {
             }
         }
 
-        if (history.empty()) {
-            recordHistory(0.0);
+        if (!has_best_so_far) {
+            recordHistory();
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

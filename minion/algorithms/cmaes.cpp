@@ -28,7 +28,7 @@ MinionResult CMAES::optimize() {
     }
 
     try {
-        history.clear();
+        resetBestSoFar();
 
         size_t generation = 0;
 
@@ -95,12 +95,11 @@ MinionResult CMAES::optimize() {
 
             //if (generation % (dimension == 0 ? 1 : (7 + static_cast<int>(3.0 * dimension))) == 0) {
             
-                updateEigenDecomposition();
-            
+            updateEigenDecomposition();
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
-            recordIteration(generation, Nevals, effectiveStep);
+            recordIteration(generation, Nevals);
 
             if (support_tol && effectiveStep <= stoppingTol) {
                 break;
@@ -111,7 +110,7 @@ MinionResult CMAES::optimize() {
             }
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

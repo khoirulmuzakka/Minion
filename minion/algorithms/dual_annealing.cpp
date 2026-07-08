@@ -153,7 +153,7 @@ void Dual_Annealing::step (int iter, double temp){
     double relGap = std::fabs(current_E - best_E) / denom;
 
     minionResult = MinionResult(best_cand, best_E, iter, Nevals, relGap <= stoppingTol, "");
-    history.push_back(minionResult);
+    updateBestSoFar(minionResult);
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
         size_t maxevals_ls = maxevals-Nevals;
@@ -172,7 +172,7 @@ void Dual_Annealing::step (int iter, double temp){
             throw std::runtime_error("Unknown local search algorithm.");
         };
         Nevals += minionResult.nfev;
-        history.push_back(minionResult);
+        updateBestSoFar(minionResult);
 
         //std::cout << "DA : LS : " << best_E << " " << minionResult.fun << " " << Nevals << " " << minionResult.nfev << " "<< N_no_improve<<"\n";
         if (minionResult.fun<best_E){
@@ -189,7 +189,7 @@ void Dual_Annealing::step (int iter, double temp){
 MinionResult Dual_Annealing::optimize() {
     if (!hasInitialized) initialize();
     try {
-        history.clear();
+        resetBestSoFar();
         Nevals=0;
 
         double temperature_restart = initial_temp * restart_temp_ratio;
@@ -202,8 +202,8 @@ MinionResult Dual_Annealing::optimize() {
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
-                if (!history.empty() && history.back().success) {
-                    return getBestFromHistory();
+                if (minionResult.success) {
+                    return getBestSoFar();
                 }
                 if ( temperature < temperature_restart) {
                     init(false); 
@@ -216,7 +216,7 @@ MinionResult Dual_Annealing::optimize() {
             } while(Nevals < maxevals); ;
         } while(Nevals < maxevals); 
 
-        return getBestFromHistory();
+        return getBestSoFar();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

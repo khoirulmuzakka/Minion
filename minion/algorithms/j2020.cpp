@@ -95,7 +95,7 @@ MinionResult j2020::optimize() {
     }
 
     try {
-        history.clear();
+        resetBestSoFar();
 
         if (bounds.empty()) {
             throw std::runtime_error("j2020 requires problem dimension greater than zero.");
@@ -120,7 +120,7 @@ MinionResult j2020::optimize() {
         best = population[bestIndex];
         best_fitness = fitness[bestIndex];
         minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
-        history.push_back(minionResult);
+        updateBestSoFar(minionResult);
         if (callback != nullptr) {
             callback(&minionResult);
         }
@@ -261,7 +261,7 @@ MinionResult j2020::optimize() {
                 best = trial;
                 best_fitness = trialCost;
                 minionResult = MinionResult(best, best_fitness, cycle + 1, Nevals, false, "");
-                history.push_back(minionResult);
+                updateBestSoFar(minionResult);
                 if (callback != nullptr) {
                     callback(&minionResult);
                 }
@@ -282,7 +282,7 @@ MinionResult j2020::optimize() {
             }
         }
 
-        return getBestFromHistory();
+        return getBestSoFar();
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

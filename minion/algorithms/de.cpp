@@ -191,7 +191,8 @@ void Differential_Evolution::init (){
     best = population[best_idx];
     best_fitness = fitness[best_idx];
     Nevals += population.size();
-    history.push_back(MinionResult(best, best_fitness, 0, Nevals, false, ""));
+    minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+    updateBestSoFar(minionResult);
 };
 
 bool Differential_Evolution::checkStopping(){
@@ -237,7 +238,7 @@ MinionResult Differential_Evolution::optimize() {
     try {
         archive.clear();
         archive_fitness.clear();
-        history.clear();
+        resetBestSoFar();
         init();
         size_t iter=1;
         do {
@@ -270,13 +271,13 @@ MinionResult Differential_Evolution::optimize() {
             best_fitness = fitness[best_idx];
             onBestUpdated(best, best_fitness, improved);
             minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
-            history.push_back(minionResult);
+            updateBestSoFar(minionResult);
             iter++;
             if (callback != nullptr) callback(&minionResult);
             if ( support_tol && checkStopping()) break;
         } while(Nevals < maxevals); 
 
-        return getBestFromHistory();
+        return getBestSoFar();
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

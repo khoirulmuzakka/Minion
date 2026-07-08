@@ -105,7 +105,7 @@ public:
             initialize();
         }
         MainCycle();
-        return getBestFromHistory();
+        return getBestSoFar();
     }
 
     void initialize() override;

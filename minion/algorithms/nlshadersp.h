@@ -302,7 +302,7 @@ public :
     MinionResult optimize() override{
         if (!hasInitialized) initialize();
         MainCycle(); 
-        return getBestFromHistory();
+        return getBestSoFar();
     }; 
 
     /**
