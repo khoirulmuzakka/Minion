@@ -555,6 +555,10 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
         .def("__call__", &CEC2014Functions::operator(), py::call_guard<py::gil_scoped_release>());
 
+    py::class_<CEC20142017Functions>(m, "CEC20142017Functions")
+        .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
+        .def("__call__", &CEC20142017Functions::operator(), py::call_guard<py::gil_scoped_release>());
+
     py::class_<CEC2017Functions>(m, "CEC2017Functions")
         .def(py::init<int, int>(), py::arg("function_number"), py::arg("dimension"))
         .def("__call__", &CEC2017Functions::operator(), py::call_guard<py::gil_scoped_release>());

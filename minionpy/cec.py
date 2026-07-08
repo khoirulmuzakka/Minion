@@ -2,6 +2,7 @@ import numpy as np
 
 from .minionpycpp import CEC2017Functions as cppCEC2017Functions
 from .minionpycpp import CEC2014Functions as cppCEC2014Functions
+from .minionpycpp import CEC20142017Functions as cppCEC20142017Functions
 from .minionpycpp import CEC2019Functions as cppCEC2019Functions
 from .minionpycpp import CEC2020Functions as cppCEC2020Functions
 from .minionpycpp import CEC2022Functions as cppCEC2022Functions
@@ -243,6 +244,60 @@ class CEC2014Functions(_BenchmarkMetadataMixin):
         ----------
         X : list[list[float]]
             Input vectors to evaluate. 
+
+        Returns
+        -------
+        list
+            A vector of function values corresponding to each input vector.
+        """
+        return self.cpp_func(X)
+
+class CEC20142017Functions(_BenchmarkMetadataMixin):
+    """
+    Provides access to the combined CEC2014 + CEC2017 benchmark suite.
+
+    This class implements 60 benchmark optimization problems:
+    F1-F30 map to CEC2014 and F31-F60 map to CEC2017.
+
+    Available dimensions: **2, 10, 20, 30, 50, 100**
+    Available functions: **1–60**
+    """
+
+    def __init__(self, function_number, dimension):
+        """
+        Initialize a CEC20142017Functions instance.
+
+        Parameters
+        ----------
+        function_number : int
+            The function index (must be in the range 1–60).
+            Functions 41–49 are not available for dimensions 2 and 20.
+        dimension : int
+            The problem dimensionality (must be one of {2, 10, 20, 30, 50, 100}).
+        """
+        if function_number not in range(1, 61):
+            raise Exception("Function number must be between 1-60.")
+        if int(dimension) not in [2, 10, 20, 30, 50, 100]:
+            raise Exception("Dimension must be 2, 10, 20, 30, 50, 100")
+
+        local_function = int(function_number) if int(function_number) <= 30 else int(function_number) - 30
+        if int(dimension) in [2, 20] and local_function in range(11, 20):
+            raise Exception("At dimension 2 and 20, function number 41-49 are not available")
+
+        self.function_number = int(function_number)
+        self.dimension = int(dimension)
+        self.bounds = _repeat_bounds(self.dimension, -100.0, 100.0)
+        self.f_opt = 100.0
+        self.cpp_func = cppCEC20142017Functions(self.function_number, self.dimension)
+
+    def __call__(self, X):
+        """
+        Evaluate the selected combined CEC2014/CEC2017 test function.
+
+        Parameters
+        ----------
+        X : list[list[float]]
+            Input vectors to evaluate.
 
         Returns
         -------
