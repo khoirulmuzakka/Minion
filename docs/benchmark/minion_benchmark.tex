@@ -1,0 +1,475 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\setlist[itemize]{leftmargin=1.5em}
+
+\newtheorem{proposition}{Proposition}
+
+\title{Minion Benchmark Functions}
+\author{Minion Project}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Construction of Benchmark Functions}
+\begin{proposition}[Common minimizer under weighted composition]
+	Let
+	\[
+	f(x) = \sum_{i=1}^m w_i(x) g_i(x),
+	\]
+	and suppose that $x_g$ is a common global minimizer of all component functions
+	$g_i$. Define
+	\[
+	\Delta g_i(x) = g_i(x) - g_i(x_g),
+	\qquad
+	\Delta w_i(x) = w_i(x) - w_i(x_g).
+	\]
+	Then $x_g$ is a global minimizer of $f$ if and only if
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x)
+	+
+	\sum_i \Delta w_i(x)\,g_i(x_g)
+	\ge 0
+	\qquad
+	\forall x.
+	\]
+\end{proposition}
+
+\begin{proof}
+	Since $x_g$ is a global minimizer of $f$ if and only if $f(x)-f(x_g)\ge 0$ for
+	all $x$, we expand
+	\[
+	f(x)-f(x_g)
+	=
+	\sum_i w_i(x)g_i(x) - \sum_i w_i(x_g)g_i(x_g).
+	\]
+	Add and subtract $\sum_i w_i(x)g_i(x_g)$:
+	\[
+	f(x)-f(x_g)
+	=
+	\sum_i w_i(x)\bigl[g_i(x)-g_i(x_g)\bigr]
+	+
+	\sum_i \bigl[w_i(x)-w_i(x_g)\bigr] g_i(x_g),
+	\]
+	which is exactly
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x)
+	+
+	\sum_i \Delta w_i(x)\,g_i(x_g).
+	\]
+	Hence $x_g$ is a global minimizer if and only if the displayed inequality holds
+	for all $x$.
+\end{proof}
+
+\begin{proposition}[Exact-dominance sufficient condition]
+Consider
+\[
+f(x)=\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr),
+\]
+where each component satisfies
+\[
+g_i(z)\ge 0
+\qquad \text{for all } z,
+\qquad
+g_i(0)=0.
+\]
+Assume further that
+\[
+w_i(x)\ge 0
+\qquad \forall i,x,
+\qquad
+\sum_{i=1}^m w_i(x)=1
+\qquad \forall x,
+\]
+that component $1$ has the smallest bias,
+\[
+b_1 \le b_i
+\qquad \forall i,
+\]
+and that exact dominance holds at $x_1^\ast$:
+\[
+w_1(x_1^\ast)=1,
+\qquad
+w_j(x_1^\ast)=0
+\qquad
+\forall j\neq 1.
+\]
+Then $x_1^\ast$ is a global minimizer of $f$.
+\end{proposition}
+
+\begin{proof}
+At $x=x_1^\ast$, exact dominance gives
+\[
+f(x_1^\ast)
+=
+b_1 + g_1(0)
+=
+b_1.
+\]
+For arbitrary $x$, since $g_i(x-x_i^\ast)\ge 0$ and $b_i\ge b_1$, one has
+\[
+b_i+g_i(x-x_i^\ast)\ge b_1
+\qquad
+\forall i.
+\]
+Multiplying by the nonnegative weights and summing,
+\[
+f(x)
+=
+\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr)
+\ge
+\sum_{i=1}^m w_i(x)\,b_1
+=
+b_1
+=
+f(x_1^\ast).
+\]
+Hence $x_1^\ast$ is a global minimizer.
+\end{proof}
+
+Two useful sufficient conditions follow immediately.
+
+\begin{itemize}
+	\item If all components share the same minimum value
+	\[
+	g_i(x_g)=g_0 \ge 0
+	\qquad
+	\text{for all } i,
+	\]
+	then a sufficient condition is
+	\[
+	w_i(x) > 0
+	\qquad \text{for all } i,x,
+	\]
+	together with
+	\[
+	\sum_i w_i(x) \ge \sum_i w_i(x_g)
+	\qquad \forall x.
+	\]
+	Indeed, since $\Delta g_i(x)\ge 0$ for all $i,x$, one has
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x) \ge 0,
+	\]
+	and therefore it suffices that
+	\[
+	g_0 \sum_i \Delta w_i(x) \ge 0.
+	\]
+	
+	\item In the special case $g_0 = 0$, the second term vanishes identically, so
+	\[
+	w_i(x) \ge 0
+	\qquad \text{for all } i,x
+	\]
+	is sufficient.
+\end{itemize}
+
+In particular, if the weights are normalized,
+\[
+\sum_i w_i(x) = 1
+\qquad
+\forall x,
+\]
+then the condition
+\[
+w_i(x) \ge 0
+\qquad \text{for all } i,x
+\]
+is sufficient whenever all components share the same minimum value $g_i(x_g)=g_0
+\ge 0$.
+
+
+\section{Minion Benchmark Functions}
+
+This document summarizes the mathematical form of the benchmark functions
+implemented in the Minion benchmark layer under
+\texttt{minion/benchmark/basicf.*},
+\texttt{minion/benchmark/hybridf.*}, and
+\texttt{minion/benchmark/compositionf.*}.
+
+\subsection{Notation}
+
+Let $x = (x_1,\dots,x_D)^\top \in \mathbb{R}^D$ be the decision vector,
+$x^\ast \in \mathbb{R}^D$ the user-defined global optimum location, and
+$f_{\mathrm{opt}}$ the target optimum value. The shifted variable is
+\[
+z_i = x_i - x_i^\ast,
+\qquad
+z = x - x^\ast.
+\]
+
+For the Rosenbrock and Schwefel functions, the internal coordinates are further
+shifted so that the minimum is attained at $x=x^\ast$:
+\[
+y_i = z_i + 1
+\qquad \text{(Rosenbrock)},
+\]
+\[
+y_i = z_i + 420.9687462275036
+\qquad \text{(Schwefel)}.
+\]
+
+\subsection{Basic Functions}
+
+\subsubsection{Sphere}
+\[
+f(x) = \sum_{i=1}^D z_i^2 + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Ellipsoidal}
+\[
+f(x) = \sum_{i=1}^D 10^{6\frac{i-1}{D-1}} z_i^2 + f_{\mathrm{opt}}.
+\]
+For $D=1$, the exponent is taken as $0$.
+
+\subsubsection{Bent Cigar}
+\[
+f(x) = z_1^2 + 10^6 \sum_{i=2}^D z_i^2 + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Discus}
+\[
+f(x) = 10^6 z_1^2 + \sum_{i=2}^D z_i^2 + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Rosenbrock}
+\[
+f(x) = \sum_{i=1}^{D-1}
+\left[
+100 \left(y_{i+1} - y_i^2\right)^2 + \left(y_i - 1\right)^2
+\right]
+ + f_{\mathrm{opt}},
+\]
+with $y_i = z_i + 1$.
+
+\subsubsection{Ackley}
+\[
+f(x) =
+-20 \exp\!\left(-0.2\sqrt{\frac{1}{D}\sum_{i=1}^D z_i^2}\right)
+- \exp\!\left(\frac{1}{D}\sum_{i=1}^D \cos(2\pi z_i)\right)
++ 20 + e + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Rastrigin}
+\[
+f(x) =
+10D + \sum_{i=1}^D \left(z_i^2 - 10\cos(2\pi z_i)\right)
+ + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Griewank}
+\[
+f(x) =
+\frac{1}{4000}\sum_{i=1}^D z_i^2
+- \prod_{i=1}^D \cos\!\left(\frac{z_i}{\sqrt{i}}\right)
++ 1 + f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Schwefel}
+\[
+f(x) =
+418.9828872724338 D
+- \sum_{i=1}^D y_i \sin\!\left(\sqrt{|y_i|}\right)
+ + f_{\mathrm{opt}},
+\]
+with $y_i = z_i + 420.9687462275036$.
+
+\subsubsection{Zakharov}
+\[
+f(x) =
+\sum_{i=1}^D z_i^2
++ \left(\sum_{i=1}^D \frac{i}{2} z_i\right)^2
++ \left(\sum_{i=1}^D \frac{i}{2} z_i\right)^4
++ f_{\mathrm{opt}}.
+\]
+
+\subsubsection{Levy}
+Define
+\[
+w_i = 1 + \frac{z_i}{4}.
+\]
+Then
+\[
+f(x) =
+\sin^2(\pi w_1)
++ \sum_{i=1}^{D-1} (w_i - 1)^2
+\left[1 + 10 \sin^2(\pi w_i + 1)\right]
++ (w_D - 1)^2 \left[1 + \sin^2(2\pi w_D)\right]
++ f_{\mathrm{opt}}.
+\]
+
+\subsection{Hybrid Functions}
+
+A hybrid function partitions the transformed variable vector into disjoint
+blocks and evaluates a different basic function on each block.
+
+Let the hybrid have $m$ components with proportions
+\[
+p_1,\dots,p_m,
+\qquad
+p_j > 0,
+\qquad
+\sum_{j=1}^m p_j = 1.
+\]
+
+The integer block sizes are computed so that each block receives at least one
+variable and the total dimension remains $D$. Denote the resulting block sizes
+by $d_1,\dots,d_m$ with
+\[
+\sum_{j=1}^m d_j = D.
+\]
+
+Let $P$ be a permutation of $\{1,\dots,D\}$, and let $R \in \mathbb{R}^{D
+\times D}$ be an optional orthonormal rotation matrix. The preprocessing is:
+\[
+z = x - x^\ast,
+\]
+\[
+\tilde{z} =
+\begin{cases}
+R z, & \text{if rotation is enabled}, \\
+z, & \text{otherwise},
+\end{cases}
+\]
+\[
+u_i = \tilde{z}_{P(i)}.
+\]
+
+Now split $u$ into consecutive blocks:
+\[
+u =
+\left[
+u^{(1)},
+u^{(2)},
+\dots,
+u^{(m)}
+\right],
+\qquad
+u^{(j)} \in \mathbb{R}^{d_j}.
+\]
+
+If the component functions are $g_1,\dots,g_m$, then the hybrid function is
+\[
+F_{\mathrm{hybrid}}(x)
+=
+f_{\mathrm{opt}}
++ \sum_{j=1}^m g_j\!\left(u^{(j)}\right),
+\]
+where each $g_j$ is evaluated with zero local shift and zero local optimum
+offset.
+
+\subsection{Composition Functions}
+
+A composition function blends several full-dimensional component functions using
+distance-based weights.
+
+Let the composition have $m$ components
+\[
+g_1,\dots,g_m,
+\]
+with scales
+\[
+\lambda_1,\dots,\lambda_m,
+\]
+biases
+\[
+b_1,\dots,b_m,
+\]
+and weight-shape parameters
+\[
+\delta_1,\dots,\delta_m,
+\qquad
+\delta_j > 0.
+\]
+
+Each component also has a center $x^{\ast(j)}$. Optionally, it may have a
+rotation matrix $R_j$.
+
+For component $j$, define the transformed evaluation point
+\[
+\hat{x}^{(j)} =
+\begin{cases}
+R_j(x - x^{\ast(j)}) + x^{\ast(j)}, & \text{if component rotation is enabled}, \\
+x, & \text{otherwise}.
+\end{cases}
+\]
+
+The component fitness is
+\[
+\phi_j(x) = \lambda_j g_j\!\left(\hat{x}^{(j)}\right) + b_j.
+\]
+
+The squared distance to the component center is
+\[
+r_j^2(x) = \sum_{i=1}^D \left(x_i - x_i^{\ast(j)}\right)^2.
+\]
+
+If $r_j^2(x)=0$ for some $j$, that component receives full weight and
+\[
+F_{\mathrm{comp}}(x) = f_{\mathrm{opt}} + \phi_j(x).
+\]
+
+Otherwise, the raw weight is
+\[
+\omega_j(x) =
+\left(\frac{1}{r_j^2(x)}\right)^{1/2}
+\exp\!\left(
+-\frac{r_j^2(x)}{2D\delta_j^2}
+\right).
+\]
+
+Normalize the weights:
+\[
+w_j(x) = \frac{\omega_j(x)}{\sum_{k=1}^m \omega_k(x)}.
+\]
+
+The composition function is
+\[
+F_{\mathrm{comp}}(x)
+=
+f_{\mathrm{opt}}
++ \sum_{j=1}^m w_j(x)\phi_j(x).
+\]
+
+
+\subsection{Nested Constructions}
+
+In the current Minion benchmark layer, a composition component may itself be a
+hybrid function. In that case, the same formulas apply recursively:
+
+\begin{itemize}
+\item a hybrid function is a sum of blockwise component functions after global
+shift, optional global rotation, and permutation;
+\item a composition function is a weighted blend of full-dimensional component
+functions;
+\item a composition component may therefore be either a basic function or a
+hybrid function.
+\end{itemize}
+
+\subsection{Remarks}
+
+\begin{itemize}
+\item These formulas describe the current Minion benchmark layer and are not
+identical to the official CEC2017 hybrid and composition definitions.
+\item In particular, the Minion layer is designed as a configurable generator
+for custom benchmark instances, whereas the official CEC suites use fixed,
+predefined benchmark constructions and suite-specific transformations.
+\item The default target optimum value in the current hybrid and composition
+specifications is
+\[
+f_{\mathrm{opt}} = 100.
+\]
+\end{itemize}
+
+\end{document}

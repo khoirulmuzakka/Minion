@@ -85,13 +85,24 @@ endif()
 # Helper to copy runtime DLLs next to Windows binaries/modules so they can be
 # loaded without requiring manual PATH edits.
 function(minion_copy_runtime_deps target_name)
-    if(WIN32)
-        add_custom_command(TARGET ${target_name} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${target_name}>
-                $<TARGET_FILE_DIR:${target_name}>
-            COMMAND_EXPAND_LISTS
-        )
+    if(WIN32 AND ARGC GREATER 1)
+        set(_minion_runtime_files)
+        foreach(_minion_dep IN LISTS ARGN)
+            if(TARGET ${_minion_dep})
+                get_target_property(_minion_dep_type ${_minion_dep} TYPE)
+                if(_minion_dep_type STREQUAL "SHARED_LIBRARY" OR _minion_dep_type STREQUAL "MODULE_LIBRARY")
+                    list(APPEND _minion_runtime_files "$<TARGET_FILE:${_minion_dep}>")
+                endif()
+            endif()
+        endforeach()
+        if(_minion_runtime_files)
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${_minion_runtime_files}
+                    $<TARGET_FILE_DIR:${target_name}>
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
     endif()
 endfunction()
 
@@ -206,7 +217,13 @@ if(WIN32)
 endif()
 
 if(MINION_BUILD_BENCHMARK)
-    add_library(minion_benchmark STATIC minion/benchmark/benchmark.cpp)
+    add_library(minion_benchmark STATIC
+        minion/benchmark/benchmark.cpp
+        minion/benchmark/basicf.cpp
+        minion/benchmark/hybridf.cpp
+        minion/benchmark/compositionf.cpp
+        minion/benchmark/minion_benchmark.cpp
+    )
     target_include_directories(minion_benchmark PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/utils>
@@ -236,8 +253,8 @@ if(MINION_BUILD_EXAMPLES)
         add_executable(${target_name} ${source_file})
         if(ARGC GREATER 2)
             target_link_libraries(${target_name} PRIVATE ${ARGN})
+            minion_copy_runtime_deps(${target_name} ${ARGN})
         endif()
-        minion_copy_runtime_deps(${target_name})
     endfunction()
 
     set(MINION_EXAMPLE_TARGETS)
@@ -250,6 +267,12 @@ if(MINION_BUILD_EXAMPLES)
 
         minion_add_example(run_benchmark examples/main_run_benchmark.cpp minion_benchmark minion minion_cec bbob2009)
         list(APPEND MINION_EXAMPLE_TARGETS run_benchmark)
+
+        minion_add_example(run_custom examples/main_run_custom.cpp minion_benchmark minion)
+        list(APPEND MINION_EXAMPLE_TARGETS run_custom)
+
+        minion_add_example(check_basicf_optima examples/main_check_basicf_optima.cpp minion_benchmark)
+        list(APPEND MINION_EXAMPLE_TARGETS check_basicf_optima)
     endif()
 
     function(minion_set_example_output_dir output_dir)
