@@ -26,13 +26,43 @@
 \newtheorem{corollary}{Corollary}
 
 \title{General Framework for Scalable Construction of Optimization Benchmark Function}
-\author{Minion Project}
+\author{
+	Khoirul Faiq Muzakka\(^{\ast\dagger}\),
+	Martin Finsterbusch\(^{\ast}\)\\
+	\small \(^{\ast}\)Institute of Energy Materials and Devices (IMD-2)\\
+	\small Forschungszentrum J\"ulich GmbH, Germany\\
+	\small \(^{\dagger}\)Email: \href{mailto:k.muzakka@fz-juelich.de}{k.muzakka@fz-juelich.de}
+}
 \date{\today}
 
 \begin{document}
 
 \maketitle
 
+\begin{abstract}
+Benchmark suites such as BBOB/COCO and the CEC collections provide standard
+test problems for comparing optimization algorithms, but their fixed size and
+fixed landscape designs limit their use for large-scale robustness testing. This
+paper proposes a general framework for constructing scalable families of
+continuous optimization benchmark functions from known base functions. The
+construction combines coordinate transformations, value transformations, and
+composition operators while preserving analytically known global optima under
+explicit sufficient conditions. The framework separates the roles of the main
+operators: coordinate transformations control the embedding and geometry of
+component landscapes, value transformations control objective-value response and
+modality, and composition operators determine how component features interact in
+the final objective. We provide prescriptions for common-optimum constructions,
+multiple-optimum constructions, deceptive constructions, and nested
+compositions, together with a discussion of how operator choices affect local
+minima, curvature, flatness, and multimodality. The framework is intended as a
+programmable extension of existing benchmark suites for generating many
+reproducible problem instances with controlled landscape properties and known
+reference optima. A C++ and Python implementation is provided to support
+practical benchmark generation and future large-scale algorithm robustness
+studies.
+\end{abstract}
+
+\setcounter{tocdepth}{1}
 \tableofcontents
 
 
@@ -668,6 +698,21 @@ component space. Such transformations can generate flat directions,
 non-isolated minimizers, stationary manifolds, or additional local minima caused
 by the removal of descent directions.
 
+The same affine prescription can be used to place component optima at
+off-target points. For a prescribed point \(\tilde x_i\), choose
+\begin{equation}
+	T_i(x)=A_i(x-\tilde x_i)+x_i^\star.
+	\label{eq:affine-deceptive-T}
+\end{equation}
+Then \(T_i(\tilde x_i)=x_i^\star\), so the \(i\)-th component attains its
+minimum value at \(\tilde x_i\). This does not by itself make \(\tilde x_i\) a
+local or global minimizer of the final objective, because the other components
+and the composition operator \(\psi\) also contribute there. Rather, it creates
+a controlled component-wise optimum at a prescribed point. By assigning
+different components to different points and then choosing \(\psi\), one can
+promote some of these points to repeated global optima or make them suboptimal
+deceptive points in the composed landscape.
+
 
 
 
@@ -843,47 +888,405 @@ minimum-preservation argument no longer applies without a separate analysis.
 
 
 \subsection{Composition operator $\psi$}
-The operator $\psi$ combines the transformed component values. Examples include
-weighted sums,
+\label{subsec:composition-operator}
+
+The composition operator \(\psi\) combines the transformed component values
 \[
-\psi(z)=\sum_{i=1}^m w_i z_i,
-\qquad
-w_i\ge0,
+	z_i(x)=\phi_i(g_i(T_i(x))),
+	\qquad
+	z(x)=(z_1(x),\ldots,z_m(x)).
 \]
-state-dependent weighted sums,
+Thus the final objective is
 \[
-\psi(z;x)=\sum_{i=1}^m w_i(x)z_i,
-\qquad
-w_i(x)\ge0,
+	f(x)=\psi(z(x)).
+\]
+By design, \(\psi\) should preserve the known global minimum. In the
+common-optimum case, the basic condition is
+\[
+	\psi(0)=0,
+	\qquad
+	\psi(z)\ge0
+	\quad\text{for all }z\in\mathbb{R}_{\ge0}^m.
+\]
+If the components satisfy \(z_i(x^\star)=0\) and \(z_i(x)\ge0\), then
+\(z(x^\star)=0\), and the above condition gives
+\[
+	f(x^\star)=0,
+	\qquad
+	f(x)\ge0.
+\]
+Hence \(x^\star\) remains a global minimizer of the composed objective.
+More generally, for a prescribed component-value vector \(v^\star=z(x^\star)\),
+the same argument applies with the condition
+\[
+	\psi(v^\star)=0,
+	\qquad
+	\psi(z)\ge0
+	\quad\text{for all attainable }z=z(x).
+\]
+
+The local behavior follows from the chain rule. If \(z\) and \(\psi\) are
+differentiable, then
+\begin{equation}
+	\nabla f(x)
+	=
+	J_z(x)^T\nabla\psi(z(x)).
+	\label{eq:composition-gradient}
+\end{equation}
+If both are twice differentiable, then
+\begin{equation}
+	\nabla^2 f(x)
+	=
+	J_z(x)^T\nabla^2\psi(z(x))J_z(x)
+	+
+	\sum_{i=1}^m
+	\frac{\partial\psi}{\partial z_i}(z(x))\nabla^2 z_i(x).
+	\label{eq:composition-hessian}
+\end{equation}
+At a common component minimizer \(x^\star\), the component gradients usually
+vanish, so \(J_z(x^\star)=0\). In that case,
+\[
+	\nabla f(x^\star)=0,
+	\qquad
+	\nabla^2 f(x^\star)
+	=
+	\sum_{i=1}^m
+	\frac{\partial\psi}{\partial z_i}(0)\nabla^2 z_i(x^\star).
+\]
+Thus \(\psi\) controls how component curvatures are weighted and coupled near
+the preserved optimum. Positive partial derivatives preserve positive
+curvature contributions, zero partial derivatives can flatten some component
+directions, and nonlinear coupling in \(\psi\) can introduce additional
+cross-curvature terms away from the optimum.
+
+New stationary points can also be generated at the composition level. From
+\eqref{eq:composition-gradient}, a point \(x_0\) is stationary whenever
+\[
+	J_z(x_0)^T\nabla\psi(z(x_0))=0.
+\]
+This can happen even if the individual components are not all stationary. For
+example, the component gradients may cancel after being weighted by
+\(\nabla\psi(z(x_0))\), or \(\psi\) may have a critical point at the component
+value vector \(z(x_0)\). Such a stationary point becomes a local minimum only
+when the composed value cannot decrease in a neighborhood of \(x_0\). Therefore,
+composition can create local minima through interaction among components, even
+when no single component alone has a local minimum at that point.
+
+For non-deceptive common-optimum constructions, \(\psi\) is typically chosen to
+be nonnegative and nondecreasing in each component. Examples include weighted
+sums,
+\[
+	\psi(z)=\sum_{i=1}^m w_i z_i,
+	\qquad
+	w_i\ge0,
 \]
 products,
 \[
-\psi(z)=\prod_{i=1}^m(1+z_i)-1,
-\]
-maximum-type compositions,
-\[
-\psi(z)=\max_i z_i,
+	\psi(z)=\prod_{i=1}^m(1+z_i)-1,
 \]
 and power means,
 \[
-\psi(z)=
-\left(
-\sum_{i=1}^m \alpha_i z_i^p
-\right)^{1/p},
-\qquad
-\alpha_i\ge0,
-\quad
-p>0.
+	\psi(z)=
+	\left(
+	\sum_{i=1}^m \alpha_i z_i^p
+	\right)^{1/p},
+	\qquad
+	\alpha_i\ge0,
+	\quad
+	p>0.
 \]
-Each of these operators maps the nonnegative orthant to nonnegative values and
-vanishes at the origin. Hence each is compatible with
-Theorem~\ref{thm:general-minimum-preservation}.
+The derivative and Hessian formulas explain the effect of each choice. For a
+weighted sum,
+\[
+	\nabla f(x)=\sum_{i=1}^m w_i\nabla z_i(x),
+	\qquad
+	\nabla^2 f(x)=\sum_{i=1}^m w_i\nabla^2 z_i(x).
+\]
+Thus weighted sums preserve the common optimum and blend component curvatures.
+They can also create new stationary points through cancellation of component
+gradients, even when no individual component is stationary. Such a stationary
+point becomes a local minimum only if the weighted Hessian is positive definite
+on the relevant directions.
 
-The role of $\psi$ is not only to preserve the optimum, but also to determine
-how component landscapes interact. Weighted sums produce smooth blending,
-state-dependent weights generate spatially varying dominance, products create
-strong nonlinear interaction, maximum-type operators create ridge-like
-landscapes, and nested compositions can produce hierarchical structures.
+For the product operator,
+\[
+	\frac{\partial\psi}{\partial z_i}(z)
+	=
+	\prod_{j\ne i}(1+z_j).
+\]
+Near the common optimum, where \(z=0\), this behaves like a weighted sum with
+unit weights. Away from the optimum, components with large values increase the
+effective weights of the other components. The Hessian also contains mixed
+terms through \(\nabla^2\psi\), so products can strengthen interactions between
+components and may generate additional stationary points through gradient
+cancellation and nonlinear coupling.
+
+Power means provide a smooth value-dependent aggregation. For finite \(p\), the
+partial derivatives weight components according to their current values; larger
+components become more influential when \(p>1\). New stationary points mainly
+arise through cancellation of the resulting weighted component gradients, while
+the Hessian contains additional terms from the value-dependence of these
+weights.
+
+To deliberately generate new local minima from same-point unimodal components,
+\(\psi\) must be allowed to be nonmonotone while remaining nonnegative. A simple
+smooth example is
+\[
+	\psi(z)=s\left(1+\epsilon\sin(\alpha s)\right),
+	\qquad
+	s=\sum_{i=1}^m z_i,
+	\qquad
+	0<\epsilon<1.
+\]
+This operator satisfies \(\psi(0)=0\) and \(\psi(z)>0\) for \(z\ne0\) in the
+nonnegative orthant, so the common global optimum is preserved. However,
+\(\psi\) has repeated stationary levels as a function of \(s\). Therefore, even
+if each component \(z_i\) is convex and unimodal with the same minimizer, the
+composition can become multimodal by creating local wells at positive
+component-value levels.
+
+State-dependent weighted sums,
+\[
+	\psi(z;x)=\sum_{i=1}^m w_i(x)z_i,
+	\qquad
+	w_i(x)\ge0,
+\]
+can be used when spatially varying component dominance is desired; the
+nonnegativity of the weights preserves the known minimum, while the dependence
+on \(x\) changes which component dominates in different regions. In this case
+the derivative also contains terms of the form \(z_i(x)\nabla w_i(x)\). These
+extra terms can create stationary points by balancing value gradients against
+weight gradients, so state-dependent weights are a direct way to generate
+spatially controlled local structure.
+
+For deceptive constructions, the role of \(\psi\) is different. The coordinate
+and value transformations can be chosen so that selected points
+\(\tilde x_k\) produce prescribed component-value vectors
+\[
+	v^{(k)}=z(\tilde x_k)\in\mathbb{R}_{\ge0}^m.
+\]
+Then \(\psi\) assigns objective values to these points through
+\[
+	f(\tilde x_k)=\psi(v^{(k)}).
+\]
+By choosing \(\psi(v^{(k)})=0\) for several vectors, one obtains repeated global
+optima. By choosing one vector to have value zero and other prescribed vectors
+to have small positive values, one obtains a unique global optimum together
+with controlled suboptimal deceptive points. In this setting, \(\psi\) should
+still satisfy the global nonnegativity condition on the nonnegative orthant, but
+its values at the prescribed component vectors determine the hierarchy among
+the candidate optima.
+
+A simple value-assignment form is
+\[
+	\psi(z)=\min_{k=1,\ldots,r}
+	\left\{
+		c_k+\rho_k\|z-v^{(k)}\|^2
+	\right\},
+	\qquad
+	c_k\ge0,
+	\quad
+	\rho_k>0.
+\]
+Here \(c_k\) specifies the objective value assigned to the prescribed component
+vector \(v^{(k)}\), provided the \(k\)-th branch is active at that vector.
+Choosing several active branches with \(c_k=0\) creates repeated global optima,
+whereas choosing exactly one active branch with \(c_k=0\) and the others
+positive creates a hierarchy of candidate optima. On a region where branch
+\(k\) is active, the derivative is
+\[
+	\nabla f(x)
+	=
+	2\rho_k J_z(x)^T\left(z(x)-v^{(k)}\right).
+\]
+Hence any point satisfying \(z(x)=v^{(k)}\) is stationary for the active branch.
+At such a point, the leading Hessian term is
+\[
+	\nabla^2 f(x)
+	=
+	2\rho_k J_z(x)^T J_z(x),
+\]
+up to terms that vanish when \(z(x)=v^{(k)}\). Therefore, if \(J_z(x)\) has
+sufficient rank on the relevant directions and the branch remains active
+nearby, the prescribed point becomes a local minimum of the composed objective.
+This makes the value-assignment operator an explicit mechanism for generating
+new local minima at prescribed component-value vectors. The operator is
+nonsmooth where two branches meet, but smooth alternatives can be obtained by
+replacing the minimum with a soft-min approximation. The important point is that
+deception is controlled not only by where the components vanish, but also by how
+\(\psi\) ranks the resulting component-value vectors.
+
+Figure~\ref{fig:composition-operators-2d} illustrates these composition
+operators on the domain \([-100,100]^2\), using two normalized two-dimensional
+components: a shifted Sphere and a shifted Ellipsoid function, both convex and
+both with common optimum at the origin. The examples show how the same component
+functions can produce different composed landscapes depending only on the choice
+of \(\psi\). In particular, the nonmonotone level-well operator demonstrates
+that two unimodal components with the same minimizer can still produce a
+multimodal composed function.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\textwidth]{figures/composition_operators_2d.pdf}
+	\caption{Examples of composition operators applied on \([-100,100]^2\) to
+	two normalized two-dimensional components: a shifted Sphere component and a
+	shifted Ellipsoid component. Colors show \(\log(1+f)\). The white star
+	marks the common optimum. The nonmonotone level-well example uses
+	\(\psi(z)=s(1+0.65\sin(20s))\), where \(s=z_1+z_2\).}
+	\label{fig:composition-operators-2d}
+\end{figure}
+
+Figure~\ref{fig:composition-operators-3d} shows the same examples as
+three-dimensional surfaces. The height and color are again based on
+\(\log(1+f)\), which makes both the common optimum and the large-scale
+landscape shape visible in the same plot.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\textwidth]{figures/composition_operators_3d.pdf}
+	\caption{Three-dimensional views of the same composition-operator examples
+	shown in Figure~\ref{fig:composition-operators-2d} on \([-100,100]^2\).
+	The surfaces use \(\log(1+f)\) as both height and color.}
+	\label{fig:composition-operators-3d}
+\end{figure}
+
+
+
+
+\section{Code Implementation}
+\subsection{Classification of Functions}
+
+The framework can generate a very large number of benchmark functions because a
+function is determined not only by the selected base functions, but also by the
+coordinate transformations \(T_i\), value transformations \(\phi_i\),
+composition operator \(\psi\), dimensionality, number of components, and
+numerical parameters. Therefore, generated functions should not be labeled by
+assigning a new descriptive name to each instance. Instead, we use a structured
+label that records the construction class, together with a separate metadata
+record that stores the exact parameters.
+
+The purpose of the classification is practical. It should allow users to group
+functions by the construction choices that are expected to affect optimizer
+behavior. For example, two functions may both be high-dimensional mixed
+compositions with affine coordinate transformations and oscillatory value
+transformations, even if they use different random rotations or different
+parameter values. Such functions belong to the same construction class, but they
+are different benchmark instances. The class label is therefore coarse enough
+for benchmark-suite organization and result tables, while the instance metadata
+is detailed enough for exact reproducibility.
+
+The classification follows the three-operator construction. The base-function
+code describes which primitive landscapes are used. The \(T\)-code describes
+how the search-space geometry is changed, for example by shifts, rotations,
+scalings, affine maps, or deceptive placement of component optima. The
+\(\phi\)-code describes how component values are reshaped, for example by
+linear, power, logarithmic, plateau-forming, or oscillatory transformations.
+The \(C\)-code describes how component values are combined by \(\psi\), for
+example by weighted sums, products, power means, state-dependent weights,
+nonmonotone level wells, or deceptive value assignments. Thus the label records
+the main source of landscape structure: component choice, coordinate geometry,
+value reshaping, and composition.
+
+Let the implementation provide \(N=28\) base functions. A generated benchmark
+instance is specified by
+\[
+	\left(
+	(g_{i_1},\ldots,g_{i_m}),
+	(T_1,\ldots,T_m),
+	(\phi_1,\ldots,\phi_m),
+	\psi,
+	\theta
+	\right),
+\]
+where \(\theta\) contains all numerical parameters, random seeds, shifts,
+rotations, weights, dimensions, and prescribed points. The label should be
+compact, while the metadata should be complete.
+
+We use two levels of labels. The first is a class label,
+\[
+	\texttt{MINION-D\{D\}-M\{m\}-B\{B\}-T\{T\}-P\{P\}-C\{C\}},
+\]
+where \(D\) is the dimension, \(m\) is the number of components, \(B\) describes
+the base-function selection, \(T\) the coordinate-transformation class, \(P\)
+the value-transformation class, and \(C\) the composition-operator class. For
+example,
+\[
+	\texttt{MINION-D50-M5-BMIX-TAFF-PMIX-CWS}
+\]
+denotes a 50-dimensional function with five components, mixed base functions,
+affine coordinate transformations, mixed value transformations, and a weighted
+sum composition. This label does not uniquely identify one mathematical
+function. It identifies a family of functions generated by the same structural
+recipe.
+
+The second is an instance label,
+\[
+	\texttt{MINION-D\{D\}-M\{m\}-B\{B\}-T\{T\}-P\{P\}-C\{C\}-S\{seed\}},
+\]
+which appends a seed or instance identifier. For example,
+\[
+	\texttt{MINION-D50-M5-BMIX-TAFF-PMIX-CWS-S00042}
+\]
+identifies one reproducible instance of the above class. If exact base-function
+identities should be visible in the label, the base code may include their
+indices, for example
+\[
+	\texttt{B[01,07,12,18]}
+\]
+or the compact form
+\[
+	\texttt{B01.07.12.18}.
+\]
+
+The following code dictionary is used for compact labels:
+\[
+\begin{array}{ll}
+\text{Base selection} &
+\texttt{B1},\ \texttt{BHOM},\ \texttt{BMIX},\ \texttt{BHYB},\ \texttt{BNEST},
+\\[2mm]
+\text{Coordinate transformations} &
+\texttt{TID},\ \texttt{TSH},\ \texttt{TSC},\ \texttt{TROT},\ \texttt{TAFF},
+\ \texttt{TPRJ},\ \texttt{TNOL},\ \texttt{TDEC},
+\\[2mm]
+\text{Value transformations} &
+\texttt{PID},\ \texttt{PLIN},\ \texttt{PPWR},\ \texttt{PLOG},\ \texttt{PPLT},
+\ \texttt{POSC},\ \texttt{PNON},\ \texttt{PZER},\ \texttt{PMIX},
+\\[2mm]
+\text{Composition operators} &
+\texttt{CWS},\ \texttt{CPRD},\ \texttt{CPMN},\ \texttt{CSDW},\ \texttt{CNON},
+\ \texttt{CVAL},\ \texttt{CDEC},\ \texttt{CMGO},\ \texttt{CNST}.
+\end{array}
+\]
+Here \texttt{B1} denotes a single base function, \texttt{BHOM} a homogeneous
+repetition of one base function, \texttt{BMIX} a mixed base set, \texttt{BHYB}
+a block or hybrid construction, and \texttt{BNEST} a nested construction.
+Similarly, \texttt{TAFF} denotes affine coordinate transformations,
+\texttt{TDEC} deceptive component-optimum placement, \texttt{PNON}
+nonmonotone nonnegative value transformations, \texttt{CWS} weighted sums,
+\texttt{CNON} nonmonotone level-well compositions, and \texttt{CDEC}
+deceptive-hierarchy compositions.
+
+This labeling scheme is intentionally not a substitute for metadata. The label
+is designed for tables, plots, filenames, and benchmark-suite summaries. The
+metadata file associated with each instance must store the exact base-function
+indices, all operator parameters, random seeds, and generated transformations
+needed to reconstruct the objective exactly.
+
+\subsection{API}
+\subsection{Figures}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
