@@ -5,15 +5,27 @@
 \usepackage{lmodern}
 \usepackage{amsmath,amssymb,amsfonts,amsthm}
 \usepackage{geometry}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{enumitem}
+
 
 \geometry{margin=1in}
 \setlist[itemize]{leftmargin=1.5em}
 
-\newtheorem{proposition}{Proposition}
+% --- Add these lines here ---
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+% ----------------------------
 
-\title{Minion Benchmark Functions}
+
+% --- Theorems and Propositions (Italicized text style) ---
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+
+\title{General Framework for Scalable Construction of Optimization Benchmark Function}
 \author{Minion Project}
 \date{\today}
 
@@ -23,171 +35,865 @@
 
 \tableofcontents
 
-\section{Construction of Benchmark Functions}
-\begin{proposition}[Common minimizer under weighted composition]
-	Let
-	\[
-	f(x) = \sum_{i=1}^m w_i(x) g_i(x),
-	\]
-	and suppose that $x_g$ is a common global minimizer of all component functions
-	$g_i$. Define
-	\[
-	\Delta g_i(x) = g_i(x) - g_i(x_g),
-	\qquad
-	\Delta w_i(x) = w_i(x) - w_i(x_g).
-	\]
-	Then $x_g$ is a global minimizer of $f$ if and only if
-	\[
-	\sum_i w_i(x)\,\Delta g_i(x)
-	+
-	\sum_i \Delta w_i(x)\,g_i(x_g)
-	\ge 0
-	\qquad
-	\forall x.
-	\]
-\end{proposition}
 
-\begin{proof}
-	Since $x_g$ is a global minimizer of $f$ if and only if $f(x)-f(x_g)\ge 0$ for
-	all $x$, we expand
-	\[
-	f(x)-f(x_g)
-	=
-	\sum_i w_i(x)g_i(x) - \sum_i w_i(x_g)g_i(x_g).
-	\]
-	Add and subtract $\sum_i w_i(x)g_i(x_g)$:
-	\[
-	f(x)-f(x_g)
-	=
-	\sum_i w_i(x)\bigl[g_i(x)-g_i(x_g)\bigr]
-	+
-	\sum_i \bigl[w_i(x)-w_i(x_g)\bigr] g_i(x_g),
-	\]
-	which is exactly
-	\[
-	\sum_i w_i(x)\,\Delta g_i(x)
-	+
-	\sum_i \Delta w_i(x)\,g_i(x_g).
-	\]
-	Hence $x_g$ is a global minimizer if and only if the displayed inequality holds
-	for all $x$.
-\end{proof}
+\section{Introduction}
+\label{sec:introduction}
 
-\begin{proposition}[Exact-dominance sufficient condition]
-Consider
-\[
-f(x)=\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr),
-\]
-where each component satisfies
-\[
-g_i(z)\ge 0
-\qquad \text{for all } z,
-\qquad
-g_i(0)=0.
-\]
-Assume further that
-\[
-w_i(x)\ge 0
-\qquad \forall i,x,
-\qquad
-\sum_{i=1}^m w_i(x)=1
-\qquad \forall x,
-\]
-that component $1$ has the smallest bias,
-\[
-b_1 \le b_i
-\qquad \forall i,
-\]
-and that exact dominance holds at $x_1^\ast$:
-\[
-w_1(x_1^\ast)=1,
-\qquad
-w_j(x_1^\ast)=0
-\qquad
-\forall j\neq 1.
-\]
-Then $x_1^\ast$ is a global minimizer of $f$.
-\end{proposition}
+Benchmark functions play a central role in the development and evaluation of
+optimization algorithms. They provide controlled test problems for studying
+convergence behavior, robustness, scalability, sensitivity to landscape
+properties, and comparative performance across algorithms. Widely used benchmark
+suites, such as the CEC benchmark sets and the BBOB testbed, have become
+standard tools for evaluating numerical optimization methods.
 
-\begin{proof}
-At $x=x_1^\ast$, exact dominance gives
-\[
-f(x_1^\ast)
-=
-b_1 + g_1(0)
-=
-b_1.
-\]
-For arbitrary $x$, since $g_i(x-x_i^\ast)\ge 0$ and $b_i\ge b_1$, one has
-\[
-b_i+g_i(x-x_i^\ast)\ge b_1
-\qquad
-\forall i.
-\]
-Multiplying by the nonnegative weights and summing,
+Despite their importance, existing benchmark suites are typically limited in
+size. Many commonly used collections contain only a few dozen functions, often
+with a fixed set of transformations, dimensions, and landscape structures. This
+is useful for standardized comparison, but it also limits the diversity of
+problems on which an algorithm can be tested. In particular, robustness studies
+require algorithms to be evaluated against many distinct problem instances, not
+only against a small fixed collection. An algorithm that performs well on a
+limited benchmark suite may still fail on related landscapes that are not
+represented in the test set.
+
+This motivates the need for a systematic framework for generating large numbers
+of benchmark functions in a controlled and reproducible way. Instead of defining
+each benchmark function manually, one would like to construct new functions
+automatically from known base functions while preserving important analytical
+information, especially the location and value of the global optimum. Such a
+framework should allow the user to generate hundreds or thousands of distinct
+optimization problems, while still controlling properties such as modality,
+conditioning, separability, variable interaction, basin geometry, and deception.
+
+In this work, we propose a general framework for the scalable construction of
+optimization benchmark functions. The central idea is to build new functions by
+combining transformed base functions through coordinate transformations, value
+transformations, and composition operators. The generated functions take the
+general form
 \[
 f(x)
 =
-\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr)
-\ge
-\sum_{i=1}^m w_i(x)\,b_1
-=
-b_1
-=
-f(x_1^\ast).
+\psi
+\left(
+\phi_1\!\left(g_1(T_1(x))\right),
+\ldots,
+\phi_m\!\left(g_m(T_m(x))\right)
+\right),
 \]
-Hence $x_1^\ast$ is a global minimizer.
+where \(g_i\) are corrected base functions with known optima, \(T_i\) are
+coordinate transformations, \(\phi_i\) are value transformations, and \(\psi\)
+is a composition operator. This representation separates benchmark construction
+into interpretable design components: the transformations \(T_i\) control the
+geometry in the search space, the transformations \(\phi_i\) control the
+function-value response, and the operator \(\psi\) controls how different
+components interact.
+
+A key requirement of the framework is that the generated function should retain
+a known global optimum. This is essential for benchmarking, because performance
+metrics such as objective error, success rate, and convergence speed require a
+known reference value. We therefore develop sufficient conditions under which
+the generated function has a prescribed global minimizer and a known global
+minimum value. These conditions are formulated at the level of the final
+composition, allowing both direct common-optimum constructions and more general
+deceptive constructions in which different components vanish at different
+prescribed points.
+
+The framework also provides practical prescriptions for constructing different
+classes of benchmark landscapes. In the direct composition prescription, all
+components are designed to vanish at the same prescribed point, producing a
+function with a known common optimum. In the deceptive composition prescription,
+different components are associated with different prescribed points, and the
+composition operator determines which of these points becomes the true global
+optimum. This allows the construction of landscapes with controlled deceptive
+basins, repeated optima, or suboptimal attractive regions.
+
+In addition to the theoretical formalism, we provide an implementation of the
+framework in C++ and Python, called \textsc{FuncCraft}. The software is designed
+to make large-scale benchmark generation simple and reproducible. Users can
+select base functions, transformations, composition rules, and control
+parameters to generate large collections of benchmark instances automatically.
+This enables robustness studies in which algorithms are tested across hundreds
+or thousands of distinct optimization problems rather than a small fixed suite.
+
+The focus of the present paper is the construction framework itself. We develop
+the mathematical formalism, establish minimum-preservation guarantees, describe
+the main composition prescriptions, and discuss how different design choices
+affect landscape properties. Large-scale algorithm benchmarking using extensive
+collections of generated functions is left to a separate study.
+
+
+% --------------------------------------------------------------------------
+\section{A General Composition Framework}
+\label{sec:general-composition}
+% --------------------------------------------------------------------------
+
+The objective of this work is to construct new benchmark functions from a
+given collection of known objective functions, referred to as
+\emph{base functions}. The construction is required to satisfy two main
+requirements. First, the global optimum of the generated function should remain
+known analytically. Second, the construction should provide mechanisms for
+controlling landscape properties such as multimodality, separability,
+conditioning, variable interaction, basin geometry, and deceptiveness.
+
+The starting point of benchmark constructions is that we are given a set of base functions, such as Rastrigin, Rosenbrock, Ackley, and so on. Formally, let the dimensionality under consideration is $D$. Suppose there are $m$ base functions and let  $\Omega\subseteq\mathbb{R}^D$ be the search domain. In principle, the base functions are aloowed to operate on a subdimension of the $\mathbb{R}^D$, not the whole $\mathbb{R}^D$. 
+\[
+\tilde g_i:\Omega_i\subseteq\mathbb{R}^{n_i}\to\mathbb{R},
+\qquad i=1,\ldots,m,\qquad n_i\le D, \qquad \bigcup_i \Omega_i = \Omega
+\]
+be base functions with known global minimizer and minimum values
+\[
+x_i^\star\in\operatorname*{arg\,min}_{x\in\Omega_i}\tilde g_i(x),\qquad 
+\tilde g_i^\star
+=
+\tilde g_i(x_i^\star).
+\]
+During composition, It is easier to work with the bias corrected base function therefore, we define the bias-corrected base functions
+\[
+g_i(x)
+=
+\tilde g_i(x)-\tilde g_i^\star.
+\label{eq:bias-corrected-base}
+\]
+such that
+\[
+g_i(x)\ge g_i(x_i^\star) =0
+\qquad\forall y\in\Omega_i,
+\]
+Thus, after bias correction, each base function has known minimum value zero. From now on, unless otherwise indicated, we will simply call the bias-corrected base function as base function. 
+
+In constructing the benchmark function, we are interested in a composition operator $\psi$: 
+\begin{equation}
+	\psi : \mathcal{F}^m : \to \mathcal{F}, \qquad \mathcal{F} : \Omega \to \mathbb{R}
+\end{equation}
+Specifically, we consider composition operator of the form
+\begin{equation}
+\boxed{
+	f(x)
+	=
+	\psi
+	\left(
+	\phi_1\!\left(g_1(T_1(x))\right),
+	\ldots,
+	\phi_m\!\left(g_m(T_m(x))\right)
+	\right),
+}
+\label{eq:general-composition}
+\end{equation}
+where
+\[
+T_i:\Omega\to\Omega_i, \qquad \phi_i:\mathbb{R}_{\ge0}\to\mathbb{R}, \qquad \psi:\mathbb{R}^m\to\mathbb{R}
+\]
+are a coordinate transformation, value transformation applied to the $i$-th base function, and a composition operator that combines the transformed component values respectively.
+
+The three levels in \eqref{eq:general-composition} play distinct roles. The
+coordinate transformation $T_i$ modifies the input geometry of the $i$-th
+component. It may introduce shifting, rotation, scaling, subspace selection,
+or nonlinear warping. The value transformation $\phi_i$ modifies the output
+scale and shape of the $i$-th component. It may change curvature, growth rate,
+flatness, or saturation. The composition operator $\psi$ acts in the
+function-value space and determines how the component landscapes interact.
+
+The main question is to identify conditions on $T_i$, $\phi_i$, and $\psi$
+under which the generated function still has a known global minimizer.
+
+
+
+
+\begin{proposition}[Nonnegative-function minimizer]
+	\label{f_helper}
+	Let \(h:\Omega\to\mathbb{R}\). Suppose there exists a known point
+	\(x^\star\in\Omega\) such that
+	\[
+	h(x^\star)=0, \qquad
+	h(x)\ge0
+	\qquad
+	\forall x\in\Omega.
+	\]
+	Then
+	\[
+	x^\star\in\operatorname*{arg\,min}_{x\in\Omega} h(x)
+	\]
+	and the global minimum value is \(0\).
+\end{proposition}
+
+\begin{proof}
+	Since \(h(x)\ge0=h(x^\star)\) for all \(x\in\Omega\), the claim follows.
 \end{proof}
 
-Two useful sufficient conditions follow immediately.
 
-\begin{itemize}
-	\item If all components share the same minimum value
+\begin{proposition}[\(\psi\)-condition for minimum preservation]
+	\label{thm:general-minimum-preservation}
+	Let
 	\[
-	g_i(x_g)=g_0 \ge 0
+	z_i(x)
+	=
+	\phi_i(g_i(T_i(x))),
+	\qquad i=1,\ldots,m,
+	\]
+	and let \(x^\star\in\Omega\) be the prescribed minimizer. Choose the
+	composition operator \(\psi:\mathbb{R}^m\to\mathbb{R}\) so that
+	\[
+	\psi(z_1(x^\star),\ldots,z_m(x^\star))=0,
+	\]
+	and
+	\[
+	\psi(z_1(x),\ldots,z_m(x))\ge0
 	\qquad
-	\text{for all } i,
+	\forall x\in\Omega.
 	\]
-	then a sufficient condition is
+	Then the generated function \(f(x)=\psi(z_1(x),\ldots,z_m(x))\) satisfies
 	\[
-	w_i(x) > 0
-	\qquad \text{for all } i,x,
+	x^\star\in\operatorname*{arg\,min}_{x\in\Omega} f(x),
 	\]
-	together with
-	\[
-	\sum_i w_i(x) \ge \sum_i w_i(x_g)
-	\qquad \forall x.
-	\]
-	Indeed, since $\Delta g_i(x)\ge 0$ for all $i,x$, one has
-	\[
-	\sum_i w_i(x)\,\Delta g_i(x) \ge 0,
-	\]
-	and therefore it suffices that
-	\[
-	g_0 \sum_i \Delta w_i(x) \ge 0.
-	\]
-	
-	\item In the special case $g_0 = 0$, the second term vanishes identically, so
-	\[
-	w_i(x) \ge 0
-	\qquad \text{for all } i,x
-	\]
-	is sufficient.
-\end{itemize}
+	and the global minimum value is \(0\).
+\end{proposition}
 
-In particular, if the weights are normalized,
+\begin{proof}
+	This follows immediately from Proposition~\ref{f_helper}, applied to
+	\(h=f\). 
+\end{proof}
+
+\begin{remark}
+	The conditions in Proposition~\ref{thm:general-minimum-preservation} are
+	sufficient, but not necessary. The proposition gives a condition on
+	\(\psi\) on the reachable component vectors \(z(x)\): the prescribed point
+	must be mapped to zero, and every reachable component vector must be mapped
+	to a nonnegative value.
+	
+	To see this, the exact necessary and sufficient condition for \(x^\star\) to be a global
+	minimizer of \(f\) is simply
+	\[
+	f(x)=\psi(z(x))\ge \psi(z(x^\star))
+	\qquad
+	\forall x\in\Omega.
+	\]
+	Equivalently,
+	\[
+	z(x^\star)
+	\in
+	\operatorname*{arg\,min}_{z\in z(\Omega)} \psi(z),
+	\]
+	where
+	\[
+	z(\Omega)=\{z(x):x\in\Omega\}
+	\]
+	is the set of all reachable transformed component values.
+	
+	This condition is fully general, but it is usually not convenient for benchmark
+	design because the reachable set \(z(\Omega)\) may be difficult to characterize.
+	The proposition therefore uses a stronger but easily verifiable construction.
+	Thus, Proposition~\ref{thm:general-minimum-preservation} should be interpreted as
+	a practical sufficient condition for constructing benchmark functions with a
+	known optimum, not as a complete characterization of all possible
+	minimum-preserving compositions.
+\end{remark}
+
+\begin{proposition}[\(\phi_i\)-condition for preserving component minima]
+	\label{prop:minimum-preserving-value-transformations}
+	Let \(g_i:\Omega_i\to\mathbb{R}\) be a base function with known minimizer
+	\(x_i^\star\) and minimum value \(0\), as defined above:
+	\[
+	g_i(x_i^\star)=0,
+	\qquad
+	g_i(y)\ge0
+	\qquad
+	\forall y\in\Omega_i.
+	\]
+	If the value transformation \(\phi_i:\mathbb{R}_{\ge0}\to\mathbb{R}\)
+	satisfies
+	\[
+	\phi_i(0)=0,
+	\qquad
+	\phi_i(u)\ge0
+	\qquad
+	\forall u\ge0.
+	\]
+	then \(x_i^\star\) is a global minimizer of the transformed component
+	\[
+	h_i(y)=\phi_i(g_i(y)),
+	\]
+	with minimum value \(0\). That is,
+	\[
+	h_i(x_i^\star)=0,
+	\qquad
+	h_i(y)\ge0
+	\qquad
+	\forall y\in\Omega_i.
+	\]
+\end{proposition}
+
+\begin{proof}
+	At the known minimizer,
+	\[
+	h_i(x_i^\star)
+	=
+	\phi_i(g_i(x_i^\star))
+	=
+	\phi_i(0)
+	=
+	0.
+	\]
+	For any \(y\in\Omega_i\), the base function satisfies
+	\(g_i(y)\ge0\). Since \(\phi_i(u)\ge0\) for all \(u\ge0\),
+	\[
+	h_i(y)
+	=
+	\phi_i(g_i(y))
+	\ge0.
+	\]
+	Proposition~\ref{f_helper}, applied on \(\Omega_i\) with \(h=h_i\), then
+	implies that \(x_i^\star\) is a global minimizer of \(h_i\).
+\end{proof}
+
+\begin{proposition}[Common-vanishing construction of \(\phi_i\) and \(T_i\)]
+	\label{cor:common-vanishing-construction}
+	Use Proposition~\ref{thm:general-minimum-preservation} as the minimum
+	preservation condition. Assume also that the value transformations follow
+	Proposition~\ref{prop:minimum-preserving-value-transformations}, and choose
+	a prescribed point \(x^\star\in\Omega\). If the coordinate transformations
+	satisfy
+	\[
+	T_i(x^\star)=x_i^\star
+	\qquad
+	\text{for all }i=1,\ldots,m,
+	\]
+	and if \(\psi\) is chosen so that
+	\[
+	\psi(0,\ldots,0)=0,
+	\]
+	then \(x^\star\) is a global minimizer of \(f\), and \(f(x^\star)=0\).
+\end{proposition}
+
+\begin{proof}
+	The choice of \(T_i\) sends the prescribed point \(x^\star\) to the minimizer
+	of the \(i\)-th base function:
+	\[
+	g_i(T_i(x^\star))=g_i(x_i^\star)=0.
+	\]
+	Since \(\phi_i(0)=0\), all transformed components vanish at \(x^\star\).
+	Thus the component vector at \(x^\star\) is \((0,\ldots,0)\), and
+	\[
+	f(x^\star)=\psi(0,\ldots,0)=0.
+	\]
+	For any \(x\in\Omega\), each \(T_i(x)\in\Omega_i\). By
+	Proposition~\ref{prop:minimum-preserving-value-transformations},
+	\(\phi_i(g_i(T_i(x)))\ge0\), so the construction only produces component
+	vectors in the nonnegative range. The remaining nonnegativity requirement is
+	the one imposed directly on \(\psi(z(x))\) by
+	Proposition~\ref{thm:general-minimum-preservation}. Hence \(x^\star\) is a
+	global minimizer.
+\end{proof}
+
+\begin{proposition}[Selecting one global optimum and deceptive local points]
+	\label{prop:single-global-with-deceptive-points}
+	Use Proposition~\ref{thm:general-minimum-preservation} as the minimum
+	preservation condition. Let \(\tilde x_1,\ldots,\tilde x_m\in\Omega\) be
+	prescribed candidate points, and choose coordinate transformations satisfying
+	\[
+	T_i(\tilde x_i)=x_i^\star
+	\qquad
+	\text{for all }i=1,\ldots,m.
+	\]
+	For each prescribed point, define
+	\[
+	v^{(i)}
+	=
+	\left(
+	\phi_1(g_1(T_1(\tilde x_i))),
+	\ldots,
+	\phi_m(g_m(T_m(\tilde x_i)))
+	\right).
+	\]
+	Choose one index \(k\) as the intended global minimizer. Assume that
+	\[
+	\psi(v^{(k)})=0
+	\]
+	and
+	\[
+	f(x)\ge0
+	\qquad
+	\forall x\in\Omega.
+	\]
+	Then \(\tilde x_k\) is a global minimizer of \(f\).
+	
+	For every \(i\ne k\), suppose instead that
+	\[
+	\psi(v^{(i)})=c_i>0.
+	\]
+	This condition alone does not imply that \(\tilde x_i\) is a local minimum. To
+	make \(\tilde x_i\) a deceptive local minimum, one must additionally require
+	that there exists a neighborhood \(U_i\subset\Omega\) of \(\tilde x_i\) such
+	that
+	\[
+	f(\tilde x_i)\le f(x)
+	\qquad
+	\forall x\in U_i.
+	\]
+	Equivalently,
+	\[
+	\psi(v^{(i)})
+	\le
+	\psi
+	\left(
+	\phi_1(g_1(T_1(x))),
+	\ldots,
+	\phi_m(g_m(T_m(x)))
+	\right)
+	\qquad
+	\forall x\in U_i.
+	\]
+	Under this additional local condition, \(\tilde x_i\) is a suboptimal local
+	minimum and therefore acts as a deceptive point.
+\end{proposition}
+
+\begin{proof}
+	By definition of \(v^{(i)}\),
+	\[
+	f(\tilde x_i)=\psi(v^{(i)})
+	\qquad
+	\text{for all }i=1,\ldots,m.
+	\]
+	In particular,
+	\[
+	f(\tilde x_k)=\psi(v^{(k)})=0.
+	\]
+	Together with the assumption \(f(x)\ge0\) for all \(x\in\Omega\),
+	Proposition~\ref{f_helper} implies that \(\tilde x_k\) is a global minimizer
+	of \(f\).
+	
+	For \(i\ne k\), the condition \(\psi(v^{(i)})=c_i>0\) gives
+	\[
+	f(\tilde x_i)=c_i>0.
+	\]
+	Since the global minimum value is \(0\), such a point cannot be a global
+	minimizer. If, in addition, there exists a neighborhood \(U_i\) of
+	\(\tilde x_i\) such that
+	\[
+	f(\tilde x_i)\le f(x)
+	\qquad
+	\forall x\in U_i,
+	\]
+	then \(\tilde x_i\) is a local minimizer. Hence it is a suboptimal local
+	minimizer. The displayed condition involving \(\psi\) is the same local
+	condition after substituting the definition of \(f\).
+\end{proof}
+
+
+
+
+
+\begin{proposition}[Nested construction]
+	\label{prop:nested-construction}
+	Let
+	\[
+	F_j:\Lambda_j\to\mathbb{R},
+	\qquad j=1,\ldots,r,
+	\]
+	be functions generated by the framework, each with known minimizer
+	\(\xi_j^\star\) and minimum value \(0\):
+	\[
+	F_j(\xi_j^\star)=0,
+	\qquad
+	F_j(\xi)\ge0
+	\qquad
+	\forall \xi\in\Lambda_j.
+	\]
+	Then the functions \(F_j\) may be used as base functions in a further
+	composition layer. In particular, define
+	\[
+	H(x)
+	=
+	\Psi
+	\left(
+	\Phi_1(F_1(S_1(x))),
+	\ldots,
+	\Phi_r(F_r(S_r(x)))
+	\right),
+	\]
+	where
+	\[
+	S_j:\Omega\to\Lambda_j,
+	\qquad
+	\Phi_j:\mathbb{R}_{\ge0}\to\mathbb{R}.
+	\]
+	If these maps satisfy the corresponding minimum-preservation conditions
+	above, then the nested function \(H\) again has a known global minimum value
+	\(0\).
+\end{proposition}
+
+\begin{proof}
+	Each \(F_j\) has the same properties required of a base function in the
+	preceding propositions: it is nonnegative and has known minimum value \(0\).
+	Thus \(F_j\) can replace \(g_i\) in the construction. Applying
+	Proposition~\ref{prop:minimum-preserving-value-transformations} to
+	\(\Phi_j\circ F_j\), and then applying
+	Proposition~\ref{thm:general-minimum-preservation} to the outer composition
+	\(\Psi\), gives the claim.
+\end{proof}
+
+
+
+
+
+
+
+
+\begin{remark}
+	The conditions in Proposition~\ref{thm:general-minimum-preservation} are designed
+	to preserve knowledge of the global optimum. They do not restrict the rest of
+	the landscape. Different choices of $T_i$, $\phi_i$, and $\psi$ may still create
+	additional local minima, nonseparability, ill-conditioning, ridges, plateaus,
+	or deceptive basins. The remaining sections study how these choices affect the
+	landscape properties of the generated function.
+\end{remark}
+
+
+
+The construction in \eqref{eq:general-composition} separates benchmark design
+into three independent mechanisms.
+
+
+\section{Discussions on Operator Choices}
+
+This section discusses how the main operators in the construction affect the
+landscape of the resulting objective function. We are mainly interested in two
+questions: first, when local minima are preserved and how their local shape is
+changed; second, when new local minima can be generated. The coordinate
+transformations \(T_i\) determine where component landscapes are evaluated and
+how their local geometry is embedded in the full search space. The value
+transformations \(\phi_i\) change the scale and shape of individual component
+values while preserving selected minima under suitable conditions. The
+composition operator \(\psi\) then couples the transformed components and
+determines how their individual landscape features combine into the final
+objective.
+
+\subsection{Coordinate transformations $T_i$}
+\label{subsec:coordinate-transformations}
+
+
+The coordinate transformation \(T_i:\Omega\to\Omega_i\) determines where and how
+the \(i\)-th base function is embedded in the full search space. Consider a
+single transformed component
 \[
-\sum_i w_i(x) = 1
+h(x)=g(T(x)).
+\]
+Assume first that \(g\) and \(T\) are differentiable. The first derivative is
+\begin{equation}
+	\nabla h(x)=J_T(x)^T\nabla g(T(x)).
+	\label{eq:gradient-coordinate-transform}
+\end{equation}
+If \(g\) and \(T\) are twice differentiable, then
+\begin{equation}
+	\nabla^2 h(x)
+	=
+	J_T(x)^T\nabla^2 g(T(x))J_T(x)
+	+
+	\sum_{\ell}
+	\frac{\partial g}{\partial y_\ell}(T(x))\nabla^2 T_\ell(x).
+	\label{eq:hessian-nonlinear-transform}
+\end{equation}
+
+These two formulas show how stationary points and local shape are inherited. If
+\(y^\star=T(x^\star)\) is a stationary point of \(g\), then
+\(\nabla h(x^\star)=0\). If \(y^\star\) is also a local minimum of \(g\) and
+\(T\) is continuous, then \(x^\star\) is a local minimum of \(h\), because
+\[
+g(T(x))\ge g(T(x^\star))
+\]
+for all \(x\) sufficiently close to \(x^\star\). Thus local minima of \(g\) are
+preserved at their preimages under \(T\). If the minimum of \(g\) is strict, the
+pulled-back minimum is strict only when the preimage of \(y^\star\) is locally
+isolated; otherwise the transformation may produce a flat set of minimizers.
+
+The Hessian formula describes the change of shape. At a point mapped to a
+stationary point of \(g\), the second term in
+\eqref{eq:hessian-nonlinear-transform} vanishes, so the curvature becomes
+\[
+J_T(x^\star)^T\nabla^2 g(y^\star)J_T(x^\star).
+\]
+When \(J_T(x^\star)\) has full column rank, positive curvature of \(g\) is
+preserved in the transformed variables, with changed orientation, scaling, and
+conditioning. When \(J_T(x^\star)\) is rank deficient, some curvature directions
+are lost, and an isolated minimum may become non-isolated or flat.
+
+The same formulas also show how new stationary points can be generated. A point
+\(x_0\) is stationary for \(h\) whenever
+\[
+J_T(x_0)^T\nabla g(T(x_0))=0.
+\]
+This may hold even if \(\nabla g(T(x_0))\ne0\), provided that the Jacobian of
+\(T\) annihilates the descent direction of \(g\). Such a point is a local
+minimum of \(h\) only if the transformed function cannot decrease nearby. The
+exact condition is
+\[
+g(T(x))\ge g(T(x_0))
+\]
+for all \(x\) near \(x_0\). Equivalently, \(T\) must map a neighborhood of
+\(x_0\) into a part of \(\Omega_i\) on which \(g\) cannot decrease below
+\(g(T(x_0))\). Hence \(T(x_0)\) may fail to be a local minimum of \(g\) on
+\(\Omega_i\), while \(x_0\) is still a local minimum of \(g\circ T\).
+The second-order test is then applied to
+\eqref{eq:hessian-nonlinear-transform}. In particular, positive definiteness of
+\(\nabla^2h(x_0)\) on the relevant directions gives a strict local minimum.
+This is the mechanism by which singular or nonlinear coordinate transformations
+can create local minima that are not local minima of the original base function.
+
+A common special case is the affine map
+\begin{equation}
+	T_i(x)=A_i(x-x^\star)+x_i^\star,
+	\label{eq:affine-T}
+\end{equation}
+which places the component optimum \(x_i^\star\) at the prescribed point
+\(x^\star\), since \(T_i(x^\star)=x_i^\star\). For
+\[
+h(x)=g(A(x-x^\star)+x_g^\star),
+\]
+the derivative formulas reduce to
+\begin{equation}
+	\nabla h(x)=A^T\nabla g(T(x)),
+	\qquad
+	\nabla^2 h(x)=A^T\nabla^2 g(T(x))A.
+	\label{eq:hessian-affine-transform}
+\end{equation}
+If \(A\) is nonsingular, local minima are preserved exactly: \(x_0\) is a local
+minimum of \(h\) if and only if \(T(x_0)\) is a local minimum of \(g\). The
+transformation changes the shape through the congruence
+\(A^T\nabla^2 g(T(x))A\), so it can rotate, scale, and condition the local
+landscape, but it does not create new local minima.
+
+If \(A\) is singular or rank-deficient, then \(h\) only sees the restriction of
+\(g\) to the affine image of \(T\). A point can therefore be a local minimum of
+the restricted function even if it is not a local minimum of \(g\) in the full
+component space. Such transformations can generate flat directions,
+non-isolated minimizers, stationary manifolds, or additional local minima caused
+by the removal of descent directions.
+
+
+
+
+\subsection{Value transformations $\phi_i$}
+\label{subsec:value-transformations}
+
+The value transformation \(\phi_i\) acts after the coordinate-transformed base
+value has been computed. Since the base functions are nonnegative and have
+known minimum value zero, it is enough to study a single component of the form
+\[
+	h(x)=\phi(g(x)),
+	\qquad
+	g(x)\ge0,
+	\qquad
+	g(x^\star)=0.
+\]
+The basic preservation condition is
+\[
+	\phi(0)=0,
+	\qquad
+	\phi(u)\ge0
+	\quad\text{for all }u\ge0.
+\]
+Under this condition, the known global minimizer of \(g\) remains a global
+minimizer of \(\phi\circ g\). The remaining questions are how the local shape is
+changed and whether additional local minima are introduced.
+
+Assume first that \(g\) and \(\phi\) are differentiable. Then
+\begin{equation}
+	\nabla h(x)
+	=
+	\phi'(g(x))\nabla g(x).
+	\label{eq:value-transform-gradient}
+\end{equation}
+If both are twice differentiable, then
+\begin{equation}
+	\nabla^2 h(x)
+	=
+	\phi''(g(x))\nabla g(x)\nabla g(x)^T
+	+
+	\phi'(g(x))\nabla^2 g(x).
+	\label{eq:value-transform-hessian}
+\end{equation}
+At a minimizer \(x^\star\) of \(g\), where \(g(x^\star)=0\) and
+\(\nabla g(x^\star)=0\), the first derivative becomes
+\[
+	\nabla h(x^\star)
+	=
+	\phi'(0)\nabla g(x^\star)
+	=
+	0.
+\]
+Thus the minimizer of \(g\) remains a stationary point of \(\phi\circ g\). The
+Hessian formula reduces to
+\begin{equation}
+	\nabla^2 h(x^\star)
+	=
+	\phi'(0)\nabla^2 g(x^\star).
+	\label{eq:value-transform-hessian-minimizer}
+\end{equation}
+Thus \(\phi'(0)\) controls the local curvature at the preserved optimum. If
+\(\phi'(0)>0\), the quadratic shape is preserved up to scaling. If
+\(\phi'(0)=0\), the optimum becomes flatter to second order. If \(\phi'(0)\) is
+large or singular, the optimum becomes sharper or possibly nonsmooth.
+
+When \(\phi\) is strictly increasing on \(\mathbb{R}_{\ge0}\), it preserves the
+ordering of values:
+\[
+	g(x_1)<g(x_2)
+	\quad\Longrightarrow\quad
+	\phi(g(x_1))<\phi(g(x_2)).
+\]
+Consequently, local minima are preserved exactly: a point is a local minimizer
+of \(g\) if and only if it is a local minimizer of \(\phi\circ g\). Such
+transformations change scale, curvature, and growth rate, but they do not create
+new local minima by themselves. Typical examples are
+\[
+	\phi(u)=\alpha u,
+	\qquad
+	\phi(u)=\alpha u^p,
+	\qquad
+	\phi(u)=\log(1+\alpha u),
+\]
+with parameters chosen so that \(\phi(0)=0\), \(\phi(u)\ge0\), and \(\phi\) is
+increasing on the relevant range. Linear scaling changes the vertical scale.
+Powers with \(p>1\) flatten the optimum, while powers with \(0<p<1\) sharpen it
+and may introduce nonsmoothness at \(u=0\). Logarithmic transformations compress
+large values.
+
+If \(\phi\) is nondecreasing but not strictly increasing, then global minimizers
+are still preserved, but the local-minimum structure may become less isolated.
+For example, a saturating or clipped transformation can map an interval of
+objective values to the same constant. This can create plateaus, neutral
+regions, or non-isolated minimizer sets, even though no lower value is created.
+
+New stationary points arise from the factor \(\phi'(g(x))\) in
+\eqref{eq:value-transform-gradient}. There are therefore two mechanisms. The first is inherited from the base
+function, \(\nabla g(x)=0\). The second is introduced by the value
+transformation:
+\begin{equation}
+	\phi'(g(x))=0.
+	\label{eq:value-transform-new-stationary}
+\end{equation}
+If \(\phi'(c)=0\) for some \(c>0\), then the level set \(g(x)=c\) becomes
+stationary, provided it is regular. The type of stationary set depends on
+\(\phi\) near \(c\). If \(\phi\) has a local minimum at \(c\), then the level set
+can become a local-minimum set of \(\phi\circ g\).
+
+The simplest illustration is
+\[
+	g(x)=x^2,
+	\qquad
+	\phi(u)=u(u-c)^2,
+	\qquad c>0.
+\]
+Then
+\[
+	h(x)=x^2(x^2-c)^2.
+\]
+The transformation satisfies \(\phi(0)=0\) and \(\phi(u)\ge0\) for all
+\(u\ge0\), so the original global minimizer \(x=0\) is preserved. However, it
+also vanishes at \(u=c\), so the transformed function has additional global
+minimizers at
+\[
+	x=\pm\sqrt{c}.
+\]
+Thus a nonmonotone value transformation can preserve the known global optimum
+while generating additional optima. This example is useful when repeated global
+minima are desired. If uniqueness should be preserved, the positive-value wells
+of \(\phi\) must remain above zero.
+
+Oscillatory transformations provide a simple way to create many stationary
+levels. For example,
+\[
+	\phi(u)=1-\cos(\alpha u)
+\]
+is nonnegative and vanishes at \(u=0\), but it also vanishes whenever
+\(\alpha u=2\pi k\). Hence it creates additional global minimizers at positive
+objective-value levels. In contrast,
+\[
+	\phi(u)=u\left(1+\epsilon\sin(\alpha u)\right),
+	\qquad
+	0<\epsilon<1,
+\]
+satisfies \(\phi(u)\ge u(1-\epsilon)>0\) for every \(u>0\), so \(u=0\) remains
+the unique scalar global minimizer. For large \(\alpha\), the oscillations can
+create many stationary levels, and hence additional local minima and maxima of
+\(\phi\circ g\), while preserving the known global optimum.
+
+Figure~\ref{fig:value-transform-quadratic} illustrates these effects on the
+simple base function \(g(x)=x^2\) over the domain \([-100,100]\). The examples
+show how value transformations can rescale the objective, flatten or sharpen
+the optimum, compress large values, create repeated optima, or add
+oscillatory local structure.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\textwidth]{figures/value_transform_quadratic.pdf}
+	\caption{Examples of value transformations applied to the same quadratic
+	base function \(g(x)=x^2\) on \([-100,100]\). Each panel uses its own
+	vertical scale to emphasize the induced shape.}
+	\label{fig:value-transform-quadratic}
+\end{figure}
+
+In summary, strictly increasing value transformations preserve local minima and
+only change shape. Nondecreasing transformations with flat intervals preserve
+minimum values but can create plateaus and non-isolated minimizers. Nonmonotone
+nonnegative transformations with \(\phi(0)=0\) preserve the known global optimum
+while allowing additional local minima to appear at selected objective-value
+levels. If \(\phi\) takes negative values on \(\mathbb{R}_{\ge0}\), then the
+minimum-preservation argument no longer applies without a separate analysis.
+
+
+
+\subsection{Composition operator $\psi$}
+The operator $\psi$ combines the transformed component values. Examples include
+weighted sums,
+\[
+\psi(z)=\sum_{i=1}^m w_i z_i,
 \qquad
-\forall x,
+w_i\ge0,
 \]
-then the condition
+state-dependent weighted sums,
 \[
-w_i(x) \ge 0
-\qquad \text{for all } i,x
+\psi(z;x)=\sum_{i=1}^m w_i(x)z_i,
+\qquad
+w_i(x)\ge0,
 \]
-is sufficient whenever all components share the same minimum value $g_i(x_g)=g_0
-\ge 0$.
+products,
+\[
+\psi(z)=\prod_{i=1}^m(1+z_i)-1,
+\]
+maximum-type compositions,
+\[
+\psi(z)=\max_i z_i,
+\]
+and power means,
+\[
+\psi(z)=
+\left(
+\sum_{i=1}^m \alpha_i z_i^p
+\right)^{1/p},
+\qquad
+\alpha_i\ge0,
+\quad
+p>0.
+\]
+Each of these operators maps the nonnegative orthant to nonnegative values and
+vanishes at the origin. Hence each is compatible with
+Theorem~\ref{thm:general-minimum-preservation}.
+
+The role of $\psi$ is not only to preserve the optimum, but also to determine
+how component landscapes interact. Weighted sums produce smooth blending,
+state-dependent weights generate spatially varying dominance, products create
+strong nonlinear interaction, maximum-type operators create ridge-like
+landscapes, and nested compositions can produce hierarchical structures.
+
+
+
+
+
+\appendix
+
+
+
+
 
 
 \section{Minion Benchmark Functions}
@@ -249,7 +955,7 @@ f(x) = \sum_{i=1}^{D-1}
 \left[
 100 \left(y_{i+1} - y_i^2\right)^2 + \left(y_i - 1\right)^2
 \right]
- + f_{\mathrm{opt}},
++ f_{\mathrm{opt}},
 \]
 with $y_i = z_i + 1$.
 
@@ -265,7 +971,7 @@ f(x) =
 \[
 f(x) =
 10D + \sum_{i=1}^D \left(z_i^2 - 10\cos(2\pi z_i)\right)
- + f_{\mathrm{opt}}.
++ f_{\mathrm{opt}}.
 \]
 
 \subsubsection{Griewank}
@@ -281,7 +987,7 @@ f(x) =
 f(x) =
 418.9828872724338 D
 - \sum_{i=1}^D y_i \sin\!\left(\sqrt{|y_i|}\right)
- + f_{\mathrm{opt}},
++ f_{\mathrm{opt}},
 \]
 with $y_i = z_i + 420.9687462275036$.
 
@@ -331,15 +1037,15 @@ by $d_1,\dots,d_m$ with
 \]
 
 Let $P$ be a permutation of $\{1,\dots,D\}$, and let $R \in \mathbb{R}^{D
-\times D}$ be an optional orthonormal rotation matrix. The preprocessing is:
+	\times D}$ be an optional orthonormal rotation matrix. The preprocessing is:
 \[
 z = x - x^\ast,
 \]
 \[
 \tilde{z} =
 \begin{cases}
-R z, & \text{if rotation is enabled}, \\
-z, & \text{otherwise},
+	R z, & \text{if rotation is enabled}, \\
+	z, & \text{otherwise},
 \end{cases}
 \]
 \[
@@ -400,8 +1106,8 @@ For component $j$, define the transformed evaluation point
 \[
 \hat{x}^{(j)} =
 \begin{cases}
-R_j(x - x^{\ast(j)}) + x^{\ast(j)}, & \text{if component rotation is enabled}, \\
-x, & \text{otherwise}.
+	R_j(x - x^{\ast(j)}) + x^{\ast(j)}, & \text{if component rotation is enabled}, \\
+	x, & \text{otherwise}.
 \end{cases}
 \]
 
@@ -449,27 +1155,207 @@ In the current Minion benchmark layer, a composition component may itself be a
 hybrid function. In that case, the same formulas apply recursively:
 
 \begin{itemize}
-\item a hybrid function is a sum of blockwise component functions after global
-shift, optional global rotation, and permutation;
-\item a composition function is a weighted blend of full-dimensional component
-functions;
-\item a composition component may therefore be either a basic function or a
-hybrid function.
+	\item a hybrid function is a sum of blockwise component functions after global
+	shift, optional global rotation, and permutation;
+	\item a composition function is a weighted blend of full-dimensional component
+	functions;
+	\item a composition component may therefore be either a basic function or a
+	hybrid function.
 \end{itemize}
 
 \subsection{Remarks}
 
 \begin{itemize}
-\item These formulas describe the current Minion benchmark layer and are not
-identical to the official CEC2017 hybrid and composition definitions.
-\item In particular, the Minion layer is designed as a configurable generator
-for custom benchmark instances, whereas the official CEC suites use fixed,
-predefined benchmark constructions and suite-specific transformations.
-\item The default target optimum value in the current hybrid and composition
-specifications is
-\[
-f_{\mathrm{opt}} = 100.
-\]
+	\item These formulas describe the current Minion benchmark layer and are not
+	identical to the official CEC2017 hybrid and composition definitions.
+	\item In particular, the Minion layer is designed as a configurable generator
+	for custom benchmark instances, whereas the official CEC suites use fixed,
+	predefined benchmark constructions and suite-specific transformations.
+	\item The default target optimum value in the current hybrid and composition
+	specifications is
+	\[
+	f_{\mathrm{opt}} = 100.
+	\]
 \end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Construction of Benchmark Functions}
+\begin{proposition}[Common minimizer under weighted composition]
+	Let
+	\[
+	f(x) = \sum_{i=1}^m w_i(x) g_i(x),
+	\]
+	and suppose that $x_g$ is a common global minimizer of all component functions
+	$g_i$. Define
+	\[
+	\Delta g_i(x) = g_i(x) - g_i(x_g),
+	\qquad
+	\Delta w_i(x) = w_i(x) - w_i(x_g).
+	\]
+	Then $x_g$ is a global minimizer of $f$ if and only if
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x)
+	+
+	\sum_i \Delta w_i(x)\,g_i(x_g)
+	\ge 0
+	\qquad
+	\forall x.
+	\]
+\end{proposition}
+
+\begin{proof}
+	Since $x_g$ is a global minimizer of $f$ if and only if $f(x)-f(x_g)\ge 0$ for
+	all $x$, we expand
+	\[
+	f(x)-f(x_g)
+	=
+	\sum_i w_i(x)g_i(x) - \sum_i w_i(x_g)g_i(x_g).
+	\]
+	Add and subtract $\sum_i w_i(x)g_i(x_g)$:
+	\[
+	f(x)-f(x_g)
+	=
+	\sum_i w_i(x)\bigl[g_i(x)-g_i(x_g)\bigr]
+	+
+	\sum_i \bigl[w_i(x)-w_i(x_g)\bigr] g_i(x_g),
+	\]
+	which is exactly
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x)
+	+
+	\sum_i \Delta w_i(x)\,g_i(x_g).
+	\]
+	Hence $x_g$ is a global minimizer if and only if the displayed inequality holds
+	for all $x$.
+\end{proof}
+
+\begin{proposition}[Exact-dominance sufficient condition]
+	Consider
+	\[
+	f(x)=\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr),
+	\]
+	where each component satisfies
+	\[
+	g_i(z)\ge 0
+	\qquad \text{for all } z,
+	\qquad
+	g_i(0)=0.
+	\]
+	Assume further that
+	\[
+	w_i(x)\ge 0
+	\qquad \forall i,x,
+	\qquad
+	\sum_{i=1}^m w_i(x)=1
+	\qquad \forall x,
+	\]
+	that component $1$ has the smallest bias,
+	\[
+	b_1 \le b_i
+	\qquad \forall i,
+	\]
+	and that exact dominance holds at $x_1^\ast$:
+	\[
+	w_1(x_1^\ast)=1,
+	\qquad
+	w_j(x_1^\ast)=0
+	\qquad
+	\forall j\neq 1.
+	\]
+	Then $x_1^\ast$ is a global minimizer of $f$.
+\end{proposition}
+
+\begin{proof}
+	At $x=x_1^\ast$, exact dominance gives
+	\[
+	f(x_1^\ast)
+	=
+	b_1 + g_1(0)
+	=
+	b_1.
+	\]
+	For arbitrary $x$, since $g_i(x-x_i^\ast)\ge 0$ and $b_i\ge b_1$, one has
+	\[
+	b_i+g_i(x-x_i^\ast)\ge b_1
+	\qquad
+	\forall i.
+	\]
+	Multiplying by the nonnegative weights and summing,
+	\[
+	f(x)
+	=
+	\sum_{i=1}^m w_i(x)\bigl(b_i+g_i(x-x_i^\ast)\bigr)
+	\ge
+	\sum_{i=1}^m w_i(x)\,b_1
+	=
+	b_1
+	=
+	f(x_1^\ast).
+	\]
+	Hence $x_1^\ast$ is a global minimizer.
+\end{proof}
+
+Two useful sufficient conditions follow immediately.
+
+\begin{itemize}
+	\item If all components share the same minimum value
+	\[
+	g_i(x_g)=g_0 \ge 0
+	\qquad
+	\text{for all } i,
+	\]
+	then a sufficient condition is
+	\[
+	w_i(x) > 0
+	\qquad \text{for all } i,x,
+	\]
+	together with
+	\[
+	\sum_i w_i(x) \ge \sum_i w_i(x_g)
+	\qquad \forall x.
+	\]
+	Indeed, since $\Delta g_i(x)\ge 0$ for all $i,x$, one has
+	\[
+	\sum_i w_i(x)\,\Delta g_i(x) \ge 0,
+	\]
+	and therefore it suffices that
+	\[
+	g_0 \sum_i \Delta w_i(x) \ge 0.
+	\]
+	
+	\item In the special case $g_0 = 0$, the second term vanishes identically, so
+	\[
+	w_i(x) \ge 0
+	\qquad \text{for all } i,x
+	\]
+	is sufficient.
+\end{itemize}
+
+In particular, if the weights are normalized,
+\[
+\sum_i w_i(x) = 1
+\qquad
+\forall x,
+\]
+then the condition
+\[
+w_i(x) \ge 0
+\qquad \text{for all } i,x
+\]
+is sufficient whenever all components share the same minimum value $g_i(x_g)=g_0
+\ge 0$.
 
 \end{document}
