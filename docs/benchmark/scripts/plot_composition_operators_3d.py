@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def shifted_sphere(x, y):
+def sphere(x, y):
     return x**2 + y**2
 
 
-def shifted_ellipsoid(x, y):
+def ellipsoid(x, y):
     return x**2 + 25.0 * y**2
 
 
@@ -17,8 +17,8 @@ def main():
     y = np.linspace(-100.0, 100.0, 151)
     xx, yy = np.meshgrid(x, y)
 
-    g1 = shifted_sphere(xx, yy)
-    g2 = shifted_ellipsoid(xx, yy)
+    g1 = sphere(xx, yy)
+    g2 = ellipsoid(xx, yy)
 
     z1 = g1 / np.percentile(g1, 95.0)
     z2 = g2 / np.percentile(g2, 95.0)
@@ -38,7 +38,7 @@ def main():
         ("Weighted sum", weighted),
         ("Product", product),
         ("Power mean, $p=4$", power_mean),
-        ("State-dependent weights", state_weighted),
+        ("x-dependent weights", state_weighted),
         ("Nonmonotone level wells", level_well),
     ]
     shown_panels = [(title, np.log1p(values)) for title, values in panels]
@@ -78,8 +78,8 @@ def main():
         0.0,
         0.82,
         r"Components:" "\n"
-        r"$z_1$: shifted Sphere" "\n"
-        r"$z_2$: shifted Ellipsoid" "\n\n"
+        r"$z_1$: Sphere" "\n"
+        r"$z_2$: Ellipsoid" "\n\n"
         r"Height/color: $\log(1+f)$" "\n"
         r"$\star$: common optimum" "\n\n"
         r"Level wells:" "\n"
@@ -89,7 +89,7 @@ def main():
         va="top",
     )
 
-    fig.suptitle("3D views of composition operators applied to shifted Sphere and Ellipsoid components", fontsize=12)
+    fig.suptitle("3D views of composition operators applied to Sphere and Ellipsoid components", fontsize=12)
 
     out_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "figures")
     os.makedirs(out_dir, exist_ok=True)
