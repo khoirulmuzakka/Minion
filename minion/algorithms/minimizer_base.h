@@ -11,6 +11,7 @@
 #include <variant>
 #include <map>
 #include <string>
+#include <ostream>
 
 namespace minion {
 
@@ -117,6 +118,22 @@ struct MinionResult {
         return *this;
     }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const MinionResult& result) {
+    os << "MinionResult(x=[";
+    for (size_t i = 0; i < result.x.size(); ++i) {
+        if (i > 0) {
+            os << ", ";
+        }
+        os << result.x[i];
+    }
+    os << "], fun=" << result.fun
+       << ", nit=" << result.nit
+       << ", nfev=" << result.nfev
+       << ", status=" << terminationStatusToString(result.status)
+       << ", message=\"" << result.message << "\")";
+    return os;
+}
 
 
 /**

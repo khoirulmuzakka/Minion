@@ -71,6 +71,12 @@ Example:
         objective, bounds, x0, nullptr, nullptr, "ARRDE", 100000, 42
     ).optimize();
 
+    std::cout << res << "\n";
+
+For custom formatting, access the fields directly:
+
+.. code-block:: cpp
+
     std::cout << "status: " << minion::terminationStatusToString(res.status) << "\n";
     std::cout << "succeeded: " << std::boolalpha << res.succeeded() << "\n";
     std::cout << "fun: " << res.fun << "\n";
