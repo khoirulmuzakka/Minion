@@ -462,30 +462,6 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("stdF", &ARRDE::stdF)
         .def_readonly("diversity", &ARRDE::diversity);
 
-    py::class_<GWO_DE, MinimizerBase>(m, "GWO_DE")
-        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
-                      const std::vector<std::vector<double>>&, void*, std::function<bool(MinionResult*)>,
-                      size_t, int, std::map<std::string, ConfigValue> >(),
-            py::arg("func"), 
-            py::arg("bounds"), 
-            py::arg("x0") = std::vector<std::vector<double>>(),
-            py::arg("data") = nullptr, 
-            py::arg("callback") = nullptr,
-            py::arg("maxevals") = 100000, 
-            py::arg("seed") = -1, 
-            py::arg("options") = std::map<std::string, ConfigValue>())
-            
-        .def("optimize", &GWO_DE::optimize, py::call_guard<py::gil_scoped_release>())
-        .def_readwrite("alpha_score", &GWO_DE::alpha_score)
-        .def_readwrite("beta_score", &GWO_DE::beta_score)
-        .def_readwrite("delta_score", &GWO_DE::delta_score)
-        .def_readwrite("alpha_pos", &GWO_DE::alpha_pos)
-        .def_readwrite("beta_pos", &GWO_DE::beta_pos)
-        .def_readwrite("delta_pos", &GWO_DE::delta_pos)
-        .def_readwrite("population", &GWO_DE::population)
-        .def_readwrite("fitness", &GWO_DE::fitness)
-        .def_readwrite("eval_count", &GWO_DE::eval_count);
-
     py::class_<NelderMead, MinimizerBase>(m, "NelderMead")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<bool(MinionResult*)>,

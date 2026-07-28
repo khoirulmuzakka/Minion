@@ -26,7 +26,6 @@ MinionPy is the Python interface to the Minion C++ optimization library. It focu
       - and other DE variants
     - **Other population-based algorithms:**
       - Artificial Bee Colony (ABC)
-      - Grey Wolf DE Optimization  
       - Canonical PSO, SPSO-2011, Dynamic Multi-Swarm PSO (DMS-PSO)  
       - CMA-ES *(Covariance Matrix Adaptation Evolution Strategy)*  
       - BIPOP-aCMAES

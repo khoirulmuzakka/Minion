@@ -433,35 +433,6 @@ Parameters :
                     ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
 
-Grey Wolf Optimizer Differential Evolution (GWO-DE)
-----------------------------------------------------
-GWO-DE combines Differential Evolution with the Grey Wolf Optimizer, leveraging the social structure of wolves for optimization.
-
-Algorithm name : ``"GWO_DE"``
-
-Parameters : 
-
-- ``population_size``: 0  
-
-  .. note:: The number of individuals in the population. If set to 0, a default size based on problem dimension is used.
-
-- ``mutation_rate``: 0.5  
-
-  .. note:: The probability of mutating a parameter value during evolution.
-
-- ``crossover_rate``: 0.7  
-
-  .. note:: The probability of recombining parent and mutant vectors.
-
-- ``elimination_prob``: 0.1 
-
-  .. note:: The probability of eliminating a wolf from the population.
-
-- ``bound_strategy``: ``reflect-random``  
-
-  .. note:: Method for handling boundary violations. Available strategies:  
-                    ``"random"``, ``"reflect-random"``, ``"clip"``.
-
 j2020 Algorithm
 ----------------
 The j2020 algorithm is a variation of Differential Evolution that incorporates parameter-specific strategies for mutation and recombination.

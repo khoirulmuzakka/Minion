@@ -14,7 +14,6 @@ from .minionpycpp import jSO as cppjSO
 from .minionpycpp import LSRTDE as cppLSRTDE
 from .minionpycpp import RDEX as cppRDEX
 from .minionpycpp import Differential_Evolution as cppDifferential_Evolution
-from .minionpycpp import GWO_DE as cppGWO_DE
 from .minionpycpp import Minimizer as cppMinimizer
 from .minionpycpp import NelderMead as cppNelderMead 
 from .minionpycpp import ABC as cppABC
@@ -75,7 +74,6 @@ def _normalize_algo_name(name: str) -> str:
         "JSO": "jSO",
         "IMODE": "IMODE",
         "AGSK": "AGSK",
-        "GWODE": "GWO_DE",
         "NELDERMEAD": "NelderMead",
         "ABC": "ABC",
         "PSO": "PSO",
@@ -318,102 +316,6 @@ class MinimizerBase:
         if bounds.shape[1] != 2:
             raise ValueError("Invalid bounds. Bounds must be a list of (lower_bound, upper_bound).")
         return [(b[0], b[1]) for b in bounds]
-
-class GWO_DE(MinimizerBase):
-    """
-    Implementation of the Grey Wolf Optimizer with Differential Evolution (GWO-DE) algorithm.
-
-    This class inherits from `MinimizerBase` and implements the GWO-DE optimization algorithm.
-    """
-
-    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
-                 bounds: List[tuple[float, float]],
-                 x0: Optional[List[List[float]]] = None,
-                 maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], bool]] = None,
-                 seed: Optional[int] = None,
-                 options: Dict[str, Any] = None
-        ) : 
-        """
-        Initialize the Grey Wolf Optimizer with Differential Evolution (GWO-DE).
-
-        Parameters
-        ----------
-        func : callable
-            The objective function to be minimized.
-
-            .. code-block:: python
-        
-                func(X) -> list[float]
-
-            where `X` is a list of lists of floats. Note that `func` is assumed to be vectorized. If the function instead  
-            takes a single list of floats and returns a float,  
-            it can be vectorized as follows (see examples in the documentation):
-
-            .. code-block:: python 
-
-                def func(X):
-                    return [fun(x) for x in X]
-
-            
-        bounds : list of tuple
-            List of (min, max) pairs defining the bounds for each decision variable.
-        x0 :  list[list[float]], optional
-            Initial guesses for the solution. These guesses will be used to initialize the population. 
-            If None (default), a random initialization within the given bounds is used.
-        maxevals : int, optional
-            Maximum number of function evaluations allowed. Default is 100000.
-        callback : callable, optional
-            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
-        seed : int, optional
-            Random seed for reproducibility. If None (default), the seed is not set.
-        options : dict, optional
-            Additional options for the algorithm. If None (default), the following 
-            settings are used::
-
-                options = {
-                    "population_size": 0,        # Determines population size dynamically
-                    "mutation_rate": 0.5,        # Probability of mutation
-                    "crossover_rate": 0.7,       # Probability of crossover
-                    "elimination_prob": 0.1,     # Probability of elimination
-                    "bound_strategy": "reflect-random"  # Boundary handling strategy
-                }
-
-            The available options are:
-
-            - **population_size** (int):  Initial population size. If set to `0`, it will be automatically determined.
-            - **mutation_rate** (float):  Mutation rate variable (F).
-            - **crossover_rate** (float):  Crossover probability/rate (CR).
-            - **elimination_prob** (float):  Elimination probability.
-            - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
-                    ``"random"``, ``"reflect-random"``, ``"clip"``.
-
-        Notes
-        -----
-        - The optimizer is implemented in C++ and accessed via `cppGWO_DE`.
-        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
-        - The `options` dictionary allows fine-tuning of the optimization process.
-
-        """
-        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
-        self.optimizer = cppGWO_DE(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, maxevals, self.seed, self.cpp_options)
-    
-    def optimize(self):
-        """
-        Run the GWO-DE optimization algorithm.
-
-        Returns
-        -------
-        MinionResult
-            The optimization result containing the best solution found.
-
-        Notes
-        -----
-        This method runs Nelder-Mead optimization algorithm and stores the result
-        in `self.minionResult` only.
-        """
-        self.minionResult = MinionResult(self.optimizer.optimize())
-        return self.minionResult
 
 class NelderMead(MinimizerBase):
     """
@@ -2535,7 +2437,6 @@ class Minimizer(MinimizerBase):
             - `"RDEX"`
             - `"NLSHADE_RSP"`
             - `"j2020"`
-            - `"GWO_DE"`
             - `"ARRDE"` 
             - `"ABC"` (artificial bee colony)
             - `"DA"` (dual annealing)

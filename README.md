@@ -26,7 +26,6 @@ Minion also serves as a research platform for developing and testing new optimiz
     - other advanced DE variants
   - **Other population-based algorithms:**
     - Artificial Bee Colony (ABC)
-    - Grey Wolf DE Optimization  
     - Canonical PSO, SPSO-2011, and Dynamic Multi-Swarm PSO (DMS-PSO)  
     - CMA-ES *(Covariance Matrix Adaptation Evolution Strategy)*  
     - BIPOP-aCMAES 

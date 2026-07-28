@@ -5,7 +5,6 @@
 #include "minimizer_base.h"
 #include "default_options.h"
 #include "de.h"
-#include "gwo_de.h"
 #include "lshade.h"
 #include "agsk.h"
 #include "arrde.h"

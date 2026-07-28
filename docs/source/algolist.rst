@@ -46,10 +46,6 @@ Differential Evolution Family
 ``AGSK``
     A. W. Mohamed, A. A. Hadi, A. K. Mohamed and N. H. Awad, *Evaluating the Performance of Adaptive Gaining-Sharing Knowledge Based Algorithm on CEC 2020 Benchmark Problems*, IEEE CEC, 2020.
 
-``GWO_DE``
-    S. Mirjalili, S. M. Mirjalili, and A. Lewis, *Grey Wolf Optimizer*, Advances in Engineering Software, 69, 46-61, 2014. Minion implements a Grey Wolf / Differential Evolution hybrid based on this family of methods.
-
-
 Particle Swarm and Swarm-Based Methods
 --------------------------------------
 

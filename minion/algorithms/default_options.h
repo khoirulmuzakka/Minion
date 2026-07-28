@@ -44,7 +44,6 @@ class DefaultSettings{
                 {"JSO", "jSO"},
                 {"IMODE", "IMODE"},
                 {"AGSK", "AGSK"},
-                {"GWODE", "GWO_DE"},
                 {"NELDERMEAD", "NelderMead"},
                 {"ABC", "ABC"},
                 {"PSO", "PSO"},
@@ -80,14 +79,6 @@ class DefaultSettings{
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
             {"population_size", 0},  
             {"bound_strategy" , std::string("reflect-random")} , 
-        };
-
-        std::map<std::string, ConfigValue>  default_settings_GWO_DE = {
-            {"population_size", 0}, 
-            {"mutation_rate", 0.5}, 
-            {"crossover_rate", 0.7}, 
-            {"elimination_prob", 0.1},
-            {"bound_strategy" , std::string("reflect-random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_j2020 = {
@@ -324,7 +315,6 @@ class DefaultSettings{
                 {"jSO", default_settings_jSO}, 
                 {"IMODE", default_settings_IMODE},
                 {"AGSK", default_settings_AGSK},
-                {"GWO_DE", default_settings_GWO_DE}, 
                 {"NelderMead", default_settings_NelderMead}, 
                 {"ABC", default_settings_ABC}, 
                 {"PSO", default_settings_PSO}, 

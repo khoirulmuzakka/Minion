@@ -31,7 +31,6 @@ ALGORITHMS = (
     "jSO",
     "IMODE",
     "ARRDE",
-    "GWO_DE",
     "NelderMead",
     "ABC",
     "PSO",

@@ -14,7 +14,6 @@
 #include "imode.h"
 #include "arrde.h"
 #include "de.h"
-#include "gwo_de.h"
 #include "nlshadersp.h"
 #include "nl_shade_lbc.h"
 #include "abc.h"
@@ -51,7 +50,7 @@ class Minimizer {
          * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization in the population-population based algorithms, or minion will pick teh best one in L-BFGS or NelderMead.
          * @param data Additional data to pass to the objective function.
          * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
-         * @param algo Algorithm to use : "LSHADE", "AGSK", "DE", "JADE", "jSO", "IMODE", "NelderMead", "LSRTDE", "RDEX", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
+         * @param algo Algorithm to use : "LSHADE", "AGSK", "DE", "JADE", "jSO", "IMODE", "NelderMead", "LSRTDE", "RDEX", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -81,7 +80,6 @@ class Minimizer {
             else if (algoUpper == "jSO") optimizer = new jSO (func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "IMODE") optimizer = new IMODE(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, x0, data, callback, maxevals, seed, options);
-            else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "NelderMead") optimizer = new NelderMead(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, x0, data, callback, maxevals, seed, options);
             else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, x0, data, callback, maxevals, seed, options);
@@ -106,7 +104,7 @@ class Minimizer {
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
          * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
-         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "RDEX", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "GWO_DE", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
+         * @param algo Algorithm to use : "LSHADE", "DE", "JADE", "jSO", "DE", "NelderMead", "LSRTDE", "RDEX", "NLSHADE_RSP", "NLSHADE_LBC", "j2020", "PSO", "SPSO2011", "DMSPSO", "LSHADE_cnEpSin"
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -136,7 +134,6 @@ class Minimizer {
             else if (algoUpper == "jSO") optimizer = new jSO (func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "IMODE") optimizer = new IMODE(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "ARRDE") optimizer = new ARRDE (func, bounds, {x0}, data, callback, maxevals, seed, options);
-            else if (algoUpper == "GWO_DE") optimizer = new GWO_DE(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "NelderMead") optimizer = new NelderMead(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "ABC") optimizer = new ABC(func, bounds, {x0}, data, callback, maxevals, seed, options);
             else if (algoUpper == "PSO") optimizer = new PSO(func, bounds, {x0}, data, callback, maxevals, seed, options);
