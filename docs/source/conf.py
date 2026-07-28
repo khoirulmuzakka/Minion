@@ -21,7 +21,7 @@ except ImportError:
 project = 'Minion'
 copyright = '2025, Khoirul Faiq Muzakka'
 author = 'Khoirul Faiq Muzakka'
-release = '0.2.3'
+release = '1.7.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -36,11 +36,8 @@ if importlib.util.find_spec("nbsphinx") is not None:
 breathe_enabled = importlib.util.find_spec("breathe") is not None and os.path.exists(os.path.abspath("../xml/index.xml"))
 if breathe_enabled:
     extensions.append("breathe")
-exclude_patterns = ['_build', '**.ipynb_checkpoints']
-
-
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -48,7 +45,7 @@ exclude_patterns = []
 
 html_theme = "sphinx_rtd_theme"
 #html_theme = "alabaster"
-html_static_path = ['_static']
+html_static_path = ['_static'] if os.path.isdir(os.path.join(os.path.dirname(__file__), '_static')) else []
 
 autodoc_default_options = {
     "members": True,

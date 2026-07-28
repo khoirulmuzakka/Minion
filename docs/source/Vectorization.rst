@@ -1,5 +1,5 @@
 Notes Regarding Vectorization Support
-====================================
+=====================================
 
 Minion and MinionPy expect the objective function to be **vectorized**. In other words, the objective should accept a batch of candidate points and return one objective value per point.
 

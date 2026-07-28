@@ -34,4 +34,4 @@ The following notebook presents a comparison of Minion's L-BFGS-B and L-BFGS alg
    :maxdepth: 2
    :caption: Comparison Notebook:
 
-   l_bfgs_b
+   l_bfgs_b_notebook

@@ -1,7 +1,7 @@
 # Minion: C++ and Python Optimization Library
 
 <div align="center">
-  <img src="docs/logo.png" alt="Minion Logo" width="450" />
+  <img src="docs/logo.png" alt="Minion Logo" width="550" />
 </div>
 
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)

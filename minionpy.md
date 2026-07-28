@@ -1,7 +1,7 @@
 # MinionPy
 
 <div align="center">
-  <img src="https://github.com/khoirulmuzakka/Minion/raw/main/docs/logo.png" alt="Logo" width="200" />
+  <img src="https://github.com/khoirulmuzakka/Minion/raw/main/docs/logo.png" alt="Logo" width="500" />
 </div>
 
 
