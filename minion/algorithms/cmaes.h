@@ -27,7 +27,7 @@ public:
      *           candidates are provided, the best according to @p func is used
      *           to seed the distribution mean.
      * @param data Additional opaque data forwarded to @p func.
-     * @param callback Optional callback invoked with intermediate results.
+     * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
      * @param maxevals Maximum number of function evaluations.
      * @param seed Seed for the pseudo-random number generator (``-1`` keeps the global setting).
      * @param options Algorithm-specific configuration overrides.
@@ -37,7 +37,7 @@ public:
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
-        std::function<void(MinionResult*)> callback = nullptr,
+        std::function<bool(MinionResult*)> callback = nullptr,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>());

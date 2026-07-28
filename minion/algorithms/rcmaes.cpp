@@ -82,7 +82,7 @@ RCMAES::RCMAES(
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
     void* data,
-    std::function<void(MinionResult*)> callback,
+    std::function<bool(MinionResult*)> callback,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
@@ -239,11 +239,9 @@ void RCMAES::initialize() {
 }
 
 void RCMAES::recordHistory() {
-    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, false, "");
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
-    if (callback != nullptr) {
-        callback(&minionResult);
-    }
+    shouldStopFromCallback(minionResult);
 }
 
 RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& bestPoint) const {

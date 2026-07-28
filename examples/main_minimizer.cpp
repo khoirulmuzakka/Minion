@@ -61,8 +61,9 @@ std::vector<double> objective_function(const std::vector<std::vector<double>>& X
 }
 
 // Callback function for Minion (can be used for logging or monitoring)
-void callBack(minion::MinionResult* res) {
+bool callBack(minion::MinionResult* res) {
     // std::cout << "Best fitness " << res->fun << "\n";
+    return false;
 };
 
 int main(int argc, char* argv[]) {
@@ -91,7 +92,8 @@ int main(int argc, char* argv[]) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;  // Let Minion decide the best population size
         auto res = minion::Minimizer(rosenbrock_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
-        std::cout << "\t " << algo << " : " << res.fun << "\n";
+        std::cout << "\t " << algo << " : " << res.fun
+                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
     };
 
     // Minimizing Rastrigin function
@@ -100,7 +102,8 @@ int main(int argc, char* argv[]) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;
         auto res = minion::Minimizer(rastrigin_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
-        std::cout << "\t " << algo << " : " << res.fun << "\n";
+        std::cout << "\t " << algo << " : " << res.fun
+                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
     };
 
     // Minimizing an objective function that is a class member
@@ -110,7 +113,8 @@ int main(int argc, char* argv[]) {
         auto settings = minion::DefaultSettings().getDefaultSettings(algo);
         settings["population_size"] = 0;
         auto res = minion::Minimizer(objective_function, bounds, x0, so, callBack, algo, max_evals, -1, settings).optimize();
-        std::cout << "\t " << algo << " : " << res.fun << "\n";
+        std::cout << "\t " << algo << " : " << res.fun
+                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
     };
 
     // Clean up dynamically allocated object

@@ -52,7 +52,7 @@ std::vector<double> objective_function(const std::vector<std::vector<double>>& x
     return func->operator()(x);
 }
 
-void callback(minion::MinionResult*) {}
+bool callback(minion::MinionResult*) { return false; }
 
 } // namespace
 

@@ -86,18 +86,18 @@ MinionResult NelderMead::optimize() {
         fbest = fvals[bestIndex];
 
         size_t iter = 0;
-        bool success = false;
+        TerminationStatus status = TerminationStatus::Running;
         std::string message;
 
-        auto push_result = [&](bool done) {
-            minionResult = MinionResult(best, fbest, iter, nfev, done, message);
+        auto push_result = [&](TerminationStatus resultStatus) {
+            minionResult = MinionResult(best, fbest, iter, nfev, resultStatus, message);
             updateBestSoFar(minionResult);
-            if (callback != nullptr) {
-                callback(&minionResult);
-            }
+            return shouldStopFromCallback(minionResult);
         };
 
-        push_result(false);
+        if (push_result(TerminationStatus::Running)) {
+            return getBestSoFar();
+        }
 
         while (nfev < maxevals) {
             std::vector<size_t> order = argsort(fvals, true);
@@ -124,8 +124,8 @@ MinionResult NelderMead::optimize() {
             }
 
             if (maxXdiff <= xtol && maxFdiff <= ftol) {
-                success = true;
-                message = "Optimization converged.";
+                status = TerminationStatus::Converged;
+                message = "Simplex size and function spread are below convergence tolerances.";
                 break;
             }
 
@@ -203,18 +203,21 @@ MinionResult NelderMead::optimize() {
             }
 
             ++iter;
-            push_result(false);
+            if (push_result(TerminationStatus::Running)) {
+                return getBestSoFar();
+            }
 
             if (nfev >= maxevals) {
                 break;
             }
         }
 
-        if (!success) {
-            message = "Maximum number of evaluations reached.";
+        if (status == TerminationStatus::Running) {
+            status = TerminationStatus::MaxEvaluationsReached;
+            message = "Maximum number of function evaluations reached.";
         }
 
-        push_result(true);
+        push_result(status);
         return minionResult;
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());

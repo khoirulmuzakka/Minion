@@ -236,7 +236,7 @@ void RDEX::MainCycle() {
     }
 
     size_t bestIndex = findArgMin(funPop);
-    minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, false, "");
+    minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 
     double minfit = fitArr[0];
@@ -445,7 +445,7 @@ void RDEX::MainCycle() {
         nfeval += int(funPop.size());
 
         bestIndex = findArgMin(funPop);
-        minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, false, "");
+        minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
 
         for (int indIter = 0; indIter < nIndsFront; ++indIter) {
@@ -499,9 +499,7 @@ void RDEX::MainCycle() {
             }
         }
 
-        if (callback != nullptr) {
-            callback(&minionResult);
-        }
+        if (shouldStopFromCallback(minionResult)) break;
     }
 }
 

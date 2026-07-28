@@ -663,9 +663,9 @@ MinionResult LSHADE_cnEpSin::optimize() {
                 best_fitness = fitness[bestIdx];
             }
 
-            minionResult = MinionResult(best, best_fitness, generationCounter, Nevals, false, "");
+            minionResult = MinionResult(best, best_fitness, generationCounter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
-            if (callback != nullptr) callback(&minionResult);
+            if (shouldStopFromCallback(minionResult)) break;
 
             reducePopulationIfNeeded();
 

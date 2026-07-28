@@ -27,7 +27,7 @@ public:
      * @param bounds Variable bounds for the DE population.
      * @param x0 Optional set of initial individuals.
      * @param data User payload passed to the objective.
-     * @param callback Progress callback invoked with the best-so-far state.
+     * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
      * @param maxevals Maximum number of objective evaluations.
      * @param seed RNG seed (negative -> random seed).
      * @param options Configuration map (population multiplier, archive rate, etc.).
@@ -37,7 +37,7 @@ public:
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
-        std::function<void(MinionResult*)> callback = nullptr,
+        std::function<bool(MinionResult*)> callback = nullptr,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()

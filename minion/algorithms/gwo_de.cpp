@@ -101,16 +101,20 @@ MinionResult GWO_DE::optimize() {
 
             update_leaders();
 
-            minionResult = MinionResult(alpha_pos, alpha_score, iter + 1, eval_count, false, "");
+            minionResult = MinionResult(alpha_pos, alpha_score, iter + 1, eval_count, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
-            if (callback != nullptr) {
-                callback(&minionResult);
-            }
+            if (shouldStopFromCallback(minionResult)) break;
 
             ++iter;
         }
 
-        MinionResult result(alpha_pos, alpha_score, iter, eval_count, true, "Optimization terminated successfully.");
+        MinionResult result(
+            alpha_pos,
+            alpha_score,
+            iter,
+            eval_count,
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.");
         updateBestSoFar(result);
         return result;
     } catch (const std::exception& e) {

@@ -64,7 +64,7 @@ void ABC::init() {
     best = population[best_idx];
     best_fitness = fitness[best_idx];
 
-    minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+    minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 }
 
@@ -214,9 +214,9 @@ MinionResult ABC::optimize() {
             }
             diversity.push_back((fmax - fmin) / denom);
 
-            minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
+            minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
-            if (callback != nullptr) callback(&minionResult);
+            if (shouldStopFromCallback(minionResult)) break;
             if (support_tol && checkStopping()) break;
             ++iter;
         }

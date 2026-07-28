@@ -96,7 +96,7 @@ CMAESBase::CMAESBase(
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
     void* data,
-    std::function<void(MinionResult*)> callback,
+    std::function<bool(MinionResult*)> callback,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
@@ -291,12 +291,10 @@ std::vector<double> CMAESBase::denormalizePoint(const std::vector<double>& candi
     return denormalize_point(candidate, original_bounds);
 }
 
-void CMAESBase::recordIteration(size_t generation, size_t evaluations) {
-    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, false, "");
+bool CMAESBase::recordIteration(size_t generation, size_t evaluations) {
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
-    if (callback != nullptr) {
-        callback(&minionResult);
-    }
+    return shouldStopFromCallback(minionResult);
 }
 
 }  // namespace minion

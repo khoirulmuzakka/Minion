@@ -1,7 +1,7 @@
 # Minion: C++ and Python Optimization Library
 
 <div align="center">
-  <img src="docs/minion_logo.png" alt="Minion Logo" width="200" />
+  <img src="docs/logo.png" alt="Minion Logo" width="450" />
 </div>
 
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)
@@ -115,11 +115,14 @@ int main() {
     );
 
     minion::MinionResult result = optimizer.optimize();
-    std::cout << "best f = " << result.fun << "\n";
+    std::cout << "best f  = " << result.fun << "\n";
+    std::cout << "status  = " << minion::terminationStatusToString(result.status) << "\n";
+    std::cout << "message = " << result.message << "\n";
 }
 ```
 
 In C++, `MinionFunction` is the vectorized entry point: it takes `std::vector<std::vector<double>>` and returns one value per candidate point.
+Callbacks have signature `bool(minion::MinionResult*)`; return `true` to stop optimization early and `false` to continue.
 
 ### Python Code
 
@@ -166,10 +169,12 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("f_opt   =", cec_f1.f_opt)
+print("status =", result.status_name)
+print("message =", result.message)
 ```
 
 In Python, `func(X)` receives `X` as `list[list[float]]` and returns one value per candidate point.
+Python callbacks receive a `MinionResult`; return `True` to stop optimization early, or `False`/`None` to continue.
 
 ## CEC and BBOB2009 Benchmark Usage
 
@@ -210,6 +215,7 @@ int main() {
     );
 
     minion::MinionResult result = optimizer.optimize();
+    std::cout << "status = " << minion::terminationStatusToString(result.status) << "\n";
 }
 ```
 
@@ -240,7 +246,8 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("f_opt   =", cec_f1.f_opt)
+print("status =", result.status_name)
+print("message =", result.message)
 ```
 For `CEC2011`, the pattern is the same, but the bounds are problem-specific:
 
@@ -276,7 +283,8 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("f_opt   =", bbob.f_opt)
+print("status =", result.status_name)
+print("message =", result.message)
 ```
 
 ### C++ Benchmark Driver

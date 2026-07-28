@@ -256,11 +256,9 @@ MinionResult SPSO2011::optimize() {
                 topologyDirty = true;
             }
 
-            minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
+            minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
-            if (callback != nullptr) {
-                callback(&minionResult);
-            }
+            if (shouldStopFromCallback(minionResult)) break;
 
             if (support_tol && checkStopping()) {
                 break;

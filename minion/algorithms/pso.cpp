@@ -92,7 +92,7 @@ void PSO::init() {
     spatialDiversity.clear();
     recordMetrics();
 
-    minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+    minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 }
 
@@ -187,11 +187,9 @@ MinionResult PSO::optimize() {
 
             recordMetrics();
 
-            minionResult = MinionResult(best, best_fitness, iter, Nevals, false, "");
+            minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
-            if (callback != nullptr) {
-                callback(&minionResult);
-            }
+            if (shouldStopFromCallback(minionResult)) break;
 
             if (support_tol && checkStopping()) {
                 break;

@@ -12,7 +12,7 @@ ACMAES::ACMAES(
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
     void* data,
-    std::function<void(MinionResult*)> callback,
+    std::function<bool(MinionResult*)> callback,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
@@ -98,7 +98,9 @@ MinionResult ACMAES::optimize() {
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
-            recordIteration(generation, Nevals);
+            if (recordIteration(generation, Nevals)) {
+                break;
+            }
 
             if (support_tol && effectiveStep <= stoppingTol) {
                 break;

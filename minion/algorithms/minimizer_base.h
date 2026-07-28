@@ -10,6 +10,7 @@
 #include <exception>
 #include <variant>
 #include <map>
+#include <string>
 
 namespace minion {
 
@@ -18,6 +19,37 @@ namespace minion {
  * @brief Alias for the variant type to hold different types of configuration values.
  */
 using ConfigValue = std::variant<bool, int, double, std::string>;
+
+enum class TerminationStatus {
+    Running,
+    Converged,
+    MaxEvaluationsReached,
+    MaxIterationsReached,
+    CallbackStopped,
+    Stagnated,
+    NumericalError,
+    InvalidInput,
+    RuntimeError
+};
+
+inline std::string terminationStatusToString(TerminationStatus status) {
+    switch (status) {
+        case TerminationStatus::Running: return "running";
+        case TerminationStatus::Converged: return "converged";
+        case TerminationStatus::MaxEvaluationsReached: return "max_evaluations_reached";
+        case TerminationStatus::MaxIterationsReached: return "max_iterations_reached";
+        case TerminationStatus::CallbackStopped: return "callback_stopped";
+        case TerminationStatus::Stagnated: return "stagnated";
+        case TerminationStatus::NumericalError: return "numerical_error";
+        case TerminationStatus::InvalidInput: return "invalid_input";
+        case TerminationStatus::RuntimeError: return "runtime_error";
+    }
+    return "runtime_error";
+}
+
+inline bool terminationStatusSucceeded(TerminationStatus status) {
+    return status == TerminationStatus::Converged;
+}
 
 /**
  * @struct MinionResult
@@ -28,13 +60,18 @@ struct MinionResult {
     double fun;
     size_t nit;
     size_t nfev;
-    bool success;
+    TerminationStatus status;
     std::string message;
 
     /**
      * @brief Default constructor.
      */
-    MinionResult() : fun(0.0), nit(0), nfev(0), success(false), message("") {};
+    MinionResult()
+        : fun(std::numeric_limits<double>::infinity()),
+          nit(0),
+          nfev(0),
+          status(TerminationStatus::RuntimeError),
+          message("") {};
 
      /**
      * @brief Parameterized constructor.
@@ -42,11 +79,21 @@ struct MinionResult {
      * @param fun_ The objective function value at the solution.
      * @param nit_ The number of iterations performed.
      * @param nfev_ The number of function evaluations performed.
-     * @param success_ Whether the optimization was successful.
+     * @param status_ Why the optimizer stopped.
      * @param message_ A message describing the result.
      */
-    MinionResult(const std::vector<double>& x_, double fun_, size_t nit_, size_t nfev_, bool success_, const std::string& message_)
-        : x(x_), fun(fun_), nit(nit_), nfev(nfev_), success(success_), message(message_) {};
+    MinionResult(
+        const std::vector<double>& x_,
+        double fun_,
+        size_t nit_,
+        size_t nfev_,
+        TerminationStatus status_,
+        const std::string& message_)
+        : x(x_), fun(fun_), nit(nit_), nfev(nfev_), status(status_), message(message_) {};
+
+    bool succeeded() const {
+        return terminationStatusSucceeded(status);
+    }
 
     /**
      * @brief Destructor.
@@ -64,7 +111,7 @@ struct MinionResult {
             fun = other.fun;
             nit = other.nit;
             nfev = other.nfev;
-            success = other.success;
+            status = other.status;
             message = other.message;
         }
         return *this;
@@ -211,7 +258,7 @@ class MinimizerBase {
          * @param bounds The bounds for the decision variables.
          * @param x0 The initial guesses for the solution.
          * @param data Additional data to pass to the objective function.
-         * @param callback A callback function to call after each iteration.
+         * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -221,7 +268,7 @@ class MinimizerBase {
             const std::vector<std::pair<double, double>>& bounds, 
             const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
-            std::function<void(MinionResult*)> callback = nullptr,
+            std::function<bool(MinionResult*)> callback = nullptr,
             size_t maxevals = 100000, 
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
@@ -244,7 +291,7 @@ class MinimizerBase {
          * @param func The objective function to minimize.
          * @param x0 The initial guess for the solution.
          * @param data Additional data to pass to the objective function.
-         * @param callback A callback function to call after each iteration.
+         * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
          * @param maxevals The maximum number of function evaluations.
          * @param seed global seed
          * @param options Option object, which specify further configurational settings for the algorithm.
@@ -253,7 +300,7 @@ class MinimizerBase {
             MinionFunction func, 
             const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
-            std::function<void(MinionResult*)> callback = nullptr,
+            std::function<bool(MinionResult*)> callback = nullptr,
             size_t maxevals = 100000, 
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>() ) : 
@@ -312,8 +359,34 @@ class MinimizerBase {
 
         MinionResult getBestSoFar(){
             if (!has_best_so_far) throw std::runtime_error("Best result is not available");
-            return best_so_far;
+            MinionResult result = best_so_far;
+            if (result.status == TerminationStatus::Running) {
+                if (result.nfev >= maxevals) {
+                    result.status = TerminationStatus::MaxEvaluationsReached;
+                    result.message = "Maximum number of function evaluations reached.";
+                } else {
+                    result.status = TerminationStatus::Converged;
+                    result.message = "Convergence criterion satisfied.";
+                }
+            }
+            return result;
         };
+
+        bool shouldStopFromCallback(MinionResult& result) {
+            if (callback == nullptr) {
+                return false;
+            }
+            if (!callback(&result)) {
+                return false;
+            }
+
+            result.status = TerminationStatus::CallbackStopped;
+            result.message = "Callback requested optimization stop.";
+            updateBestSoFar(result);
+            best_so_far.status = TerminationStatus::CallbackStopped;
+            best_so_far.message = result.message;
+            return true;
+        }
 
         std::vector<double> findBestPoint (const std::vector<std::vector<double>>& Xvec){
             auto fvec = func(Xvec, data); 
@@ -331,7 +404,7 @@ class MinimizerBase {
         MinionResult best_so_far;
         std::string boundStrategy;
         int seed;
-         std::function<void(MinionResult*)> callback;
+         std::function<bool(MinionResult*)> callback;
 
     protected:
         bool has_best_so_far = false;

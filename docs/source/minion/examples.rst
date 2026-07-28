@@ -59,7 +59,8 @@ Understanding MinionResult
 - ``fun``: objective value at ``x``.
 - ``nit``: number of iterations/generations completed.
 - ``nfev``: number of objective evaluations.
-- ``success``: solver status flag.
+- ``status``: enum value describing why the algorithm stopped.
+- ``succeeded()``: convenience method derived from ``status``.
 - ``message``: termination message (if provided by the algorithm).
 
 Example:
@@ -70,7 +71,8 @@ Example:
         objective, bounds, x0, nullptr, nullptr, "ARRDE", 100000, 42
     ).optimize();
 
-    std::cout << "success: " << std::boolalpha << res.success << "\n";
+    std::cout << "status: " << minion::terminationStatusToString(res.status) << "\n";
+    std::cout << "succeeded: " << std::boolalpha << res.succeeded() << "\n";
     std::cout << "fun: " << res.fun << "\n";
     std::cout << "nit: " << res.nit << ", nfev: " << res.nfev << "\n";
     std::cout << "x_best[0]: " << (res.x.empty() ? 0.0 : res.x[0]) << "\n";
@@ -86,37 +88,30 @@ You can pass a callback to monitor progress after each iteration:
 
 .. code-block:: cpp
 
-    void progress_callback(minion::MinionResult* state) {
+    bool progress_callback(minion::MinionResult* state) {
         std::cout << "iter=" << state->nit
                   << " nfev=" << state->nfev
                   << " best=" << state->fun << "\n";
+        return false; // continue optimization
     }
 
     minion::MinionResult res = minion::Minimizer(
         objective, bounds, x0, nullptr, progress_callback, "LSHADE", 100000, 42
     ).optimize();
 
-If you need custom early stopping, a practical pattern is to throw from the callback
-when your condition is met, then catch outside:
+If you need custom early stopping, return ``true`` from the callback:
 
 .. code-block:: cpp
 
-    struct StopNow : public std::exception {
-        const char* what() const noexcept override { return "user stop"; }
-    };
-
-    void early_stop_callback(minion::MinionResult* state) {
-        if (state->nfev >= 20000 || state->fun < 1e-8) {
-            throw StopNow();
-        }
+    bool early_stop_callback(minion::MinionResult* state) {
+        return state->nfev >= 20000 || state->fun < 1e-8;
     }
 
-    try {
-        auto res = minion::Minimizer(
-            objective, bounds, x0, nullptr, early_stop_callback, "ARRDE", 100000, 42
-        ).optimize();
-        (void)res;
-    } catch (const StopNow&) {
+    auto res = minion::Minimizer(
+        objective, bounds, x0, nullptr, early_stop_callback, "ARRDE", 100000, 42
+    ).optimize();
+
+    if (res.status == minion::TerminationStatus::CallbackStopped) {
         std::cout << "Optimization stopped by user callback.\n";
     }
 

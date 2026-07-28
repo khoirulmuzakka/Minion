@@ -113,7 +113,7 @@ Parameter Explanation:
 - `x0`: Initial guesses (`list[list[float]]`). Each entry is one candidate start. In population-based algorithms, some initialized individuals are replaced by these guesses; other algorithms evaluate them and keep the best one as the actual starting point.
 - `bounds`: Search space boundaries (list of tuples).
 - `maxevals`: Maximum number of function evaluations.
-- `callback`: A function that receives the current optimization result.
+- `callback`: A function that receives the current optimization result. Return `True` to stop optimization early; return `False` or `None` to continue.
 - `seed`: Random seed for reproducibility.
 - `options`: Additional algorithm-specific configuration options (see **API (Python)** section). For algorithms that support tolerance-based stopping, set `options["convergence_tol"]`.
 
@@ -138,7 +138,9 @@ The **MinionResult** object contains key information about the optimization proc
 - **`fun`**: Function value at the optimum.
 - **`nit`**: Number of iterations.
 - **`nfev`**: Number of function evaluations.
-- **`success`**: `True` if optimization was successful, else `False`.
+- **`status`**: Enum value describing why the algorithm stopped.
+- **`status_name`**: String form of `status`, such as `"converged"`, `"max_evaluations_reached"`, or `"callback_stopped"`.
+- **`succeeded()`**: Convenience method matching C++; returns `True` when `status` represents convergence.
 - **`message`**: A summary message about the optimization result.
 
 Example:
@@ -147,6 +149,28 @@ Example:
 
     print(f"Solution: {result.x}")
     print(f"Function value: {result.fun}")
+    print(f"Status: {result.status_name}")
+    print(f"Message: {result.message}")
+
+Callbacks can be used for monitoring or early stopping:
+
+.. code-block:: python
+
+    def stop_when_good(result):
+        print(result.nfev, result.fun, result.status_name)
+        return result.fun < 1e-8
+
+    optimizer = mpy.Minimizer(
+        func=objective_function,
+        x0=None,
+        bounds=[(-10, 10)] * dimension,
+        algo="ARRDE",
+        maxevals=10000,
+        callback=stop_when_good,
+    )
+
+    result = optimizer.optimize()
+    print(result.status_name)  # "callback_stopped" if the callback returned True
 
 For more details on available algorithms and advanced configuration, refer to the **API** section.  
 For additional examples, check the **Examples** section.

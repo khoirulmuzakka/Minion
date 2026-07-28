@@ -24,7 +24,7 @@ public:
      * @param bounds The bounds for the variables.
      * @param x0 The initial guesses for the solution. Note that Minion assumes multiple initial guesses, thus, x0 is an std::vector<std::vector<double>> object. These guesses will be used for population initialization.
      * @param data Additional data for the objective function.
-     * @param callback Callback function for intermediate results.
+     * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
      * @param maxevals The maximum number of evaluations.
      * @param seed The seed for random number generation.
      * @param options Option map that specifies further configurational settings for the algorithm.
@@ -34,7 +34,7 @@ public:
             const std::vector<std::pair<double, double>>& bounds, 
             const std::vector<std::vector<double>>& x0 = {},
             void* data = nullptr, 
-            std::function<void(MinionResult*)> callback = nullptr,
+            std::function<bool(MinionResult*)> callback = nullptr,
             size_t maxevals = 100000, 
             int seed=-1, 
             std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()

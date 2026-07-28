@@ -152,7 +152,13 @@ void Dual_Annealing::step (int iter, double temp){
     double denom = std::max({std::fabs(best_E), std::fabs(current_E), 1.0});
     double relGap = std::fabs(current_E - best_E) / denom;
 
-    minionResult = MinionResult(best_cand, best_E, iter, Nevals, relGap <= stoppingTol, "");
+    minionResult = MinionResult(
+        best_cand,
+        best_E,
+        iter,
+        Nevals,
+        relGap <= stoppingTol ? TerminationStatus::Converged : TerminationStatus::Running,
+        relGap <= stoppingTol ? "Convergence criterion satisfied." : "");
     updateBestSoFar(minionResult);
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
@@ -202,7 +208,7 @@ MinionResult Dual_Annealing::optimize() {
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
-                if (minionResult.success) {
+                if (minionResult.status == TerminationStatus::Converged) {
                     return getBestSoFar();
                 }
                 if ( temperature < temperature_restart) {

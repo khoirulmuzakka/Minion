@@ -836,7 +836,7 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (F[best_idx] < f_best) {
         best = X[best_idx];
         f_best = F[best_idx];
-        minionResult = MinionResult(best, f_best, 1, Nevals, false, "");
+        minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
     }
 
@@ -922,7 +922,7 @@ MinionResult L_BFGS_B::optimize() {
         if (param.past > 0) state->core.fx_hist[0] = fx;
 
         if (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm()) {
-            minionResult = MinionResult(best, f_best, 1, Nevals, true, state->core.message);
+            minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Converged, "Projected gradient norm is below convergence tolerance.");
             updateBestSoFar(minionResult);
             auto ret = getBestSoFar();
             ret.nfev = Nevals;
@@ -1014,12 +1014,29 @@ MinionResult L_BFGS_B::optimize() {
 
         const bool success = !state->core.had_issue &&
             (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm());
-        minionResult = MinionResult(best, f_best, k, Nevals, success, state->core.message);
+        TerminationStatus status = TerminationStatus::Stagnated;
+        std::string message = state->core.message;
+        if (success) {
+            status = TerminationStatus::Converged;
+            message = "Projected gradient norm is below convergence tolerance.";
+        } else if (Nevals >= maxevals) {
+            status = TerminationStatus::MaxEvaluationsReached;
+            message = "Maximum number of function evaluations reached.";
+        } else if (param.max_iterations != 0 && k >= param.max_iterations) {
+            status = TerminationStatus::MaxIterationsReached;
+            message = "Maximum number of iterations reached.";
+        } else if (state->core.had_issue) {
+            status = TerminationStatus::NumericalError;
+            if (message.empty()) message = "Numerical issue stopped L-BFGS-B.";
+        } else {
+            message = "Relative function improvement is below tolerance.";
+        }
+        minionResult = MinionResult(best, f_best, k, Nevals, status, message);
         updateBestSoFar(minionResult);
         auto ret = getBestSoFar();
         ret.nfev = Nevals;
-        ret.success = success;
-        ret.message = state->core.message;
+        ret.status = status;
+        ret.message = message;
         return ret;
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

@@ -17,7 +17,7 @@ BIPOP_aCMAES::BIPOP_aCMAES(
     const std::vector<std::pair<double, double>>& bounds,
     const std::vector<std::vector<double>>& x0,
     void* data,
-    std::function<void(MinionResult*)> callback,
+    std::function<bool(MinionResult*)> callback,
     size_t maxevals,
     int seed,
     std::map<std::string, ConfigValue> options)
@@ -189,7 +189,9 @@ size_t BIPOP_aCMAES::runRegime(
         updateEigenDecomposition();
 
         ++globalGeneration;
-        recordIteration(globalGeneration, Nevals);
+        if (recordIteration(globalGeneration, Nevals)) {
+            shouldStopRun = true;
+        }
 
         const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
         const double effectiveStep = sigma * sqrtMaxEigenvalue;
@@ -226,6 +228,9 @@ MinionResult BIPOP_aCMAES::optimize() {
         globalGeneration = 0;
 
         size_t budgetLarge = runRegime(initialMean, sigma0, lambda0);
+        if (best_so_far.status == TerminationStatus::CallbackStopped) {
+            return getBestSoFar();
+        }
         size_t budgetSmall = 0;
         size_t restart = 1;
 
@@ -252,6 +257,9 @@ MinionResult BIPOP_aCMAES::optimize() {
                 const double sigmaSmall = sigma0 * 2.0 * std::pow(10.0, -2.0 * u2);
 
                 budgetSmall += runRegime(sampleRandomMean(), sigmaSmall, lambdaSmall);
+                if (best_so_far.status == TerminationStatus::CallbackStopped) {
+                    return getBestSoFar();
+                }
                 if (Nevals >= maxevals) {
                     break;
                 }
@@ -262,6 +270,9 @@ MinionResult BIPOP_aCMAES::optimize() {
             }
 
             budgetLarge += runRegime(sampleRandomMean(), sigma0, lambdaLarge);
+            if (best_so_far.status == TerminationStatus::CallbackStopped) {
+                return getBestSoFar();
+            }
             ++restart;
         }
 

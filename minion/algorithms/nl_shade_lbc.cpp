@@ -312,7 +312,7 @@ void NLSHADE_LBC::MainCycle() {
     }
 
     size_t initial_best_index = findArgMin(funcRes);
-    minionResult = MinionResult(popul_vec[initial_best_index], funcRes[initial_best_index], Generation, NFEval, false, "");
+    minionResult = MinionResult(popul_vec[initial_best_index], funcRes[initial_best_index], Generation, NFEval, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 
     do {
@@ -400,7 +400,7 @@ void NLSHADE_LBC::MainCycle() {
 
         size_t best_index = findArgMin(funcRes);
         std::vector<double> bestIndividual = popul_vec[best_index];
-        minionResult = MinionResult(bestIndividual, funcRes[best_index], Generation, NFEval, false, "");
+        minionResult = MinionResult(bestIndividual, funcRes[best_index], Generation, NFEval, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
 
         for (int TheChosenOne = 0; TheChosenOne != NInds; TheChosenOne++) {
@@ -436,7 +436,7 @@ void NLSHADE_LBC::MainCycle() {
         UpdateMemoryCrF();
         SuccessFilled = 0;
         Generation++;
-        if (callback != nullptr) callback(&minionResult);
+        if (shouldStopFromCallback(minionResult)) break;
 
     } while (NFEval < MaxFEval);
 }

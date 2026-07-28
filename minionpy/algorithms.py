@@ -2,6 +2,7 @@ import ctypes
 from functools import wraps
 
 import numpy as np
+from .minionpycpp import termination_status_to_string
 from .minionpycpp import LSHADE as cppLSHADE
 from .minionpycpp import LSHADE as cppJADE
 from .minionpycpp import IMODE as cppIMODE
@@ -105,13 +106,10 @@ class MinionResult:
     - **fun** (*float*): Objective function value at `x`.
     - **nit** (*int*): Number of iterations performed.
     - **nfev** (*int*): Number of function evaluations.
-    - **success** (*bool*): Whether the optimization was successful.
+    - **status**: Enum value describing why optimization stopped.
     - **message** (*str*): Descriptive message about the optimization outcome.
 
-    Notes
-    -----
-    The structure of `MinionResult` closely resembles `scipy.optimize.OptimizeResult`,
-    making it easy to use in similar contexts.
+    The public fields mirror the C++ ``MinionResult``.
     """
 
     def __init__(self, minRes):
@@ -127,9 +125,21 @@ class MinionResult:
         self.fun = minRes.fun
         self.nit = minRes.nit
         self.nfev = minRes.nfev
-        self.success = minRes.success
+        self.status = minRes.status
         self.message = minRes.message
-        self.result = minRes
+
+    def succeeded(self):
+        """
+        Return True when the termination status represents successful convergence.
+        """
+        return self.status_name == "converged"
+
+    @property
+    def status_name(self):
+        """
+        Return the string representation of ``status`` for display/logging.
+        """
+        return termination_status_to_string(self.status)
 
     def __repr__(self):
         """
@@ -141,14 +151,16 @@ class MinionResult:
             A formatted string displaying key optimization results.
         """
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
-                f"nfev={self.nfev}, success={self.success}, message={self.message})")
+                f"nfev={self.nfev}, status={self.status_name}, "
+                f"message={self.message})")
 
     
 class CalllbackWrapper: 
     """
-    Wraps a Python function that takes cppMinionResult as an argument to work with MinionResult.
+    Wraps a Python callback that takes a MinionResult.
     
-    Converts a callback function from working with cppMinionResult to MinionResult.
+    The callback return value controls early stopping: True stops optimization,
+    while False or None continues.
     """
 
     def __init__(self, callback):
@@ -156,7 +168,7 @@ class CalllbackWrapper:
         Initialize CallbackWrapper.
 
         Parameters:
-        - callback: A function that takes cppMinionResult as an argument.
+        - callback: A function that takes MinionResult and optionally returns bool.
         """
         self.callback = callback
 
@@ -168,10 +180,11 @@ class CalllbackWrapper:
         - minRes: MinionResult object to pass to the callback function.
 
         Returns:
-        - Result of the callback function.
+        - True to stop optimization, False to continue.
         """
         minionResult = MinionResult(minRes)
-        return self.callback(minionResult)
+        result = self.callback(minionResult)
+        return False if result is None else bool(result)
     
 
 class MinimizerBase:
@@ -186,7 +199,7 @@ class MinimizerBase:
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) : 
         """
@@ -203,7 +216,7 @@ class MinimizerBase:
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is `100000`.
         callback : callable, optional
-            A function that is called at each iteration. It must accept the current optimization state as an argument.
+            A function called at each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue.
         seed : int, optional
             Random seed for reproducibility. If `None`, a random seed is used.
         options : dict, optional
@@ -317,7 +330,7 @@ class GWO_DE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -351,8 +364,7 @@ class GWO_DE(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -379,7 +391,7 @@ class GWO_DE(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppGWO_DE`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -414,7 +426,7 @@ class NelderMead(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -449,8 +461,7 @@ class NelderMead(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -469,7 +480,7 @@ class NelderMead(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppNelderMead`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -520,7 +531,7 @@ class PSO(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         r"""
@@ -540,7 +551,7 @@ class PSO(MinimizerBase):
             Maximum number of objective evaluations allowed. Default ``100000``.
         callback : callable, optional
             Callable invoked after each iteration with the current
-            :class:`MinionResult`.  Default ``None``.
+            :class:`MinionResult`. Return True to stop optimization early; return False or None to continue. Default ``None``.
         seed : int, optional
             Random seed for reproducibility.  If ``None`` (default) a random seed
             is chosen.
@@ -615,7 +626,7 @@ class SPSO2011(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -628,7 +639,8 @@ class SPSO2011(MinimizerBase):
         bounds : list of tuple
             Search-space bounds for each variable.
         x0, maxevals, callback, seed, options :
-            Same semantics as :class:`PSO`.
+            Same semantics as :class:`PSO`. The callback may return True to stop
+            optimization early; False or None continues.
 
         """
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
@@ -668,7 +680,7 @@ class DMSPSO(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -677,7 +689,8 @@ class DMSPSO(MinimizerBase):
         Parameters
         ----------
         func, bounds, x0, maxevals, callback, seed, options :
-            See :class:`PSO` for the base semantics.
+            See :class:`PSO` for the base semantics. The callback may return True
+            to stop optimization early; False or None continues.
 
         Notes
         -----
@@ -720,7 +733,7 @@ class LSHADE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -755,8 +768,7 @@ class LSHADE(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -796,7 +808,7 @@ class LSHADE(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppLSHADE`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -858,7 +870,7 @@ class AGSK(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) :
@@ -910,7 +922,7 @@ class IMODE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
@@ -949,7 +961,7 @@ class LSHADE_cnEpSin(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -965,7 +977,8 @@ class LSHADE_cnEpSin(MinimizerBase):
             Optional initial population.  When ``None`` the population is drawn
             uniformly within the supplied bounds.
         maxevals, callback, seed :
-            Same semantics as :class:`LSHADE`.
+            Same semantics as :class:`LSHADE`. The callback may return True to stop
+            optimization early; False or None continues.
         options : dict, optional
             Additional configuration.  If ``None`` the following defaults are
             applied::
@@ -1021,7 +1034,7 @@ class CMAES(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -1039,7 +1052,7 @@ class CMAES(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
-            User callback receiving intermediate :class:`MinionResult` objects.
+            User callback receiving intermediate :class:`MinionResult` objects. Return True to stop optimization early; return False or None to continue.
         seed : int, optional
             Seed for the pseudo-random number generator. ``None`` keeps the
             global RNG state.
@@ -1087,7 +1100,7 @@ class ACMAES(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -1121,7 +1134,7 @@ class RCMAES(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -1139,7 +1152,7 @@ class RCMAES(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
-            User callback receiving intermediate :class:`MinionResult` objects.
+            User callback receiving intermediate :class:`MinionResult` objects. Return True to stop optimization early; return False or None to continue.
         seed : int, optional
             Seed for the pseudo-random number generator. ``None`` keeps the
             global RNG state.
@@ -1183,7 +1196,7 @@ class BIPOP_aCMAES(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None) -> None:
         """
@@ -1201,7 +1214,7 @@ class BIPOP_aCMAES(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations. Default ``100000``.
         callback : callable, optional
-            User callback receiving intermediate :class:`MinionResult` objects.
+            User callback receiving intermediate :class:`MinionResult` objects. Return True to stop optimization early; return False or None to continue.
         seed : int, optional
             Seed for the pseudo-random number generator. ``None`` keeps the
             global RNG state.
@@ -1247,7 +1260,7 @@ class jSO(MinimizerBase):
                  bounds: List[tuple[float, float]],
                 x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1283,8 +1296,7 @@ class jSO(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1320,7 +1332,7 @@ class jSO(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppjSO`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1363,7 +1375,7 @@ class JADE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1399,8 +1411,7 @@ class JADE(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1442,7 +1453,7 @@ class JADE(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppJADE`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1485,7 +1496,7 @@ class NLSHADE_RSP(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1520,8 +1531,7 @@ class NLSHADE_RSP(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1551,7 +1561,7 @@ class NLSHADE_RSP(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppNLSHADE_RSP`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1587,7 +1597,7 @@ class ABC(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1622,8 +1632,7 @@ class ABC(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1651,7 +1660,7 @@ class ABC(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppABC`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1690,7 +1699,7 @@ class Dual_Annealing(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1724,8 +1733,7 @@ class Dual_Annealing(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1758,7 +1766,7 @@ class Dual_Annealing(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppDual_Annealing`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1795,7 +1803,7 @@ class L_BFGS_B(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1829,8 +1837,7 @@ class L_BFGS_B(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1866,7 +1873,7 @@ class L_BFGS_B(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppL_BFGS_B`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -1902,7 +1909,7 @@ class L_BFGS(MinimizerBase):
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
                  x0: List[List[float]],
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -1934,8 +1941,7 @@ class L_BFGS(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -1971,7 +1977,7 @@ class L_BFGS(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppL_BFGS_B`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -2010,7 +2016,7 @@ class j2020(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -2045,8 +2051,7 @@ class j2020(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -2079,7 +2084,7 @@ class j2020(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppj2020`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -2118,7 +2123,7 @@ class LSRTDE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                 x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -2153,8 +2158,7 @@ class LSRTDE(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -2186,7 +2190,7 @@ class LSRTDE(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppLSRTDE`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -2224,7 +2228,7 @@ class RDEX(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) :
@@ -2259,8 +2263,9 @@ class RDEX(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state.
+            Return True to stop optimization early; return False or None to continue.
+            Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -2270,7 +2275,7 @@ class RDEX(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppRDEX`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
 
@@ -2310,7 +2315,7 @@ class ARRDE(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -2322,7 +2327,7 @@ class ARRDE(MinimizerBase):
         :param bounds: List of ``(min, max)`` bounds for each decision variable.
         :param x0: Optional initial guesses as ``list[list[float]]``.
                 :param maxevals: Maximum number of objective evaluations. Default is ``100000``.
-        :param callback: Optional callback invoked after each iteration.
+        :param callback: Optional callback invoked after each iteration. Return True to stop optimization early; return False or None to continue.
         :param seed: Optional random seed.
         :param options: Optional algorithm settings. Defaults to
             ``{"population_size": 0, "bound_strategy": "reflect-random"}``.
@@ -2370,7 +2375,7 @@ class Differential_Evolution(MinimizerBase):
                  bounds: List[tuple[float, float]],
                  x0: Optional[List[List[float]]] = None,
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -2405,8 +2410,7 @@ class Differential_Evolution(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is 100000.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -2440,7 +2444,7 @@ class Differential_Evolution(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppDifferential_Evolution`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
 
         """
@@ -2485,7 +2489,7 @@ class Minimizer(MinimizerBase):
                  x0: Optional[List[List[float]]] = None,
                  algo : str = "ARRDE",
                  maxevals: int = 100000,
-                 callback: Optional[Callable[[Any], None]] = None,
+                 callback: Optional[Callable[[Any], bool]] = None,
                  seed: Optional[int] = None,
                  options: Dict[str, Any] = None
         ) : 
@@ -2548,8 +2552,7 @@ class Minimizer(MinimizerBase):
         maxevals : int, optional
             Maximum number of function evaluations allowed. Default is `100000`.
         callback : callable, optional
-            A function that is called after each iteration. It must accept a single 
-            argument containing the current optimization state. Default is None.
+            A function called after each iteration with the current optimization state. Return True to stop optimization early; return False or None to continue. Default is None.
         seed : int, optional
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
@@ -2559,7 +2562,7 @@ class Minimizer(MinimizerBase):
         Notes
         -----
         - The optimizer is implemented in C++ and accessed via `cppMinimizer`.
-        - The `callback` function can be used for logging or monitoring progress.
+        - The `callback` function can be used for logging, monitoring progress, or early stopping by returning True.
         - The `options` dictionary allows fine-tuning of the optimization process.
         """
         canonical_algo = _normalize_algo_name(algo)

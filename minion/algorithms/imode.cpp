@@ -779,7 +779,7 @@ bool IMODE::runLocalSearch() {
         best = result.x;
         best_fitness = result.fun;
         sorted_indices.clear();
-        MinionResult record(best, best_fitness, best_so_far.nit, Nevals, false, "IMODE local search");
+        MinionResult record(best, best_fitness, best_so_far.nit, Nevals, TerminationStatus::Running, "IMODE local search");
         updateBestSoFar(record);
         return true;
     }

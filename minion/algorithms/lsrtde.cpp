@@ -274,7 +274,7 @@ void LSRTDE::MainCycle()
 
         size_t best_index = findArgMin(fun_pop);
         std::vector<double> bestInd = pop[best_index ];
-        minionResult = MinionResult(bestInd, fun_pop[best_index], Generation, NFEval, false, "");
+        minionResult = MinionResult(bestInd, fun_pop[best_index], Generation, NFEval, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
 
         for(int IndIter=0;IndIter<NIndsFront;IndIter++){
@@ -325,7 +325,7 @@ void LSRTDE::MainCycle()
                 for(int j=0;j!=NVars;j++)
                     Popul[i][j] = PopulTemp[i][j];
         }
-        if (callback != nullptr) callback(&minionResult);
+        if (shouldStopFromCallback(minionResult)) break;
 
 
     }

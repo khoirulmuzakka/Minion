@@ -9,10 +9,14 @@
 import os
 import sys
 import warnings
+import importlib.util
 sys.path.append("../../")
 sys.path.append(os.path.abspath('../minionpy'))
 import minionpy
-from sphinx.deprecation import RemovedInSphinx80Warning
+try:
+    from sphinx.deprecation import RemovedInSphinx80Warning
+except ImportError:
+    RemovedInSphinx80Warning = None
 
 project = 'Minion'
 copyright = '2025, Khoirul Faiq Muzakka'
@@ -26,9 +30,12 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'nbsphinx',  
-    "breathe"
 ]
+if importlib.util.find_spec("nbsphinx") is not None:
+    extensions.append("nbsphinx")
+breathe_enabled = importlib.util.find_spec("breathe") is not None and os.path.exists(os.path.abspath("../xml/index.xml"))
+if breathe_enabled:
+    extensions.append("breathe")
 exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 
@@ -58,5 +65,23 @@ breathe_projects = {
 breathe_default_project = "Minion"
 
 # Silence upstream Breathe/Sphinx compatibility deprecation noise during docs build.
-warnings.filterwarnings("ignore", category=RemovedInSphinx80Warning, module=r"breathe\.project")
+if RemovedInSphinx80Warning is not None:
+    warnings.filterwarnings("ignore", category=RemovedInSphinx80Warning, module=r"breathe\.project")
+
+if not breathe_enabled:
+    from docutils import nodes
+    from docutils.parsers.rst import Directive
+
+    class DoxygenIndexFallback(Directive):
+        has_content = False
+        option_spec = {"project": str}
+
+        def run(self):
+            paragraph = nodes.paragraph(
+                text="Doxygen XML was not found; generate docs/xml to include the C++ API index."
+            )
+            return [paragraph]
+
+    def setup(app):
+        app.add_directive("doxygenindex", DoxygenIndexFallback)
 

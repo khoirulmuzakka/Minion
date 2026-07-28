@@ -1,7 +1,7 @@
 # MinionPy
 
 <div align="center">
-  <img src="https://github.com/khoirulmuzakka/Minion/raw/main/docs/minion_logo.png" alt="Logo" width="200" />
+  <img src="https://github.com/khoirulmuzakka/Minion/raw/main/docs/logo.png" alt="Logo" width="200" />
 </div>
 
 
@@ -42,6 +42,12 @@ MinionPy is the Python interface to the Minion C++ optimization library. It focu
 
 - **Performance**  
   Most implemented algorithms are population-based, making them suitable for parallelization. MinionPy is optimized for vectorized functions, enabling efficient use of multithreading and multiprocessing capabilities.
+
+- **Explicit termination status**  
+  Optimization results expose ``status`` and the display helper ``status_name`` so callers can distinguish convergence, evaluation budget exhaustion, callback stops, numerical errors, and other termination reasons. Use ``succeeded()`` for the C++-matching success predicate.
+
+- **Callback early stopping**  
+  Python callbacks receive a ``MinionResult``. Return ``True`` to stop optimization early, or return ``False``/``None`` to continue.
 
 - **Cross-Platform Compatibility**  
   MinionPy is implemented in C++ with a Python wrapper, supporting usage in both languages. It has been tested on the following platforms:

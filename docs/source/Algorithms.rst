@@ -52,6 +52,11 @@ In Python, you can pass the parameters via a dictionary when creating the `Minim
     # Run optimization
     result = min.optimize()
 
+    print(result.fun, result.status_name, result.message)
+
+``result.status_name`` reports why the algorithm stopped, for example ``"converged"``, ``"max_evaluations_reached"``, or ``"callback_stopped"``.
+Callbacks receive the current result; return ``True`` to stop early, or ``False``/``None`` to continue.
+
 
 
 .. note::

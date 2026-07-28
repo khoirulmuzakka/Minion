@@ -119,11 +119,9 @@ MinionResult j2020::optimize() {
         size_t bestIndex = findArgMin(fitness);
         best = population[bestIndex];
         best_fitness = fitness[bestIndex];
-        minionResult = MinionResult(best, best_fitness, 0, Nevals, false, "");
+        minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
-        if (callback != nullptr) {
-            callback(&minionResult);
-        }
+        if (shouldStopFromCallback(minionResult)) return getBestSoFar();
 
         size_t maxFES = maxevals;
         size_t cycle = 0;
@@ -260,11 +258,9 @@ MinionResult j2020::optimize() {
                 bestIndex = individualIndex;
                 best = trial;
                 best_fitness = trialCost;
-                minionResult = MinionResult(best, best_fitness, cycle + 1, Nevals, false, "");
+                minionResult = MinionResult(best, best_fitness, cycle + 1, Nevals, TerminationStatus::Running, "");
                 updateBestSoFar(minionResult);
-                if (callback != nullptr) {
-                    callback(&minionResult);
-                }
+                if (shouldStopFromCallback(minionResult)) return getBestSoFar();
             }
 
             double meanFVal = calcMean(F);

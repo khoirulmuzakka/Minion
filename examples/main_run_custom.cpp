@@ -134,7 +134,8 @@ int main(int argc, char* argv[]) {
                       << std::setw(18) << benchmark->function()->name << "  "
                       << "f=" << std::setw(14) << std::setprecision(8) << std::scientific << result.fun << "  "
                       << "nfev=" << std::setw(8) << result.nfev << "  "
-                      << "ok=" << (result.success ? "1" : "0") << std::endl;
+                      << "status=" << minion::terminationStatusToString(result.status) << "  "
+                      << "ok=" << (result.succeeded() ? "1" : "0") << std::endl;
         }
 
         const double mean_fun = total_fun / static_cast<double>(suite.size());

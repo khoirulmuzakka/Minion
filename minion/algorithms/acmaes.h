@@ -17,7 +17,7 @@ public:
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
-        std::function<void(MinionResult*)> callback = nullptr,
+        std::function<bool(MinionResult*)> callback = nullptr,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>());

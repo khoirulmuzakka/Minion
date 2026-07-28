@@ -425,7 +425,7 @@ void NLSHADE_RSP::MainCycle()
         
         size_t best_index = findArgMin(funcRes);
         std::vector<double> bestIndividual = popul_vec[best_index ];
-        minionResult = MinionResult( bestIndividual, funcRes[best_index], Generation, NFEval, false, "");
+        minionResult = MinionResult( bestIndividual, funcRes[best_index], Generation, NFEval, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
 
         for (int TheChosenOne=0;TheChosenOne!=NInds;TheChosenOne++){
@@ -487,7 +487,7 @@ void NLSHADE_RSP::MainCycle()
         UpdateMemoryCrF();
         SuccessFilled = 0;
         Generation ++;
-        if (callback != nullptr) callback(&minionResult);
+        if (shouldStopFromCallback(minionResult)) break;
         
     } while(NFEval < MaxFEval);
 }

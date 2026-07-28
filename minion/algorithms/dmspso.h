@@ -18,7 +18,7 @@ public:
      * @param bounds Search-space bounds.
      * @param x0 Optional set of initial particles.
      * @param data User payload forwarded to the objective.
-     * @param callback Per-iteration callback receiving the best solution.
+     * @param callback Callback invoked with intermediate results. Return true to stop optimization; return false to continue.
      * @param maxevals Maximum number of objective evaluations.
      * @param seed RNG seed (negative -> random seed).
      * @param options Configuration map (sub-swarm count, regroup period, etc.).
@@ -28,7 +28,7 @@ public:
         const std::vector<std::pair<double, double>>& bounds,
         const std::vector<std::vector<double>>& x0 = {},
         void* data = nullptr,
-        std::function<void(MinionResult*)> callback = nullptr,
+        std::function<bool(MinionResult*)> callback = nullptr,
         size_t maxevals = 100000,
         int seed = -1,
         std::map<std::string, ConfigValue> options = std::map<std::string, ConfigValue>()
