@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
                       << std::setw(18) << benchmark->function()->name << "  "
                       << "f=" << std::setw(14) << std::setprecision(8) << std::scientific << result.fun << "  "
                       << "nfev=" << std::setw(8) << result.nfev << "  "
-                      << "status=" << minion::terminationStatusToString(result.status) << "  "
+                      << "status=" << result.status << "  "
                       << "ok=" << (result.succeeded() ? "1" : "0") << std::endl;
         }
 

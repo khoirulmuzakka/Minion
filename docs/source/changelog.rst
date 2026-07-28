@@ -5,6 +5,21 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.8.0 - 2026-07-29
+--------------------------
+
+**Changed**
+
+- Reworked ``MinionResult`` to expose an enum-based termination status with readable string output in both C++ and Python.
+- Improved convergence and termination reporting so algorithms distinguish convergence, evaluation-budget exhaustion, callback stops, stagnation, numerical errors, and runtime errors more consistently.
+- Updated callback handling so returning ``true`` / ``True`` stops optimization and reports ``callback_stopped``.
+- Updated examples, documentation, notebooks, and tests to use ``result.status`` directly.
+
+**Fixed**
+
+- Fixed algorithms that could previously report convergence when they actually exhausted the evaluation budget.
+- Fixed callback stop propagation in several algorithm families, including DE variants, CMA-ES variants, Dual Annealing, and L-BFGS methods.
+
 Version 1.7.0 - 2026-07-07
 --------------------------
 

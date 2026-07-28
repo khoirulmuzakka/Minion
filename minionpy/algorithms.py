@@ -2,7 +2,7 @@ import ctypes
 from functools import wraps
 
 import numpy as np
-from .minionpycpp import termination_status_to_string
+from .minionpycpp import TerminationStatus, termination_status_to_string
 from .minionpycpp import LSHADE as cppLSHADE
 from .minionpycpp import LSHADE as cppJADE
 from .minionpycpp import IMODE as cppIMODE
@@ -29,6 +29,15 @@ from .minionpycpp import ACMAES as cppACMAES
 from .minionpycpp import RCMAES as cppRCMAES
 from .minionpycpp import BIPOP_aCMAES as cppBIPOP_aCMAES
 
+
+def _termination_status_repr(status):
+    return termination_status_to_string(status)
+
+
+# pybind11 enum values keep enum identity for comparisons, but their default
+# display is verbose. Match the C++ stream operator for user-facing output.
+TerminationStatus.__str__ = _termination_status_repr
+TerminationStatus.__repr__ = _termination_status_repr
 
 
 _PyGILState_Ensure = ctypes.pythonapi.PyGILState_Ensure
@@ -130,14 +139,7 @@ class MinionResult:
         """
         Return True when the termination status represents successful convergence.
         """
-        return self.status_name == "converged"
-
-    @property
-    def status_name(self):
-        """
-        Return the string representation of ``status`` for display/logging.
-        """
-        return termination_status_to_string(self.status)
+        return self.status == TerminationStatus.Converged
 
     def __repr__(self):
         """
@@ -149,7 +151,7 @@ class MinionResult:
             A formatted string displaying key optimization results.
         """
         return (f"MinionResult(x={self.x}, fun={self.fun}, nit={self.nit}, "
-                f"nfev={self.nfev}, status={self.status_name}, "
+                f"nfev={self.nfev}, status={self.status}, "
                 f"message={self.message})")
 
     
@@ -178,7 +180,7 @@ class CalllbackWrapper:
         - minRes: MinionResult object to pass to the callback function.
 
         Returns:
-        - True to stop optimization, False to continue.
+        - True to stop optimization, False or None to continue.
         """
         minionResult = MinionResult(minRes)
         result = self.callback(minionResult)

@@ -301,9 +301,13 @@ public :
      */
     MinionResult optimize() override{
         if (!hasInitialized) initialize();
-        MainCycle(); 
-        return getBestSoFar();
-    }; 
+        MainCycle();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            static_cast<size_t>(NFEval),
+            static_cast<size_t>(Generation));
+    };
 
     /**
      * @brief Initialize the algorithm given the input settings.

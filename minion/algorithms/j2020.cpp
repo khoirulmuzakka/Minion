@@ -278,7 +278,11 @@ MinionResult j2020::optimize() {
             }
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            Nevals,
+            cycle);
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

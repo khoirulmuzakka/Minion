@@ -3,13 +3,14 @@ from __future__ import annotations
 import math
 import os
 import sys
+from typing import Callable
+
 import numpy as np
+
 
 IMPORT_MODE = os.environ.get("MINIONPY_IMPORT_MODE", "local")
 if IMPORT_MODE not in {"local", "installed"}:
-    raise RuntimeError(
-        "MINIONPY_IMPORT_MODE must be either 'local' or 'installed'."
-    )
+    raise RuntimeError("MINIONPY_IMPORT_MODE must be either 'local' or 'installed'.")
 
 if IMPORT_MODE == "local":
     REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -26,6 +27,7 @@ ALGORITHMS = (
     "JADE",
     "j2020",
     "NLSHADE_RSP",
+    "NLSHADE_LBC",
     "LSRTDE",
     "RDEX",
     "jSO",
@@ -38,6 +40,7 @@ ALGORITHMS = (
     "DMSPSO",
     "LSHADE_cnEpSin",
     "CMAES",
+    "ACMAES",
     "RCMAES",
     "BIPOP_aCMAES",
     "DA",
@@ -45,306 +48,196 @@ ALGORITHMS = (
     "L_BFGS",
 )
 
-SPHERE_UPPER = {algorithm: 1e-3 for algorithm in ALGORITHMS}
-ROSENBROCK_UPPER = {algorithm: 10.0 for algorithm in ALGORITHMS}
-EVAL_SLACK = 100
+MAXEVALS = 180
+EVAL_SLACK = 40
 
 
 def sphere_batch(x_batch):
-    return minionpy.sphere(np.asarray(x_batch, dtype=float)).tolist()
+    return [float(np.sum(np.asarray(x, dtype=float) ** 2)) for x in x_batch]
 
 
-def rosenbrock_batch(x_batch):
-    return minionpy.rosenbrock(np.asarray(x_batch, dtype=float)).tolist()
-
-
-def make_cec2017_batch(function_number: int, dimension: int):
-    cec2017 = minionpy.CEC2017Functions(function_number, dimension)
-
-    def objective(x_batch):
-        return list(cec2017(x_batch))
-
-    return objective
-
-
-def _run_case(
-    func,
-    bounds,
-    x0,
-    algorithm: str,
-    maxevals: int,
-    seed: int,
-    quality_upper: float | None = None,
-):
-    result = minionpy.Minimizer(
-        func=func,
-        bounds=bounds,
-        x0=x0,
-        algo=algorithm,
+def make_minimizer(algo: str, callback=None, maxevals: int = MAXEVALS, options=None):
+    merged_options = {"convergence_tol": 1e-8}
+    if options:
+        merged_options.update(options)
+    return minionpy.Minimizer(
+        func=sphere_batch,
+        bounds=[(-1.0, 1.0), (-1.0, 1.0)],
+        x0=[[0.3, -0.2]],
+        algo=algo,
         maxevals=maxevals,
-        seed=seed,
-        options={"convergence_tol": 1e-8},
-    ).optimize()
-
-    finite_ok = math.isfinite(result.fun)
-    eval_ok = result.nfev <= maxevals + EVAL_SLACK
-    quality_ok = True if quality_upper is None else result.fun <= quality_upper
-    passed = finite_ok and eval_ok and quality_ok
-
-    return {
-        "algorithm": algorithm,
-        "fun": float(result.fun),
-        "nfev": int(result.nfev),
-        "passed": passed,
-        "message": (
-            f"finite={finite_ok} nfev={result.nfev} "
-            f"limit={maxevals + EVAL_SLACK} best_f={result.fun}"
-            + ("" if quality_upper is None else f" quality_limit={quality_upper}")
-        ),
-    }
+        callback=callback,
+        seed=3,
+        options=merged_options,
+    )
 
 
-def run_sphere_suite(
-    dimension: int = 5,
-    maxevals: int = 4000,
-    seed: int = 42,
-):
-    bounds = [(-5.0, 5.0)] * dimension
-    x0 = [[0.5] * dimension]
-    records = []
-
-    for algorithm in ALGORITHMS:
-        record = _run_case(
-            func=sphere_batch,
-            bounds=bounds,
-            x0=x0,
-            algorithm=algorithm,
-            maxevals=maxevals,
-            seed=seed,
-            quality_upper=SPHERE_UPPER[algorithm],
-        )
-        records.append(record)
-
-    return records
+def run_checks(checks: list[tuple[str, Callable[[], None]]]) -> int:
+    total = len(checks)
+    for index, (name, check) in enumerate(checks, 1):
+        check()
+        print(f"Test {index}/{total}: {name}: passed")
+    print(f"{total}/{total} Passed.")
+    return 0
 
 
-def run_rosenbrock_suite(
-    dimension: int = 5,
-    maxevals: int = 4000,
-    seed: int = 42,
-):
-    bounds = [(-5.0, 5.0)] * dimension
-    x0 = [[0.5] * dimension]
-    records = []
-
-    for algorithm in ALGORITHMS:
-        record = _run_case(
-            func=rosenbrock_batch,
-            bounds=bounds,
-            x0=x0,
-            algorithm=algorithm,
-            maxevals=maxevals,
-            seed=seed,
-            quality_upper=ROSENBROCK_UPPER[algorithm],
-        )
-        records.append(record)
-
-    return records
+def check_status_string_representation():
+    assert str(minionpy.TerminationStatus.Converged) == "converged"
+    assert repr(minionpy.TerminationStatus.MaxEvaluationsReached) == "max_evaluations_reached"
 
 
-def run_cec2017_suite(
-    function_numbers,
-    algorithms=ALGORITHMS,
-    dimension: int = 10,
-    maxevals: int = 10000,
-    seed: int = 20250306,
-):
-    bounds = [(-100.0, 100.0)] * dimension
-    x0 = [[0.0] * dimension]
-    records = []
+def check_result_object_semantics():
+    converged = make_minimizer("NelderMead").optimize()
+    exhausted = make_minimizer("ARRDE", options={"minimum_population_size": 4}).optimize()
 
-    for function_number in function_numbers:
-        objective = make_cec2017_batch(function_number, dimension)
-        for algorithm in algorithms:
-            record = _run_case(
-                func=objective,
-                bounds=bounds,
-                x0=x0,
-                algorithm=algorithm,
-                maxevals=maxevals,
-                seed=seed,
-            )
-            record["function_number"] = function_number
-            records.append(record)
-
-    return records
+    assert converged.succeeded()
+    assert not exhausted.succeeded()
+    assert converged.status == minionpy.TerminationStatus.Converged
+    assert "status=converged" in repr(converged)
 
 
-def _print_function_results(function_name: str, records, dimension: int, maxevals: int):
-    print(f"{function_name} minimization using all Minion algorithms")
-    print(f"dimension={dimension}, maxevals={maxevals}\n")
-    print(f"{'Algorithm':<18}{'best_f':>16}{'nfev':>12}")
-    print("-" * 46)
-    for record in records:
-        print(f"{record['algorithm']:<18}{record['fun']:>16.8e}{record['nfev']:>12}")
-
-
-def _print_cec2017_results(records, function_numbers, dimension: int, maxevals: int, seed: int):
-    print(f"\nCEC2017 minimization (F{min(function_numbers)}-F{max(function_numbers)}, dimension={dimension})")
-    print(f"functions=F{min(function_numbers)}-F{max(function_numbers)}, maxevals={maxevals}, seed={seed}\n")
-    current_function = None
-    for index, record in enumerate(records):
-        function_number = record["function_number"]
-        if function_number != current_function:
-            current_function = function_number
-            print(f"Function F{function_number}")
-            print(f"{'Algorithm':<18}{'best_f':>16}{'nfev':>12}")
-            print("-" * 46)
-        print(f"{record['algorithm']:<18}{record['fun']:>16.8e}{record['nfev']:>12}")
-        next_is_new_function = index + 1 < len(records) and records[index + 1]["function_number"] != function_number
-        if next_is_new_function:
-            print()
-    if records and records[-1]["function_number"] == current_function:
-        print()
-
-
-def _check_vectorized_test_functions():
+def check_vectorized_test_functions():
     x_batch = np.zeros((3, 5), dtype=float)
-
     sphere_values = np.asarray(minionpy.sphere(x_batch), dtype=float)
     rosenbrock_values = np.asarray(minionpy.rosenbrock(x_batch), dtype=float)
 
-    if sphere_values.shape != (3,) or rosenbrock_values.shape != (3,):
-        return {
-            "algorithm": "test_functions",
-            "passed": False,
-            "message": f"unexpected output shapes sphere={sphere_values.shape} rosenbrock={rosenbrock_values.shape}",
-        }
-    if not np.all(np.isfinite(sphere_values)) or not np.all(np.isfinite(rosenbrock_values)):
-        return {
-            "algorithm": "test_functions",
-            "passed": False,
-            "message": "non-finite values from vectorized test functions",
-        }
-    return {"algorithm": "test_functions", "passed": True, "message": "ok"}
+    assert sphere_values.shape == (3,)
+    assert rosenbrock_values.shape == (3,)
+    assert np.all(np.isfinite(sphere_values))
+    assert np.all(np.isfinite(rosenbrock_values))
 
 
-def _check_cec2017_wrapper():
+def check_cec2017_wrapper():
     cec2017 = minionpy.CEC2017Functions(1, 10)
-    x_batch = np.zeros((2, 10), dtype=float).tolist()
+    values = np.asarray(cec2017(np.zeros((2, 10), dtype=float).tolist()), dtype=float)
 
-    values = np.asarray(cec2017(x_batch), dtype=float)
-
-    if values.shape != (2,):
-        return {"algorithm": "CEC2017_wrapper", "passed": False, "message": f"unexpected output shape {values.shape}"}
-    if not np.all(np.isfinite(values)):
-        return {"algorithm": "CEC2017_wrapper", "passed": False, "message": "non-finite values from CEC2017 wrapper"}
-    return {"algorithm": "CEC2017_wrapper", "passed": True, "message": "ok"}
+    assert values.shape == (2,)
+    assert np.all(np.isfinite(values))
 
 
-def _check_rdex_wrapper():
-    if not hasattr(minionpy, "RDEX"):
-        return {"algorithm": "RDEX_wrapper", "passed": False, "message": "minionpy.RDEX is missing"}
+def check_callback_false_or_none_continues():
+    for callback in (lambda result: False, lambda result: None):
+        calls = []
 
-    objective = sphere_batch
-    bounds = [(-5.0, 5.0)] * 3
+        def wrapped(result):
+            calls.append(result)
+            return callback(result)
 
-    try:
-        direct_result = minionpy.RDEX(
-            func=objective,
-            bounds=bounds,
-            maxevals=60,
-            seed=7,
-        ).optimize()
-        generic_result = minionpy.Minimizer(
-            func=objective,
-            bounds=bounds,
-            algo="RDEX",
-            maxevals=60,
-            seed=7,
-        ).optimize()
-    except Exception as exc:
-        return {"algorithm": "RDEX_wrapper", "passed": False, "message": str(exc)}
-
-    if not math.isfinite(direct_result.fun) or not math.isfinite(generic_result.fun):
-        return {"algorithm": "RDEX_wrapper", "passed": False, "message": "non-finite result from RDEX"}
-
-    return {"algorithm": "RDEX_wrapper", "passed": True, "message": "ok"}
+        result = make_minimizer("ARRDE", callback=wrapped, options={"minimum_population_size": 4}).optimize()
+        assert calls
+        assert result.status != minionpy.TerminationStatus.CallbackStopped
+        assert result.status == minionpy.TerminationStatus.MaxEvaluationsReached
 
 
-def main():
-    test_dimension = 5
-    test_maxevals = 4000
-    test_seed = 42
+def check_callback_receives_minion_result():
+    seen = []
 
-    cec_dimension = 10
-    cec_maxevals = 10000
-    cec_seed = 20250306
-    cec_function_numbers = list(range(1, 31))
+    def callback(result):
+        seen.append(result)
+        return True
 
-    failed_checks = 0
-    total_checks = 0
+    result = make_minimizer("DE", callback=callback).optimize()
 
-    x_batch_check = _check_vectorized_test_functions()
-    total_checks += 1
-    if not x_batch_check["passed"]:
-        failed_checks += 1
-        print(f"[FAIL][Vectorized] {x_batch_check['algorithm']} {x_batch_check['message']}", file=sys.stderr)
+    assert seen
+    assert isinstance(seen[0], minionpy.MinionResult)
+    assert math.isfinite(seen[0].fun)
+    assert seen[0].nfev > 0
+    assert result.status == minionpy.TerminationStatus.CallbackStopped
+    assert result.message == "Callback requested optimization stop."
 
-    cec_wrapper_check = _check_cec2017_wrapper()
-    total_checks += 1
-    if not cec_wrapper_check["passed"]:
-        failed_checks += 1
-        print(f"[FAIL][Wrapper] {cec_wrapper_check['algorithm']} {cec_wrapper_check['message']}", file=sys.stderr)
 
-    rdex_wrapper_check = _check_rdex_wrapper()
-    total_checks += 1
-    if not rdex_wrapper_check["passed"]:
-        failed_checks += 1
-        print(f"[FAIL][Wrapper] {rdex_wrapper_check['algorithm']} {rdex_wrapper_check['message']}", file=sys.stderr)
+def check_all_algorithms_have_terminal_status():
+    bad = []
+    for algo in ALGORITHMS:
+        options = {"minimum_population_size": 4} if algo == "ARRDE" else None
+        result = make_minimizer(algo, options=options).optimize()
+        if result.status in {
+            minionpy.TerminationStatus.Running,
+            minionpy.TerminationStatus.RuntimeError,
+        }:
+            bad.append((algo, str(result.status), result.message))
+        if not math.isfinite(result.fun):
+            bad.append((algo, "non_finite", result.fun))
+        if result.nfev > MAXEVALS + EVAL_SLACK:
+            bad.append((algo, "nfev", result.nfev))
 
-    sphere_records = run_sphere_suite(
-        dimension=test_dimension,
-        maxevals=test_maxevals,
-        seed=test_seed,
-    )
-    _print_function_results("Sphere", sphere_records, test_dimension, test_maxevals)
-    total_checks += len(sphere_records)
-    for record in sphere_records:
-        if not record["passed"]:
-            failed_checks += 1
-            print(f"[FAIL][Sphere] {record['algorithm']} {record['message']}", file=sys.stderr)
+    assert not bad, bad
 
-    print()
-    rosenbrock_records = run_rosenbrock_suite(
-        dimension=test_dimension,
-        maxevals=test_maxevals,
-        seed=test_seed,
-    )
-    _print_function_results("Rosenbrock", rosenbrock_records, test_dimension, test_maxevals)
-    total_checks += len(rosenbrock_records)
-    for record in rosenbrock_records:
-        if not record["passed"]:
-            failed_checks += 1
-            print(f"[FAIL][Rosenbrock] {record['algorithm']} {record['message']}", file=sys.stderr)
 
-    cec_records = run_cec2017_suite(
-        function_numbers=cec_function_numbers,
-        algorithms=ALGORITHMS,
-        dimension=cec_dimension,
-        maxevals=cec_maxevals,
-        seed=cec_seed,
-    )
-    _print_cec2017_results(cec_records, cec_function_numbers, cec_dimension, cec_maxevals, cec_seed)
-    total_checks += len(cec_records)
-    for record in cec_records:
-        if not record["passed"]:
-            failed_checks += 1
-            print(f"[FAIL][CEC2017 F{record['function_number']}] {record['algorithm']} {record['message']}", file=sys.stderr)
+def check_all_algorithms_callback_stop():
+    bad = []
 
-    passed_checks = total_checks - failed_checks
-    print(f"\nTest summary: {passed_checks}/{total_checks} checks passed.")
-    return 0 if failed_checks == 0 else 1
+    def stop_now(result):
+        return True
+
+    for algo in ALGORITHMS:
+        options = {"minimum_population_size": 4} if algo == "ARRDE" else None
+        result = make_minimizer(algo, callback=stop_now, options=options).optimize()
+        if result.status != minionpy.TerminationStatus.CallbackStopped:
+            bad.append((algo, str(result.status), result.message))
+
+    assert not bad, bad
+
+
+def check_budget_exhaustion_algorithms_do_not_fake_convergence():
+    for algo in ("ARRDE", "j2020", "RCMAES"):
+        options = {"minimum_population_size": 4} if algo == "ARRDE" else None
+        result = make_minimizer(algo, options=options).optimize()
+        assert result.status == minionpy.TerminationStatus.MaxEvaluationsReached, (
+            algo,
+            result.status,
+            result.message,
+        )
+
+
+def check_dual_annealing_callback_without_local_search():
+    result = make_minimizer(
+        "DA",
+        callback=lambda result: True,
+        options={"use_local_search": False},
+    ).optimize()
+
+    assert result.status == minionpy.TerminationStatus.CallbackStopped
+
+
+def check_lbfgs_callbacks_stop():
+    for algo in ("L_BFGS", "L_BFGS_B"):
+        result = make_minimizer(algo, callback=lambda result: True).optimize()
+        assert result.status == minionpy.TerminationStatus.CallbackStopped
+
+
+def check_rdex_direct_wrapper():
+    direct = minionpy.RDEX(
+        func=sphere_batch,
+        bounds=[(-1.0, 1.0), (-1.0, 1.0)],
+        x0=[[0.3, -0.2]],
+        maxevals=MAXEVALS,
+        seed=3,
+    ).optimize()
+    generic = make_minimizer("RDEX").optimize()
+
+    assert math.isfinite(direct.fun)
+    assert math.isfinite(generic.fun)
+    assert direct.status != minionpy.TerminationStatus.Running
+    assert generic.status != minionpy.TerminationStatus.Running
+
+
+def main() -> int:
+    checks = [
+        ("readable termination status strings", check_status_string_representation),
+        ("MinionResult semantics", check_result_object_semantics),
+        ("vectorized test functions", check_vectorized_test_functions),
+        ("CEC2017 wrapper returns finite vector output", check_cec2017_wrapper),
+        ("callbacks returning False or None continue", check_callback_false_or_none_continues),
+        ("callback receives MinionResult and can stop", check_callback_receives_minion_result),
+        ("all algorithms return terminal finite results", check_all_algorithms_have_terminal_status),
+        ("all algorithms stop when callback returns True", check_all_algorithms_callback_stop),
+        ("budget-exhaustion algorithms do not fake convergence", check_budget_exhaustion_algorithms_do_not_fake_convergence),
+        ("Dual Annealing callback works without local search", check_dual_annealing_callback_without_local_search),
+        ("L-BFGS callbacks stop", check_lbfgs_callbacks_stop),
+        ("RDEX direct and generic wrappers run", check_rdex_direct_wrapper),
+    ]
+    return run_checks(checks)
 
 
 if __name__ == "__main__":

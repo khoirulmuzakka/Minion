@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
         settings["population_size"] = 0;  // Let Minion decide the best population size
         auto res = minion::Minimizer(rosenbrock_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun
-                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
+                  << " (" << res.status << ")\n";
     };
 
     // Minimizing Rastrigin function
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
         settings["population_size"] = 0;
         auto res = minion::Minimizer(rastrigin_vect, bounds, x0, nullptr, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun
-                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
+                  << " (" << res.status << ")\n";
     };
 
     // Minimizing an objective function that is a class member
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
         settings["population_size"] = 0;
         auto res = minion::Minimizer(objective_function, bounds, x0, so, callBack, algo, max_evals, -1, settings).optimize();
         std::cout << "\t " << algo << " : " << res.fun
-                  << " (" << minion::terminationStatusToString(res.status) << ")\n";
+                  << " (" << res.status << ")\n";
     };
 
     // Clean up dynamically allocated object

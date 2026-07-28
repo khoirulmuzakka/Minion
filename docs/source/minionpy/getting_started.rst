@@ -138,8 +138,7 @@ The **MinionResult** object contains key information about the optimization proc
 - **`fun`**: Function value at the optimum.
 - **`nit`**: Number of iterations.
 - **`nfev`**: Number of function evaluations.
-- **`status`**: Enum value describing why the algorithm stopped.
-- **`status_name`**: String form of `status`, such as `"converged"`, `"max_evaluations_reached"`, or `"callback_stopped"`.
+- **`status`**: Enum value describing why the algorithm stopped. It prints as a readable string such as `"converged"`, `"max_evaluations_reached"`, or `"callback_stopped"`.
 - **`succeeded()`**: Convenience method matching C++; returns `True` when `status` represents convergence.
 - **`message`**: A summary message about the optimization result.
 
@@ -149,7 +148,7 @@ Example:
 
     print(f"Solution: {result.x}")
     print(f"Function value: {result.fun}")
-    print(f"Status: {result.status_name}")
+    print(f"Status: {result.status}")
     print(f"Message: {result.message}")
 
 Callbacks can be used for monitoring or early stopping:
@@ -157,7 +156,7 @@ Callbacks can be used for monitoring or early stopping:
 .. code-block:: python
 
     def stop_when_good(result):
-        print(result.nfev, result.fun, result.status_name)
+        print(result.nfev, result.fun, result.status)
         return result.fun < 1e-8
 
     optimizer = mpy.Minimizer(
@@ -170,7 +169,7 @@ Callbacks can be used for monitoring or early stopping:
     )
 
     result = optimizer.optimize()
-    print(result.status_name)  # "callback_stopped" if the callback returned True
+    print(result.status)  # "callback_stopped" if the callback returned True
 
 For more details on available algorithms and advanced configuration, refer to the **API** section.  
 For additional examples, check the **Examples** section.

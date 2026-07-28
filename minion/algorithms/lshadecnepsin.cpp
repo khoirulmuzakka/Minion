@@ -500,6 +500,9 @@ MinionResult LSHADE_cnEpSin::optimize() {
 
         size_t dim = bounds.size();
 
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
+
         while (Nevals < maxevals) {
             ++generationCounter;
             size_t currentPopSize = population.size();
@@ -670,6 +673,8 @@ MinionResult LSHADE_cnEpSin::optimize() {
             reducePopulationIfNeeded();
 
             if (support_tol && checkStopping()) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Convergence criterion satisfied.";
                 break;
             }
             if (Nevals >= maxevals) {
@@ -677,7 +682,7 @@ MinionResult LSHADE_cnEpSin::optimize() {
             }
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, generationCounter);
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

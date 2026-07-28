@@ -781,6 +781,7 @@ bool IMODE::runLocalSearch() {
         sorted_indices.clear();
         MinionResult record(best, best_fitness, best_so_far.nit, Nevals, TerminationStatus::Running, "IMODE local search");
         updateBestSoFar(record);
+        shouldStopFromCallback(record);
         return true;
     }
     return false;

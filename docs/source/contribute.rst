@@ -55,8 +55,8 @@ Running Tests Locally
 
 Before opening a pull request, run the local checks relevant to the part of the project you changed.
 
-C++ test suite
-^^^^^^^^^^^^^^
+C++ integration test
+^^^^^^^^^^^^^^^^^^^^
 
 The repository includes a native integration test target in ``tests/test_minion.cpp``. To build and run it manually with CMake:
 
@@ -65,7 +65,7 @@ The repository includes a native integration test target in ``tests/test_minion.
    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMINION_BUILD_BENCHMARK=ON -DMINION_BUILD_EXAMPLES=ON -DMINION_BUILD_PYTHON=ON -DMINION_BUILD_TESTS=ON
    cmake --build build --target minion_test --config Release
 
-Run the test binary directly if you want to see the full per-algorithm output:
+Run the test binary directly if you want to see the numbered checks and full per-algorithm benchmark output:
 
 .. code-block:: shell
 
@@ -91,22 +91,38 @@ This test checks that:
 - the returned objective values are finite
 - the evaluation counts stay within the configured ``maxevals`` budget (with a small slack)
 - the Sphere and Rosenbrock runs satisfy simple solution-quality thresholds
+- representative CEC2017 benchmark cases run without non-finite values or budget overruns
+- native C++ callback early stopping returns ``CallbackStopped``
+- C++ stream output for ``TerminationStatus`` and ``MinionResult`` is readable
 
-The benchmark sections are mainly integration and stability checks rather than strict performance benchmarks.
+The benchmark sections are mainly integration and stability checks rather than strict performance benchmarks. They intentionally use simple thresholds so that the tests catch regressions without becoming sensitive to small stochastic differences.
 
 Python binding test
 ^^^^^^^^^^^^^^^^^^^
 
-The repository also includes a Python rewrite of ``tests/test_minion.cpp`` in ``tests/test_minionpy.py``. Run it from the repository root after building or installing ``minionpy``. See the :doc:`installation guide <installation>` if you need the source-build or install steps.
+The repository also includes ``tests/test_minionpy.py`` for the public Python API. Run it from the repository root after building or installing ``minionpy``. See the :doc:`installation guide <installation>` if you need the source-build or install steps.
 
 .. code-block:: shell
 
    python tests/test_minionpy.py
 
-This script exercises the public ``minionpy`` interface and mirrors the same validation logic as the C++ integration test. In addition to the optimization checks described above, it also verifies that:
+This script uses a small numbered runner and prints output in the form ``Test i/N: check name: passed``, followed by ``N/N Passed.``. It exercises the Python wrapper, pybind callback path, enum exposure, and the C++ optimizers through the public ``minionpy`` interface.
 
+The Python test verifies that:
+
+- ``TerminationStatus`` prints as readable strings
+- ``MinionResult`` exposes readable status values and correct ``succeeded()`` behavior
+- callbacks receive a Python ``MinionResult``
+- callbacks returning ``True`` stop optimization with ``CallbackStopped``
+- callbacks returning ``False`` or ``None`` continue optimization
+- every algorithm exposed by ``minionpy.Minimizer`` returns a terminal finite result rather than ``Running`` or ``RuntimeError``
+- every algorithm exposed by ``minionpy.Minimizer`` honors callback early stopping
+- algorithms that do not support tolerance stopping, such as ``ARRDE``, ``j2020``, and ``RCMAES``, report budget exhaustion instead of fake convergence
+- ``Dual_Annealing`` callback stopping works both with and without local search
+- ``L_BFGS`` and ``L_BFGS_B`` callback stopping works
 - vectorized helper functions return finite outputs
-- the ``CEC2017Functions`` and ``BBOB2009Problem`` wrappers evaluate batched inputs correctly
+- the ``CEC2017Functions`` wrapper evaluates batched inputs correctly
+- direct and generic ``RDEX`` wrappers run successfully
 
 If your change only affects documentation, you do not need to run the full optimization tests, but you should still verify that the docs build locally if you changed reStructuredText, notebooks, or generated API content.
 
@@ -122,7 +138,7 @@ At the time of writing, CI covers:
 - Python runtime validation through ``tests/test_minionpy.py``
 - packaging jobs for release artifacts
 
-In practice, the main CI workflow builds both the native C++ integration test and the Python extension, runs the C++ test through ``ctest``, and then runs the Python rewrite of the same integration-test logic.
+In practice, the main CI workflow builds both the native C++ integration test and the Python extension, runs the C++ test through ``ctest``, and then runs the Python API validation script.
 
 If your change affects the Python bindings, examples, packaging, or documentation, verify those areas directly instead of assuming the C++ build alone is enough.
 

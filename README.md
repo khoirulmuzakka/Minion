@@ -1,7 +1,7 @@
 # Minion: C++ and Python Optimization Library
 
 <div align="center">
-  <img src="docs/logo.png" alt="Minion Logo" width="550" />
+  <img src="docs/logo.png" alt="Minion Logo" width="600" />
 </div>
 
 ![CI](https://github.com/khoirulmuzakka/Minion/actions/workflows/ci.yml/badge.svg)
@@ -16,7 +16,7 @@
 
 Minion also serves as a research platform for developing and testing new optimization algorithms. It includes benchmark functions from IEEE CEC competitions (2011, 2014, 2017, 2019, 2020, and 2022), providing a robust framework for algorithm evaluation and comparison.
 
-## 🔥 Why Minion?
+## Why Minion?
 - **State-of-the-art optimization algorithms** :
   - **Differential Evolution-based algorithms:**
     - Basic Differential Evolution (DE)
@@ -48,7 +48,7 @@ Minion also serves as a research platform for developing and testing new optimiz
     - `F21` (failed `75/1000`, max relative error `1.46`)
     - `F22` (failed `89/1000`, max relative error `1.42`)
 
-## 🚀 Installation and Usage
+## Installation and Usage
 
 ### Build dependencies
 - CMake >= 3.18
@@ -115,7 +115,7 @@ int main() {
 
     minion::MinionResult result = optimizer.optimize();
     std::cout << "best f  = " << result.fun << "\n";
-    std::cout << "status  = " << minion::terminationStatusToString(result.status) << "\n";
+    std::cout << "status  = " << result.status << "\n";
     std::cout << "message = " << result.message << "\n";
 }
 ```
@@ -168,7 +168,7 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("status =", result.status_name)
+print("status =", result.status)
 print("message =", result.message)
 ```
 
@@ -214,7 +214,7 @@ int main() {
     );
 
     minion::MinionResult result = optimizer.optimize();
-    std::cout << "status = " << minion::terminationStatusToString(result.status) << "\n";
+    std::cout << "status = " << result.status << "\n";
 }
 ```
 
@@ -245,7 +245,7 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("status =", result.status_name)
+print("status =", result.status)
 print("message =", result.message)
 ```
 For `CEC2011`, the pattern is the same, but the bounds are problem-specific:
@@ -282,7 +282,7 @@ optimizer = mpy.Minimizer(
 
 result = optimizer.optimize()
 print("best f =", result.fun)
-print("status =", result.status_name)
+print("status =", result.status)
 print("message =", result.message)
 ```
 
@@ -303,41 +303,6 @@ The command-line layout is:
 ```text
 cec|bbob Nruns dim algo popsize year maxevals nthreads accuracy
 ```
-
-If you omit the leading `cec` or `bbob`, the driver defaults to `cec`.
-
-### Python Benchmark API
-
-The Python binding exposes the same benchmark machinery through:
-- `minionpy.run_benchmark(mode="cec" | "bbob", ...)`
-- `minionpy.Benchmark`
-- `minionpy.BenchmarkConfig`
-- `minionpy.BenchmarkMode` for lower-level use
-
-Example:
-
-```python
-import minionpy as mpy
-
-result = mpy.run_benchmark(
-    mode="bbob",# "cec
-    num_runs=51,
-    dimension=10,
-    algo="ARRDE",
-    popsize=0,
-    year=2009,
-    max_evals=30000,
-    nthreads=32,
-    acc=8,
-    dump_results=True,
-    results_folder=".",
-    log_min_ev=False,
-)
-print(result.results)
-print(result.results_file)
-```
-
-If you prefer an object-oriented wrapper, `mpy.Benchmark(config).run()` is also available, and `BenchmarkConfig.mode` accepts the enum value `mpy.BenchmarkMode.Bbob`.
 
 ## 📖 Documentation
 For full usage instructions, API reference, and examples, visit the official documentation:

@@ -36,6 +36,9 @@ MinionResult ACMAES::optimize() {
         std::vector<Eigen::VectorXd> zs(lambda, Eigen::VectorXd::Zero(dimension));
         std::vector<double> fitness(lambda, std::numeric_limits<double>::infinity());
 
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
+
         while (Nevals < maxevals) {
             ++generation;
 
@@ -103,6 +106,8 @@ MinionResult ACMAES::optimize() {
             }
 
             if (support_tol && effectiveStep <= stoppingTol) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Step size is below convergence tolerance.";
                 break;
             }
 
@@ -111,7 +116,7 @@ MinionResult ACMAES::optimize() {
             }
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, generation);
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

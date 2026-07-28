@@ -21,7 +21,7 @@ except ImportError:
 project = 'Minion'
 copyright = '2025, Khoirul Faiq Muzakka'
 author = 'Khoirul Faiq Muzakka'
-release = '1.7.0'
+release = '1.8.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

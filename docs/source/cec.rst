@@ -100,7 +100,7 @@ The usual C++ pattern is to adapt the CEC evaluator to ``MinionFunction``:
         );
 
         minion::MinionResult result = optimizer.optimize();
-        std::cout << "status = " << minion::terminationStatusToString(result.status) << "\n";
+        std::cout << "status = " << result.status << "\n";
     }
 
 
@@ -126,7 +126,7 @@ For BBOB2009, the same pattern works with ``BBOB2009Problem``:
         );
 
         minion::MinionResult result = optimizer.optimize();
-        std::cout << "status = " << minion::terminationStatusToString(result.status) << "\n";
+        std::cout << "status = " << result.status << "\n";
     }
 
 
@@ -160,7 +160,7 @@ In Python, no adapter is needed because the benchmark wrapper is already vectori
 
     result = optimizer.optimize()
     print("best f =", result.fun)
-    print("status =", result.status_name)
+    print("status =", result.status)
     print("f_opt  =", cec_f1.f_opt)
 
 
@@ -191,7 +191,7 @@ For ``BBOB2009``, the same direct usage works with ``BBOB2009Problem``:
 
     result = optimizer.optimize()
     print("best f =", result.fun)
-    print("status =", result.status_name)
+    print("status =", result.status)
     print("f_opt  =", bbob.f_opt)
 
 

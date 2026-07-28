@@ -280,7 +280,11 @@ MinionResult BIPOP_aCMAES::optimize() {
             recordIteration(globalGeneration, Nevals);
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            Nevals,
+            globalGeneration);
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

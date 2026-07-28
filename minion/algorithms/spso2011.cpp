@@ -223,6 +223,8 @@ MinionResult SPSO2011::optimize() {
         stagnationCounter = 0;
 
         size_t iter = 1;
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
         while (Nevals < maxevals && !population.empty()) {
             updateVelocitiesAndPositions();
 
@@ -261,6 +263,8 @@ MinionResult SPSO2011::optimize() {
             if (shouldStopFromCallback(minionResult)) break;
 
             if (support_tol && checkStopping()) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Convergence criterion satisfied.";
                 break;
             }
 
@@ -270,7 +274,7 @@ MinionResult SPSO2011::optimize() {
             }
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, iter);
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

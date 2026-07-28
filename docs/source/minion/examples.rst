@@ -77,7 +77,7 @@ For custom formatting, access the fields directly:
 
 .. code-block:: cpp
 
-    std::cout << "status: " << minion::terminationStatusToString(res.status) << "\n";
+    std::cout << "status: " << res.status << "\n";
     std::cout << "succeeded: " << std::boolalpha << res.succeeded() << "\n";
     std::cout << "fun: " << res.fun << "\n";
     std::cout << "nit: " << res.nit << ", nfev: " << res.nfev << "\n";

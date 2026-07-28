@@ -104,7 +104,11 @@ public:
     MinionResult optimize() override {
         if (!hasInitialized) initialize();
         MainCycle();
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            static_cast<size_t>(NFEval),
+            static_cast<size_t>(Generation));
     }
 
     void initialize() override;

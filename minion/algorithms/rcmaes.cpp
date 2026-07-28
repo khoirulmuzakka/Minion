@@ -238,10 +238,10 @@ void RCMAES::initialize() {
     hasInitialized = true;
 }
 
-void RCMAES::recordHistory() {
+bool RCMAES::recordHistory() {
     minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
-    shouldStopFromCallback(minionResult);
+    return shouldStopFromCallback(minionResult);
 }
 
 RCMAES::ExclusionBox RCMAES::buildExclusionBox(const std::vector<double>& bestPoint) const {
@@ -438,7 +438,9 @@ MinionResult RCMAES::optimize() {
             updateEigenDecomposition();
 
             ++generation;
-            recordHistory();
+            if (recordHistory()) {
+                break;
+            }
 
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
@@ -515,7 +517,11 @@ MinionResult RCMAES::optimize() {
             recordHistory();
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            Nevals,
+            generation);
     } catch (const std::exception& ex) {
         throw std::runtime_error(ex.what());
     }

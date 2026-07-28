@@ -165,6 +165,8 @@ MinionResult PSO::optimize() {
         init();
 
         size_t iter = 1;
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
         while (Nevals < maxevals) {
             updateVelocitiesAndPositions();
             auto newFitness = func(population, data);
@@ -192,6 +194,8 @@ MinionResult PSO::optimize() {
             if (shouldStopFromCallback(minionResult)) break;
 
             if (support_tol && checkStopping()) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Convergence criterion satisfied.";
                 break;
             }
 
@@ -201,7 +205,7 @@ MinionResult PSO::optimize() {
             iter++;
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, iter);
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

@@ -11,6 +11,10 @@ using Vector = Eigen::VectorXd;
 using Matrix = Eigen::MatrixXd;
 using IndexSet = std::vector<int>;
 
+struct CallbackStopException : public std::exception {
+    const char* what() const noexcept override { return "Callback requested optimization stop."; }
+};
+
 struct LBFGSBParam {
     int m = 10;
     double epsilon = 1e-10;
@@ -838,6 +842,9 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
         f_best = F[best_idx];
         minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
+        if (shouldStopFromCallback(minionResult)) {
+            throw CallbackStopException();
+        }
     }
 
     std::vector<double> grad_vec;
@@ -924,6 +931,9 @@ MinionResult L_BFGS_B::optimize() {
         if (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm()) {
             minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Converged, "Projected gradient norm is below convergence tolerance.");
             updateBestSoFar(minionResult);
+            if (shouldStopFromCallback(minionResult)) {
+                return getBestSoFar();
+            }
             auto ret = getBestSoFar();
             ret.nfev = Nevals;
             return ret;
@@ -999,6 +1009,8 @@ MinionResult L_BFGS_B::optimize() {
                 SubspaceMinimization::compute(state->core.bfgs, x, xcp, state->core.grad, lb, ub, fv_set, state->core.drt);
                 ++k;
             }
+        } catch (const CallbackStopException&) {
+            return getBestSoFar();
         } catch (const MaxevalExceedError&) {
             state->core.had_issue = true;
             state->core.message = "stopped: maximum evaluations exceeded";
@@ -1033,11 +1045,16 @@ MinionResult L_BFGS_B::optimize() {
         }
         minionResult = MinionResult(best, f_best, k, Nevals, status, message);
         updateBestSoFar(minionResult);
+        if (shouldStopFromCallback(minionResult)) {
+            return getBestSoFar();
+        }
         auto ret = getBestSoFar();
         ret.nfev = Nevals;
         ret.status = status;
         ret.message = message;
         return ret;
+    } catch (const CallbackStopException&) {
+        return getBestSoFar();
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }

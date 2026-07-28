@@ -241,6 +241,8 @@ MinionResult Differential_Evolution::optimize() {
         resetBestSoFar();
         init();
         size_t iter=1;
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
         do {
             adaptParameters();
             std::vector<std::vector<double>> trials(population.size(), std::vector<double>(population[0].size()));
@@ -270,14 +272,21 @@ MinionResult Differential_Evolution::optimize() {
             best = population[best_idx];
             best_fitness = fitness[best_idx];
             onBestUpdated(best, best_fitness, improved);
+            if (best_so_far.status == TerminationStatus::CallbackStopped) {
+                break;
+            }
             minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
             iter++;
             if (shouldStopFromCallback(minionResult)) break;
-            if ( support_tol && checkStopping()) break;
-        } while(Nevals < maxevals); 
+            if (support_tol && checkStopping()) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
+        } while(Nevals < maxevals);
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, iter - 1);
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

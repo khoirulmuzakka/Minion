@@ -89,6 +89,8 @@ MinionResult ABC::optimize() {
         }
 
         size_t iter = 1;
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
         while (Nevals < maxevals) {
             // Employed bees phase
             std::vector<std::vector<double>> employedCandidates(population.size());
@@ -217,11 +219,15 @@ MinionResult ABC::optimize() {
             minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
             if (shouldStopFromCallback(minionResult)) break;
-            if (support_tol && checkStopping()) break;
+            if (support_tol && checkStopping()) {
+                finalStatus = TerminationStatus::Converged;
+                finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
             ++iter;
         }
 
-        return getBestSoFar();
+        return finalizeBestSoFar(finalStatus, finalMessage, Nevals, iter);
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

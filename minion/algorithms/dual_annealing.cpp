@@ -160,6 +160,7 @@ void Dual_Annealing::step (int iter, double temp){
         relGap <= stoppingTol ? TerminationStatus::Converged : TerminationStatus::Running,
         relGap <= stoppingTol ? "Convergence criterion satisfied." : "");
     updateBestSoFar(minionResult);
+    shouldStopFromCallback(minionResult);
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
         size_t maxevals_ls = maxevals-Nevals;
@@ -208,6 +209,9 @@ MinionResult Dual_Annealing::optimize() {
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
+                if (minionResult.status == TerminationStatus::CallbackStopped) {
+                    return getBestSoFar();
+                }
                 if (minionResult.status == TerminationStatus::Converged) {
                     return getBestSoFar();
                 }
@@ -222,7 +226,10 @@ MinionResult Dual_Annealing::optimize() {
             } while(Nevals < maxevals); ;
         } while(Nevals < maxevals); 
 
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            Nevals);
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

@@ -105,7 +105,11 @@ public:
             initialize();
         }
         MainCycle();
-        return getBestSoFar();
+        return finalizeBestSoFar(
+            TerminationStatus::MaxEvaluationsReached,
+            "Maximum number of function evaluations reached.",
+            static_cast<size_t>(nfeval),
+            static_cast<size_t>(generation));
     }
 
     void initialize() override;

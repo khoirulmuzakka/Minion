@@ -52,6 +52,11 @@ inline bool terminationStatusSucceeded(TerminationStatus status) {
     return status == TerminationStatus::Converged;
 }
 
+inline std::ostream& operator<<(std::ostream& os, TerminationStatus status) {
+    os << terminationStatusToString(status);
+    return os;
+}
+
 /**
  * @struct MinionResult
  * @brief A structure to store the result of an optimization process.
@@ -130,7 +135,7 @@ inline std::ostream& operator<<(std::ostream& os, const MinionResult& result) {
     os << "], fun=" << result.fun
        << ", nit=" << result.nit
        << ", nfev=" << result.nfev
-       << ", status=" << terminationStatusToString(result.status)
+       << ", status=" << result.status
        << ", message=\"" << result.message << "\")";
     return os;
 }
@@ -378,16 +383,33 @@ class MinimizerBase {
             if (!has_best_so_far) throw std::runtime_error("Best result is not available");
             MinionResult result = best_so_far;
             if (result.status == TerminationStatus::Running) {
-                if (result.nfev >= maxevals) {
-                    result.status = TerminationStatus::MaxEvaluationsReached;
-                    result.message = "Maximum number of function evaluations reached.";
-                } else {
-                    result.status = TerminationStatus::Converged;
-                    result.message = "Convergence criterion satisfied.";
-                }
+                result.status = TerminationStatus::RuntimeError;
+                result.message = "Optimizer stopped without setting a termination status.";
             }
             return result;
         };
+
+        MinionResult finalizeBestSoFar(
+            TerminationStatus status,
+            const std::string& message,
+            size_t nfev,
+            size_t nit = 0)
+        {
+            if (!has_best_so_far) throw std::runtime_error("Best result is not available");
+            MinionResult result = best_so_far;
+            if (result.status == TerminationStatus::Running) {
+                result.status = status;
+                result.message = message;
+            }
+            if (nfev > 0) {
+                result.nfev = nfev;
+            }
+            if (nit > 0) {
+                result.nit = nit;
+            }
+            best_so_far = result;
+            return result;
+        }
 
         bool shouldStopFromCallback(MinionResult& result) {
             if (callback == nullptr) {
@@ -402,6 +424,8 @@ class MinimizerBase {
             updateBestSoFar(result);
             best_so_far.status = TerminationStatus::CallbackStopped;
             best_so_far.message = result.message;
+            best_so_far.nfev = result.nfev;
+            best_so_far.nit = result.nit;
             return true;
         }
 
