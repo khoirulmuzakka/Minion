@@ -33,7 +33,9 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 
 templates_path = ['_templates']
-exclude_patterns = []
+
+# Render notebooks from their saved outputs during documentation builds.
+nbsphinx_execute = 'never'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -59,4 +61,3 @@ breathe_default_project = "Minion"
 
 # Silence upstream Breathe/Sphinx compatibility deprecation noise during docs build.
 warnings.filterwarnings("ignore", category=RemovedInSphinx80Warning, module=r"breathe\.project")
-

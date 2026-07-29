@@ -107,11 +107,11 @@ int main() {
     };
 
     auto options = minion::DefaultSettings().getDefaultSettings("DE");
-    options["population_size"] = 50;
-    options["convergence_tol"] = 1e-6;
+    options["population_size"] = 0; //default
+    options["convergence_tol"] = 1e-8;
 
     minion::Minimizer optimizer(
-        rosenbrock_batch, bounds, x0, nullptr, nullptr, "DE", 20000, 42, options
+        rosenbrock_batch, bounds, x0, nullptr, nullptr, "ARRDE", 20000, 42, options
     );
 
     minion::MinionResult result = optimizer.optimize();
@@ -157,7 +157,7 @@ optimizer = mpy.Minimizer(
     func=rosenbrock_batch,
     x0=x0,
     bounds=bounds,
-    algo="DE",
+    algo="ARRDE",
     maxevals=20000,
     callback=None,
     seed=42,
