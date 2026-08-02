@@ -265,6 +265,9 @@ if(MINION_BUILD_EXAMPLES)
         minion_add_example(main_complexity examples/main_complexity.cpp minion minion_cec)
         list(APPEND MINION_EXAMPLE_TARGETS main_complexity)
 
+        minion_add_example(main_cec examples/main_cec.cpp minion minion_cec)
+        list(APPEND MINION_EXAMPLE_TARGETS main_cec)
+
         minion_add_example(run_benchmark examples/main_run_benchmark.cpp minion_benchmark minion minion_cec bbob2009)
         list(APPEND MINION_EXAMPLE_TARGETS run_benchmark)
 

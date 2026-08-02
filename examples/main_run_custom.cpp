@@ -18,6 +18,7 @@ struct CustomRunConfig {
     std::string algo = "ARRDE";
     int dimension = 50;
     int max_evals = 500000;
+    int population_size = 0;
     int num_functions = 20;
     int instance = 1;
     int num_hybrid = 10;
@@ -40,11 +41,12 @@ CustomRunConfig parse_cli(int argc, char* argv[]) {
     if (argc > 1) config.algo = argv[1];
     if (argc > 2) config.dimension = std::max(1, std::atoi(argv[2]));
     if (argc > 3) config.max_evals = std::max(1, std::atoi(argv[3]));
-    if (argc > 4) config.num_functions = std::max(1, std::atoi(argv[4]));
-    if (argc > 5) config.instance = std::atoi(argv[5]);
-    if (argc > 6) config.num_hybrid = std::max(0, std::atoi(argv[6]));
-    if (argc > 7) config.num_composition = std::max(0, std::atoi(argv[7]));
-    if (argc > 8) config.use_rotation = std::atoi(argv[8]) != 0;
+    if (argc > 4) config.population_size = std::max(0, std::atoi(argv[4]));
+    if (argc > 5) config.num_functions = std::max(1, std::atoi(argv[5]));
+    if (argc > 6) config.instance = std::atoi(argv[6]);
+    if (argc > 7) config.num_hybrid = std::max(0, std::atoi(argv[7]));
+    if (argc > 8) config.num_composition = std::max(0, std::atoi(argv[8]));
+    if (argc > 9) config.use_rotation = std::atoi(argv[9]) != 0;
 
     if (config.num_hybrid + config.num_composition != config.num_functions) {
         config.num_functions = config.num_hybrid + config.num_composition;
@@ -64,7 +66,7 @@ int main(int argc, char* argv[]) {
     std::cerr.setf(std::ios::unitbuf);
 
     try {
-        std::cout << "Usage: run_custom [algo] [dimension] [maxevals] [num_functions] [instance] [num_hybrid] [num_composition] [use_rotation]" << std::endl;
+        std::cout << "Usage: run_custom [algo] [dimension] [maxevals] [population_size] [num_functions] [instance] [num_hybrid] [num_composition] [use_rotation]" << std::endl;
         const CustomRunConfig config = parse_cli(argc, argv);
 
         std::vector<std::shared_ptr<minion::MinionBenchmark>> suite;
@@ -104,6 +106,7 @@ int main(int argc, char* argv[]) {
                   << " generated MinionBenchmark functions with " << config.algo
                   << " in D=" << config.dimension
                   << ", maxevals=" << config.max_evals
+                  << ", popsize=" << config.population_size
                   << ", instance=" << config.instance
                   << ", hybrids=" << config.num_hybrid
                   << ", compositions=" << config.num_composition
@@ -112,7 +115,7 @@ int main(int argc, char* argv[]) {
         for (std::size_t i = 0; i < suite.size(); ++i) {
             const auto& benchmark = suite[i];
             auto settings = minion::DefaultSettings().getDefaultSettings(config.algo);
-            settings["population_size"] = 0;
+            settings["population_size"] = config.population_size;
 
             minion::Minimizer minimizer(
                 evaluate_benchmark_batch,
