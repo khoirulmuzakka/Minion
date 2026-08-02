@@ -149,19 +149,16 @@ void Dual_Annealing::step (int iter, double temp){
 
     if (best_E == best_E_save) N_no_improve++;
 
-    const bool converged = check_convergence({best_cand, current_cand}, {best_E, current_E});
-
     minionResult = MinionResult(
         best_cand,
         best_E,
         iter,
         Nevals,
-        converged ? TerminationStatus::Converged : TerminationStatus::Running,
-        converged ? "Coordinate spread or objective-value spread is below convergence tolerance." : "");
+        TerminationStatus::Running,
+        "");
     updateBestSoFar(minionResult);
     shouldStopFromCallback(minionResult);
-    if (minionResult.status == TerminationStatus::Converged ||
-        minionResult.status == TerminationStatus::CallbackStopped) {
+    if (minionResult.status == TerminationStatus::CallbackStopped) {
         return;
     }
 
@@ -187,12 +184,28 @@ void Dual_Annealing::step (int iter, double temp){
 
         //std::cout << "DA : LS : " << best_E << " " << minionResult.fun << " " << Nevals << " " << minionResult.nfev << " "<< N_no_improve<<"\n";
         if (minionResult.fun<best_E){
-            best_cand = minionResult.x; 
-            best_E = minionResult.fun; 
+            best_cand = minionResult.x;
+            best_E = minionResult.fun;
             current_cand= best_cand;
             current_E = best_E;
             N_no_improve=0;
         }
+    }
+
+    if (minionResult.status == TerminationStatus::CallbackStopped) {
+        return;
+    }
+
+    const bool converged = check_convergence({best_cand, current_cand}, {best_E, current_E});
+    if (converged) {
+        minionResult = MinionResult(
+            best_cand,
+            best_E,
+            iter,
+            Nevals,
+            TerminationStatus::Converged,
+            "Coordinate spread or objective-value spread is below convergence tolerance.");
+        updateBestSoFar(minionResult);
     }
 
 };
