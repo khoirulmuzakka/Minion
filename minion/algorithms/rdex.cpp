@@ -32,6 +32,7 @@ void RDEX::initialize() {
     ebHybridRate = ebHybridRateInit;
     perturbationRate = options.get<double>("perturbation_rate", 0.4);
     maxFEval = int(maxevals);
+    configureConvergenceTolerances(options);
 
     initialize_population(populSize, int(bounds.size()));
     hasInitialized = true;
@@ -238,6 +239,12 @@ void RDEX::MainCycle() {
     size_t bestIndex = findArgMin(funPop);
     minionResult = MinionResult(pop[bestIndex], funPop[bestIndex], generation, nfeval, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
+    if (reachedMaxIterations(0)) {
+        minionResult.status = TerminationStatus::MaxIterationsReached;
+        minionResult.message = "Maximum number of iterations reached.";
+        updateBestSoFar(minionResult);
+        return;
+    }
 
     double minfit = fitArr[0];
     double maxfit = fitArr[0];
@@ -499,6 +506,36 @@ void RDEX::MainCycle() {
             }
         }
 
+        std::vector<std::vector<double>> activePopulation(
+            populFront.begin(),
+            populFront.begin() + static_cast<std::ptrdiff_t>(nIndsFront));
+        std::vector<double> activeFitness(
+            fitArrFront.begin(),
+            fitArrFront.begin() + static_cast<std::ptrdiff_t>(nIndsFront));
+        if (reachedMaxIterations(static_cast<size_t>(generation))) {
+            const size_t bestIndex = findArgMin(activeFitness);
+            minionResult = MinionResult(
+                activePopulation[bestIndex],
+                activeFitness[bestIndex],
+                generation,
+                nfeval,
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.");
+            updateBestSoFar(minionResult);
+            break;
+        }
+        if (check_convergence(activePopulation, activeFitness)) {
+            const size_t bestIndex = findArgMin(activeFitness);
+            minionResult = MinionResult(
+                activePopulation[bestIndex],
+                activeFitness[bestIndex],
+                generation,
+                nfeval,
+                TerminationStatus::Converged,
+                "Coordinate spread or objective-value spread is below convergence tolerance.");
+            updateBestSoFar(minionResult);
+            break;
+        }
         if (shouldStopFromCallback(minionResult)) break;
     }
 }

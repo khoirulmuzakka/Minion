@@ -95,7 +95,8 @@ const std::vector<std::string>& algorithms() {
 
 std::map<std::string, minion::ConfigValue> settings_for(const std::string& algo) {
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
-    settings["convergence_tol"] = 1e-8;
+    settings["x_tol"] = 1e-8;
+    settings["f_tol"] = 1e-8;
     if (algo == "ARRDE") {
         settings["minimum_population_size"] = 4;
     }

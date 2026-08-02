@@ -27,7 +27,7 @@ build:
 
     install:
       - pip install --upgrade pybind11 sphinx==7.0.0 breathe numpy nbsphinx sphinx_rtd_theme
-      - bash compile.sh  # Compile C++ code, run Doxygen, and build docs
+      - SPHINXOPTS="-D nbsphinx_execute=never" bash compile.sh  # Compile C++ code, run Doxygen, and build docs without executing notebooks
 
 sphinx:
   configuration: docs/source/conf.py

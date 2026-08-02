@@ -192,7 +192,7 @@ void RCMAES::initialize() {
 
     useBounds = !bounds.empty();
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
-    support_tol = false;
+    support_tol = true;
 
     const double logDim = dimension > 0 ? std::log(static_cast<double>(dimension)) : 1.0;
     lambda_min = static_cast<size_t>(4.0 + std::ceil(3.0 * logDim));
@@ -222,10 +222,8 @@ void RCMAES::initialize() {
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }
-    minRelStep = options.getSilent<double>("min_rel_step", 1e-8);
-    if (minRelStep <= 0.0) {
-        minRelStep = 1e-8;
-    }
+    configureConvergenceTolerances(options);
+    maxRestarts = options.getSilent<int>("max_restarts", -1);
     useCustomActive = options.getSilent<bool>("useCustomActive", true);
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
@@ -281,6 +279,7 @@ MinionResult RCMAES::optimize() {
 
     try {
         resetBestSoFar();
+        maxiters = -1;
         currentFitness.clear();
         best = eigenToStd(initialMean);
         best_fitness = std::numeric_limits<double>::infinity();
@@ -292,6 +291,12 @@ MinionResult RCMAES::optimize() {
         bool useRestartSamples = false;
         std::vector<std::vector<double>> restartSamples;
         double sigmaEff = sigma0;
+        int restartCount = 0;
+        auto canRestart = [&]() {
+            return maxRestarts < 0 || restartCount < maxRestarts;
+        };
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
 
         configurePopulationParameters(lambda_base);
         resetRegimeState(initialMean, sigmaEff);
@@ -345,6 +350,7 @@ MinionResult RCMAES::optimize() {
                 fitness[i] = valueFit;
                 currentFitness[i] = valueFit;
             }
+            std::vector<double> evaluatedFitness(fitness.begin(), fitness.begin() + static_cast<std::ptrdiff_t>(evalCount));
 
             Nevals += evalCount;
 
@@ -441,12 +447,18 @@ MinionResult RCMAES::optimize() {
             if (recordHistory()) {
                 break;
             }
-
             const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
             const double effectiveStep = sigma * sqrtMaxEigenvalue;
-            double minRelStep_eff = minRelStep + 99*minRelStep*(1.0-double(Nevals)/double(maxevals));
-            bool restartRequested = effectiveStep < minRelStep_eff ;
+            double xTolEff = xTol + 99*xTol*(1.0-double(Nevals)/double(maxevals));
+            bool restartRequested =
+                (xTol >= 0.0 && effectiveStep < xTolEff) ||
+                (fTol >= 0.0 && relativeFitnessDiversity(evaluatedFitness) <= fTol);
             if (restartRequested) {
+                if (!canRestart()) {
+                    finalStatus = TerminationStatus::Stagnated;
+                    finalMessage = "Maximum number of restarts reached.";
+                    break;
+                }
                 if (false ){
                     std::cerr << "[RCMAES] restart at generation " << generation
                             << ", evals " << Nevals
@@ -504,6 +516,7 @@ MinionResult RCMAES::optimize() {
                     sigmaEff = sigma0;
                     resetRegimeState(restartMean, sigmaEff);
                     useRestartSamples = true;
+                    ++restartCount;
                     continue;
                 }
             }
@@ -518,8 +531,8 @@ MinionResult RCMAES::optimize() {
         }
 
         return finalizeBestSoFar(
-            TerminationStatus::MaxEvaluationsReached,
-            "Maximum number of function evaluations reached.",
+            finalStatus,
+            finalMessage,
             Nevals,
             generation);
     } catch (const std::exception& ex) {

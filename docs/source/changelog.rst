@@ -41,7 +41,6 @@ Version 1.6.1 - 2026-06-13
 - Made algorithm name handling more robust across common naming variants.
 - Updated ``CEC2011`` to more closely mirror the original MATLAB implementation.
 - Streamlined the CEC API.
-- Added ``convergence_tol`` to the options of supported algorithms.
 
 Version 1.5.0 - 2026-03-07
 --------------------------

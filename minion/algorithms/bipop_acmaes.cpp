@@ -37,6 +37,7 @@ Eigen::VectorXd BIPOP_aCMAES::sampleRandomMean() const {
 
 void BIPOP_aCMAES::initialize() {
     const Options options = buildOptions("BIPOP_aCMAES");
+    maxiters = -1;
 
     dimension = bounds.size();
     if (dimension == 0) {
@@ -45,9 +46,6 @@ void BIPOP_aCMAES::initialize() {
 
     useBounds = !bounds.empty();
     boundStrategy = options.get<std::string>("bound_strategy", std::string("reflect-random"));
-    support_tol = true;
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
-
     lambda0 = static_cast<size_t>(options.get<int>("population_size", 0));
     if (lambda0 == 0) {
         const double logDim = std::log(static_cast<double>(dimension));
@@ -59,10 +57,8 @@ void BIPOP_aCMAES::initialize() {
     if (sigma0 <= 0.0) {
         sigma0 = 0.3;
     }
-    minRelStep = options.getSilent<double>("min_rel_step", 1e-8);
-    if (minRelStep <= 0.0) {
-        minRelStep = 1e-8;
-    }
+    configureConvergenceTolerances(options);
+    maxRestarts = options.getSilent<int>("max_restarts", -1);
 
     mean = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dimension));
     initializeMean();
@@ -142,6 +138,7 @@ size_t BIPOP_aCMAES::runRegime(
         for (size_t i = 0; i < evalCount; ++i) {
             fitness[i] = std::isnan(fitVals[i]) ? std::numeric_limits<double>::infinity() : fitVals[i];
         }
+        std::vector<double> evaluatedFitness(fitness.begin(), fitness.begin() + static_cast<std::ptrdiff_t>(evalCount));
 
         Nevals += evalCount;
         regimeEvaluations += evalCount;
@@ -192,10 +189,10 @@ size_t BIPOP_aCMAES::runRegime(
         if (recordIteration(globalGeneration, Nevals)) {
             shouldStopRun = true;
         }
-
         const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
         const double effectiveStep = sigma * sqrtMaxEigenvalue;
-        if (effectiveStep < minRelStep) {
+        if ((xTol >= 0.0 && effectiveStep < xTol) ||
+            (fTol >= 0.0 && relativeFitnessDiversity(evaluatedFitness) <= fTol)) {
             if (false ){
                 std::cerr << "[BIPOP_aCMAES] restart at generation " << globalGeneration
                         << ", evals " << Nevals
@@ -233,8 +230,14 @@ MinionResult BIPOP_aCMAES::optimize() {
         }
         size_t budgetSmall = 0;
         size_t restart = 1;
+        int restartCount = 0;
+        auto canRestart = [&]() {
+            return maxRestarts < 0 || restartCount < maxRestarts;
+        };
+        TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
+        std::string finalMessage = "Maximum number of function evaluations reached.";
 
-        while (Nevals < maxevals) {
+        while (Nevals < maxevals && canRestart()) {
             size_t lambdaLarge = 0;
             if (restart >= (8 * sizeof(size_t))) {
                 lambdaLarge = std::numeric_limits<size_t>::max() / 2;
@@ -248,7 +251,7 @@ MinionResult BIPOP_aCMAES::optimize() {
                 lambdaLarge = std::min(lambdaLarge, maxevals);
             }
 
-            while (budgetLarge > budgetSmall && Nevals < maxevals) {
+            while (budgetLarge > budgetSmall && Nevals < maxevals && canRestart()) {
                 const double u1 = rand_gen(0.0, 1.0);
                 const double u2 = rand_gen(0.0, 1.0);
                 size_t lambdaSmall = static_cast<size_t>(
@@ -257,6 +260,7 @@ MinionResult BIPOP_aCMAES::optimize() {
                 const double sigmaSmall = sigma0 * 2.0 * std::pow(10.0, -2.0 * u2);
 
                 budgetSmall += runRegime(sampleRandomMean(), sigmaSmall, lambdaSmall);
+                ++restartCount;
                 if (best_so_far.status == TerminationStatus::CallbackStopped) {
                     return getBestSoFar();
                 }
@@ -265,24 +269,28 @@ MinionResult BIPOP_aCMAES::optimize() {
                 }
             }
 
-            if (Nevals >= maxevals) {
+            if (Nevals >= maxevals || !canRestart()) {
                 break;
             }
 
             budgetLarge += runRegime(sampleRandomMean(), sigma0, lambdaLarge);
+            ++restartCount;
             if (best_so_far.status == TerminationStatus::CallbackStopped) {
                 return getBestSoFar();
             }
             ++restart;
         }
-
+        if (Nevals < maxevals && !canRestart()) {
+            finalStatus = TerminationStatus::Stagnated;
+            finalMessage = "Maximum number of restarts reached.";
+        }
         if (!has_best_so_far) {
             recordIteration(globalGeneration, Nevals);
         }
 
         return finalizeBestSoFar(
-            TerminationStatus::MaxEvaluationsReached,
-            "Maximum number of function evaluations reached.",
+            finalStatus,
+            finalMessage,
             Nevals,
             globalGeneration);
     } catch (const std::exception& ex) {

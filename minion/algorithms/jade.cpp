@@ -46,7 +46,7 @@ void JADE::initialize  (){
     }
 
     minPopSize = options.get<int>("minimum_population_size", 4);
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    configureConvergenceTolerances(options);
     if (populationSize == minPopSize) popreduce = false; 
     else popreduce = true;
     hasInitialized=true;

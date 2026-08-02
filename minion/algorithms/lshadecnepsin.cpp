@@ -49,7 +49,7 @@ void LSHADE_cnEpSin::initialize() {
     memorySize = static_cast<size_t>(std::max<int>(options.get<int>("memory_size", 5), 1));
     learningPeriod = static_cast<size_t>(std::max<int>(options.get<int>("learning_period", 20), 1));
     epsilon = options.get<double>("epsilon", 1e-8);
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    configureConvergenceTolerances(options);
 
     memorySF.assign(memorySize, 0.5);
     memoryCR.assign(memorySize, 0.5);
@@ -480,7 +480,6 @@ MinionResult LSHADE_cnEpSin::optimize() {
     if (!hasInitialized) initialize();
     try {
         resetBestSoFar();
-        diversity.clear();
         meanCR.clear();
         meanF.clear();
         stdCR.clear();
@@ -491,6 +490,13 @@ MinionResult LSHADE_cnEpSin::optimize() {
         archive_fitness.clear();
 
         init();
+        if (reachedMaxIterations(0)) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
 
         maxPopulationSize = population.size();
         populationSize = population.size();
@@ -672,9 +678,14 @@ MinionResult LSHADE_cnEpSin::optimize() {
 
             reducePopulationIfNeeded();
 
-            if (support_tol && checkStopping()) {
+            if (support_tol && check_convergence(population, fitness)) {
                 finalStatus = TerminationStatus::Converged;
                 finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
+            if (reachedMaxIterations(generationCounter)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
                 break;
             }
             if (Nevals >= maxevals) {

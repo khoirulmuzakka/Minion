@@ -33,6 +33,7 @@ extensions = [
 ]
 if importlib.util.find_spec("nbsphinx") is not None:
     extensions.append("nbsphinx")
+nbsphinx_execute = "never"
 breathe_enabled = importlib.util.find_spec("breathe") is not None and os.path.exists(os.path.abspath("../xml/index.xml"))
 if breathe_enabled:
     extensions.append("breathe")
@@ -81,4 +82,3 @@ if not breathe_enabled:
 
     def setup(app):
         app.add_directive("doxygenindex", DoxygenIndexFallback)
-

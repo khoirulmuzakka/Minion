@@ -117,7 +117,8 @@ The Python test verifies that:
 - callbacks returning ``False`` or ``None`` continue optimization
 - every algorithm exposed by ``minionpy.Minimizer`` returns a terminal finite result rather than ``Running`` or ``RuntimeError``
 - every algorithm exposed by ``minionpy.Minimizer`` honors callback early stopping
-- algorithms that do not support tolerance stopping, such as ``ARRDE``, ``j2020``, and ``RCMAES``, report budget exhaustion instead of fake convergence
+- algorithms that do not support tolerance stopping, such as ``ARRDE`` and ``j2020``, report budget exhaustion instead of fake convergence
+- restart-based CMA-ES variants expose restart-cap behavior without pretending budget exhaustion is convergence
 - ``Dual_Annealing`` callback stopping works both with and without local search
 - ``L_BFGS`` and ``L_BFGS_B`` callback stopping works
 - vectorized helper functions return finite outputs

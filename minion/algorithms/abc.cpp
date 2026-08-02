@@ -43,7 +43,7 @@ void ABC::initialize() {
     }
 
     limit = static_cast<size_t>(std::max<int>(options.get<int>("limit", 100), 1));
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    support_tol = false;
     hasInitialized = true;
 }
 
@@ -68,18 +68,10 @@ void ABC::init() {
     updateBestSoFar(minionResult);
 }
 
-bool ABC::checkStopping() const {
-    if (diversity.empty()) {
-        return false;
-    }
-    return diversity.back() <= stoppingTol;
-}
-
 MinionResult ABC::optimize() {
     if (!hasInitialized) initialize();
     try {
         resetBestSoFar();
-        diversity.clear();
         Nevals = 0;
         init();
 
@@ -91,6 +83,13 @@ MinionResult ABC::optimize() {
         size_t iter = 1;
         TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
         std::string finalMessage = "Maximum number of function evaluations reached.";
+        if (reachedMaxIterations(0)) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
         while (Nevals < maxevals) {
             // Employed bees phase
             std::vector<std::vector<double>> employedCandidates(population.size());
@@ -207,21 +206,12 @@ MinionResult ABC::optimize() {
                 best = population[best_idx];
             }
 
-            double fmax = findMax(fitness);
-            double fmin = findMin(fitness);
-            double meanFitness = calcMean(fitness);
-            double denom = std::fabs(meanFitness);
-            if (denom <= 1e-12) {
-                denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
-            }
-            diversity.push_back((fmax - fmin) / denom);
-
             minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
             if (shouldStopFromCallback(minionResult)) break;
-            if (support_tol && checkStopping()) {
-                finalStatus = TerminationStatus::Converged;
-                finalMessage = "Convergence criterion satisfied.";
+            if (reachedMaxIterations(iter)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
                 break;
             }
             ++iter;

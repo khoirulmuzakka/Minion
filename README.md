@@ -106,8 +106,10 @@ int main() {
     };
 
     auto options = minion::DefaultSettings().getDefaultSettings("DE");
+    options["maxiters"] = -1;
     options["population_size"] = 50;
-    options["convergence_tol"] = 1e-6;
+    options["x_tol"] = 1e-8;
+    options["f_tol"] = 1e-12;
 
     minion::Minimizer optimizer(
         rosenbrock_batch, bounds, x0, nullptr, nullptr, "DE", 20000, 42, options
@@ -151,8 +153,10 @@ x0 = [
 ]
 
 options = {
+    "maxiters": -1,
     "population_size": 50,
-    "convergence_tol": 1e-6,
+    "x_tol": 1e-8,
+    "f_tol": 1e-6,
 }
 
 optimizer = mpy.Minimizer(

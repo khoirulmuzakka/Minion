@@ -21,15 +21,12 @@ public:
     size_t Nevals = 0;
     size_t limit = 100;
     bool support_tol = true;
-    std::vector<double> diversity;
 
 protected:
     /**
      * @brief Initializes the population and other parameters.
      */
     virtual void init();
-    virtual bool checkStopping() const;
-
 public:
     /**
      * @brief Constructor for ABC.

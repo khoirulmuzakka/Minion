@@ -218,6 +218,13 @@ MinionResult SPSO2011::optimize() {
         resetBestSoFar();
         Nevals = 0;
         init();
+        if (reachedMaxIterations(0)) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
         lastBestFitness = best_fitness;
         topologyDirty = true;
         stagnationCounter = 0;
@@ -248,8 +255,6 @@ MinionResult SPSO2011::optimize() {
                 best = population[bestIdx];
             }
 
-            recordMetrics();
-
             if (best_fitness < lastBestFitness) {
                 lastBestFitness = best_fitness;
                 stagnationCounter = 0;
@@ -262,9 +267,15 @@ MinionResult SPSO2011::optimize() {
             updateBestSoFar(minionResult);
             if (shouldStopFromCallback(minionResult)) break;
 
-            if (support_tol && checkStopping()) {
+            if (support_tol && check_convergence(population, fitness)) {
                 finalStatus = TerminationStatus::Converged;
                 finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
+
+            if (reachedMaxIterations(iter)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
                 break;
             }
 

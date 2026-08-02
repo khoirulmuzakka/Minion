@@ -68,21 +68,23 @@ class DefaultSettings{
         }
 
         std::map<std::string, ConfigValue> default_settings_DE = {
-            {"population_size", 0}, 
+            {"maxiters", -1},
+            {"population_size", 0},
             {"mutation_rate", 0.5}, 
             {"crossover_rate", 0.8}, 
             {"mutation_strategy", std::string("best1bin")}, 
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
-            {"population_size", 0},  
-            {"bound_strategy" , std::string("reflect-random")} , 
+            {"population_size", 0},
+            {"bound_strategy" , std::string("reflect-random")} ,
         };
 
         std::map<std::string, ConfigValue>  default_settings_j2020 = {
-            {"population_size", 0},  
+            {"population_size", 0},
             {"tau1", 0.1},
             {"tau2" , 0.1} , 
             {"myEqs", 0.4},
@@ -90,101 +92,129 @@ class DefaultSettings{
         };
 
         std::map<std::string, ConfigValue>   default_settings_LSRTDE = {
-            {"population_size", 0},  
+            {"maxiters", -1},
+            {"population_size", 0},
             {"memory_size", 5},
-            {"success_rate" , 0.5} , 
+            {"success_rate" , 0.5} ,
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("random")}
         };
 
         std::map<std::string, ConfigValue>   default_settings_RDEX = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"memory_size", 5},
             {"success_rate", 0.5},
             {"eb_hybrid_rate_init", 0.7},
             {"perturbation_rate", 0.4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy", std::string("random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_NLSHADE_RSP = {
-            {"population_size", 0},  
-            {"minimum_population_size", 4}, 
+            {"maxiters", -1},
+            {"population_size", 0},
+            {"minimum_population_size", 4},
             {"memory_size", 100},
-            {"archive_size_ratio" , 2.6} , 
+            {"archive_size_ratio" , 2.6} ,
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_NLSHADE_LBC = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"minimum_population_size", 4},
             {"memory_size", 0},
             {"archive_size_ratio", 1.0},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy", std::string("midpoint-target")}
         };
 
         std::map<std::string, ConfigValue> default_settings_JADE  = {
-            {"population_size", 0},  
+            {"maxiters", -1},
+            {"population_size", 0},
             {"c", 0.1}, 
             {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_jSO = {
-            {"population_size", 0},  
+            {"maxiters", -1},
+            {"population_size", 0},
             {"memory_size", 5}, 
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_IMODE = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"minimum_population_size", 4},
             {"memory_size", 0},
             {"archive_size_ratio", 2.6},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_AGSK = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"minimum_population_size", 12},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
 
         std::map<std::string, ConfigValue>  default_settings_LSHADE = {
-            {"population_size", 0},  
-            {"memory_size", 6}, 
+            {"maxiters", -1},
+            {"population_size", 0},
+            {"memory_size", 6},
             {"mutation_strategy", std::string("current_to_pbest_A_1bin")},
-            {"archive_size_ratio", 2.6}, 
-            {"minimum_population_size", 4}, 
+            {"archive_size_ratio", 2.6},
+            {"minimum_population_size", 4},
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"bound_strategy" , std::string("random")} 
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
+            {"bound_strategy" , std::string("random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_ABC= {
-            {"population_size", 0},  
+            {"maxiters", -1},
+            {"population_size", 0},
             {"limit", 100},
-            {"convergence_tol", 1e-4},
-            {"bound_strategy" , std::string("reflect-random")} 
+            {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_PSO = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"inertia_weight", 0.7},
             {"cognitive_coefficient", 1.5},
             {"social_coefficient", 1.5},
             {"velocity_clamp", 0.2},
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_SPSO2011 = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"inertia_weight", 0.729844},
             {"cognitive_coefficient", 1.49618},
@@ -195,11 +225,13 @@ class DefaultSettings{
             {"informant_degree", 3},
             {"velocity_clamp", 0.0},
             {"normalize", false},
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_DMSPSO = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"inertia_weight", 0.7},
             {"cognitive_coefficient", 1.2},
@@ -209,11 +241,13 @@ class DefaultSettings{
             {"subswarm_count", 4},
             {"regroup_period", 5},
             {"velocity_clamp", 0.2},
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_LSHADE_cnEpSin = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"memory_size", 5},
             {"archive_rate", 1.4},
@@ -225,40 +259,50 @@ class DefaultSettings{
             {"learning_period", 20},
             {"sin_freq_base", 0.5},
             {"epsilon", 1e-8},
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_CMAES = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"convergence_tol", 1e-8},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_ACMAES = {
+            {"maxiters", -1},
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"convergence_tol", 1e-8},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"min_rel_step", 1e-8},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
+            {"max_restarts", -1},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"min_rel_step", 1e-8},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
+            {"max_restarts", -1},
             {"bound_strategy", std::string("reflect-random")}
         };
 
         std::map<std::string, ConfigValue>  default_settings_DA= {
-            {"acceptance_par", -5.0},  
+            {"maxiters", -1},
+            {"acceptance_par", -5.0},
             {"visit_par", 2.67},  
             {"initial_temp", 5230.0  },
             {"restart_temp_ratio" , 2e-5},
@@ -266,19 +310,22 @@ class DefaultSettings{
             {"local_search_algo", "L_BFGS_B"},
             {"func_noise_ratio", 1e-16},
             {"N_points_derivative", 3},
-            {"convergence_tol", 1e-4},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
             {"bound_strategy" , std::string("periodic")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
+                {"maxiters", -1},
                 {"locality_factor", 0.05},
-                {"convergence_tol", 1e-4},
+                {"x_tol", 1e-8},
+                {"f_tol", -1.0},
                 {"bound_strategy" , std::string("reflect-random")}, 
         };
 
         std::map<std::string, ConfigValue> default_settings_LBFGSB = {
-            {"max_iterations", 100000},
-            {"m" , 10}, 
+            {"maxiters", -1},
+            {"m" , 10},
             {"g_epsilon", 1e-5},
             {"g_epsilon_rel", 0.0},
             {"f_reltol", 1e-9},
@@ -290,8 +337,8 @@ class DefaultSettings{
         };
 
         std::map<std::string, ConfigValue> default_settings_LBFGS = {
-            {"max_iterations", 100000},
-            {"m" , 10}, 
+            {"maxiters", -1},
+            {"m" , 10},
             {"g_epsilon", 1e-5},
             {"g_epsilon_rel", 0.0},
             {"f_reltol", 1e-9},
@@ -315,18 +362,18 @@ class DefaultSettings{
                 {"jSO", default_settings_jSO}, 
                 {"IMODE", default_settings_IMODE},
                 {"AGSK", default_settings_AGSK},
-                {"NelderMead", default_settings_NelderMead}, 
+                {"NelderMead", default_settings_NelderMead},
                 {"ABC", default_settings_ABC}, 
                 {"PSO", default_settings_PSO}, 
                 {"SPSO2011", default_settings_SPSO2011}, 
                 {"DMSPSO", default_settings_DMSPSO}, 
                 {"LSHADE_cnEpSin", default_settings_LSHADE_cnEpSin}, 
-                {"CMAES", default_settings_CMAES}, 
+                {"CMAES", default_settings_CMAES},
                 {"ACMAES", default_settings_ACMAES},
-                {"BIPOP_aCMAES", default_settings_BIPOP_aCMAES}, 
+                {"BIPOP_aCMAES", default_settings_BIPOP_aCMAES},
                 {"RCMAES", default_settings_RCMAES},
-                {"DA", default_settings_DA}, 
-                {"L_BFGS_B", default_settings_LBFGSB}, 
+                {"DA", default_settings_DA},
+                {"L_BFGS_B", default_settings_LBFGSB},
                 {"L_BFGS", default_settings_LBFGS}
             };
 

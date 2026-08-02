@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 namespace minion {
 
@@ -187,7 +188,7 @@ void CMAESBase::initializeCommon(const std::string& algorithm_name, double damps
                       0.0,
                       std::sqrt((muEff - 1.0) / (dimension + 1.0)) - 1.0) +
             damps_extra_term;
-    stoppingTol = getConvergenceTolerance(options, 1e-8);
+    configureConvergenceTolerances(options);
 
     chiN = std::sqrt(static_cast<double>(dimension)) *
            (1.0 - 1.0 / (4.0 * static_cast<double>(dimension)) +
@@ -291,10 +292,30 @@ std::vector<double> CMAESBase::denormalizePoint(const std::vector<double>& candi
     return denormalize_point(candidate, original_bounds);
 }
 
+bool CMAESBase::check_convergence(
+    const std::vector<std::vector<double>>& population,
+    const std::vector<double>& fitness) const
+{
+    return MinimizerBase::check_convergence(denormalize_points(population, original_bounds), fitness);
+}
+
 bool CMAESBase::recordIteration(size_t generation, size_t evaluations) {
     minionResult = MinionResult(denormalizePoint(best), best_fitness, generation, evaluations, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
     return shouldStopFromCallback(minionResult);
+}
+
+MinionResult CMAESBase::recordInitialMean(size_t evaluations) {
+    best = std::vector<double>(mean.data(), mean.data() + mean.size());
+    std::vector<double> values = func({best}, data);
+    if (values.empty()) {
+        throw std::runtime_error("Objective function returned no value for the initial mean");
+    }
+    best_fitness = std::isnan(values.front()) ? std::numeric_limits<double>::infinity() : values.front();
+    Nevals = evaluations + 1;
+    minionResult = MinionResult(denormalizePoint(best), best_fitness, 0, Nevals, TerminationStatus::Running, "");
+    updateBestSoFar(minionResult);
+    return minionResult;
 }
 
 }  // namespace minion

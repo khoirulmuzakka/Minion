@@ -883,7 +883,7 @@ MinionResult L_BFGS_B::optimize() {
         param.epsilon_rel    = options.get<double>("g_epsilon_rel", 1e-10);
         param.past           = 3;
         param.delta          = options.get<double>("f_reltol", 1e-20);
-        param.max_iterations = options.get<int>("max_iterations", 0);
+        param.max_iterations = maxiters > 0 ? maxiters : 0;
         param.max_submin     = 10;
         param.max_linesearch = options.get<int>("max_linesearch", 20);
         param.min_step       = 1e-20;
@@ -930,6 +930,17 @@ MinionResult L_BFGS_B::optimize() {
 
         if (state->core.projgnorm <= param.epsilon || state->core.projgnorm <= param.epsilon_rel * x.norm()) {
             minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Converged, "Projected gradient norm is below convergence tolerance.");
+            updateBestSoFar(minionResult);
+            if (shouldStopFromCallback(minionResult)) {
+                return getBestSoFar();
+            }
+            auto ret = getBestSoFar();
+            ret.nfev = Nevals;
+            return ret;
+        }
+
+        if (maxiters == 0) {
+            minionResult = MinionResult(best, f_best, 0, Nevals, TerminationStatus::MaxIterationsReached, "Maximum number of iterations reached.");
             updateBestSoFar(minionResult);
             if (shouldStopFromCallback(minionResult)) {
                 return getBestSoFar();
@@ -998,7 +1009,7 @@ MinionResult L_BFGS_B::optimize() {
                     state->core.fx_hist[k % param.past] = fx;
                 }
 
-                if (param.max_iterations != 0 && k >= param.max_iterations) break;
+                if (param.max_iterations > 0 && k >= param.max_iterations) break;
 
                 vecs = x - state->core.xp;
                 vecy = state->core.grad - state->core.gradp;
@@ -1034,7 +1045,7 @@ MinionResult L_BFGS_B::optimize() {
         } else if (Nevals >= maxevals) {
             status = TerminationStatus::MaxEvaluationsReached;
             message = "Maximum number of function evaluations reached.";
-        } else if (param.max_iterations != 0 && k >= param.max_iterations) {
+        } else if (param.max_iterations > 0 && k >= param.max_iterations) {
             status = TerminationStatus::MaxIterationsReached;
             message = "Maximum number of iterations reached.";
         } else if (state->core.had_issue) {

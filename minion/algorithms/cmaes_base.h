@@ -34,6 +34,10 @@ protected:
         const Eigen::VectorXd& DState,
         double sigmaState) const;
     std::vector<double> denormalizePoint(const std::vector<double>& candidate) const;
+    bool check_convergence(
+        const std::vector<std::vector<double>>& population,
+        const std::vector<double>& fitness) const override;
+    MinionResult recordInitialMean(size_t evaluations);
     bool recordIteration(size_t generation, size_t evaluations);
 
     size_t lambda = 0;

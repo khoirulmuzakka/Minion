@@ -28,7 +28,7 @@ void PSO::configureFromOptions(const Options& options) {
     cognitiveCoeff = options.get<double>("cognitive_coefficient", 1.5);
     socialCoeff = options.get<double>("social_coefficient", 1.5);
     velocityClamp = options.get<double>("velocity_clamp", 0.2);
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    configureConvergenceTolerances(options);
     if (velocityClamp < 0.0) {
         velocityClamp = 0.0;
     }
@@ -88,10 +88,6 @@ void PSO::init() {
 
     Nevals += population.size();
 
-    diversity.clear();
-    spatialDiversity.clear();
-    recordMetrics();
-
     minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 }
@@ -130,39 +126,21 @@ void PSO::updateVelocitiesAndPositions() {
     }
 }
 
-void PSO::recordMetrics() {
-    if (population.empty() || fitness.empty()) {
-        return;
-    }
-    double fmax = findMax(fitness);
-    double fmin = findMin(fitness);
-    double mean = calcMean(fitness);
-    double denom = std::fabs(mean);
-    if (denom <= 1e-12) {
-        denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
-    }
-    double relRange = (fmax - fmin) / denom;
-    diversity.push_back(relRange);
-    spatialDiversity.push_back(averageEuclideanDistance(population));
-}
-
-bool PSO::checkStopping() const {
-    if (diversity.empty()) {
-        return false;
-    }
-    return diversity.back() <= stoppingTol;
-}
-
 MinionResult PSO::optimize() {
     if (!hasInitialized) {
         initialize();
     }
     try {
         resetBestSoFar();
-        diversity.clear();
-        spatialDiversity.clear();
         Nevals = 0;
         init();
+        if (reachedMaxIterations(0)) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
 
         size_t iter = 1;
         TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
@@ -187,15 +165,19 @@ MinionResult PSO::optimize() {
                 best_fitness = fitness[bestIdx];
             }
 
-            recordMetrics();
-
             minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
             if (shouldStopFromCallback(minionResult)) break;
 
-            if (support_tol && checkStopping()) {
+            if (support_tol && check_convergence(population, fitness)) {
                 finalStatus = TerminationStatus::Converged;
                 finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
+
+            if (reachedMaxIterations(iter)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
                 break;
             }
 

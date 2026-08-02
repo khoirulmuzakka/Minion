@@ -27,7 +27,7 @@ void NelderMead::initialize() {
     }
 
     simplex_scale = clamp(options.get<double>("locality_factor", 0.05), 1e-10, 1.0);
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    configureConvergenceTolerances(options);
 
     hasInitialized = true;
 }
@@ -74,9 +74,6 @@ MinionResult NelderMead::optimize() {
         rho   = 0.75 - 1.0 / (2.0 * static_cast<double>(n));
         sigma = 1.0 - rho;
 
-        double xtol = stoppingTol;
-        double ftol = stoppingTol;
-
         std::vector<std::vector<double>> simplex = build_simplex(xinit);
         std::vector<double> fvals = func(simplex, data);
         size_t nfev = simplex.size();
@@ -98,6 +95,11 @@ MinionResult NelderMead::optimize() {
         if (push_result(TerminationStatus::Running)) {
             return getBestSoFar();
         }
+        if (reachedMaxIterations(iter)) {
+            message = "Maximum number of iterations reached.";
+            push_result(TerminationStatus::MaxIterationsReached);
+            return minionResult;
+        }
 
         while (nfev < maxevals) {
             std::vector<size_t> order = argsort(fvals, true);
@@ -114,18 +116,9 @@ MinionResult NelderMead::optimize() {
             fbest = fvals[0];
             bestIndex = 0;
 
-            double maxXdiff = 0.0;
-            double maxFdiff = 0.0;
-            for (size_t i = 1; i < simplex.size(); ++i) {
-                for (size_t d = 0; d < n; ++d) {
-                    maxXdiff = std::max(maxXdiff, std::fabs(simplex[i][d] - best[d]));
-                }
-                maxFdiff = std::max(maxFdiff, std::fabs(fvals[i] - fbest));
-            }
-
-            if (maxXdiff <= xtol && maxFdiff <= ftol) {
+            if (check_convergence(simplex, fvals)) {
                 status = TerminationStatus::Converged;
-                message = "Simplex size and function spread are below convergence tolerances.";
+                message = "Simplex coordinate spread or objective-value spread is below convergence tolerance.";
                 break;
             }
 
@@ -205,6 +198,11 @@ MinionResult NelderMead::optimize() {
             ++iter;
             if (push_result(TerminationStatus::Running)) {
                 return getBestSoFar();
+            }
+            if (reachedMaxIterations(iter)) {
+                status = TerminationStatus::MaxIterationsReached;
+                message = "Maximum number of iterations reached.";
+                break;
             }
 
             if (nfev >= maxevals) {

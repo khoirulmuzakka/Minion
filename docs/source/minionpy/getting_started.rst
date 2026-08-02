@@ -115,7 +115,7 @@ Parameter Explanation:
 - `maxevals`: Maximum number of function evaluations.
 - `callback`: A function that receives the current optimization result. Return `True` to stop optimization early; return `False` or `None` to continue.
 - `seed`: Random seed for reproducibility.
-- `options`: Additional algorithm-specific configuration options (see **API (Python)** section). For algorithms that support tolerance-based stopping, set `options["convergence_tol"]`.
+- `options`: Additional algorithm-specific configuration options (see **API (Python)** section). Algorithms without built-in restart strategies accept `options["maxiters"]`; the default `-1` disables the iteration cap. For algorithms that support tolerance-based stopping, set `options["x_tol"]` and/or `options["f_tol"]`; a negative tolerance disables that specific check.
 
 **Note:** All algorithms in **minionpy** share the same constructor, so the instantiation process is identical for each one.
 

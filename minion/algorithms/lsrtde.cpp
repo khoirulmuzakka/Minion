@@ -18,8 +18,9 @@ void LSRTDE::initialize  (){
     if (PopulSize==0) PopulSize=  int(20*bounds.size());
     MaxFEval = int(maxevals); 
 
-    MemorySize= options.get<int> ("memory_size", 6) ; 
+    MemorySize= options.get<int> ("memory_size", 6) ;
     SuccessRate =  options.get<double> ("success_rate", 0.5);
+    configureConvergenceTolerances(options);
     initialize_population(PopulSize, int(bounds.size()));
     hasInitialized=true;
 }
@@ -154,7 +155,7 @@ void LSRTDE::RemoveWorst(int _NIndsFront, int _newNIndsFront)
 }
 
 void LSRTDE::MainCycle()
-{   
+{
     resetBestSoFar();
     std::vector<double> FitTemp2;
 
@@ -172,6 +173,15 @@ void LSRTDE::MainCycle()
             globalbest = bestfit;
             globalbestinit = true;
         }
+    }
+    size_t initial_best_index = findArgMin(fun_pop);
+    minionResult = MinionResult(pop[initial_best_index], fun_pop[initial_best_index], Generation, NFEval, TerminationStatus::Running, "");
+    updateBestSoFar(minionResult);
+    if (reachedMaxIterations(0)) {
+        minionResult.status = TerminationStatus::MaxIterationsReached;
+        minionResult.message = "Maximum number of iterations reached.";
+        updateBestSoFar(minionResult);
+        return;
     }
 
     double minfit = FitArr[0];
@@ -324,6 +334,36 @@ void LSRTDE::MainCycle()
             for(int i=0;i!=NIndsCurrent;i++)
                 for(int j=0;j!=NVars;j++)
                     Popul[i][j] = PopulTemp[i][j];
+        }
+        std::vector<std::vector<double>> activePopulation(
+            PopulFront.begin(),
+            PopulFront.begin() + static_cast<std::ptrdiff_t>(NIndsFront));
+        std::vector<double> activeFitness(
+            FitArrFront.begin(),
+            FitArrFront.begin() + static_cast<std::ptrdiff_t>(NIndsFront));
+        if (reachedMaxIterations(static_cast<size_t>(Generation))) {
+            const size_t bestIndex = findArgMin(activeFitness);
+            minionResult = MinionResult(
+                activePopulation[bestIndex],
+                activeFitness[bestIndex],
+                Generation,
+                NFEval,
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.");
+            updateBestSoFar(minionResult);
+            break;
+        }
+        if (check_convergence(activePopulation, activeFitness)) {
+            const size_t bestIndex = findArgMin(activeFitness);
+            minionResult = MinionResult(
+                activePopulation[bestIndex],
+                activeFitness[bestIndex],
+                Generation,
+                NFEval,
+                TerminationStatus::Converged,
+                "Coordinate spread or objective-value spread is below convergence tolerance.");
+            updateBestSoFar(minionResult);
+            break;
         }
         if (shouldStopFromCallback(minionResult)) break;
 

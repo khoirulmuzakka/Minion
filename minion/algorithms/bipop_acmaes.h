@@ -45,7 +45,7 @@ private:
     size_t lambda0 = 0;
 
     double sigma0 = 0.0;
-    double minRelStep = 1e-8;
+    int maxRestarts = -1;
 
     Eigen::VectorXd initialMean;
 

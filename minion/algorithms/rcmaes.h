@@ -50,7 +50,7 @@ private:
     size_t lambda_min = 0;
     double mu_ratio = 0.5;
     double sigma0 = 0.0;
-    double minRelStep = 1e-8;
+    int maxRestarts = -1;
     bool useCustomActive = false;
 
     Eigen::VectorXd initialMean;

@@ -11,6 +11,7 @@ void ARRDE::initialize() {
         defaults[option.first] = option.second;
     }
     Options options(defaults);
+    maxiters = -1;
 
     boundStrategy = options.get<std::string>("bound_strategy", "reflect-random");
     const std::vector<std::string> allowedBoundStrategies = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};

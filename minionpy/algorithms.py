@@ -221,6 +221,11 @@ class MinimizerBase:
             Random seed for reproducibility. If `None`, a random seed is used.
         options : dict, optional
             Additional algorithm-specific parameters. If `None`, default settings are used.
+            Algorithms without built-in restart strategies accept ``maxiters``; the default ``-1`` disables the iteration cap.
+            Algorithms with tolerance-based stopping use ``x_tol`` for coordinate
+            spread and ``f_tol`` for relative objective-value spread. The default values
+            are ``x_tol=1e-8`` and ``f_tol=-1.0`` where supported. Set either
+            tolerance to a negative value to disable that specific convergence check.
 
         Raises
         ------
@@ -373,13 +378,21 @@ class NelderMead(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
+                    "locality_factor"         : 0.05,
+                    "x_tol"                   : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"          : "reflect-random"
                 }
 
             The available options are:
 
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
+
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
+            - **x_tol** (float): Coordinate-spread convergence tolerance across the simplex.
+            - **f_tol** (float): Relative objective-value spread tolerance across the simplex.
 
         Notes
         -----
@@ -427,7 +440,8 @@ class PSO(MinimizerBase):
     - ``social_coefficient`` (*float*): global-attraction coefficient :math:`c_2`.
     - ``velocity_clamp`` (*float*): fraction of the search range used as velocity limit.
     - ``use_latin`` (*bool*): initialize swarm with Latin hypercube sampling if ``True``.
-    - ``support_tolerance`` (*bool*): enable the diversity based stop criterion.
+    - ``x_tol`` (*float*): coordinate-spread convergence tolerance.
+    - ``f_tol`` (*float*): relative objective-value spread convergence tolerance.
     - ``bound_strategy`` (*str*): boundary handling policy (``"reflect-random"`` by default).
     """
 
@@ -463,7 +477,8 @@ class PSO(MinimizerBase):
             Configuration dictionary.  If ``None`` the following defaults are used::
 
                 {
-                    "population_size"       : 0,
+            "maxiters"                 : -1,
+            "population_size"       : 0,
                     "inertia_weight"        : 0.7,
                     "cognitive_coefficient" : 1.5,
                     "social_coefficient"    : 1.5,
@@ -472,6 +487,8 @@ class PSO(MinimizerBase):
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (*int*): Swarm size (``0`` → ``5 * D``).
             - **inertia_weight** (*float*): Inertia weight :math:`\omega`.
@@ -505,6 +522,7 @@ class SPSO2011(MinimizerBase):
     Default options used when ``options`` is ``None``::
 
         {
+            "maxiters"                 : -1,
             "population_size"       : 0,
             "inertia_weight"        : 0.729844,
             "cognitive_coefficient" : 1.49618,
@@ -515,6 +533,8 @@ class SPSO2011(MinimizerBase):
             "informant_degree"      : 3,
             "velocity_clamp"        : 0.0,
             "normalize"             : False,
+            "x_tol"                 : 1e-8,
+            "f_tol": -1.0,
             "bound_strategy"        : "reflect-random"
         }
 
@@ -523,6 +543,8 @@ class SPSO2011(MinimizerBase):
     - ``informant_degree`` / ``neighborhood_size`` (*int*): number of informants per particle.
     - ``velocity_clamp`` (*float*): optional velocity clamp fraction.
     - ``normalize`` (*bool*): operate in normalised coordinates before mapping back to the original bounds.
+    - ``x_tol`` (*float*): coordinate-spread convergence tolerance.
+    - ``f_tol`` (*float*): relative objective-value spread convergence tolerance.
     - ``bound_strategy`` (*str*): boundary handling policy.
     """
 
@@ -577,6 +599,8 @@ class DMSPSO(MinimizerBase):
     - ``subswarm_count`` (*int*): number of dynamic subswarms (default ``4``).
     - ``regroup_period`` (*int*): iterations between subswarm reshuffles (default ``5``).
     - ``velocity_clamp`` (*float*): fraction of the search range used as the velocity limit (default ``0.2``).
+    - ``x_tol`` (*float*): coordinate-spread convergence tolerance.
+    - ``f_tol`` (*float*): relative objective-value spread convergence tolerance.
     - ``bound_strategy`` (*str*): boundary handling policy (``"reflect-random"`` by default).
     """
 
@@ -680,16 +704,21 @@ class LSHADE(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"         :  0,  
                     "memory_size"             :  6, 
                     "mutation_strategy"       : "current_to_pbest_A_1bin",
                     "archive_size_ratio"      :  2.6, 
                     "minimum_population_size" :  4, 
                     "reduction_strategy"      : "linear",
-                    "bound_strategy"          : "reflect-random"
+                    "x_tol"                   : 1e-8,
+                    "f_tol": -1.0,
+                    "bound_strategy"          : "random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
@@ -706,6 +735,8 @@ class LSHADE(MinimizerBase):
             - **minimum_population_size** (int): Final population size after reduction.
             - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
                     ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -756,8 +787,11 @@ class AGSK(MinimizerBase):
     Options accepted via ``options`` (defaults shown) ::
 
         {
+            "maxiters"                 : -1,
             "population_size"         : 0,      # auto -> 40*D if D>5 else 100
             "minimum_population_size" : 12,
+            "x_tol"                   : 1e-8,
+            "f_tol": -1.0,
             "bound_strategy"          : "reflect-random"
         }
 
@@ -803,23 +837,26 @@ class IMODE(MinimizerBase):
 
     IMODE combines multiple mutation operators, adaptive control parameters, and
     linear population size reduction. It is well suited for multimodal and
-    high-dimensional benchmark problems where maintaining diversity is critical.
+    high-dimensional benchmark problems where maintaining population spread is critical.
 
     Options accepted via ``options`` (defaults shown)::
 
         {
+            "maxiters"                 : -1,
             "population_size"         : 0,      # auto -> max(18*D, 6*D^2) capped at 5000
             "minimum_population_size" : 4,
             "memory_size"             : 0,      # auto -> 20*D
             "archive_size_ratio"      : 2.6,
-            "bound_strategy"          : "none"
+            "x_tol"                   : 1e-8,
+            "f_tol": -1.0,
+            "bound_strategy"          : "reflect-random"
         }
 
     Notes
     -----
     - Setting ``population_size`` to ``0`` reproduces the MATLAB reference scaling rule.
     - ``memory_size`` of ``0`` activates the heuristic ``20 * D`` success-history length.
-    - The default boundary handler is ``"none"`` because IMODE uses its own hybrid repair.
+    - The default boundary handler is ``"reflect-random"``.
     """
 
     def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
@@ -888,6 +925,7 @@ class LSHADE_cnEpSin(MinimizerBase):
             applied::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"        :   0,
                     "memory_size"            :   5,
                     "archive_rate"           :   1.4,
@@ -899,6 +937,8 @@ class LSHADE_cnEpSin(MinimizerBase):
                     "learning_period"        :  20,
                     "sin_freq_base"          :   0.5,
                     "epsilon"                : 1e-8,
+                    "x_tol"                  : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"         : "reflect-random"
                 }
         """
@@ -966,13 +1006,9 @@ class CMAES(MinimizerBase):
 
                 options = {
                     "population_size"  : 0,
-                    "mu"               : 0,
-                    "initial_step"     : 0.3,
-                    "cc"               : 0.0,
-                    "cs"               : 0.0,
-                    "c1"               : 0.0,
-                    "cmu"              : 0.0,
-                    "damps"            : 0.0,
+                    "rel_initial_step" : 0.3,
+                    "x_tol"            : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"   : "reflect-random"
                 }
         """
@@ -1009,6 +1045,17 @@ class ACMAES(MinimizerBase):
                  options: Dict[str, Any] = None) -> None:
         """
         Initialize the ACMAES algorithm.
+
+        Default options are::
+
+            {
+            "maxiters"                 : -1,
+            "population_size"  : 0,
+                "rel_initial_step" : 0.3,
+                "x_tol"            : 1e-8,
+                "f_tol": -1.0,
+                "bound_strategy"   : "reflect-random",
+            }
         """
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppACMAES(
@@ -1066,7 +1113,10 @@ class RCMAES(MinimizerBase):
 
                 options = {
                     "population_size"  : 0,
-                    "initial_step"     : 0.2,
+                    "rel_initial_step" : 0.3,
+                    "x_tol"            : 1e-8,
+                    "f_tol": -1.0,
+                    "max_restarts"     : -1,
                     "bound_strategy"   : "reflect-random"
                 }
         """
@@ -1127,11 +1177,12 @@ class BIPOP_aCMAES(MinimizerBase):
             are applied::
 
                 options = {
-                    "population_size" : 0,    # If 0, determined automatically
-                    "max_restarts"    : 8,    # Maximum number of adaptive restarts
-                    "max_iterations"  : 5000, # Max iterations per run
-                    "initial_step"    : 0.3,  # Initial CMA-ES step size (sigma)
-                    "bound_strategy"  : "reflect-random" # Boundary handling
+                    "population_size"  : 0,    # If 0, determined automatically
+                    "rel_initial_step" : 0.3,  # Initial CMA-ES step size
+                    "x_tol"            : 1e-8,
+                    "f_tol": -1.0,
+                    "max_restarts"     : -1,   # -1 means unlimited restarts
+                    "bound_strategy"   : "reflect-random"
                 }
         """
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
@@ -1213,10 +1264,14 @@ class jSO(MinimizerBase):
                     "archive_size_ratio"        : 1.0, 
                     "minimum_population_size"   :  4, 
                     "reduction_strategy"        : "linear",
-                    "bound_strategy"            : "reflect-random"
+                    "x_tol"                     : 1e-8,
+                    "f_tol": -1.0,
+                    "bound_strategy"            : "random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int): Initial population size (N). If set to `0`, it will be automatically determined as:
 
@@ -1230,6 +1285,8 @@ class jSO(MinimizerBase):
             - **minimum_population_size** (int): Final population size after reduction.
             - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
                     ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1323,16 +1380,21 @@ class JADE(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"               :  0,  
                     "c"                             : 0.1, 
                     "mutation_strategy"             :  "current_to_pbest_A_1bin",
                     "archive_size_ratio"            :  1.0, 
                     "minimum_population_size"       :  4, 
                     "reduction_strategy"            : "linear",
+                    "x_tol"                         : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"                : "reflect-random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
 
@@ -1351,6 +1413,8 @@ class JADE(MinimizerBase):
             - **minimum_population_size** (int): Final population size after reduction.
             - **reduction_strategy** (str):  Strategy used to reduce the population size. Available strategies:  
                     ``"linear"``, ``"exponential"``, ``"agsk"``.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1443,13 +1507,19 @@ class NLSHADE_RSP(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"       :  0,  
+                    "minimum_population_size": 4,
                     "memory_size"           : 100,
                     "archive_size_ratio"    : 2.6 , 
+                    "x_tol"                 : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"        : "reflect-random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
@@ -1459,6 +1529,9 @@ class NLSHADE_RSP(MinimizerBase):
                 where *D* is the dimensionality of the problem.
             - **memory_size** (int):  Number of entries in memory to store successful crossover (CR) and mutation (F) parameters.
             - **archive_size_ratio** (float): Ratio of the archive size to the current population size.
+            - **minimum_population_size** (int): Final population size after reduction.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1544,12 +1617,15 @@ class ABC(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"       :  0,  
-                    "mutation_strategy"     : "rand1,
+                    "limit"                 : 100,
                     "bound_strategy"        : "reflect-random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
@@ -1557,7 +1633,7 @@ class ABC(MinimizerBase):
                         N = 5 \\cdot D
 
                 where *D* is the dimensionality of the problem.
-            - **mutation_strategy** (str):  Mutation strategy, default is "rand1", available : "rand1", "best1"
+            - **limit** (int): Scout trigger threshold for abandoned food sources.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1645,17 +1721,23 @@ class Dual_Annealing(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "acceptance_par" : -5.0,  
                     "visit_par" :  2.67,  
                     "initial_temp"     :  5230.0, 
                     "restart_temp_ratio" : 2e-05,
                     "use_local_search": True,
                     "local_search_algo" : "L_BFGS_B",
-                    "finite_diff_rel_step", 1e-10,
+                    "func_noise_ratio": 1e-16,
+                    "N_points_derivative": 3,
+                    "x_tol": 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"        : "periodic"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **acceptance_par** (double) : acceptance parameter. The value must be between -1.0e+4 and -5.
             - **visit_par** (double) : visiting distribution parameter. The value must be between 1.0 and 3.0.
@@ -1663,7 +1745,10 @@ class Dual_Annealing(MinimizerBase):
             - **restart_temp_ratio** (double) : restart temperature ratio. The value must be between 0 and 1.
             - **use_local_search** (bool) : a flag to whether or not to use local search. 
             - **local_search_algo** (str) : Algorithm name for local search. Available : "NelderMead" or "L_BFGS_B".
-            - **finite_diff_rel_step** (double) : The relative step size for finite difference computations for L_BFGS_B. The default value 0.0 means that the relative step is given by the square root of machine epsilon. 
+            - **func_noise_ratio** (double): Relative objective noise level used by local-search finite differences.
+            - **N_points_derivative** (int): Number of points used by the derivative approximation.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -1749,7 +1834,7 @@ class L_BFGS_B(MinimizerBase):
             following settings are used::
 
                 options = {
-                    "max_iterations": 0,
+                    "maxiters"               : -1,
                     "m" : 15, 
                     "g_epsilon": 1e-8,
                     "g_epsilon_rel": 0.0,
@@ -1762,7 +1847,8 @@ class L_BFGS_B(MinimizerBase):
                 }
 
             The available options are:
-            - **max_iterations** (int): Maximum number of iterations. Default is 0 (no limit).
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
             - **m** (int): The number of corrections used in the limited memory matrix. Default is 15.
             - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-8.
             - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 0.0.
@@ -1853,7 +1939,7 @@ class L_BFGS(MinimizerBase):
             following settings are used::
 
                 options = {
-                    "max_iterations": 0,
+                    "maxiters"               : -1,
                     "m" : 15, 
                     "g_epsilon": 1e-8,
                     "g_epsilon_rel": 0.0,
@@ -1866,7 +1952,8 @@ class L_BFGS(MinimizerBase):
                 }
 
             The available options are:
-            - **max_iterations** (int): Maximum number of iterations. Default is 0 (no limit).
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
             - **m** (int): The number of corrections used in the limited memory matrix. Default is 15.
             - **g_epsilon** (double): Absolute gradient tolerance for stopping criteria. Default is 1e-8.
             - **g_epsilon_rel** (double): Relative gradient tolerance for stopping criteria. Default is 0.0.
@@ -2070,13 +2157,18 @@ class LSRTDE(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"       : 0,  
                     "memory_size"           :  5,
                     "success_rate"          : 0.5 , 
-                    "bound_strategy"        :"reflect-random"
+                    "x_tol"                 : 1e-8,
+                    "f_tol": -1.0,
+                    "bound_strategy"        : "random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int): Initial population size (N). If set to ``0``, it will be automatically determined as follows:
 
@@ -2088,6 +2180,8 @@ class LSRTDE(MinimizerBase):
 
             - **memory_size** (float) : memory size for storing the values of ``CR`` and ``F`` 
             - **success_rate** (float) : The success rate value.
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -2174,7 +2268,19 @@ class RDEX(MinimizerBase):
             Random seed for reproducibility. If None (default), the seed is not set.
         options : dict, optional
             Additional options for configuring the algorithm. If None (default), the
-            settings are taken from the default configuration of RDEX.
+            following settings are used::
+
+                options = {
+                    "maxiters"               : -1,
+                    "population_size"     : 0,
+                    "memory_size"         : 5,
+                    "success_rate"        : 0.5,
+                    "eb_hybrid_rate_init" : 0.7,
+                    "perturbation_rate"   : 0.4,
+                    "x_tol"               : 1e-8,
+                    "f_tol": -1.0,
+                    "bound_strategy"      : "random",
+                }
 
         Notes
         -----
@@ -2322,14 +2428,19 @@ class Differential_Evolution(MinimizerBase):
             following settings are used::
 
                 options = {
+                    "maxiters"               : -1,
                     "population_size"         :  0,  
                     "mutation_strategy"       : "best1bin",
                     "mutation_rate"           : 0.5, 
                     "crossover_rate"          : 0.8,
+                    "x_tol"                   : 1e-8,
+                    "f_tol": -1.0,
                     "bound_strategy"          : "reflect-random"
                 }
 
             The available options are:
+
+            - **maxiters** (int): Maximum number of algorithm iterations. Default is -1, which disables the iteration cap.
 
             - **population_size** (int):  Initial population size (N). If set to `0`, it will be automatically determined. 
                 .. math::
@@ -2341,7 +2452,9 @@ class Differential_Evolution(MinimizerBase):
                     ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
                     ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``.
             - **mutation_rate** (float): the value of the mutation rate (F).
-            - **crossover_rate** (float): the value of the crossover rate (F).
+            - **crossover_rate** (float): the value of the crossover rate (CR).
+            - **x_tol** (float): Coordinate-spread convergence tolerance.
+            - **f_tol** (float): Relative objective-value spread convergence tolerance.
             - **bound_strategy** (str): Method for handling boundary violations. Available strategies:  
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -2461,6 +2574,12 @@ class Minimizer(MinimizerBase):
         options : dict, optional
             Additional options for configuring the algorithm. If None (default), the 
             settings are taken from the default configuration of the chosen algorithm.
+            Algorithms without built-in restart strategies accept ``maxiters``; the default ``-1`` disables the iteration cap.
+            Algorithms with tolerance-based stopping use ``x_tol`` for coordinate
+            spread and ``f_tol`` for relative objective-value spread. ``BIPOP_aCMAES``
+            and ``RCMAES`` also accept ``max_restarts``; ``-1`` means unlimited
+            restarts. A negative ``x_tol`` or ``f_tol`` disables that specific
+            convergence check.
 
         Notes
         -----

@@ -14,6 +14,7 @@ void j2020::initialize() {
         defaults[entry.first] = entry.second;
     }
     Options options(defaults);
+    maxiters = -1;
 
     boundStrategy = options.get<std::string>("bound_strategy", "reflect-random");
     std::vector<std::string> supportedBounds = {"random", "reflect", "reflect-random", "clip", "periodic", "none"};

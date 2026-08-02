@@ -22,7 +22,7 @@ void Dual_Annealing::initialize() {
     local_min_algo = options.get<std::string> ("local_search_algo", "L_BFGS_B");
     func_noise_ratio = options.get<double>("func_noise_ratio", 1e-10);
     der_N_points = options.get<int>("N_points_derivative", 3);
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    configureConvergenceTolerances(options);
     
     if ( initial_temp <= 0.01 || initial_temp > 50000.0 ) throw std::runtime_error("Initial temperature must be between 0.01 and 50000.0. Found : "+std::to_string(initial_temp));
     if ( restart_temp_ratio <= 0.0 || restart_temp_ratio > 1.0) throw std::runtime_error("restart_temp_ratio must be between 0.0 and 1.0. Found : "+ std::to_string(restart_temp_ratio));
@@ -149,29 +149,33 @@ void Dual_Annealing::step (int iter, double temp){
 
     if (best_E == best_E_save) N_no_improve++;
 
-    double denom = std::max({std::fabs(best_E), std::fabs(current_E), 1.0});
-    double relGap = std::fabs(current_E - best_E) / denom;
+    const bool converged = check_convergence({best_cand, current_cand}, {best_E, current_E});
 
     minionResult = MinionResult(
         best_cand,
         best_E,
         iter,
         Nevals,
-        relGap <= stoppingTol ? TerminationStatus::Converged : TerminationStatus::Running,
-        relGap <= stoppingTol ? "Convergence criterion satisfied." : "");
+        converged ? TerminationStatus::Converged : TerminationStatus::Running,
+        converged ? "Coordinate spread or objective-value spread is below convergence tolerance." : "");
     updateBestSoFar(minionResult);
     shouldStopFromCallback(minionResult);
+    if (minionResult.status == TerminationStatus::Converged ||
+        minionResult.status == TerminationStatus::CallbackStopped) {
+        return;
+    }
 
     if (useLocalSearch && (best_E< best_E_save || N_no_improve>max_no_improve)  ){
         size_t maxevals_ls = maxevals-Nevals;
         if (local_min_algo == "NelderMead"){
             auto settings = DefaultSettings().getDefaultSettings("NelderMead");
             settings["locality_factor"] = 0.5;
-            settings["convergence_tol"] = stoppingTol;
+            settings["x_tol"] = xTol;
+            settings["f_tol"] = fTol;
             minionResult = NelderMead(func, bounds, {best_cand}, data, callback, 0.25*maxevals_ls, seed, settings).optimize();
         } else if (local_min_algo == "L_BFGS_B"){
             auto defaultSettings = DefaultSettings().getDefaultSettings("L_BFGS_B");
-            defaultSettings["max_iterations"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
+            defaultSettings["maxiters"] =  std::max(std::min (int(6*bounds.size()), 1000), 100);
             defaultSettings["func_noise_ratio"] = func_noise_ratio;
             defaultSettings["N_points_derivative"] = der_N_points;
             minionResult = L_BFGS_B(func, bounds, {best_cand}, data, callback, maxevals_ls, seed, defaultSettings).optimize();
@@ -202,13 +206,25 @@ MinionResult Dual_Annealing::optimize() {
         double temperature_restart = initial_temp * restart_temp_ratio;
         double t1 = std::exp((visit_par - 1) * std::log(2.0)) - 1.0;
         init();
+        minionResult = MinionResult(best_cand, best_E, 0, Nevals, TerminationStatus::Running, "");
+        updateBestSoFar(minionResult);
+        size_t totalIterations = 0;
         do {
             size_t iter=0;
             do {
+                if (reachedMaxIterations(totalIterations)) {
+                    return finalizeBestSoFar(
+                        TerminationStatus::MaxIterationsReached,
+                        "Maximum number of iterations reached.",
+                        Nevals,
+                        totalIterations);
+                }
                 double s = double(iter) + 2.0;
                 double t2 = std::exp((visit_par - 1) * std::log(s)) - 1.0;
                 double temperature = initial_temp * t1 / t2;
                 step(iter, temperature);
+                iter++;
+                totalIterations++;
                 if (minionResult.status == TerminationStatus::CallbackStopped) {
                     return getBestSoFar();
                 }
@@ -222,14 +238,14 @@ MinionResult Dual_Annealing::optimize() {
                     //initial_temp= 0.5*initial_temp;
                     break;
                 };
-                iter ++;
             } while(Nevals < maxevals); ;
-        } while(Nevals < maxevals); 
+        } while(Nevals < maxevals);
 
         return finalizeBestSoFar(
             TerminationStatus::MaxEvaluationsReached,
             "Maximum number of function evaluations reached.",
-            Nevals);
+            Nevals,
+            totalIterations);
 
     } catch (const std::exception& e) {
         throw std::runtime_error(e.what());

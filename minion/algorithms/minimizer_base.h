@@ -305,7 +305,8 @@ class MinimizerBase {
                 };
             }
             if (seed != -1) set_global_seed(seed);
-            optionMap = options;    
+            optionMap = options;
+            maxiters = getMaxIterations(Options(optionMap));
         };
 
         /**
@@ -332,7 +333,8 @@ class MinimizerBase {
                 throw std::invalid_argument("x0 must not be empty");
             }
             if (seed != -1) set_global_seed(seed);
-            optionMap = options;    
+            optionMap = options;
+            maxiters = getMaxIterations(Options(optionMap));
         };
 
         /**
@@ -362,8 +364,94 @@ class MinimizerBase {
         bool hasInitialized =false;
         void* data = nullptr;
 
-        double getConvergenceTolerance(const Options& options, double defaultValue = 0.0) const {
-            return options.getSilent<double>("convergence_tol", defaultValue);
+        double getXTolerance(const Options& options, double defaultValue = 0.0) const {
+            return options.getSilent<double>("x_tol", defaultValue);
+        }
+
+        double getFTolerance(const Options& options, double defaultValue = 0.0) const {
+            return options.getSilent<double>("f_tol", defaultValue);
+        }
+
+        int getMaxIterations(const Options& options, int defaultValue = -1) const {
+            return options.getSilent<int>("maxiters", defaultValue);
+        }
+
+        bool hasMaxIterations() const {
+            return maxiters >= 0;
+        }
+
+        bool reachedMaxIterations(size_t iterations) const {
+            return hasMaxIterations() && iterations >= static_cast<size_t>(maxiters);
+        }
+
+        void configureConvergenceTolerances(
+            const Options& options,
+            double defaultXTol = 0.0,
+            double defaultFTol = 0.0)
+        {
+            xTol = getXTolerance(options, defaultXTol);
+            fTol = getFTolerance(options, defaultFTol);
+        }
+
+        double maxCoordinateSpread(const std::vector<std::vector<double>>& population) const {
+            if (population.empty() || population.front().empty()) {
+                return 0.0;
+            }
+
+            const size_t dimension = population.front().size();
+            std::vector<double> minCoord = population.front();
+            std::vector<double> maxCoord = population.front();
+
+            for (size_t i = 1; i < population.size(); ++i) {
+                const auto& individual = population[i];
+                const size_t limit = std::min(dimension, individual.size());
+                for (size_t d = 0; d < limit; ++d) {
+                    minCoord[d] = std::min(minCoord[d], individual[d]);
+                    maxCoord[d] = std::max(maxCoord[d], individual[d]);
+                }
+            }
+
+            double maxSpread = 0.0;
+            for (size_t d = 0; d < dimension; ++d) {
+                maxSpread = std::max(maxSpread, maxCoord[d] - minCoord[d]);
+            }
+            return maxSpread;
+        }
+
+        double relativeFitnessDiversity(const std::vector<double>& fitness) const {
+            if (fitness.empty()) {
+                return 0.0;
+            }
+
+            double fmin = fitness.front();
+            double fmax = fitness.front();
+            for (double value : fitness) {
+                fmin = std::min(fmin, value);
+                fmax = std::max(fmax, value);
+            }
+
+            const double range = fmax - fmin;
+            if (range == 0.0) {
+                return 0.0;
+            }
+
+            const double denom = std::fabs(0.5 * (fmax + fmin));
+            if (denom <= std::numeric_limits<double>::epsilon()) {
+                return std::numeric_limits<double>::infinity();
+            }
+            return range / denom;
+        }
+
+        virtual bool check_convergence(
+            const std::vector<std::vector<double>>& population,
+            const std::vector<double>& fitness) const
+        {
+            if (population.empty() || fitness.empty()) {
+                return false;
+            }
+            const bool xConverged = xTol >= 0.0 && maxCoordinateSpread(population) <= xTol;
+            const bool fConverged = fTol >= 0.0 && relativeFitnessDiversity(fitness) <= fTol;
+            return xConverged || fConverged;
         }
 
         void resetBestSoFar() {
@@ -373,7 +461,11 @@ class MinimizerBase {
         }
 
         void updateBestSoFar(const MinionResult& result) {
-            if (!has_best_so_far || result.fun < best_so_far.fun) {
+            if (!has_best_so_far ||
+                result.fun < best_so_far.fun ||
+                (result.fun == best_so_far.fun &&
+                 best_so_far.status == TerminationStatus::Running &&
+                 result.status != TerminationStatus::Running)) {
                 best_so_far = result;
                 has_best_so_far = true;
             }
@@ -439,13 +531,15 @@ class MinimizerBase {
         MinionFunction func;
         std::vector<std::pair<double, double>> bounds;
         std::vector<std::vector<double>> x0;
-        double stoppingTol = 0.0;
         size_t maxevals;
         MinionResult minionResult;
         MinionResult best_so_far;
         std::string boundStrategy;
         int seed;
          std::function<bool(MinionResult*)> callback;
+        double xTol = 0.0;
+        double fTol = 0.0;
+        int maxiters = -1;
 
     protected:
         bool has_best_so_far = false;

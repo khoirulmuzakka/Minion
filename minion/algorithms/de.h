@@ -22,7 +22,6 @@ public :
     size_t Nevals=0;
 
     std::vector<double> meanCR, meanF, stdCR, stdF;
-    std::vector<double> diversity;
     //these objects must be updated in init and adapt parameters.
     std::vector<double> F, CR;
     std::vector<size_t> p;
@@ -85,12 +84,6 @@ protected :
      * @brief Initializes the population and other parameters.
      */
     virtual void init ();
-
-    /**
-     * @brief Checks stopping criteria for the optimization.
-     * @return True if stopping criteria are met, false otherwise.
-     */
-    virtual bool checkStopping();
 
     /**
      * @brief Adapts parameters of the algorithm.

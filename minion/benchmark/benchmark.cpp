@@ -450,7 +450,8 @@ double minimize_cec_functions(int function_number,
 
     auto settings = minion::DefaultSettings().getDefaultSettings(algo);
     settings["population_size"] = popsize;
-    settings["convergence_tol"] = 0.0;
+    settings["x_tol"] = 0.0;
+    settings["f_tol"] = 0.0;
     std::vector<std::vector<double>> x0={};
     if (algo == "NelderMead" || algo == "L_BFGS_B" || algo == "DA"){
         std::vector<double> x00;

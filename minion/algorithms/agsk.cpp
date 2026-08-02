@@ -40,7 +40,8 @@ void AGSK::initialize() {
     knowledgeAssignment = std::vector<int>(populationSize, 0);
 
     initializeKnowledgeParameters();
-    support_tol = false;
+    configureConvergenceTolerances(options);
+    support_tol = true;
     hasInitialized = true;
 }
 

@@ -17,6 +17,7 @@ void NLSHADE_LBC::initialize() {
     int memorySize = options.get<int>("memory_size", 0);
     if (memorySize == 0) memorySize = 20 * int(bounds.size());
     double archiveSizeRatio = options.get<double>("archive_size_ratio", 1.0);
+    configureConvergenceTolerances(options);
     initialize_population(populsize, int(bounds.size()), memorySize, archiveSizeRatio);
     hasInitialized = true;
 }
@@ -314,6 +315,12 @@ void NLSHADE_LBC::MainCycle() {
     size_t initial_best_index = findArgMin(funcRes);
     minionResult = MinionResult(popul_vec[initial_best_index], funcRes[initial_best_index], Generation, NFEval, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
+    if (reachedMaxIterations(0)) {
+        minionResult.status = TerminationStatus::MaxIterationsReached;
+        minionResult.message = "Maximum number of iterations reached.";
+        updateBestSoFar(minionResult);
+        return;
+    }
 
     do {
         double minfit = FitMass[0];
@@ -436,6 +443,32 @@ void NLSHADE_LBC::MainCycle() {
         UpdateMemoryCrF();
         SuccessFilled = 0;
         Generation++;
+        std::vector<double> currentFitness(FitMass, FitMass + NInds);
+        std::vector<std::vector<double>> currentPopulation = convertToVector(Popul, NInds, NVars);
+        if (reachedMaxIterations(static_cast<size_t>(Generation))) {
+            const size_t bestIndex = findArgMin(currentFitness);
+            minionResult = MinionResult(
+                currentPopulation[bestIndex],
+                currentFitness[bestIndex],
+                Generation,
+                NFEval,
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.");
+            updateBestSoFar(minionResult);
+            break;
+        }
+        if (check_convergence(currentPopulation, currentFitness)) {
+            const size_t bestIndex = findArgMin(currentFitness);
+            minionResult = MinionResult(
+                currentPopulation[bestIndex],
+                currentFitness[bestIndex],
+                Generation,
+                NFEval,
+                TerminationStatus::Converged,
+                "Coordinate spread or objective-value spread is below convergence tolerance.");
+            updateBestSoFar(minionResult);
+            break;
+        }
         if (shouldStopFromCallback(minionResult)) break;
 
     } while (NFEval < MaxFEval);

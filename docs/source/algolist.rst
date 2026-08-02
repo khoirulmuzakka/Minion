@@ -34,8 +34,14 @@ Differential Evolution Family
 ``NLSHADE_RSP``
     V. Stanovov, S. Akhmedova and E. Semenkin, *NL-SHADE-RSP Algorithm with Adaptive Archive and Selective Pressure for CEC 2021 Numerical Optimization*, IEEE CEC, 2021.
 
+``NLSHADE_LBC``
+    NL-SHADE variant with local-best crossover behavior and linear population reduction.
+
 ``LSRTDE``
     V. Stanovov and E. Semenkin, *Success Rate-based Adaptive Differential Evolution L-SRTDE for CEC 2024 Competition*, IEEE CEC, 2024.
+
+``RDEX``
+    Rank-driven differential evolution variant with elite-bias hybrid mutation.
 
 ``ARRDE``
     Khoirul Faiq Muzakka, Ahsani Hafizhu Shali, Haris Suhendar, Sören Möller, Martin Finsterbusch, *Robust Differential Evolution via Nonlinear Population Size Reduction and Adaptive Restart: The ARRDE Algorithm*, arXiv, 2025. https://arxiv.org/abs/2511.18429
@@ -67,6 +73,9 @@ Evolution Strategies
 
 ``CMAES``
     N. Hansen and A. Ostermeier, *Adapting arbitrary normal mutation distributions in evolution strategies: the covariance matrix adaptation*, Proceedings of IEEE International Conference on Evolutionary Computation, 1996.
+
+``ACMAES``
+    Active CMA-ES variant with negative covariance updates.
 
 ``BIPOP_aCMAES``
     Nikolaus Hansen, *Benchmarking a BI-population CMA-ES on the BBOB-2009 function testbed*, GECCO '09 Companion, 2009.

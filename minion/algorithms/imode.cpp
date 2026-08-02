@@ -347,6 +347,8 @@ void IMODE::initialize() {
     CR.assign(populationSize, 0.5);
     operatorAssignment.assign(populationSize, 2);
     operatorProbabilities = {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0};
+    configureConvergenceTolerances(options);
+    support_tol = true;
     hasInitialized = true;
 }
 

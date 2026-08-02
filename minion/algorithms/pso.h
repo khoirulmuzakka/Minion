@@ -30,14 +30,9 @@ public:
     bool useLatin = true;
     bool support_tol = true;
 
-    std::vector<double> diversity;
-    std::vector<double> spatialDiversity;
-
 protected:
     virtual void init();
     virtual void updateVelocitiesAndPositions();
-    virtual void recordMetrics();
-    virtual bool checkStopping() const;
 
     void configureFromOptions(const Options& options);
 

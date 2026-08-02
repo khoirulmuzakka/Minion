@@ -39,6 +39,15 @@ MinionResult ACMAES::optimize() {
         TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
         std::string finalMessage = "Maximum number of function evaluations reached.";
 
+        if (reachedMaxIterations(0)) {
+            recordInitialMean(Nevals);
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
+
         while (Nevals < maxevals) {
             ++generation;
 
@@ -99,15 +108,19 @@ MinionResult ACMAES::optimize() {
 
             updateEigenDecomposition();
 
-            const double sqrtMaxEigenvalue = D.size() > 0 ? D.maxCoeff() : 0.0;
-            const double effectiveStep = sigma * sqrtMaxEigenvalue;
             if (recordIteration(generation, Nevals)) {
                 break;
             }
 
-            if (support_tol && effectiveStep <= stoppingTol) {
+            if (reachedMaxIterations(generation)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
+                break;
+            }
+
+            if (support_tol && check_convergence(population, fitness)) {
                 finalStatus = TerminationStatus::Converged;
-                finalMessage = "Step size is below convergence tolerance.";
+                finalMessage = "Coordinate spread or objective-value spread is below convergence tolerance.";
                 break;
             }
 

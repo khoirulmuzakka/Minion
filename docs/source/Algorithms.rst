@@ -16,22 +16,22 @@ In C++, you can retrieve the default settings for an algorithm and adjust the pa
     std::map<std::string, minion::ConfigValue> options = settings.getDefaultSettings("LSHADE");
 
     // Override default parameters
-    options["population_size"] = 50; 
+    options["population_size"] = 50;
 
     // Initialize the minimizer with custom settings
     auto min = minion::Minimizer(rosenbrock_vect, bounds, {}, nullptr, nullptr, "LSHADE", max_evals, -1, options);
 
     // Perform optimization
     auto min_result = min.optimize();
-    
+
 
 **Python Example:**
 
 In Python, you can pass the parameters via a dictionary when creating the `Minimizer` object. Here’s an example for configuring and using the ARRDE algorithm:
 
-.. code-block:: Python 
+.. code-block:: Python
 
-    import minionpy as mpy 
+    import minionpy as mpy
 
     options = {
         "population_size"           : 0,           # Auto sizing based on dimension and budget when set to 0
@@ -57,16 +57,24 @@ In Python, you can pass the parameters via a dictionary when creating the `Minim
 ``result.status`` reports why the algorithm stopped, for example ``"converged"``, ``"max_evaluations_reached"``, or ``"callback_stopped"``.
 Callbacks receive the current result; return ``True`` to stop early, or ``False``/``None`` to continue.
 
+Tolerance-based convergence is configured with ``x_tol`` and ``f_tol`` for algorithms that support it.
+``x_tol`` is the maximum coordinate spread of the active population, swarm, offspring set, or simplex.
+``f_tol`` is the relative spread of the active objective values. Optimization stops when either tolerance is satisfied.
+The default values are ``x_tol = 1e-8`` and ``f_tol = -1.0``. Restarting CMA-ES variants use these tolerances as restart triggers.
+Set ``x_tol`` or ``f_tol`` to a negative value to disable that convergence check.
+Algorithms without built-in restart strategies also accept ``maxiters`` as a uniform iteration cap. The default is ``maxiters = -1``, which disables
+iteration-based stopping and leaves ``maxevals`` as the primary budget. ``ARRDE``, ``j2020``, ``RCMAES``, and ``BIPOP_aCMAES`` use their restart strategies instead and do not expose ``maxiters``.
+
 
 
 .. note::
 
-   The optional ``x0`` argument can contain **multiple** initial guesses. 
-   Population-based algorithms, such as Differential Evolution variants, LSHADE, and PSO, use these samples to initialise their populations. 
+   The optional ``x0`` argument can contain **multiple** initial guesses.
+   Population-based algorithms, such as Differential Evolution variants, LSHADE, and PSO, use these samples to initialise their populations.
    For algorithms that evolve a single incumbent solution (e.g., CMA-ES, Nelder-Mead, L-BFGS, L-BFGS-B), Minion evaluates the provided guesses first and starts from the best-performing one.
 
 
-Each algorithm comes with a set of configurable parameters that affect its behavior during the optimization process. For example, the ``population_size`` parameter controls the number of candidate solutions in the population, while the ``mutation_rate`` defines the probability of modifying a candidate solution during the mutation process. 
+Each algorithm comes with a set of configurable parameters that affect its behavior during the optimization process. For example, the ``population_size`` parameter controls the number of candidate solutions in the population, while the ``mutation_rate`` defines the probability of modifying a candidate solution during the mutation process.
 
 Please refer to the respective algorithm section for detailed descriptions of each parameter.
 
@@ -81,6 +89,11 @@ Differential Evolution (DE) is a population-based stochastic optimization algori
 Algorithm name : ``"DE"``
 
 Parameters :
+
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
 
 - ``population_size``: 0
 
@@ -98,9 +111,13 @@ Parameters :
 
   .. note:: Mutation / crossover strategy. Available strategies include ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``, ``"current_to_best1bin"``, ``"current_to_best1exp"``, ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``, ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``, ``"current_to_pbest_AW_1bin"``, and ``"current_to_pbest_AW_1exp"``.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance. Optimization stops when the population fitness spread falls below this threshold.
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
 
 - ``bound_strategy``: ``reflect-random``
 
@@ -115,33 +132,42 @@ Minion implements several particle swarm variants. The canonical PSO uses a glob
 
 Algorithm name : ``"PSO"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Swarm size. If set to ``0``, it defaults to ``5 * D`` where ``D`` is the problem dimension.
 
-- ``inertia_weight``: 0.7  
+- ``inertia_weight``: 0.7
 
   .. note:: Inertia weight :math:`\omega` that controls how much momentum each particle carries between steps.
 
-- ``cognitive_coefficient``: 1.5  
+- ``cognitive_coefficient``: 1.5
 
   .. note:: Personal acceleration constant :math:`c_1` steering particles toward their own best position.
 
-- ``social_coefficient``: 1.5  
+- ``social_coefficient``: 1.5
 
   .. note:: Social acceleration constant :math:`c_2` that pulls particles toward the global best.
 
-- ``velocity_clamp``: 0.2  
+- ``velocity_clamp``: 0.2
 
   .. note:: Fraction of the search range used as a velocity limit. ``0`` disables clamping.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on swarm fitness values. Smaller values require the swarm to contract more before stopping.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -154,53 +180,62 @@ This implementation mirrors the stochastic PSO 2011 variant proposed by Clerc an
 
 Algorithm name : ``"SPSO2011"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Swarm size. ``0`` selects the heuristic default of ``5 * D``.
 
-- ``inertia_weight``: 0.729844  
+- ``inertia_weight``: 0.729844
 
   .. note:: Inertia parameter :math:`\omega` controlling exploration versus exploitation.
 
-- ``cognitive_coefficient``: 1.49618  
+- ``cognitive_coefficient``: 1.49618
 
   .. note:: Cognitive acceleration constant influencing attraction toward each particle's personal best.
 
-- ``social_coefficient``: 1.49618  
+- ``social_coefficient``: 1.49618
 
   .. note:: Social acceleration constant drawing particles toward informants and the global best.
 
-- ``phi_personal``: 1.49618  
+- ``phi_personal``: 1.49618
 
   .. note:: Parameter used in the stochastic hypersphere sampling for the personal component.
 
-- ``phi_social``: 1.49618  
+- ``phi_social``: 1.49618
 
   .. note:: Parameter used in the stochastic hypersphere sampling for the social component.
 
-- ``neighborhood_size``: 3  
+- ``neighborhood_size``: 3
 
   .. note:: Number of neighbors considered when building the adaptive informant topology.
 
-- ``informant_degree``: 3  
+- ``informant_degree``: 3
 
   .. note:: Degree of the communication graph; controls how many informants each particle has.
 
-- ``velocity_clamp``: 0.0  
+- ``velocity_clamp``: 0.0
 
   .. note:: Maximum velocity as a fraction of the search range. ``0`` disables the clamp.
 
-- ``normalize``: False  
+- ``normalize``: False
 
   .. note:: Whether to transform search vectors into a normalised unit hypercube before mapping back to bounds.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on swarm fitness values.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -211,49 +246,58 @@ Dynamic Multi-Swarm PSO partitions the swarm into co-operative sub-swarms that p
 
 Algorithm name : ``"DMSPSO"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Swarm size. ``0`` enables the adaptive default of ``5 * D`` particles.
 
-- ``inertia_weight``: 0.7  
+- ``inertia_weight``: 0.7
 
   .. note:: Inertia term balancing exploration and exploitation across sub-swarms.
 
-- ``cognitive_coefficient``: 1.2  
+- ``cognitive_coefficient``: 1.2
 
   .. note:: Personal attraction strength toward each particle's historical best.
 
-- ``social_coefficient``: 1.0  
+- ``social_coefficient``: 1.0
 
   .. note:: Global attraction weight toward the swarm-wide best.
 
-- ``local_coefficient``: 1.4  
+- ``local_coefficient``: 1.4
 
   .. note:: Influence of the current sub-swarm best position.
 
-- ``global_coefficient``: 0.8  
+- ``global_coefficient``: 0.8
 
   .. note:: Influence of the overall global best retained across regroupings.
 
-- ``subswarm_count``: 4  
+- ``subswarm_count``: 4
 
   .. note:: Number of co-operative sub-swarms maintained before regrouping.
 
-- ``regroup_period``: 5  
+- ``regroup_period``: 5
 
   .. note:: Iterations between sub-swarm regrouping events.
 
-- ``velocity_clamp``: 0.2  
+- ``velocity_clamp``: 0.2
 
   .. note:: Fraction of the search range that caps particle velocities. ``0`` disables clamping.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on swarm fitness values.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -266,57 +310,66 @@ Ensemble Sinusoidal LSHADE with covariance learning augments LSHADE with an ense
 
 Algorithm name : ``"LSHADE_cnEpSin"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Initial population size. ``0`` chooses the default ``18 * D`` heuristic.
 
-- ``memory_size``: 5  
+- ``memory_size``: 5
 
   .. note:: Number of entries stored in the shared scaling-factor, crossover-rate, and frequency memories.
 
-- ``archive_rate``: 1.4  
+- ``archive_rate``: 1.4
 
   .. note:: Ratio between archive size and current population size.
 
-- ``minimum_population_size``: 4  
+- ``minimum_population_size``: 4
 
   .. note:: Final population size reached by linear population reduction.
 
-- ``p_best_fraction``: 0.11  
+- ``p_best_fraction``: 0.11
 
   .. note:: Fraction of top individuals eligible for the current-to-``p``-best mutation.
 
-- ``rotation_probability``: 0.4  
+- ``rotation_probability``: 0.4
 
   .. note:: Probability of switching to eigen-space crossover with covariance learning.
 
-- ``neighborhood_fraction``: 0.5  
+- ``neighborhood_fraction``: 0.5
 
   .. note:: Fraction of the population used to estimate the covariance matrix.
 
-- ``freq_init``: 0.5  
+- ``freq_init``: 0.5
 
   .. note:: Initial value for the sinusoidal frequency adaptation.
 
-- ``learning_period``: 20  
+- ``learning_period``: 20
 
   .. note:: Window size for tracking ensemble success statistics.
 
-- ``sin_freq_base``: 0.5  
+- ``sin_freq_base``: 0.5
 
   .. note:: Base frequency for the first sinusoidal strategy.
 
-- ``epsilon``: 1e-8  
+- ``epsilon``: 1e-8
 
   .. note:: Small constant used to stabilise probability updates.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on population fitness values.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -329,45 +382,88 @@ Covariance Matrix Adaptation Evolution Strategy samples offspring from an evolvi
 
 Algorithm name : ``"CMAES"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Number of offspring sampled each generation. ``0`` derives the default ``4 + 3 \log(D)`` value.
 
-- ``mu``: 0  
+- ``mu``: 0
 
   .. note:: Number of parents contributing to the new mean. ``0`` sets it to ``population_size / 2``.
 
-- ``initial_step``: 0.3  
+- ``rel_initial_step``: 0.3
 
   .. note:: Initial global step size, scaled by the average bound width.
 
-- ``cc``: 0.0  
+- ``cc``: 0.0
 
   .. note:: Cumulation parameter for the covariance evolution path.
 
-- ``cs``: 0.0  
+- ``cs``: 0.0
 
   .. note:: Cumulation parameter for the step-size control path.
 
-- ``c1``: 0.0  
+- ``c1``: 0.0
 
   .. note:: Learning rate for rank-one covariance updates.
 
-- ``cmu``: 0.0  
+- ``cmu``: 0.0
 
   .. note:: Learning rate for the rank-``\mu`` covariance update.
 
-- ``damps``: 0.0  
+- ``damps``: 0.0
 
   .. note:: Damping parameter controlling how aggressively the step size adapts.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on offspring fitness values.
+  .. note:: Coordinate-spread convergence tolerance measured in original coordinates.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
+
+  .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+
+aCMA-ES
+-------
+Active CMA-ES extends CMA-ES with negative covariance updates from poorly ranked offspring.
+
+Algorithm name : ``"ACMAES"``
+
+Parameters :
+
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Number of offspring sampled each generation. ``0`` derives the default ``4 + 3 \log(D)`` value.
+
+- ``rel_initial_step``: 0.3
+
+  .. note:: Initial global step size, scaled by the average bound width.
+
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance measured in original coordinates.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
@@ -380,56 +476,100 @@ BIPOP aCMA-ES is an adaptive bi-population variant of CMA-ES that alternates bet
 
 Algorithm name : ``"BIPOP_aCMAES"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+
+- ``population_size``: 0
 
   .. note:: Number of offspring sampled each generation. ``0`` derives the default value based on the dimensionality of the problem.
 
-- ``max_iterations``: 100000
+- ``rel_initial_step``: 0.3
 
-  .. note:: Maximum number of iterations (generations) allowed per run.
+  .. note:: Initial global step size, scaled by the average bound width.
 
-- ``initial_step``: 0.3
+- ``x_tol``: 1e-8
 
-  .. note:: Initial global step size (sigma), scaled by the average bound width.
+  .. note:: Restart trigger based on the effective step size.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Restart trigger based on relative objective-value spread of evaluated offspring.
+
+- ``max_restarts``: -1
+
+  .. note:: Maximum number of restarts. ``-1`` means unlimited restarts.
+
+- ``bound_strategy``: ``reflect-random``
+
+  .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+
+RCMAES
+------
+RCMAES is a robust restart CMA-ES variant with active covariance updates and exclusion-based restart sampling.
+
+Algorithm name : ``"RCMAES"``
+
+Parameters :
+
+
+- ``population_size``: 0
+
+  .. note:: Number of offspring sampled each generation. ``0`` chooses a budget- and dimension-dependent default.
+
+- ``rel_initial_step``: 0.3
+
+  .. note:: Initial global step size, scaled by the average bound width.
+
+- ``x_tol``: 1e-8
+
+  .. note:: Restart trigger based on the effective step size.
+
+- ``f_tol``: -1.0
+
+  .. note:: Restart trigger based on relative objective-value spread of evaluated offspring.
+
+- ``max_restarts``: -1
+
+  .. note:: Maximum number of restarts. ``-1`` means unlimited restarts.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy for infeasible samples. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 
 Adaptive Restart-Refine Differential Evolution (ARRDE)
 ------------------------------------------------------
-ARRDE is an extension of the Differential Evolution algorithm with adaptive restart and refinement strategies. 
+ARRDE is an extension of the Differential Evolution algorithm with adaptive restart and refinement strategies.
 
 Algorithm name : ``"ARRDE"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
 
-  .. note:: Initial population size. If set to ``0``, ARRDE computes  
+- ``population_size``: 0
+
+  .. note:: Initial population size. If set to ``0``, ARRDE computes
 
                 .. math::
 
                     N = \max\!\left(2D,\; \operatorname{clip}\big(D \cdot m(\eta), 4, 3000\big)\right)
 
-                where :math:`D` is dimensionality, :math:`\eta = \tfrac{N_{\text{maxevals}}}{D}`, and  
+                where :math:`D` is dimensionality, :math:`\eta = \tfrac{N_{\text{maxevals}}}{D}`, and
 
                 .. math::
 
-                    m(\eta) = 
+                    m(\eta) =
                     \begin{cases}
                         2.0, & \log_{10} \eta \le 2,\\
                         2.0 + 5.756 (\log_{10} \eta - 2)^{1.609}, & \text{otherwise.}
                     \end{cases}
 
-                :math:`N_{\text{maxevals}}` is the maximum number of function evaluations. 
+                :math:`N_{\text{maxevals}}` is the maximum number of function evaluations.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``bound_strategy``: ``reflect-random``
 
-  .. note:: Method for handling boundary violations. Available strategies:  
+  .. note:: Method for handling boundary violations. Available strategies:
                     ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
 
@@ -441,9 +581,10 @@ Reference : J. Brest, M. S. Maučec and B. Bošković, "Differential Evolution A
 
 Algorithm name : ``"j2020"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0 
+
+- ``population_size``: 0
 
   .. note:: Initial population size (N). If set to ``0``, it will be automatically determined as follows:
 
@@ -451,21 +592,21 @@ Parameters :
 
                         N = 8 \cdot D
 
-- ``tau1``: 0.1  
+- ``tau1``: 0.1
 
-  .. note:: The value of *tau1* variable. The value must be between 0 and 1. 
+  .. note:: The value of *tau1* variable. The value must be between 0 and 1.
 
-- ``tau2``: 0.1  
+- ``tau2``: 0.1
 
-  .. note:: The value of *tau1* variable. The value must be between 0 and 1. 
+  .. note:: The value of *tau1* variable. The value must be between 0 and 1.
 
-- ``myEqs``: 0.4  
+- ``myEqs``: 0.4
 
-  .. note:: The value of *myEqs* variable. The value must be between 0 and 1. 
+  .. note:: The value of *myEqs* variable. The value must be between 0 and 1.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``bound_strategy``: ``reflect-random``
 
-  .. note:: Method for handling boundary violations. Available strategies:  
+  .. note:: Method for handling boundary violations. Available strategies:
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 LSRTDE Algorithm
@@ -476,9 +617,14 @@ The LSRTDE algorithm. Designed to solve CEC2024.
 
 Algorithm name : ``"LSRTDE"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: nitial population size (N). If set to ``0``, it will be automatically determined as follows:
 
@@ -488,18 +634,71 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``memory_size``: 5  
+- ``memory_size``: 5
 
   .. note:: Memory size for storing the values of ``CR`` and ``F``.
 
-- ``success_rate``: 0.5  
+- ``success_rate``: 0.5
 
   .. note:: The success rate required for selecting an individual for the next generation.
 
-- ``bound_strategy``: ``random``  
+- ``x_tol``: 1e-8
 
-  .. note:: Method for handling boundary violations. Available strategies:  
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``random``
+
+  .. note:: Method for handling boundary violations. Available strategies:
                     ``"random"``, ``"reflect-random"``, ``"clip"``.
+
+RDEX Algorithm
+--------------
+RDEX is a differential evolution variant with rank-driven selection and an elite-bias hybrid mutation mechanism.
+
+Algorithm name : ``"RDEX"``
+
+Parameters :
+
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size. ``0`` selects the algorithm's heuristic default.
+
+- ``memory_size``: 5
+
+  .. note:: Memory size for adaptive control parameters.
+
+- ``success_rate``: 0.5
+
+  .. note:: Success-rate threshold used by the adaptive mechanism.
+
+- ``eb_hybrid_rate_init``: 0.7
+
+  .. note:: Initial elite-bias hybridization rate.
+
+- ``perturbation_rate``: 0.4
+
+  .. note:: Perturbation probability used by the RDEX mutation mechanism.
+
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``random``
+
+  .. note:: Method for handling boundary violations. Available strategies: ``"random"``, ``"reflect-random"``, ``"clip"``.
 
 NLSHADE-RSP Algorithm
 ----------------------
@@ -509,11 +708,16 @@ NLSHADE-RSP is an extension of the SHADE algorithm designed to solve CEC2021 pro
 
 Algorithm name : ``"NLSHADE_RSP"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
 
-  .. note:: Initial population size (N). If set to `0`, it will be automatically determined. 
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size (N). If set to `0`, it will be automatically determined.
 
                 .. math::
 
@@ -521,17 +725,70 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``memory_size``: 100  
+- ``memory_size``: 100
 
-  .. note:: Memory size for storing the values of ``CR`` and ``F`` 
+  .. note:: Memory size for storing the values of ``CR`` and ``F``
 
-- ``archive_size_ratio``: 2.6  
+- ``archive_size_ratio``: 2.6
 
   .. note:: The ratio of the archive size relative to the population size.
 
-- ``bound_strategy``: ``reflect-random`` 
+- ``minimum_population_size``: 4
+
+  .. note:: Minimum population size used during population reduction.
+
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
+
+NLSHADE-LBC Algorithm
+---------------------
+NLSHADE-LBC is an NL-SHADE variant with linear population reduction and local-best crossover behavior.
+
+Algorithm name : ``"NLSHADE_LBC"``
+
+Parameters :
+
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size. ``0`` selects the algorithm's heuristic default.
+
+- ``minimum_population_size``: 4
+
+  .. note:: Minimum population size used during population reduction.
+
+- ``memory_size``: 0
+
+  .. note:: Success-history memory size. ``0`` applies the heuristic ``20 * D``.
+
+- ``archive_size_ratio``: 1.0
+
+  .. note:: The ratio of the archive size relative to the population size.
+
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``midpoint-target``
+
+  .. note:: Boundary handling policy used by this variant.
 
 JADE Algorithm
 --------------
@@ -541,9 +798,14 @@ JADE is a variant of Differential Evolution that introduces adaptive strategies 
 
 Algorithm name : ``"JADE"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Initial population size (N). If set to ``0``, it will be automatically determined as follows:
 
@@ -553,34 +815,38 @@ Parameters :
                 - If :math:`50 < D \leq 70`, then :math:`N = 300`.
                 - Else, :math:`N = 400`.
 
-- ``c``: 0.1  
+- ``c``: 0.1
 
-  .. note::  The value of *c* variable. The value must be between 0 and 1. 
+  .. note::  The value of *c* variable. The value must be between 0 and 1.
 
-- ``mutation_strategy``: ``current_to_pbest_A_1bin``  
+- ``mutation_strategy``: ``current_to_pbest_A_1bin``
 
-  .. note::  Mutation strategy used in the optimization process. Available strategies:  
-                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
-                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,  
+  .. note::  Mutation strategy used in the optimization process. Available strategies:
+                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,
+                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,
                     ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``.
 
-- ``archive_size_ratio``: 1.0  
+- ``archive_size_ratio``: 1.0
 
   .. note:: The ratio of the archive size relative to the population size.
 
-- ``minimum_population_size``: 4  
+- ``minimum_population_size``: 4
 
   .. note:: The minimum population size.
 
-- ``reduction_strategy``: ``linear``  
+- ``reduction_strategy``: ``linear``
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on population fitness values.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -592,9 +858,14 @@ The jSO algorithm is a variant of LSHADE, designed to solve CEC2017 problems.
 
 Algorithm name : ``"jSO"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
 
   .. note:: Initial population size (N). If set to `0`, it will be automatically determined as:
 
@@ -604,27 +875,31 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``memory_size``: 5  
+- ``memory_size``: 5
 
   .. note:: Memory size for storing the values of ``CR`` and ``F``.
 
-- ``archive_size_ratio``: 1.0  
+- ``archive_size_ratio``: 1.0
 
   .. note:: The ratio of the archive size relative to the population size.
 
-- ``minimum_population_size``: 4  
+- ``minimum_population_size``: 4
 
   .. note:: The minimum population size.
 
-- ``reduction_strategy``: ``linear``  
+- ``reduction_strategy``: ``linear``
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Diversity-based convergence tolerance on population fitness values.
+  .. note:: Coordinate-spread convergence tolerance.
 
-- ``bound_strategy``: ``random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``random``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -636,11 +911,16 @@ Linear Population Reduction - Success History Adaptive Differential Evolution (L
 
 Algorithm name : ``"LSHADE"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
 
-  .. note:: Initial population size (N). If set to `0`, it will be automatically determined. 
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size (N). If set to `0`, it will be automatically determined.
 
                 .. math::
 
@@ -648,30 +928,38 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``memory_size``: 6  
+- ``memory_size``: 6
 
   .. note:: Memory size for storing the values of ``CR`` and ``F``.
 
-- ``mutation_strategy``: ``current_to_pbest_A_1bin``  
+- ``mutation_strategy``: ``current_to_pbest_A_1bin``
 
-  .. note:: Mutation strategy used in the optimization process. Available strategies:  
-                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,  
-                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,  
+  .. note:: Mutation strategy used in the optimization process. Available strategies:
+                    ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``,
+                    ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``,
                     ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``.
 
-- ``archive_size_ratio``: 2.6  
+- ``archive_size_ratio``: 2.6
 
   .. note:: The ratio of the archive size relative to the population size.
 
-- ``minimum_population_size``: 4  
+- ``minimum_population_size``: 4
 
   .. note:: The minimum population size.
 
-- ``reduction_strategy``: ``linear``  
+- ``reduction_strategy``: ``linear``
 
   .. note:: The strategy for reducing the population size over time. Options include linear, exponential, or agsk.
 
-- ``bound_strategy``: ``random``  
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``random``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -685,9 +973,14 @@ Algorithm name : ``"IMODE"``
 
 Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
 
-  .. note:: Initial population size. If set to ``0``, it follows the IMODE rule  
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size. If set to ``0``, it follows the IMODE rule
 
                 .. math::
 
@@ -695,19 +988,27 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``minimum_population_size``: 4  
+- ``minimum_population_size``: 4
 
   .. note:: Terminal population size used during linear reduction. Must be at least 4.
 
-- ``memory_size``: 0  
+- ``memory_size``: 0
 
   .. note:: Size of the success-history memory for adaptive parameters. ``0`` applies the heuristic ``20 \cdot D``.
 
-- ``archive_size_ratio``: 2.6  
+- ``archive_size_ratio``: 2.6
 
   .. note:: Archive size relative to the population size.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Boundary handling policy. Available strategies: ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
@@ -721,9 +1022,14 @@ Algorithm name : ``"AGSK"``
 
 Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
 
-  .. note:: Initial population size (N). If set to `0`, it follows the reference rule  
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size (N). If set to `0`, it follows the reference rule
 
                 .. math::
 
@@ -734,11 +1040,19 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``minimum_population_size``: 12  
+- ``minimum_population_size``: 12
 
   .. note:: Minimum population size allowed during AGSK's nonlinear reduction schedule. Must be >= 4.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``x_tol``: 1e-8
+
+  .. note:: Coordinate-spread convergence tolerance.
+
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread convergence tolerance.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Method for handling boundary violations. Available strategies: ``"random"``, ``"reflect"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``, ``"none"``.
 
@@ -748,11 +1062,16 @@ The Artificial Bee Colony (ABC) algorithm is a swarm intelligence-based optimiza
 
 Algorithm name : ``"ABC"``
 
-Parameters : 
+Parameters :
 
-- ``population_size``: 0  
+- ``maxiters``: -1
 
-  .. note:: Initial population size (N). If set to `0`, it will be automatically determined. 
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+
+- ``population_size``: 0
+
+  .. note:: Initial population size (N). If set to `0`, it will be automatically determined.
 
                 .. math::
 
@@ -760,15 +1079,11 @@ Parameters :
 
                 where *D* is the dimensionality of the problem.
 
-- ``limit``: 100  
+- ``limit``: 100
 
   .. note:: Scout trigger threshold. A food source is reinitialised after this many unsuccessful trials.
 
-- ``convergence_tol``: 1e-4
-
-  .. note:: Diversity-based convergence tolerance on colony fitness values.
-
-- ``bound_strategy``: ``reflect-random``  
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -780,29 +1095,33 @@ Dual Annealing combines simulated annealing with local search to provide a flexi
 
 Algorithm name : ``"DA"``
 
-Parameters : 
+Parameters :
 
-- ``acceptance_par``: -5.0  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+- ``acceptance_par``: -5.0
 
   .. note:: The acceptance parameter controlling the probability of accepting worse solutions. The value must be between -1.0e+4 and -5.
 
-- ``visit_par``: 2.67  
+- ``visit_par``: 2.67
 
   .. note:: The parameter controlling the annealing rate during the search. The value must be between 1.0 and 3.0.
 
-- ``initial_temp``: 5230.0  
+- ``initial_temp``: 5230.0
 
   .. note:: The initial temperature for the annealing process. The value must be between 0.01 and 5.0e+4.
 
-- ``restart_temp_ratio``: 2e-5  
+- ``restart_temp_ratio``: 2e-5
 
   .. note:: The temperature ratio for restart condition. The value must be between 0 and 1.
 
-- ``use_local_search``: true  
+- ``use_local_search``: true
 
   .. note:: Whether to use local search (e.g., L-BFGS-B) to refine the solutions.
 
-- ``local_search_algo``: ``L_BFGS_B`` 
+- ``local_search_algo``: ``L_BFGS_B``
 
   .. note:: The local search algorithm to be used. Available : ``"NelderMead"`` and ``"L_BFGS_B"``
 
@@ -814,11 +1133,15 @@ Parameters :
 
   .. note:: Number of sample points used by the local-search derivative approximation. Even values are rounded up internally.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Objective-space convergence tolerance used by the annealing routine.
+  .. note:: Coordinate-spread convergence tolerance between the best and current annealing candidates.
 
-- ``bound_strategy``: ``periodic``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread tolerance used by the annealing routine.
+
+- ``bound_strategy``: ``periodic``
 
   .. note:: Method for handling boundary violations. Available strategies:  ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -830,17 +1153,25 @@ The Nelder-Mead algorithm is a derivative-free optimization method that relies o
 
 Algorithm name : ``"NelderMead"``
 
-Parameters : 
+Parameters :
 
-- ``locality_factor``: 0.05  
+- ``maxiters``: -1
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+- ``locality_factor``: 0.05
 
   .. note:: The factor controlling the step size for reflection and expansion during optimization.
 
-- ``convergence_tol``: 1e-4
+- ``x_tol``: 1e-8
 
-  .. note:: Simplex-size / function-spread convergence tolerance used by the Nelder-Mead stopping test.
+  .. note:: Coordinate-spread convergence tolerance across the simplex.
 
-- ``bound_strategy``: ``reflect-random``  
+- ``f_tol``: -1.0
+
+  .. note:: Relative objective-value spread tolerance across the simplex.
+
+- ``bound_strategy``: ``reflect-random``
 
   .. note:: Method for handling boundary violations. Available strategies:   ``"random"``, ``"reflect-random"``, ``"clip"``, ``"periodic"``.
 
@@ -849,7 +1180,7 @@ L-BFGS-B Algorithm
 
 L-BFGS-B is a quasi-Newton method that approximates the Hessian matrix while handling bound constraints. The implementation here utilizes the back-end code from the `LBFGSpp` library (`https://github.com/yixuan/LBFGSpp`), which provides L-BFGS-B updates and Hessian approximation functionality.
 
-Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed. 
+Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed.
 
 Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
 
@@ -859,47 +1190,47 @@ Algorithm Name : ``"L_BFGS_B"``
 
 Parameters
 
-- **``max_iterations``**: *100000*  
+- **``maxiters``**: *-1*
 
-  .. note:: The maximum number of iterations allowed for the algorithm.
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
 
-- **``m``**: *10*  
+- **``m``**: *10*
 
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
-- **``g_epsilon``**: *1e-5*  
+- **``g_epsilon``**: *1e-5*
 
   .. note:: The absolute gradient convergence tolerance.
 
-- **``g_epsilon_rel``**: *0.0*  
+- **``g_epsilon_rel``**: *0.0*
 
   .. note:: The relative gradient convergence tolerance.
 
-- **``f_reltol``**: *1e-9*  
+- **``f_reltol``**: *1e-9*
 
   .. note:: The function value convergence tolerance.
 
-- **``max_linesearch``**: *20*  
+- **``max_linesearch``**: *20*
 
   .. note:: The maximum number of iterations allowed during line search.
 
-- **``c_1``**: *1e-3*  
+- **``c_1``**: *1e-3*
 
   .. note:: The first Wolfe condition parameter for line search.
 
-- **``c_2``**: *0.9*  
+- **``c_2``**: *0.9*
 
   .. note:: The second Wolfe condition parameter for line search.
 
-- **``func_noise_ratio``**: *0.0*  
+- **``func_noise_ratio``**: *0.0*
 
   .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
-- **``N_points_derivative``**: *3*  
+- **``N_points_derivative``**: *3*
 
-  .. note:: The number of sample points used for derivative calculations.  
-            If set to an even number, it is automatically increased by 1 to make it odd.  
-            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
+  .. note:: The number of sample points used for derivative calculations.
+            If set to an even number, it is automatically increased by 1 to make it odd.
+            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:
             **1 + D * (N - 1)**, where ``D`` is the dimensionality of the problem.
 
 
@@ -908,7 +1239,7 @@ L-BFGS Algorithm
 
 L-BFGS is a quasi-Newton method that approximates the Hessian matrix for *unconstrained* optimization rpoblem. The implementation here utilizes the back-end code from the `LBFGSpp` library (`https://github.com/yixuan/LBFGSpp`), which provides L-BFGS updates and Hessian approximation functionality.
 
-Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed. 
+Minion implements a customized **derivative calculation** method that ensures both **vectorization** and **noise robustness**. To improve stability under noise, the derivative is computed using an **adaptive step size**, and a **noise-robust Lanczos derivative** is employed.
 
 Additionally, **function calls are vectorized**, meaning the objective function and its derivative can be evaluated in a **single batch**. This batch execution can be further parallelized using **multithreading** or **multiprocessing**, leading to significant computational efficiency improvements.
 
@@ -918,45 +1249,45 @@ Algorithm Name : ``"L_BFGS"``
 
 Parameters
 
-- **``max_iterations``**: *100000*  
+- **``maxiters``**: *-1*
 
-  .. note:: The maximum number of iterations allowed for the algorithm.
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
 
-- **``m``**: *10*  
+- **``m``**: *10*
 
   .. note:: The number of previous iterations used to approximate the Hessian matrix.
 
-- **``g_epsilon``**: *1e-5*  
+- **``g_epsilon``**: *1e-5*
 
   .. note:: The absolute gradient convergence tolerance.
 
-- **``g_epsilon_rel``**: *0.0* 
+- **``g_epsilon_rel``**: *0.0*
 
   .. note:: The relative gradient convergence tolerance.
 
-- **``f_reltol``**: *1e-9*  
+- **``f_reltol``**: *1e-9*
 
   .. note:: The function value convergence tolerance.
 
-- **``max_linesearch``**: *20* 
+- **``max_linesearch``**: *20*
 
   .. note:: The maximum number of iterations allowed during line search.
 
-- **``c_1``**: *1e-3*  
+- **``c_1``**: *1e-3*
 
   .. note:: The first Wolfe condition parameter for line search.
 
-- **``c_2``**: *0.9*  
+- **``c_2``**: *0.9*
 
   .. note:: The second Wolfe condition parameter for line search.
 
-- **``func_noise_ratio``**: *0.0*  
+- **``func_noise_ratio``**: *0.0*
 
   .. note:: Noise level (ratio), defined as the deviation of the function value from its ideal smooth counterpart, relative to the function value. If the function is smooth, set this to zero.
 
-- **``N_points_derivative``**: *3*  
+- **``N_points_derivative``**: *3*
 
-  .. note:: The number of sample points used for derivative calculations.  
-            If set to an even number, it is automatically increased by 1 to make it odd.  
-            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:  
+  .. note:: The number of sample points used for derivative calculations.
+            If set to an even number, it is automatically increased by 1 to make it odd.
+            Given ``N``, the total function call batch size for one function evaluation and derivative calculation is computed as:
             **1 + D * (N - 1)**, where ``D`` is the dimensionality of the problem.

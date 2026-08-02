@@ -83,8 +83,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &Differential_Evolution::meanCR)
         .def_readonly("meanF", &Differential_Evolution::meanF)
         .def_readonly("stdCR", &Differential_Evolution::stdCR)
-        .def_readonly("stdF", &Differential_Evolution::stdF)
-        .def_readonly("diversity", &Differential_Evolution::diversity);
+        .def_readonly("stdF", &Differential_Evolution::stdF);
 
     py::class_<j2020, MinimizerBase>(m, "j2020")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -148,8 +147,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &LSHADE::meanCR)
         .def_readonly("meanF", &LSHADE::meanF)
         .def_readonly("stdCR", &LSHADE::stdCR)
-        .def_readonly("stdF", &LSHADE::stdF)
-        .def_readonly("diversity", &LSHADE::diversity);
+        .def_readonly("stdF", &LSHADE::stdF);
 
     py::class_<AGSK, Differential_Evolution>(m, "AGSK")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -167,8 +165,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &AGSK::meanCR)
         .def_readonly("meanF", &AGSK::meanF)
         .def_readonly("stdCR", &AGSK::stdCR)
-        .def_readonly("stdF", &AGSK::stdF)
-        .def_readonly("diversity", &AGSK::diversity);
+        .def_readonly("stdF", &AGSK::stdF);
 
     py::class_<IMODE, Differential_Evolution>(m, "IMODE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -186,8 +183,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &IMODE::meanCR)
         .def_readonly("meanF", &IMODE::meanF)
         .def_readonly("stdCR", &IMODE::stdCR)
-        .def_readonly("stdF", &IMODE::stdF)
-        .def_readonly("diversity", &IMODE::diversity);
+        .def_readonly("stdF", &IMODE::stdF);
 
     py::class_<LSHADE_cnEpSin, Differential_Evolution>(m, "LSHADE_cnEpSin")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -205,8 +201,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &LSHADE_cnEpSin::meanCR)
         .def_readonly("meanF", &LSHADE_cnEpSin::meanF)
         .def_readonly("stdCR", &LSHADE_cnEpSin::stdCR)
-        .def_readonly("stdF", &LSHADE_cnEpSin::stdF)
-        .def_readonly("diversity", &LSHADE_cnEpSin::diversity);
+        .def_readonly("stdF", &LSHADE_cnEpSin::stdF);
 
     py::class_<jSO, Differential_Evolution>(m, "jSO")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -225,8 +220,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &jSO::meanCR)
         .def_readonly("meanF", &jSO::meanF)
         .def_readonly("stdCR", &jSO::stdCR)
-        .def_readonly("stdF", &jSO::stdF)
-        .def_readonly("diversity", &jSO::diversity);
+        .def_readonly("stdF", &jSO::stdF);
 
     py::class_<JADE, Differential_Evolution>(m, "JADE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -245,8 +239,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &JADE::meanCR)
         .def_readonly("meanF", &JADE::meanF)
         .def_readonly("stdCR", &JADE::stdCR)
-        .def_readonly("stdF", &JADE::stdF)
-        .def_readonly("diversity", &JADE::diversity);
+        .def_readonly("stdF", &JADE::stdF);
 
     py::class_<NLSHADE_RSP, MinimizerBase>(m, "NLSHADE_RSP")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -308,9 +301,7 @@ PYBIND11_MODULE(minionpycpp, m) {
             py::arg("seed") = -1, 
             py::arg("options") = std::map<std::string, ConfigValue>())
 
-        .def("optimize", &PSO::optimize, py::call_guard<py::gil_scoped_release>())
-        .def_readonly("diversity", &PSO::diversity)
-        .def_readonly("spatialDiversity", &PSO::spatialDiversity);
+        .def("optimize", &PSO::optimize, py::call_guard<py::gil_scoped_release>());
 
     py::class_<SPSO2011, PSO>(m, "SPSO2011")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
@@ -459,8 +450,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("meanCR", &ARRDE::meanCR)
         .def_readonly("meanF", &ARRDE::meanF)
         .def_readonly("stdCR", &ARRDE::stdCR)
-        .def_readonly("stdF", &ARRDE::stdF)
-        .def_readonly("diversity", &ARRDE::diversity);
+        .def_readonly("stdF", &ARRDE::stdF);
 
     py::class_<NelderMead, MinimizerBase>(m, "NelderMead")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,

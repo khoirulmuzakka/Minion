@@ -25,8 +25,8 @@ void Differential_Evolution::initialize  (){
         std::cerr << "Mutation strategy : "+mutation_strategy+" is not known or supported. ’best1bin' will be used instead\n";
         mutation_strategy="best1bin"; 
     };
-    p = std::vector<size_t>(populationSize, 1); 
-    stoppingTol = getConvergenceTolerance(options, 1e-4);
+    p = std::vector<size_t>(populationSize, 1);
+    configureConvergenceTolerances(options);
     hasInitialized=true;
 }
 
@@ -195,24 +195,7 @@ void Differential_Evolution::init (){
     updateBestSoFar(minionResult);
 };
 
-bool Differential_Evolution::checkStopping(){
-    double fmax = findMax(fitness); 
-    double fmin = findMin(fitness);
-    double meanFitness = calcMean(fitness);
-    double denom = std::fabs(meanFitness);
-    if (denom <= 1e-12) {
-        denom = std::max({std::fabs(fmax), std::fabs(fmin), 1.0});
-    }
-    double relRange = (fmax-fmin)/denom;
-    diversity.push_back(relRange);
-    bool stop = false;
-    if (relRange <= stoppingTol) {
-        stop= true;
-    };
-    return stop;
-};
-
-void Differential_Evolution::adaptParameters(){   
+void Differential_Evolution::adaptParameters(){
     meanCR.push_back(calcMean(CR));
     meanF.push_back(calcMean(F));
     stdCR.push_back(calcStdDev(CR));
@@ -240,6 +223,13 @@ MinionResult Differential_Evolution::optimize() {
         archive_fitness.clear();
         resetBestSoFar();
         init();
+        if (reachedMaxIterations(0)) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxIterationsReached,
+                "Maximum number of iterations reached.",
+                Nevals,
+                0);
+        }
         size_t iter=1;
         TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
         std::string finalMessage = "Maximum number of function evaluations reached.";
@@ -277,11 +267,17 @@ MinionResult Differential_Evolution::optimize() {
             }
             minionResult = MinionResult(best, best_fitness, iter, Nevals, TerminationStatus::Running, "");
             updateBestSoFar(minionResult);
+            const size_t completedIter = iter;
             iter++;
             if (shouldStopFromCallback(minionResult)) break;
-            if (support_tol && checkStopping()) {
+            if (support_tol && check_convergence(population, fitness)) {
                 finalStatus = TerminationStatus::Converged;
                 finalMessage = "Convergence criterion satisfied.";
+                break;
+            }
+            if (reachedMaxIterations(completedIter)) {
+                finalStatus = TerminationStatus::MaxIterationsReached;
+                finalMessage = "Maximum number of iterations reached.";
                 break;
             }
         } while(Nevals < maxevals);
