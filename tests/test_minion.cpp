@@ -126,7 +126,7 @@ bool check_status_streaming() {
 
     return status_stream.str() == "max_evaluations_reached" &&
            result_stream.str().find("status=converged") != std::string::npos &&
-           result.succeeded();
+           result.status == minion::TerminationStatus::Converged;
 }
 
 bool run_suite(

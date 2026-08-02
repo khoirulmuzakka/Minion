@@ -43,7 +43,7 @@ MinionPy is the Python interface to the Minion C++ optimization library. It focu
   Most implemented algorithms are population-based, making them suitable for parallelization. MinionPy is optimized for vectorized functions, enabling efficient use of multithreading and multiprocessing capabilities.
 
 - **Explicit termination status**  
-  Optimization results expose ``status`` so callers can distinguish convergence, evaluation budget exhaustion, callback stops, numerical errors, and other termination reasons. The status prints as a readable string; use ``succeeded()`` for the C++-matching success predicate.
+  Optimization results expose ``status`` so callers can distinguish convergence, evaluation budget exhaustion, callback stops, numerical errors, and other termination reasons. The status prints as a readable string.
 
 - **Callback early stopping**  
   Python callbacks receive a ``MinionResult``. Return ``True`` to stop optimization early, or return ``False``/``None`` to continue.

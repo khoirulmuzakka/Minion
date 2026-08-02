@@ -48,7 +48,10 @@ For example, let's define a simple **Sphere function** (sum of squares) to minim
 
 Choose an optimization algorithm from the available list:
 
-- **"DE"**, **"ARRDE"**, **"AGSK"**, **"LSHADE"**, **"JADE"**, **"jSO"**, **"NLSHADE_RSP"**, **"LSRTDE"**, **"j2020"**, **"NelderMead"**.
+- **Differential Evolution family**: ``"DE"``, ``"LSHADE"``, ``"LSHADE_cnEpSin"``, ``"JADE"``, ``"jSO"``, ``"j2020"``, ``"NLSHADE_RSP"``, ``"NLSHADE_LBC"``, ``"LSRTDE"``, ``"RDEX"``, ``"ARRDE"``, ``"IMODE"``, ``"AGSK"``.
+- **Swarm-based methods**: ``"PSO"``, ``"SPSO2011"``, ``"DMSPSO"``, ``"ABC"``.
+- **Evolution strategies**: ``"CMAES"``, ``"ACMAES"``, ``"BIPOP_aCMAES"``, ``"RCMAES"``.
+- **Classical and local-search methods**: ``"NelderMead"``, ``"DA"``, ``"L_BFGS_B"``, ``"L_BFGS"``.
 
 Suppose we use the **ARRDE** algorithm. We can instantiate it using:
 
@@ -139,7 +142,6 @@ The **MinionResult** object contains key information about the optimization proc
 - **`nit`**: Number of iterations.
 - **`nfev`**: Number of function evaluations.
 - **`status`**: Enum value describing why the algorithm stopped. It prints as a readable string such as `"converged"`, `"max_evaluations_reached"`, or `"callback_stopped"`.
-- **`succeeded()`**: Convenience method matching C++; returns `True` when `status` represents convergence.
 - **`message`**: A summary message about the optimization result.
 
 Example:

@@ -48,10 +48,6 @@ inline std::string terminationStatusToString(TerminationStatus status) {
     return "runtime_error";
 }
 
-inline bool terminationStatusSucceeded(TerminationStatus status) {
-    return status == TerminationStatus::Converged;
-}
-
 inline std::ostream& operator<<(std::ostream& os, TerminationStatus status) {
     os << terminationStatusToString(status);
     return os;
@@ -96,10 +92,6 @@ struct MinionResult {
         TerminationStatus status_,
         const std::string& message_)
         : x(x_), fun(fun_), nit(nit_), nfev(nfev_), status(status_), message(message_) {};
-
-    bool succeeded() const {
-        return terminationStatusSucceeded(status);
-    }
 
     /**
      * @brief Destructor.

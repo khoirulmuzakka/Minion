@@ -135,12 +135,6 @@ class MinionResult:
         self.status = minRes.status
         self.message = minRes.message
 
-    def succeeded(self):
-        """
-        Return True when the termination status represents successful convergence.
-        """
-        return self.status == TerminationStatus.Converged
-
     def __repr__(self):
         """
         Return a string representation of the `MinionResult` object.

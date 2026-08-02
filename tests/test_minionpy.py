@@ -132,9 +132,8 @@ def check_result_object_semantics():
     converged = make_minimizer("NelderMead").optimize()
     exhausted = make_minimizer("ARRDE", options={"minimum_population_size": 4}).optimize()
 
-    assert converged.succeeded()
-    assert not exhausted.succeeded()
     assert converged.status == minionpy.TerminationStatus.Converged
+    assert exhausted.status != minionpy.TerminationStatus.Converged
     assert "status=converged" in repr(converged)
 
 

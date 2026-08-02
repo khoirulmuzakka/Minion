@@ -111,7 +111,7 @@ This script uses a small numbered runner and prints output in the form ``Test i/
 The Python test verifies that:
 
 - ``TerminationStatus`` prints as readable strings
-- ``MinionResult`` exposes readable status values and correct ``succeeded()`` behavior
+- ``MinionResult`` exposes readable status values
 - callbacks receive a Python ``MinionResult``
 - callbacks returning ``True`` stop optimization with ``CallbackStopped``
 - callbacks returning ``False`` or ``None`` continue optimization

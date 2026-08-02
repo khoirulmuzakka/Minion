@@ -55,7 +55,6 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readwrite("nit", &MinionResult::nit)
         .def_readwrite("nfev", &MinionResult::nfev)
         .def_readwrite("status", &MinionResult::status)
-        .def("succeeded", &MinionResult::succeeded)
         .def_readwrite("message", &MinionResult::message);
 
     py::class_<MinimizerBase>(m, "MinimizerBase")

@@ -60,7 +60,6 @@ Understanding MinionResult
 - ``nit``: number of iterations/generations completed.
 - ``nfev``: number of objective evaluations.
 - ``status``: enum value describing why the algorithm stopped.
-- ``succeeded()``: convenience method derived from ``status``.
 - ``message``: termination message (if provided by the algorithm).
 
 Example:
@@ -78,7 +77,6 @@ For custom formatting, access the fields directly:
 .. code-block:: cpp
 
     std::cout << "status: " << res.status << "\n";
-    std::cout << "succeeded: " << std::boolalpha << res.succeeded() << "\n";
     std::cout << "fun: " << res.fun << "\n";
     std::cout << "nit: " << res.nit << ", nfev: " << res.nfev << "\n";
     std::cout << "x_best[0]: " << (res.x.empty() ? 0.0 : res.x[0]) << "\n";

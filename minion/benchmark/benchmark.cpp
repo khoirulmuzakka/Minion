@@ -658,7 +658,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                 const Job job = jobs[job_index];
                 std::unique_ptr<MinEvLogger> logger;
                 double fval = std::numeric_limits<double>::infinity();
-                bool succeeded = false;
+                bool jobSolved = false;
 
                 try {
                     if (mode == minion::BenchmarkMode::Cec) {
@@ -722,7 +722,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                     }
 
                     results[static_cast<size_t>(job.run_index)][job.function_index] = fval;
-                    succeeded = true;
+                    jobSolved = true;
                 } catch (const std::exception& e) {
                     std::lock_guard<std::mutex> lock(coutMutex);
                     std::cerr << "Error optimizing function F" << job.function_number
@@ -735,7 +735,7 @@ minion::BenchmarkResult run_benchmark(const minion::BenchmarkConfig& config) {
                     std::cout << format_progress_bar(done, jobs.size(), progress_start)
                               << "  Best F" << std::setfill('0') << std::setw(static_cast<int>(function_label_width))
                               << std::right << job.function_number << " : "
-                              << std::setfill(' ') << (succeeded ? format_scientific(fval, acc) : std::string("failed"))
+                              << std::setfill(' ') << (jobSolved ? format_scientific(fval, acc) : std::string("failed"))
                               << std::endl;
                 }
             }
