@@ -180,9 +180,13 @@ void Dual_Annealing::step (int iter, double temp){
             throw std::runtime_error("Unknown local search algorithm.");
         };
         Nevals += minionResult.nfev;
-        updateBestSoFar(minionResult);
 
         //std::cout << "DA : LS : " << best_E << " " << minionResult.fun << " " << Nevals << " " << minionResult.nfev << " "<< N_no_improve<<"\n";
+        if (minionResult.status == TerminationStatus::CallbackStopped) {
+            minionResult.nfev = Nevals;
+            updateBestSoFar(minionResult);
+            return;
+        }
         if (minionResult.fun<best_E){
             best_cand = minionResult.x;
             best_E = minionResult.fun;
@@ -190,10 +194,8 @@ void Dual_Annealing::step (int iter, double temp){
             current_E = best_E;
             N_no_improve=0;
         }
-    }
-
-    if (minionResult.status == TerminationStatus::CallbackStopped) {
-        return;
+        minionResult = MinionResult(best_cand, best_E, iter, Nevals, TerminationStatus::Running, "");
+        updateBestSoFar(minionResult);
     }
 
     const bool converged = check_convergence({best_cand, current_cand}, {best_E, current_E});

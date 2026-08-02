@@ -428,6 +428,30 @@ def check_lbfgs_callbacks_stop():
         assert result.status == minionpy.TerminationStatus.CallbackStopped
 
 
+def check_lbfgs_line_search_fallback_stagnates():
+    cases = {
+        "L_BFGS": {"max_linesearch": 1, "c_1": 0.9, "c_2": 0.1},
+        "L_BFGS_B": {"max_linesearch": 0},
+    }
+    for algo, options in cases.items():
+        result = make_minimizer(
+            algo,
+            maxevals=80,
+            options={
+                **options,
+                "g_epsilon": 0.0,
+                "g_epsilon_rel": 0.0,
+                "f_reltol": 0.0,
+            },
+        ).optimize()
+        assert result.status == minionpy.TerminationStatus.Stagnated, (
+            algo,
+            result.status,
+            result.message,
+        )
+        assert "line search" in result.message, (algo, result.message)
+
+
 def check_rdex_direct_wrapper():
     direct = minionpy.RDEX(
         func=sphere_batch,
@@ -468,6 +492,7 @@ def main() -> int:
         ("CMA restart cap option works", check_cma_restart_cap_option),
         ("Dual Annealing callback works without local search", check_dual_annealing_callback_without_local_search),
         ("L-BFGS callbacks stop", check_lbfgs_callbacks_stop),
+        ("L-BFGS line-search fallback stagnates", check_lbfgs_line_search_fallback_stagnates),
         ("RDEX direct and generic wrappers run", check_rdex_direct_wrapper),
     ]
     return run_checks(checks)

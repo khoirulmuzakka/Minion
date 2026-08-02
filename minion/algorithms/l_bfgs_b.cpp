@@ -632,6 +632,7 @@ public:
         double best_dg = dg;
         Vector best_x = xp;
         Vector best_grad = grad;
+        bool sawNonFinite = false;
 
         step = std::clamp(step, param.min_step, std::min(step_max, param.max_step));
         for (int iter = 0; iter < param.max_linesearch; ++iter) {
@@ -640,6 +641,7 @@ public:
             dg = grad.dot(drt);
 
             if (!std::isfinite(fx) || !std::isfinite(dg)) {
+                sawNonFinite = true;
                 step = s.brackt ? (s.stx + 0.5 * (s.sty - s.stx)) : std::max(param.min_step, 0.5 * step);
                 continue;
             }
@@ -716,7 +718,9 @@ public:
             x = xp;
             fx = s.finit;
             dg = s.ginit;
-            message = "line search failed to find a usable step";
+            message = sawNonFinite
+                ? "line search encountered non-finite objective value or directional derivative"
+                : "line search failed to find a usable step";
             return false;
         }
         return true;
@@ -733,6 +737,7 @@ struct SolverCore {
     Vector drt;
     double projgnorm = 0.0;
     bool had_issue = false;
+    bool numerical_issue = false;
     std::string message;
 
     explicit SolverCore(const LBFGSBParam& p) : param(p) {}
@@ -833,6 +838,9 @@ double L_BFGS_B::fun_and_grad(const VectorXd& x, VectorXd& grad){
 
     auto F = func(X, data);
     Nevals += F.size();
+    if (F.size() != X.size() || !std::all_of(F.begin(), F.end(), [](double value) { return std::isfinite(value); })) {
+        throw std::runtime_error("Objective function returned non-finite value during L-BFGS-B evaluation.");
+    }
     double f = F[0];
     last_f = f;
 
@@ -899,6 +907,7 @@ MinionResult L_BFGS_B::optimize() {
         delete state;
         state = new InternalState(param);
         state->core.had_issue = false;
+        state->core.numerical_issue = false;
         state->core.message.clear();
 
         Vector lb(bounds.size()), ub(bounds.size());
@@ -990,12 +999,18 @@ MinionResult L_BFGS_B::optimize() {
                 if (!ls_ok) {
                     state->core.had_issue = true;
                     state->core.message = ls_message;
+                    if (ls_message.find("non-finite") != std::string::npos) {
+                        state->core.numerical_issue = true;
+                    }
                     break;
                 }
                 if (!ls_message.empty()) {
                     state->core.had_issue = true;
                     if (state->core.message.empty()) {
                         state->core.message = ls_message;
+                    }
+                    if (ls_message.find("non-finite") != std::string::npos) {
+                        state->core.numerical_issue = true;
                     }
                 }
 
@@ -1027,10 +1042,12 @@ MinionResult L_BFGS_B::optimize() {
             state->core.message = "stopped: maximum evaluations exceeded";
         } catch (const std::exception& e) {
             state->core.had_issue = true;
+            state->core.numerical_issue = true;
             state->core.message = std::string("stopped: ") + e.what();
             std::cerr << "[Warning] " << e.what() << std::endl;
         } catch (...) {
             state->core.had_issue = true;
+            state->core.numerical_issue = true;
             state->core.message = "stopped: unknown error";
             std::cerr << "[Warning] Unknown error." << std::endl;
         }
@@ -1048,9 +1065,12 @@ MinionResult L_BFGS_B::optimize() {
         } else if (param.max_iterations > 0 && k >= param.max_iterations) {
             status = TerminationStatus::MaxIterationsReached;
             message = "Maximum number of iterations reached.";
-        } else if (state->core.had_issue) {
+        } else if (state->core.numerical_issue) {
             status = TerminationStatus::NumericalError;
             if (message.empty()) message = "Numerical issue stopped L-BFGS-B.";
+        } else if (state->core.had_issue) {
+            status = TerminationStatus::Stagnated;
+            if (message.empty()) message = "L-BFGS-B could not make reliable local progress.";
         } else {
             message = "Relative function improvement is below tolerance.";
         }

@@ -148,6 +148,10 @@ public:
             x.noalias() = xp + step * drt;
             fx = f(x, grad);
             dg = grad.dot(drt);
+            if (!std::isfinite(fx) || !std::isfinite(dg)) {
+                message = "line search encountered non-finite objective value or directional derivative";
+                return false;
+            }
 
             if (fx - fx_init > step * test_decr || (step_lo > 0.0 && fx >= fx_lo)) {
                 step_hi = step;
@@ -183,6 +187,10 @@ public:
             x.noalias() = xp + step * drt;
             fx = f(x, grad);
             dg = grad.dot(drt);
+            if (!std::isfinite(fx) || !std::isfinite(dg)) {
+                message = "line search encountered non-finite objective value or directional derivative";
+                return false;
+            }
 
             if (fx - fx_init > step * test_decr || fx >= fx_lo) {
                 step_hi = step;
@@ -225,6 +233,7 @@ struct SolverCore {
     Vector drt;
     double gnorm = 0.0;
     bool had_issue = false;
+    bool numerical_issue = false;
     std::string message;
 
     explicit SolverCore(const LBFGSParam& p) : param(p) {}
@@ -293,6 +302,9 @@ double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
 
     auto F = func(X, data);
     Nevals += F.size();
+    if (F.size() != X.size() || !std::all_of(F.begin(), F.end(), [](double value) { return std::isfinite(value); })) {
+        throw std::runtime_error("Objective function returned non-finite value during L-BFGS evaluation.");
+    }
     double f = F[0];
     last_f = f;
 
@@ -357,6 +369,7 @@ MinionResult L_BFGS::optimize() {
         delete state;
         state = new InternalState(param);
         state->core.had_issue = false;
+        state->core.numerical_issue = false;
         state->core.message.clear();
 
         auto bestx = findBestPoint(x0);
@@ -417,11 +430,17 @@ MinionResult L_BFGS::optimize() {
                 if (!ls_ok) {
                     state->core.had_issue = true;
                     state->core.message = ls_message;
+                    if (ls_message.find("non-finite") != std::string::npos) {
+                        state->core.numerical_issue = true;
+                    }
                     break;
                 }
                 if (!ls_message.empty()) {
                     state->core.had_issue = true;
                     if (state->core.message.empty()) state->core.message = ls_message;
+                    if (ls_message.find("non-finite") != std::string::npos) {
+                        state->core.numerical_issue = true;
+                    }
                 }
 
                 state->core.gnorm = state->core.grad.norm();
@@ -443,6 +462,7 @@ MinionResult L_BFGS::optimize() {
                 state->core.bfgs.apply_Hv(state->core.grad, -1.0, state->core.drt);
                 if (!state->core.drt.allFinite() || state->core.drt.norm() == 0.0) {
                     state->core.had_issue = true;
+                    state->core.numerical_issue = true;
                     state->core.message = "stopped: inverse-Hessian direction became invalid";
                     break;
                 }
@@ -456,10 +476,12 @@ MinionResult L_BFGS::optimize() {
             state->core.message = "stopped: maximum evaluations exceeded";
         } catch (const std::exception& e) {
             state->core.had_issue = true;
+            state->core.numerical_issue = true;
             state->core.message = std::string("stopped: ") + e.what();
             std::cerr << "[Warning] " << e.what() << std::endl;
         } catch (...) {
             state->core.had_issue = true;
+            state->core.numerical_issue = true;
             state->core.message = "stopped: unknown error";
             std::cerr << "[Warning] Unknown error." << std::endl;
         }
@@ -477,9 +499,12 @@ MinionResult L_BFGS::optimize() {
         } else if (param.max_iterations > 0 && k >= param.max_iterations) {
             status = TerminationStatus::MaxIterationsReached;
             message = "Maximum number of iterations reached.";
-        } else if (state->core.had_issue) {
+        } else if (state->core.numerical_issue) {
             status = TerminationStatus::NumericalError;
             if (message.empty()) message = "Numerical issue stopped L-BFGS.";
+        } else if (state->core.had_issue) {
+            status = TerminationStatus::Stagnated;
+            if (message.empty()) message = "L-BFGS could not make reliable local progress.";
         } else {
             message = "Relative function improvement is below tolerance.";
         }

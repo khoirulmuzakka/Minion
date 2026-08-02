@@ -31,9 +31,28 @@ If all objective values are identical, the relative objective-value spread is tr
 case ``f_max == f_min == 0.0``. If the denominator is zero but the objective-value range is nonzero, the spread is
 treated as infinite and does not trigger ``f_tol`` convergence.
 
+Note that L-BFGS and L-BFGS-B have their own stopping criteria, which are specified in the algorithm options (``g_epsilon``, ``g_epsilon_rel``, ``f_reltol``).
+
+
+Meaning of ``converged``
+------------------------
+
+When ``result.status`` is ``converged``, it means the optimizer stopped because one of its configured convergence
+rules was satisfied. It does not mean that Minion has proven the returned point is the global optimum.
+
+For population, swarm, simplex, and offspring-based algorithms, ``converged`` usually means that either the active
+candidate coordinates are close enough according to ``x_tol`` or the active objective values are close enough
+according to ``f_tol``. Because the tolerance check uses ``or`` logic, satisfying either condition is enough to stop.
+
+For local-search algorithms such as ``L_BFGS`` and ``L_BFGS_B``, ``converged`` comes from their own criteria, such as
+gradient norm or relative objective improvement. These criteria indicate that the local search appears to have settled
+under the configured tolerances.
+
+In all cases, interpret ``converged`` as an algorithmic stopping reason: the search has become stationary or
+contracted enough under the selected tolerances. For solution quality, still inspect ``result.fun``, ``result.x``,
+and ``result.message`` against the accuracy required by your problem.
+
 The same ``x_tol`` / ``f_tol`` names are used for ``NelderMead`` and ``DA``. For ``CMAES`` and ``ACMAES``, coordinate
 spread is measured in the original bounded coordinates, even though the internal sampling uses normalized coordinates.
 For ``BIPOP_aCMAES`` and ``RCMAES``, the tolerance options are used as restart triggers; ``max_restarts = -1`` means
 unlimited restarts.
-
-Note that L-BFGS and L-BFGS-B have their own stopping criteria, which are specified in the algorithm options (``g_epsilon``, ``g_epsilon_rel``, ``f_reltol``).

@@ -1,4 +1,8 @@
 # Changelog
+## [1.9.0] - 2026-08-03
+### Added
+- Implemented x_tol, f_tol, and maxiters stopping control.
+
 ## [1.8.0] - 2026-07-29
 ### Changed
 - Reworked `MinionResult` to expose an enum-based termination status with readable string output in both C++ and Python.

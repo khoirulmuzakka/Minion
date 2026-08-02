@@ -5,6 +5,13 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.9.0 - 2026-08-03
+--------------------------
+
+**Added**
+
+- Implemented x_tol, f_tol, and maxiters stopping control.
+
 Version 1.8.0 - 2026-07-29
 --------------------------
 
