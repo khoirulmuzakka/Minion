@@ -1,4 +1,8 @@
 # Changelog
+## [1.9.1] - 2026-08-24
+### Added
+- Implemented gradient descent.
+
 ## [1.9.0] - 2026-08-03
 ### Added
 - Implemented x_tol, f_tol, and maxiters stopping control.

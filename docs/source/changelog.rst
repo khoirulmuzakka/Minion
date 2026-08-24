@@ -5,6 +5,13 @@ Changelog
    :local:
    :depth: 2
 
+Version 1.9.1 - 2026-08-24
+--------------------------
+
+**Added**
+
+- Implemented Gradient Descent. 
+
 Version 1.9.0 - 2026-08-03
 --------------------------
 

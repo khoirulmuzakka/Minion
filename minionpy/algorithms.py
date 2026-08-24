@@ -2683,7 +2683,7 @@ class Minimizer(MinimizerBase):
         canonical_algo = _normalize_algo_name(algo)
 
         if canonical_algo in ["NelderMead", "DA", "L_BFGS", "L_BFGS_B"] and (x0 is None):
-            raise RuntimeError("x0 must not be None or empty for Nelder-Mead to work!")
+            raise RuntimeError("x0 must not be None or empty!")
         
         super().__init__(func, bounds, x0, maxevals, callback, seed, options)
         self.optimizer = cppMinimizer(self._func_for_cpp, self.bounds, self.x0cpp, self.data, self._callback_for_cpp, canonical_algo, maxevals, self.seed, self.cpp_options)
