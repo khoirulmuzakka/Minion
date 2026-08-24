@@ -1234,6 +1234,116 @@ Parameters
             **1 + D * (N - 1)**, where ``D`` is the dimensionality of the problem.
 
 
+Gradient Descent
+----------------
+
+``GradientDescent`` is Minion's zeroth-order gradient optimizer for bounded black-box objectives. It estimates gradients from function evaluations and then applies one of three update rules:
+
+- ``"gd"`` for pure gradient descent.
+- ``"sgd"`` for stochastic / subsampled gradient updates.
+- ``"adam"`` for Adam-style adaptive first- and second-moment scaling.
+
+The gradient estimate can be formed either from coordinate finite differences or from random directional finite differences. Because the implementation is black-box and vectorized, each iteration evaluates the objective on a batch of perturbations, which can be useful when function calls are parallelized externally.
+
+Algorithm Name : ``"GradientDescent"``
+
+Alias : ``"GD"``
+
+Parameters
+
+- **``maxiters``**: *-1*
+
+  .. note:: Maximum number of algorithm iterations. ``-1`` disables the iteration cap.
+
+- **``base_learning_rate``**: *1e-2*
+
+  .. note:: Base step size. For ``"gd"`` and ``"sgd"``, this is the actual learning rate when ``lr_decay = 1``. For ``"adam"``, it is the global scaling factor applied after Adam's moment normalization.
+
+- **``update_rule``**: ``"adam"``
+
+  .. note:: Update scheme. Supported values are ``"gd"``, ``"sgd"``, and ``"adam"``.
+
+- **``gradient_estimator``**: ``"coordinate_fd"``
+
+  .. note:: Black-box gradient estimator. Supported values are ``"coordinate_fd"`` and ``"random_direction_fd"``.
+
+- **``use_line_search``**: *False*
+
+  .. note:: Enables Armijo backtracking on the proposed update. This is most useful for ``"gd"`` and ``"sgd"``, but it can also scale Adam steps.
+
+- **``max_linesearch``**: *8*
+
+  .. note:: Maximum number of geometric backtracking reductions. The solver tests up to ``max_linesearch + 1`` candidate scales per iteration, starting from the unscaled proposed step.
+
+- **``line_search_c1``**: *1e-4*
+
+  .. note:: Armijo sufficient-decrease constant.
+
+- **``line_search_rho``**: *0.5*
+
+  .. note:: Backtracking shrink factor :math:`\rho`. Each failed trial scales the proposed update by an additional factor of ``rho``.
+
+- **``N_points_derivative``**: *2*
+
+  .. note:: Number of points used by each one-dimensional finite-difference stencil.
+
+- **``fd_epsilon``**: *0.0*
+
+  .. note:: Optional absolute finite-difference step size. If ``0.0``, Minion chooses an adaptive step from the objective scale and machine precision.
+
+- **``func_noise_ratio``**: *1e-10*
+
+  .. note:: Relative noise estimate used when selecting an adaptive finite-difference step size.
+
+- **``gradient_samples``**: *16*
+
+  .. note:: Number of random directions sampled per iteration when ``gradient_estimator = "random_direction_fd"``. With central directional differences, the evaluation count is typically ``1 + 2 * gradient_samples`` per iteration, subject to boundary projection details.
+
+- **``coordinate_batch_size``**: *0*
+
+  .. note:: Number of coordinates differentiated per iteration when ``gradient_estimator = "coordinate_fd"``. ``0`` means use all coordinates. In ``"sgd"`` mode, ``0`` is promoted to ``1``.
+
+- **``beta1``**: *0.9*
+
+  .. note:: Adam first-moment coefficient.
+
+- **``beta2``**: *0.999*
+
+  .. note:: Adam second-moment coefficient.
+
+- **``epsilon``**: *1e-8*
+
+  .. note:: Small stabilizer added to Adam's denominator.
+
+- **``momentum``**: *0.0*
+
+  .. note:: Momentum factor used by the non-Adam update path. This affects ``"gd"`` and ``"sgd"``.
+
+- **``lr_decay``**: *1.0*
+
+  .. note:: Per-iteration multiplicative decay applied to ``base_learning_rate``.
+
+- **``g_tol``**: *1e-6*
+
+  .. note:: Gradient-norm convergence tolerance. Set to a negative value to disable this stopping test.
+
+- **``x_tol``**: *1e-8*
+
+  .. note:: Maximum-coordinate step tolerance between consecutive iterates.
+
+- **``f_tol``**: *-1.0*
+
+  .. note:: Relative objective-improvement tolerance. Set to a negative value to disable this stopping test.
+
+- **``bound_strategy``**: ``"clip"``
+
+  .. note:: Boundary handling policy applied after each update. GradientDescent currently uses projection by clipping to the box.
+
+.. note::
+
+   The legacy option name ``learning_rate`` is still accepted as an alias for ``base_learning_rate`` for backward compatibility.
+
+
 L-BFGS Algorithm
 ------------------
 

@@ -57,7 +57,9 @@ class DefaultSettings{
                 {"DA", "DA"},
                 {"DUALANNEALING", "DA"},
                 {"LBFGSB", "L_BFGS_B"},
-                {"LBFGS", "L_BFGS"}
+                {"LBFGS", "L_BFGS"},
+                {"GRADIENTDESCENT", "GradientDescent"},
+                {"GD", "GradientDescent"}
             };
 
             auto it = aliases.find(normalized);
@@ -333,7 +335,8 @@ class DefaultSettings{
             {"c_1",1e-3},
             {"c_2", 0.9}, 
             {"func_noise_ratio", 0.0}, 
-            {"N_points_derivative", 3}
+            {"N_points_derivative", 3},
+            {"fd_epsilon", 0.0}
         };
 
         std::map<std::string, ConfigValue> default_settings_LBFGS = {
@@ -346,7 +349,33 @@ class DefaultSettings{
             {"c_1",1e-3},
             {"c_2", 0.9}, 
             {"func_noise_ratio", 0.0}, 
-            {"N_points_derivative", 3}
+            {"N_points_derivative", 3},
+            {"fd_epsilon", 0.0}
+        };
+
+        std::map<std::string, ConfigValue> default_settings_GradientDescent = {
+            {"maxiters", -1},
+            {"base_learning_rate", 1e-2},
+            {"update_rule", std::string("adam")},
+            {"gradient_estimator", std::string("coordinate_fd")},
+            {"use_line_search", false},
+            {"max_linesearch", 8},
+            {"line_search_c1", 1e-4},
+            {"line_search_rho", 0.5},
+            {"N_points_derivative", 2},
+            {"fd_epsilon", 0.0},
+            {"func_noise_ratio", 1e-10},
+            {"gradient_samples", 16},
+            {"coordinate_batch_size", 0},
+            {"beta1", 0.9},
+            {"beta2", 0.999},
+            {"epsilon", 1e-8},
+            {"momentum", 0.0},
+            {"lr_decay", 1.0},
+            {"g_tol", 1e-6},
+            {"x_tol", 1e-8},
+            {"f_tol", -1.0},
+            {"bound_strategy", std::string("clip")}
         };
 
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {
@@ -374,7 +403,8 @@ class DefaultSettings{
                 {"RCMAES", default_settings_RCMAES},
                 {"DA", default_settings_DA},
                 {"L_BFGS_B", default_settings_LBFGSB},
-                {"L_BFGS", default_settings_LBFGS}
+                {"L_BFGS", default_settings_LBFGS},
+                {"GradientDescent", default_settings_GradientDescent}
             };
 
         std::map<std::string, ConfigValue> getDefaultSettings(std::string algo){

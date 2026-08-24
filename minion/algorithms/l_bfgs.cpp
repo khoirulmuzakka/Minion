@@ -260,58 +260,24 @@ double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
     if (Nevals > maxevals) throw MaxevalExceedError("Maxevals has been exceeded.");
     if (!state) throw std::runtime_error("L_BFGS internal state is not initialized.");
 
-    const int m = std::max(static_cast<int>(std::ceil((static_cast<double>(N_points) - 1.0) / 2.0)), 1);
     std::vector<double> x_vec(x.data(), x.data() + x.size());
-    std::vector<std::vector<double>> X;
-    X.push_back(x_vec);
+    BlackBoxGradientOptions gradient_options;
+    gradient_options.N_points = N_points;
+    gradient_options.func_noise_ratio = func_noise_ratio;
+    gradient_options.last_f = last_f;
+    gradient_options.fd_epsilon = fd_epsilon;
+    gradient_options.finite_diff_rel_step = fin_diff_rel_step;
+    gradient_options.estimator = "coordinate_fd";
+    gradient_options.curvature_diag = state->core.bfgs.compute_hessian_diagonal();
 
-    std::vector<double> hvec;
-    std::vector<double> sec_der = state->core.bfgs.compute_hessian_diagonal();
-    const double ferr = std::max(std::fabs(last_f), 1.0) * func_noise_ratio;
-    for (int i = 0; i < x.size(); i++) {
-        double h_min = std::pow(epsilon, 0.5) * std::max(1.0, std::fabs(x[i]));
-        double h_max = 0.01 * std::max(1.0, std::fabs(x[i]));
-        double curvature = std::max(std::fabs(sec_der[static_cast<size_t>(i)]), 1e-16);
-        double h_est = 2.0 * std::sqrt(std::max(ferr, 1e-32) / curvature);
-        double h = std::min(h_max, std::max(h_min, h_est));
-        if (h <= 0.0) {
-            h = std::min(h_max, std::max(h_min, fin_diff_rel_step * std::max(1.0, std::fabs(x[i]))));
-        }
-        hvec.push_back(h);
-    }
+    const BlackBoxGradientResult result = estimateBlackBoxGradient(func, data, x_vec, gradient_options);
+    Nevals += result.evaluations;
+    last_f = result.value;
 
-    if (N_points == 1) {
-        for (int i = 0; i < x.size(); i++) {
-            std::vector<double> xp = x_vec;
-            xp[i] += hvec[static_cast<size_t>(i)];
-            X.push_back(xp);
-        }
-    } else {
-        for (int i = 0; i < x.size(); i++) {
-            for (int j = 1; j <= m; j++) {
-                double h = hvec[static_cast<size_t>(i)];
-                std::vector<double> xpp = x_vec;
-                std::vector<double> xpm = x_vec;
-                xpp[i] += j * h;
-                xpm[i] -= j * h;
-                X.push_back(xpp);
-                X.push_back(xpm);
-            }
-        }
-    }
-
-    auto F = func(X, data);
-    Nevals += F.size();
-    if (F.size() != X.size() || !std::all_of(F.begin(), F.end(), [](double value) { return std::isfinite(value); })) {
-        throw std::runtime_error("Objective function returned non-finite value during L-BFGS evaluation.");
-    }
-    double f = F[0];
-    last_f = f;
-
-    size_t best_idx = findArgMin(F);
-    if (F[best_idx] < f_best) {
-        best = X[best_idx];
-        f_best = F[best_idx];
+    size_t best_idx = findArgMin(result.sampled_values);
+    if (result.sampled_values[best_idx] < f_best) {
+        best = result.sampled_points[best_idx];
+        f_best = result.sampled_values[best_idx];
         minionResult = MinionResult(best, f_best, 1, Nevals, TerminationStatus::Running, "");
         updateBestSoFar(minionResult);
         if (shouldStopFromCallback(minionResult)) {
@@ -319,25 +285,8 @@ double L_BFGS::fun_and_grad(const VectorXd& x, VectorXd& grad){
         }
     }
 
-    std::vector<double> grad_vec;
-    if (N_points == 1) {
-        for (int i = 0; i < x.size(); i++) grad_vec.push_back((F[static_cast<size_t>(i + 1)] - f) / (X[static_cast<size_t>(i + 1)][i] - x[i]));
-    } else {
-        int k = 1;
-        for (int i = 0; i < x.size(); i++) {
-            double h = hvec[static_cast<size_t>(i)];
-            double grad_val = 0.0;
-            for (int j = 1; j <= m; j++) {
-                double cj = j / (m * (m + 1) * (2.0 * m + 1));
-                grad_val += cj * (F[static_cast<size_t>(k)] - F[static_cast<size_t>(k + 1)]);
-                k += 2;
-            }
-            grad_vec.push_back(3.0 * grad_val / h);
-        }
-    }
-
-    grad = Eigen::Map<Eigen::VectorXd>(grad_vec.data(), static_cast<Eigen::Index>(grad_vec.size()));
-    return f;
+    grad = Eigen::Map<const Eigen::VectorXd>(result.gradient.data(), static_cast<Eigen::Index>(result.gradient.size()));
+    return result.value;
 }
 
 MinionResult L_BFGS::optimize() {
@@ -362,6 +311,7 @@ MinionResult L_BFGS::optimize() {
 
         N_points = options.get<int>("N_points_derivative", 1);
         func_noise_ratio = options.get<double>("func_noise_ratio", 1e-10);
+        fd_epsilon = options.get<double>("fd_epsilon", 0.0);
         Nevals = 0;
         f_best = std::numeric_limits<double>::max();
         best.clear();

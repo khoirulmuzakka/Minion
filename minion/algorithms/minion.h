@@ -22,6 +22,7 @@
 #include "dual_annealing.h"
 #include "l_bfgs_b.h"
 #include "l_bfgs.h"
+#include "gradient_descent.h"
 #include "pso.h"
 #include "spso2011.h"
 #include "dmspso.h"

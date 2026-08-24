@@ -432,6 +432,21 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readwrite("best_so_far", &MinimizerBase::best_so_far)
         .def("optimize", &L_BFGS::optimize, py::call_guard<py::gil_scoped_release>());
 
+    py::class_<GradientDescent, MinimizerBase>(m, "GradientDescent")
+        .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
+                      const std::vector<std::vector<double>>&, void*, std::function<bool(MinionResult*)>,
+                      size_t, int, std::map<std::string, ConfigValue> >(),
+            py::arg("func"),
+            py::arg("bounds"),
+            py::arg("x0") = std::vector<std::vector<double>>(),
+            py::arg("data") = nullptr,
+            py::arg("callback") = nullptr,
+            py::arg("maxevals") = 100000,
+            py::arg("seed") = -1,
+            py::arg("options") = std::map<std::string, ConfigValue>())
+        .def_readwrite("best_so_far", &MinimizerBase::best_so_far)
+        .def("optimize", &GradientDescent::optimize, py::call_guard<py::gil_scoped_release>());
+
     py::class_<ARRDE, Differential_Evolution>(m, "ARRDE")
         .def(py::init<MinionFunction, const std::vector<std::pair<double, double>>&,
                       const std::vector<std::vector<double>>&, void*, std::function<bool(MinionResult*)>,

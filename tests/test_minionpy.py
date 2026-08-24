@@ -46,6 +46,8 @@ ALGORITHMS = (
     "DA",
     "L_BFGS_B",
     "L_BFGS",
+    "GradientDescent",
+    "GD",
 )
 
 MAXEVALS = 180
@@ -69,6 +71,7 @@ TOLERANCE_STOP_ALGORITHMS = (
     "CMAES",
     "ACMAES",
     "DA",
+    "GradientDescent",
 )
 RESTART_TOLERANCE_ALGORITHMS = ("RCMAES", "BIPOP_aCMAES")
 RESTART_STRATEGY_ALGORITHMS = ("ARRDE", "j2020", "RCMAES", "BIPOP_aCMAES")
@@ -452,6 +455,31 @@ def check_lbfgs_line_search_fallback_stagnates():
         assert "line search" in result.message, (algo, result.message)
 
 
+def check_gradient_descent_backtracking_improves_large_step():
+    common_options = {
+        "update_rule": "gd",
+        "gradient_estimator": "coordinate_fd",
+        "base_learning_rate": 10.0,
+        "maxiters": 1,
+        "g_tol": -1.0,
+        "x_tol": -1.0,
+        "f_tol": -1.0,
+    }
+    without_ls = make_minimizer(
+        "GradientDescent",
+        maxevals=120,
+        options=common_options,
+    ).optimize()
+    with_ls = make_minimizer(
+        "GradientDescent",
+        maxevals=120,
+        options={**common_options, "use_line_search": True, "max_linesearch": 8},
+    ).optimize()
+
+    assert math.isfinite(with_ls.fun)
+    assert with_ls.fun < without_ls.fun, (without_ls.fun, with_ls.fun)
+
+
 def check_rdex_direct_wrapper():
     direct = minionpy.RDEX(
         func=sphere_batch,
@@ -493,6 +521,7 @@ def main() -> int:
         ("Dual Annealing callback works without local search", check_dual_annealing_callback_without_local_search),
         ("L-BFGS callbacks stop", check_lbfgs_callbacks_stop),
         ("L-BFGS line-search fallback stagnates", check_lbfgs_line_search_fallback_stagnates),
+        ("GradientDescent backtracking rescues an oversized step", check_gradient_descent_backtracking_improves_large_step),
         ("RDEX direct and generic wrappers run", check_rdex_direct_wrapper),
     ]
     return run_checks(checks)

@@ -98,3 +98,9 @@ Classical and Local Search Methods
 
 ``L_BFGS``
     Liu, D. C.; Nocedal, J., *On the Limited Memory Method for Large Scale Optimization*, Mathematical Programming B, 45(3), 503-528, 1989.
+
+``GradientDescent``
+    Zeroth-order gradient descent family for black-box box-constrained optimization in Minion, supporting pure GD, SGD-style updates, and Adam with finite-difference gradient estimators.
+
+``GD``
+    Alias for ``GradientDescent``.

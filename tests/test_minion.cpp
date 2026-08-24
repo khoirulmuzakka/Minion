@@ -89,6 +89,8 @@ const std::vector<std::string>& algorithms() {
         "DA",
         "L_BFGS_B",
         "L_BFGS",
+        "GradientDescent",
+        "GD",
     };
     return values;
 }

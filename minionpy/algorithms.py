@@ -20,6 +20,7 @@ from .minionpycpp import ABC as cppABC
 from .minionpycpp import Dual_Annealing as cppDual_Annealing
 from .minionpycpp import L_BFGS_B as cppL_BFGS_B
 from .minionpycpp import L_BFGS as cppL_BFGS
+from .minionpycpp import GradientDescent as cppGradientDescent
 from .minionpycpp import PSO as cppPSO
 from .minionpycpp import SPSO2011 as cppSPSO2011
 from .minionpycpp import DMSPSO as cppDMSPSO
@@ -97,6 +98,8 @@ def _normalize_algo_name(name: str) -> str:
         "DUALANNEALING": "DA",
         "LBFGSB": "L_BFGS_B",
         "LBFGS": "L_BFGS",
+        "GRADIENTDESCENT": "GradientDescent",
+        "GD": "GradientDescent",
     }
     try:
         return aliases[normalized]
@@ -1985,6 +1988,102 @@ class L_BFGS(MinimizerBase):
         This method runs the optimization algorithm and stores the result
         in `self.minionResult` only.
         """
+        self.minionResult = MinionResult(self.optimizer.optimize())
+        return self.minionResult
+
+
+class GradientDescent(MinimizerBase):
+    """
+    Zeroth-order gradient descent with configurable black-box gradient estimation.
+
+    The optimizer supports three update rules through ``options["update_rule"]``:
+    ``"gd"``, ``"sgd"``, and ``"adam"``. Gradient estimates come from either
+    coordinate finite differences or random directional finite differences.
+    The main step-size option is ``base_learning_rate``. The legacy key
+    ``learning_rate`` is still accepted for backward compatibility.
+    """
+
+    def __init__(self, func: Callable[[np.ndarray, Optional[object]], float],
+                 bounds: List[tuple[float, float]],
+                 x0: Optional[List[List[float]]] = None,
+                 maxevals: int = 100000,
+                 callback: Optional[Callable[[Any], bool]] = None,
+                 seed: Optional[int] = None,
+                 options: Dict[str, Any] = None) -> None:
+        """
+        Initialize black-box gradient descent.
+
+        Parameters
+        ----------
+        func : callable
+            Vectorized objective function ``func(X) -> list[float]``.
+        bounds : list of tuple
+            Box constraints for each decision variable.
+        x0 : list[list[float]], optional
+            Optional starting points. If multiple guesses are supplied, the best
+            one is selected before the first update.
+        maxevals : int, optional
+            Maximum number of function evaluations.
+        callback : callable, optional
+            Callback invoked with :class:`MinionResult`. Return True to stop.
+        seed : int, optional
+            Random seed for reproducibility.
+        options : dict, optional
+            Configuration dictionary. Defaults are::
+
+                {
+                    "maxiters": -1,
+                    "base_learning_rate": 1e-2,
+                    "update_rule": "adam",
+                    "gradient_estimator": "coordinate_fd",
+                    "use_line_search": False,
+                    "max_linesearch": 8,
+                    "line_search_c1": 1e-4,
+                    "line_search_rho": 0.5,
+                    "N_points_derivative": 2,
+                    "fd_epsilon": 0.0,
+                    "func_noise_ratio": 1e-10,
+                    "gradient_samples": 16,
+                    "coordinate_batch_size": 0,
+                    "beta1": 0.9,
+                    "beta2": 0.999,
+                    "epsilon": 1e-8,
+                    "momentum": 0.0,
+                    "lr_decay": 1.0,
+                    "g_tol": 1e-6,
+                    "x_tol": 1e-8,
+                    "f_tol": -1.0,
+                    "bound_strategy": "clip",
+                }
+
+              ``base_learning_rate`` is the constant step size for ``"gd"`` and
+              ``"sgd"`` when ``lr_decay == 1``. For ``"adam"``, it acts as the
+              global scale before Adam's coordinate-wise normalization.
+
+              ``use_line_search`` enables Armijo backtracking on the proposed
+              update. The solver tests scaled steps ``1, rho, rho^2, ...`` up to
+              ``max_linesearch`` reductions using ``line_search_c1`` as the
+              sufficient-decrease constant.
+
+              ``gradient_samples`` controls the number of random directions used
+              by ``"random_direction_fd"``. ``coordinate_batch_size`` controls
+              how many coordinates are differentiated per iteration when using
+              ``"coordinate_fd"``; ``0`` means use all coordinates.
+        """
+
+        super().__init__(func, bounds, x0, maxevals, callback, seed, options)
+        self.optimizer = cppGradientDescent(
+            self._func_for_cpp,
+            self.bounds,
+            self.x0cpp,
+            self.data,
+            self._callback_for_cpp,
+            maxevals,
+            self.seed,
+            self.cpp_options,
+        )
+
+    def optimize(self):
         self.minionResult = MinionResult(self.optimizer.optimize())
         return self.minionResult
     

@@ -2,6 +2,7 @@
 #define L_BFGS_B_H
 
 #include "minimizer_base.h"
+#include "blackbox_gradient.h"
 #include "default_options.h"
 #include <cmath>  
 #include <algorithm>
@@ -31,6 +32,7 @@ public:
     double f_best = std::numeric_limits<double>::max();
     int N_points= 1;
     double func_noise_ratio =1e-10;
+    double fd_epsilon = 0.0;
 
 private : 
     struct InternalState;
