@@ -31,6 +31,7 @@ Minion also serves as a research platform for developing and testing new optimiz
     - BIPOP-aCMAES 
     - RCMAES (Restart aCMAES)
   - **Classical optimization algorithms:**
+    - Gradient-descent
     - Nelder-Mead  
     - Generalized Simulated Annealing (Dual Annealing) 
     - L-BFGS-B (vectorized & noise-robust) 
