@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: 'Minion: A C++ and Python Library for Single-Objective Optimization'
+type: software
+authors:
+- given-names: Khoirul Faiq
+  family-names: Muzakka
+  orcid: https://orcid.org/0000-0002-3888-1697
+- given-names: Sören
+  family-names: Möller
+  orcid: https://orcid.org/0000-0002-7948-4305
+- given-names: Martin
+  family-names: Finsterbusch
+  orcid: https://orcid.org/0000-0001-7027-7636
+repository-code: https://github.com/khoirulmuzakka/Minion
+license: MIT
