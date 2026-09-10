@@ -1,7 +1,7 @@
 ---
 title: 'Minion: A C++ and Python Library for Single-Objective Optimization'
 tags:
-  - Blackbox Optimization
+  - Black-box Optimization
   - Derivative-Free Optimization
   - Evolutionary Algorithms
   - Differential Evolution
@@ -28,11 +28,11 @@ bibliography: paper.bib
 
 # Summary
 
-Optimization problems arise throughout science, engineering, and machine learning, including tasks such as simulation calibration, experimental data fitting, hyperparameter tuning, and design optimization. A common setting is single-objective optimization, where the goal is to minimize or maximize one performance measure. In many practical cases, the objective function is a black box: it can be evaluated at chosen points, but no closed-form expression, gradient, or other derivative information is available. To support optimization problems of this kind, we introduce Minion, a derivative-free optimization library for unconstrained and bound-constrained single-objective blackbox problems. It is implemented in C++, with a Python interface available through MinionPy.
+Optimization problems arise throughout science, engineering, and machine learning, including tasks such as simulation calibration, experimental data fitting, hyperparameter tuning, and design optimization. A common setting is single-objective optimization, where the goal is to minimize or maximize one performance measure. In many practical cases, the objective function is a black box: it can be evaluated at chosen points, but no closed-form expression, gradient, or other derivative information is available. To support optimization problems of this kind, we introduce Minion, a derivative-free optimization library for unconstrained and bound-constrained single-objective black-box problems. It is implemented in C++, with a Python interface available through MinionPy.
 
 The library offers a centralized implementation of advanced derivative-free optimization algorithms, including state-of-the-art Differential Evolution (DE) methods that have performed strongly in IEEE Congress on Evolutionary Computation (CEC) competitions, Covariance Matrix Adaptation Evolution Strategy (CMA-ES) variants, and several Particle Swarm Optimization (PSO) variants. Alongside these research-grade solvers, Minion ships widely used optimizers such as Nelder–Mead, Dual Annealing (generalized simulated annealing), L-BFGS, and L-BFGS-B, allowing practitioners to combine established baselines with advanced heuristics within a single API. Many existing optimization libraries include only elementary variants of these methods and lack standardized benchmark problems. Minion addresses this by integrating multiple CEC benchmark suites (2011, 2014, 2017, 2019, 2020, and 2022) to facilitate algorithm evaluation and comparison.
 
-Compared with widely adopted toolkits such as SciPy, NLopt, and pagmo2/pygmo, Minion emphasizes a unified interface for batch-evaluated objective functions, provides native support for modern population-based methods and finite-difference quasi-Newton solvers, and bundles curated CEC benchmark suites for reproducible experimentation. These design choices serve researchers developing bespoke algorithms as well as practitioners seeking robust defaults for blackbox optimization.
+Compared with widely adopted toolkits such as SciPy, NLopt, and pagmo2/pygmo, Minion emphasizes a unified interface for batch-evaluated objective functions, provides native support for modern population-based methods and finite-difference quasi-Newton solvers, and bundles curated CEC benchmark suites for reproducible experimentation. These design choices serve researchers developing bespoke algorithms as well as practitioners seeking robust defaults for black-box optimization.
 
 # State of the field
 
@@ -46,13 +46,13 @@ DEAP [@DEAP_JMLR2012] provides a highly extensible Python framework for construc
 
 Minion aims to complement these ecosystems by concentrating on single-objective optimization with built-in support for batch evaluation, finite-difference quasi-Newton solvers, modern DE, CMA-ES, and PSO variants, and integrated CEC benchmark suites. The goal is not to replace these libraries, but to offer an option tailored to scenarios where such capabilities are central requirements.
 
-The decision to build Minion rather than contribute a single extension to an existing package follows from this scope. Adding one or two solvers to SciPy, NLopt, DEAP, or pagmo2 would not by itself provide a coherent benchmark platform, a shared batched-objective interface across both global and local solvers, and C++/Python access to a curated collection of recent CEC-oriented algorithms. Minion's scholarly contribution is therefore the integration of these components into a reproducible research tool: users can compare modern DE variants, CMA-ES variants, swarm-based methods, and classical local search algorithms, and optionally evaluate them on standardized CEC benchmark suites without changing objective-function conventions or stitching together multiple libraries
+The decision to build Minion rather than contribute a single extension to an existing package follows from this scope. Adding one or two solvers to SciPy, NLopt, DEAP, or pagmo2 would not by itself provide a coherent benchmark platform, a shared batched-objective interface across both global and local solvers, and C++/Python access to a curated collection of recent CEC-oriented algorithms. Minion's scholarly contribution is therefore the integration of these components into a reproducible research tool: users can compare modern DE variants, CMA-ES variants, swarm-based methods, and classical local search algorithms, and optionally evaluate them on standardized CEC benchmark suites without changing objective-function conventions or stitching together multiple libraries.
 
 # Statement of need
 
 Minion was created to address several limitations in existing optimization libraries:
 
-1. Lack of a centralized library for advanced derivative-free optimization algorithms. Many optimization libraries lack a unified framework that combines modern DE variants, CMA-ES variants, PSO variants, and established local-search methods through a simple interface in both C++ and Python. While basic implementations of these algorithm families are common, recent research-grade variants such as L-SHADE, jSO, NL-SHADE-RSP, LSRTDE, BIPOP-ACMAES, and DMS-PSO are often absent or distributed across separate packages. Minion fills this gap by providing these algorithms alongside a platform for researchers to create and test new optimizers.
+1. Lack of a centralized library for advanced derivative-free optimization algorithms. Many optimization libraries lack a unified framework that combines modern DE variants, CMA-ES variants, PSO variants, and established local-search methods through a simple interface in both C++ and Python. While basic implementations of these algorithm families are common, recent research-grade variants such as L-SHADE, jSO, NL-SHADE-RSP, L-SRTDE, BIPOP-ACMAES, and DMS-PSO are often absent or distributed across separate packages. Minion fills this gap by providing these algorithms alongside a platform for researchers to create and test new optimizers.
 
 2. Lack of centralized CEC benchmark support for reproducible comparison. Benchmarking derivative-free algorithms often requires separate implementations of CEC test suites, custom data files, and ad hoc scripts, making results harder to reproduce and compare. Minion integrates CEC benchmark suites from 2011, 2014, 2017, 2019, 2020, and 2022 under the same objective-function convention as user-defined problems, streamlining benchmarking and comparison with existing methods.
 
@@ -60,9 +60,9 @@ Minion was created to address several limitations in existing optimization libra
 
 4. Lack of robust L-BFGS-B and L-BFGS implementations that perform well under noise and support batch objective evaluations. Traditional finite-difference quasi-Newton implementations can struggle with noisy function calls, which are common in real-world applications such as experimental data fitting. Minion mitigates this by using batched derivative evaluations together with a curvature-aware adaptive finite-difference step size and an optional Lanczos-style derivative estimate.
 
-# Software Design
+# Software design
 
-Minion is organized around a small C++ core interface rather than around algorithm-specific entry points. The user-facing `Minimizer` class acts as a factory and dispatcher: it normalizes an algorithm identifier, constructs the corresponding solver, and exposes both `optimize()` and call-operator execution. All concrete optimizers inherit from `MinimizerBase`, which stores common state including the objective function, bounds, initial guesses, stopping tolerance, evaluation budget, random seed, callback, option map, current result, and optimization history. This structure keeps each algorithm implementation focused on its search logic while preserving uniform validation, configuration, and result reporting.
+Minion is organized around a small C++ core interface rather than around algorithm-specific entry points. The user-facing `Minimizer` class acts as a factory and dispatcher: it normalizes an algorithm identifier, constructs the corresponding solver, and exposes execution through both `optimize()` and the call operator. All concrete optimizers inherit from `MinimizerBase`, which stores common state including the objective function, bounds, initial guesses, stopping tolerance, evaluation budget, random seed, callback, option map, current result, and optimization history. This structure keeps each algorithm implementation focused on its search logic while preserving uniform validation, configuration, and result reporting.
 
 The central design choice is that objective functions are batched by default. In C++, a `MinionFunction` maps `std::vector<std::vector<double>>` candidate points to a vector of objective values, and the same convention is exposed in Python. This is less familiar than scalar objective calls, but it reflects the workload that motivated Minion: population-based algorithms, finite-difference gradients, noisy objectives, and benchmark campaigns often evaluate many candidates per iteration. A batched interface lets users vectorize evaluations in Python, run compiled objective kernels efficiently, or distribute objective calls without wrapping every solver separately.
 
@@ -77,12 +77,12 @@ Minion currently implements the following optimization algorithms:
 
 - Basic DE [@Storn1997]
 - JADE [@5208221]
-- LSHADE [@b6900380]
-- LSHADE-cnEpSin [@Awad2017]
+- L-SHADE [@b6900380]
+- L-SHADE-cnEpSin [@Awad2017]
 - jSO [@7969456]
 - j2020 [@9185551]
 - NL-SHADE-RSP [@9504959]
-- LSRTDE [@10611907]
+- L-SRTDE [@10611907]
 - Adaptive Restart-Refine DE (ARRDE) [@ARRDE]
 - Artificial Bee Colony (ABC) [@Karaboga2005]
 - Canonical PSO [@Kennedy1995]
@@ -100,9 +100,9 @@ Additional algorithms are planned for future releases. Minion also ships benchma
 Minion’s L-BFGS and L-BFGS-B implementations build on LBFGSpp [@LBFGSpp] but introduce derivative calculations tailored to noisy, vectorized workloads. Gradient estimates are generated from batched finite differences. The finite-difference step for each coordinate is adapted from an estimate of local curvature, obtained from L-BFGS curvature information accumulated in previous iterations, and from a multiplicative model of function noise. This follows the relation $h = 2\sqrt{\epsilon_f / |f^{(2)}|}$, where $\epsilon_f$ is the estimated function-value noise and $f^{(2)}$ is the local second derivative. Minion also supports a Lanczos-style derivative formula derived from least-squares fitting, while preserving a single batched objective call for the derivative evaluation. The accompanying benchmark notebook demonstrates the robustness of these quasi-Newton solvers on noisy CEC test suites while preserving a fully vectorized evaluation pipeline.
 
 
-# Research Impact Statement
+# Research impact statement
 
-Minion supports reproducible research in single-objective blackbox optimization by combining advanced optimizers, batched objective evaluation, and standardized CEC benchmark suites in one C++/Python package. It also provides a practical platform for developing and evaluating new methods against strong baselines under consistent objective-function conventions, stopping criteria, and benchmark setups.
+Minion supports reproducible research in single-objective black-box optimization by combining advanced optimizers, batched objective evaluation, and standardized CEC benchmark suites in one C++/Python package. It also provides a practical platform for developing and evaluating new methods against strong baselines under consistent objective-function conventions, stopping criteria, and benchmark setups.
 
 Minion is particularly relevant for optimization studies where objective evaluations are expensive, noisy, or naturally parallel, including simulation calibration, experimental data fitting, machine-learning hyperparameter tuning, and engineering design studies. It has already been used beyond its own benchmark examples, including in applied ion beam analysis software [@MUZAKKA2026166076] and in the development and evaluation of new optimization methods [@ARRDE; @muzakka2026rcmaes].
 
