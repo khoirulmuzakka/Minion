@@ -70,7 +70,7 @@ iteration-based stopping and leaves ``maxevals`` as the primary budget. ``ARRDE`
 .. note::
 
    The optional ``x0`` argument can contain **multiple** initial guesses.
-   Population-based algorithms, such as Differential Evolution variants, LSHADE, and PSO, use these samples to initialise their populations.
+   Population-based algorithms, such as Differential Evolution variants, LSHADE, and PSO, evaluate and rank all supplied guesses and use the best guesses, up to the initial population size, to initialise their populations. Remaining slots use normally generated points. All guess evaluations count toward the evaluation budget, and retained guesses are evaluated only once.
    For algorithms that evolve a single incumbent solution (e.g., CMA-ES, Nelder-Mead, L-BFGS, L-BFGS-B), Minion evaluates the provided guesses first and starts from the best-performing one.
 
 

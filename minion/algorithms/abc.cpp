@@ -49,14 +49,8 @@ void ABC::initialize() {
 
 void ABC::init() {
     population = random_sampling(bounds, populationSize);
-    if (!x0.empty()) {
-        for (size_t i = 0; i < x0.size() && i < population.size(); ++i) {
-            population[i] = x0[i];
-        }
-    }
 
-    fitness = func(population, data);
-    Nevals += population.size();
+    fitness = initializePopulation(population, Nevals);
 
     trialCounters.assign(population.size(), 0);
 

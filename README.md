@@ -65,7 +65,7 @@ Detailed installation, native package, C++ build, and usage instructions are ava
 Across both C++ and Python, Minion uses the same core model:
 - The objective must be vectorized: it receives a batch of candidate points and returns one objective value per point.
 - `x0` contains multiple initial guesses, where each inner vector/list is one candidate start.
-- `x0` is not a full population specification. In population-based algorithms, Minion first initializes the population using the algorithm's normal rule, then replaces some initialized individuals with the supplied guesses. In non-population-based algorithms, Minion evaluates the guesses and starts from the best one.
+- `x0` is not a full population specification. In population-based algorithms, Minion first initializes the population using the algorithm's normal rule, then evaluates and ranks all supplied guesses and replaces initialized individuals with the best `min(len(x0), N0)` guesses, where `N0` is the initial population size. Ranking evaluations count toward the evaluation budget, and retained guesses are not evaluated twice. In non-population-based algorithms, Minion evaluates the guesses and starts from the best one.
 - After constructing the `Minimizer`, call `optimize()` to run the algorithm and get a result object.
 
 ### C++ Code

@@ -82,11 +82,6 @@ void LSRTDE::initialize_population(int _newNInds, int _newNVars)
     Indices2 = new int[PopulSize];
 
     Popul = random_sampling(bounds, PopulSize);
-    if (!x0.empty()) {
-        for (int i=0; i<x0.size(); i++) {
-            if ( i < Popul.size() ) Popul[i] = x0[i];
-        };
-    }
     for(int i=0;i!=PopulSize;i++)
         tempSuccessCr[i] = 0;
     for(int i=0;i!=MemorySize;i++)
@@ -162,8 +157,8 @@ void LSRTDE::MainCycle()
     std::vector<std::vector<double>> pop; 
     std::vector<double> fun_pop; 
     for(int IndIter=0;IndIter<NIndsFront;IndIter++) pop.push_back(Popul[IndIter]);
-    fun_pop= func(pop, data);
-    NFEval+= int(pop.size());
+    fun_pop = initializePopulation(pop, NFEval);
+    for (int i = 0; i < NIndsFront; ++i) Popul[i] = pop[i];
     for(int IndIter=0;IndIter<NIndsFront;IndIter++)
     {
         FitArr[IndIter] = fun_pop[IndIter];

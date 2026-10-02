@@ -96,11 +96,6 @@ void RDEX::initialize_population(int newNInds, int newNVars) {
     fitMass.assign(nIndsFrontMax, 0.0);
 
     popul = random_sampling(bounds, populSize);
-    if (!x0.empty()) {
-        for (size_t i = 0; i < x0.size() && i < popul.size(); ++i) {
-            popul[i] = x0[i];
-        }
-    }
 }
 
 void RDEX::UpdateMemory() {
@@ -225,8 +220,8 @@ void RDEX::MainCycle() {
         pop.push_back(popul[i]);
     }
 
-    std::vector<double> funPop = func(pop, data);
-    nfeval += int(funPop.size());
+    std::vector<double> funPop = initializePopulation(pop, nfeval);
+    for (int i = 0; i < nIndsFront; ++i) popul[i] = pop[i];
     for (int i = 0; i < nIndsFront; ++i) {
         fitArr[i] = funPop[i];
         FindNSaveBest(i == 0, i);

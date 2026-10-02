@@ -56,12 +56,6 @@ void PSO::init() {
 
     population = useLatin ? latin_hypercube_sampling(bounds, populationSize)
                           : random_sampling(bounds, populationSize);
-    if (!x0.empty()) {
-        size_t limit = std::min(x0.size(), population.size());
-        for (size_t i = 0; i < limit; ++i) {
-            population[i] = x0[i];
-        }
-    }
 
     velocities.assign(populationSize, std::vector<double>(dim, 0.0));
     for (size_t i = 0; i < population.size(); ++i) {
@@ -76,7 +70,7 @@ void PSO::init() {
         }
     }
 
-    fitness = func(population, data);
+    fitness = initializePopulation(population, Nevals);
     std::replace_if(fitness.begin(), fitness.end(), [](double value) { return std::isnan(value); }, 1e+100);
 
     personalBestPositions = population;
@@ -86,7 +80,6 @@ void PSO::init() {
     best = population[bestIdx];
     best_fitness = fitness[bestIdx];
 
-    Nevals += population.size();
 
     minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);

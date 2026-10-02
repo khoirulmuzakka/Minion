@@ -171,13 +171,6 @@ void NLSHADE_RSP::initialize_population(int newNInds, int newNVars, int NewMemSi
 	for (int i = 0; i<NIndsMax; i++)
 		for (int j = 0; j<NVars; j++)
 			Popul[i][j] = rand_gen(bounds[j].first, bounds[j].second);
-    if (!x0.empty()) {
-        for (int i=0; i<x0.size(); i++) {
-            if ( i < NIndsMax ) {
-                for (int j = 0; j<NVars; j++) Popul[i][j] =x0[i][j]; 
-            } 
-        };
-    };
     Donor = new double[NVars];
     Trial = new double[NVars];
     Rands = new int[NIndsMax];
@@ -312,8 +305,10 @@ void NLSHADE_RSP::MainCycle()
     resetBestSoFar();
 
     std::vector<std::vector<double>> popul_vec= convertToVector(Popul, NInds, NVars);
-    auto funcRes = func(popul_vec, data);
-    NFEval += int(popul_vec.size());
+    auto funcRes = initializePopulation(popul_vec, NFEval);
+    for (int i = 0; i < NInds; ++i) {
+        for (int j = 0; j < NVars; ++j) Popul[i][j] = popul_vec[i][j];
+    }
 
     for(int TheChosenOne=0;TheChosenOne!=NInds;TheChosenOne++)
     {
@@ -328,6 +323,12 @@ void NLSHADE_RSP::MainCycle()
     size_t initial_best_index = findArgMin(funcRes);
     minionResult = MinionResult(popul_vec[initial_best_index], funcRes[initial_best_index], Generation, NFEval, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
+    if (NFEval >= MaxFEval) {
+        minionResult.status = TerminationStatus::MaxEvaluationsReached;
+        minionResult.message = "Maximum number of function evaluations reached.";
+        updateBestSoFar(minionResult);
+        return;
+    }
     if (reachedMaxIterations(0)) {
         minionResult.status = TerminationStatus::MaxIterationsReached;
         minionResult.message = "Maximum number of iterations reached.";

@@ -2,6 +2,8 @@
 #define MINIMIZER_BASE_H
 
 #include <vector>
+#include <algorithm>
+#include <numeric>
 #include <functional>
 #include <stdexcept>
 #include <cmath>
@@ -511,6 +513,40 @@ class MinimizerBase {
             best_so_far.nfev = result.nfev;
             best_so_far.nit = result.nit;
             return true;
+        }
+
+        // Evaluate every supplied guess once and retain the best ones in the
+        // initial population. Only unfilled slots need random-point evaluations.
+        template <typename Counter>
+        std::vector<double> initializePopulation(
+            std::vector<std::vector<double>>& population, Counter& evaluations) {
+            const size_t retained = std::min(x0.size(), population.size());
+            std::vector<std::vector<double>> candidates = x0;
+            candidates.insert(candidates.end(), population.begin() + retained, population.end());
+            auto values = func(candidates, data);
+            evaluations += static_cast<Counter>(candidates.size());
+            if (values.size() != candidates.size()) {
+                throw std::runtime_error("Objective must return one value per candidate.");
+            }
+
+            std::vector<size_t> order(x0.size());
+            std::iota(order.begin(), order.end(), 0);
+            std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+                // NaN guesses rank behind guesses with valid objective values.
+                if (std::isnan(values[a])) return false;
+                if (std::isnan(values[b])) return true;
+                return values[a] < values[b];
+            });
+
+            std::vector<double> fitness(population.size());
+            for (size_t i = 0; i < retained; ++i) {
+                population[i] = x0[order[i]];
+                fitness[i] = values[order[i]];
+            }
+            for (size_t i = retained; i < population.size(); ++i) {
+                fitness[i] = values[x0.size() + i - retained];
+            }
+            return fitness;
         }
 
         std::vector<double> findBestPoint (const std::vector<std::vector<double>>& Xvec){

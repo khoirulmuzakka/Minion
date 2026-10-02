@@ -103,16 +103,8 @@ MinionResult j2020::optimize() {
         }
 
         population = random_sampling(bounds, populationSize);
-        if (!x0.empty()) {
-            for (size_t i = 0; i < x0.size() && i < population.size(); ++i) {
-                if (x0[i].size() == bounds.size()) {
-                    population[i] = x0[i];
-                }
-            }
-        }
-
-        fitness = func(population, data);
-        Nevals = fitness.size();
+        Nevals = 0;
+        fitness = initializePopulation(population, Nevals);
 
         F = std::vector<double>(populationSize, baseF);
         CR = std::vector<double>(populationSize, baseCR);

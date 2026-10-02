@@ -109,11 +109,11 @@ Each inner list is one candidate starting point, so Minion supports **multiple i
 .. note::
 
    Multiple initial guesses are **not** the same as manually defining the algorithm's full population.
-   For population-based algorithms, Minion first initializes the population according to the algorithm's own rules, then replaces some individuals with the supplied guesses.
+   For population-based algorithms, Minion first initializes the population according to the algorithm's own rules, then evaluates and ranks all supplied guesses and replaces individuals with the best ``min(len(x0), N0)`` guesses, where ``N0`` is the initial population size. These evaluations count toward the evaluation budget; retained guesses are not evaluated twice.
    For non-population-based algorithms, Minion evaluates the provided guesses and starts from the best one.
 
 Parameter Explanation:
-- `x0`: Initial guesses (`list[list[float]]`). Each entry is one candidate start. In population-based algorithms, some initialized individuals are replaced by these guesses; other algorithms evaluate them and keep the best one as the actual starting point.
+- `x0`: Initial guesses (`list[list[float]]`). Each entry is one candidate start. In population-based algorithms, initialized individuals are replaced by the best supplied guesses up to the initial population size; other algorithms evaluate them and keep the best one as the actual starting point.
 - `bounds`: Search space boundaries (list of tuples).
 - `maxevals`: Maximum number of function evaluations.
 - `callback`: A function that receives the current optimization result. Return `True` to stop optimization early; return `False` or `None` to continue.

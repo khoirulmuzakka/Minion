@@ -181,16 +181,10 @@ std::vector<double> Differential_Evolution::crossover(const std::vector<double>&
 void Differential_Evolution::init (){
     if (useLatin) population = latin_hypercube_sampling(bounds, populationSize);
     else population = random_sampling(bounds, populationSize);
-    if (!x0.empty()) {
-        for (int i=0; i<x0.size(); i++) {
-            if ( i < population.size() ) population[i] = x0[i];
-        };
-    };
-    fitness = func(population, data);
+    fitness = initializePopulation(population, Nevals);
     size_t best_idx = findArgMin(fitness);
     best = population[best_idx];
     best_fitness = fitness[best_idx];
-    Nevals += population.size();
     minionResult = MinionResult(best, best_fitness, 0, Nevals, TerminationStatus::Running, "");
     updateBestSoFar(minionResult);
 };
@@ -229,6 +223,11 @@ MinionResult Differential_Evolution::optimize() {
                 "Maximum number of iterations reached.",
                 Nevals,
                 0);
+        }
+        if (Nevals >= maxevals) {
+            return finalizeBestSoFar(
+                TerminationStatus::MaxEvaluationsReached,
+                "Maximum number of function evaluations reached.", Nevals, 0);
         }
         size_t iter=1;
         TerminationStatus finalStatus = TerminationStatus::MaxEvaluationsReached;
