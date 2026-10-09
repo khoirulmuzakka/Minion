@@ -1,4 +1,8 @@
 # Changelog
+## [2.0.1] - 2026-10-10
+### Added
+- Implemented error analysis based on hessian and bootstrap. 
+
 ## [1.9.1] - 2026-08-24
 ### Added
 - Implemented gradient descent.

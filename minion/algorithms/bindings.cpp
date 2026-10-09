@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>  // Include for std::vector support
 #include <pybind11/functional.h>
+#include <pybind11/eigen.h>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include "minion.h"
@@ -17,6 +18,11 @@
 namespace py = pybind11;
 
 using namespace minion; 
+using minion::uncertainty::Uncertainty;
+using minion::uncertainty::HessianOptions;
+using minion::uncertainty::HessianResult;
+using minion::uncertainty::BootstrapOptions;
+using minion::uncertainty::BootstrapResult;
 
 // Exception translator
 void translate_exception(const std::exception &e) {
@@ -25,6 +31,87 @@ void translate_exception(const std::exception &e) {
 
 
 PYBIND11_MODULE(minionpycpp, m) {
+    py::class_<HessianOptions>(m, "HessianOptions")
+        .def(py::init<>())
+        .def_readwrite("step_sizes", &HessianOptions::step_sizes)
+        .def_readwrite("parameter_scales", &HessianOptions::parameter_scales)
+        .def_readwrite("relative_step", &HessianOptions::relative_step)
+        .def_readwrite("confidence_level", &HessianOptions::confidence_level)
+        .def_readwrite("eigenvalue_tolerance", &HessianOptions::eigenvalue_tolerance)
+        .def_readwrite("stability_tolerance", &HessianOptions::stability_tolerance)
+        .def_readwrite("batch_size", &HessianOptions::batch_size)
+        .def_readwrite("check_stability", &HessianOptions::check_stability)
+        .def_readwrite("discard_nonpositive", &HessianOptions::discard_nonpositive);
+    py::class_<HessianResult>(m, "HessianResult")
+        .def_readonly("estimate", &HessianResult::estimate)
+        .def_readonly("std", &HessianResult::std)
+        .def_readonly("ci_lower", &HessianResult::ci_lower)
+        .def_readonly("ci_upper", &HessianResult::ci_upper)
+        .def_readonly("hessian", &HessianResult::hessian)
+        .def_readonly("covariance", &HessianResult::covariance)
+        .def_readonly("correlation", &HessianResult::correlation)
+        .def_readonly("gradient", &HessianResult::gradient)
+        .def_readonly("eigenvalues", &HessianResult::eigenvalues)
+        .def_readonly("eigenvectors", &HessianResult::eigenvectors)
+        .def_readonly("scaled_eigenvalues", &HessianResult::scaled_eigenvalues)
+        .def_readonly("scaled_eigenvectors", &HessianResult::scaled_eigenvectors)
+        .def_readonly("discarded_modes", &HessianResult::discarded_modes)
+        .def_readonly("retained_rank", &HessianResult::retained_rank)
+        .def_readonly("condition_number", &HessianResult::condition_number)
+        .def_readonly("differentiation_error", &HessianResult::differentiation_error)
+        .def_readonly("step_sizes", &HessianResult::step_sizes)
+        .def_readonly("stencil_types", &HessianResult::stencil_types)
+        .def_readonly("warnings", &HessianResult::warnings)
+        .def_readonly("status", &HessianResult::status)
+        .def_readonly("covariance_valid", &HessianResult::covariance_valid)
+        .def_readonly("covariance_available", &HessianResult::covariance_available)
+        .def_readonly("uncertainty_complete", &HessianResult::uncertainty_complete)
+        .def_readonly("confidence_level", &HessianResult::confidence_level)
+        .def_readonly("nfev", &HessianResult::nfev)
+        .def_readonly("objective_calls", &HessianResult::objective_calls);
+    py::class_<BootstrapOptions>(m, "BootstrapOptions")
+        .def(py::init<>())
+        .def_readwrite("n_samples", &BootstrapOptions::n_samples)
+        .def_readwrite("optimizer", &BootstrapOptions::optimizer)
+        .def_readwrite("maxevals", &BootstrapOptions::maxevals)
+        .def_readwrite("seed", &BootstrapOptions::seed)
+        .def_readwrite("confidence_level", &BootstrapOptions::confidence_level)
+        .def_readwrite("warm_start", &BootstrapOptions::warm_start)
+        .def_readwrite("require_convergence", &BootstrapOptions::require_convergence)
+        .def_readwrite("optimizer_options", &BootstrapOptions::optimizer_options);
+    py::class_<BootstrapResult>(m, "BootstrapResult")
+        .def_readonly("estimate", &BootstrapResult::estimate)
+        .def_readonly("mean", &BootstrapResult::mean)
+        .def_readonly("std", &BootstrapResult::std)
+        .def_readonly("ci_lower", &BootstrapResult::ci_lower)
+        .def_readonly("ci_upper", &BootstrapResult::ci_upper)
+        .def_readonly("samples", &BootstrapResult::samples)
+        .def_readonly("covariance", &BootstrapResult::covariance)
+        .def_readonly("correlation", &BootstrapResult::correlation)
+        .def_readonly("realization_results", &BootstrapResult::realization_results)
+        .def_readonly("used_indices", &BootstrapResult::used_indices)
+        .def_readonly("sample_seeds", &BootstrapResult::sample_seeds)
+        .def_readonly("optimizer_seeds", &BootstrapResult::optimizer_seeds)
+        .def_readonly("seed", &BootstrapResult::seed)
+        .def_readonly("warnings", &BootstrapResult::warnings)
+        .def_readonly("status", &BootstrapResult::status)
+        .def_readonly("confidence_level", &BootstrapResult::confidence_level)
+        .def_readonly("n_requested", &BootstrapResult::n_requested)
+        .def_readonly("n_valid", &BootstrapResult::n_valid)
+        .def_readonly("n_converged", &BootstrapResult::n_converged)
+        .def_readonly("n_used", &BootstrapResult::n_used)
+        .def_readonly("nfev", &BootstrapResult::nfev)
+        .def_readonly("covariance_available", &BootstrapResult::covariance_available)
+        .def_readonly("covariance_valid", &BootstrapResult::covariance_valid);
+    py::class_<Uncertainty>(m, "Uncertainty")
+        .def(py::init<MinionFunction, const std::vector<double>&,
+             const std::vector<std::pair<double,double>>&, void*>(),
+             py::arg("objective"), py::arg("optimum"),
+             py::arg("bounds") = std::vector<std::pair<double,double>>{}, py::arg("data") = nullptr)
+        .def("hessian", &Uncertainty::hessian, py::arg("scale"),
+             py::arg("options") = HessianOptions{}, py::call_guard<py::gil_scoped_release>())
+        .def("bootstrap", &Uncertainty::bootstrap, py::arg("objective_sampler"),
+             py::arg("options") = BootstrapOptions{}, py::call_guard<py::gil_scoped_release>());
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);

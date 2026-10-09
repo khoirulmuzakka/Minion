@@ -2,6 +2,7 @@
 #define MINION_H
 
 #include "utility.h"
+#include "../uncertainty/uncertainty.h"
 #include "minimizer_base.h"
 #include "default_options.h"
 #include "de.h"

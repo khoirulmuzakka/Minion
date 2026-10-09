@@ -7,5 +7,6 @@ prune minionpy.egg-info
 
 # Include native sources and data in the sdist so source builds still work.
 recursive-include minion/include *.h
+recursive-include minion/uncertainty *.h *.cpp
 recursive-include minion/cec *.h *.cpp *.inl
 recursive-include cec_input_data *

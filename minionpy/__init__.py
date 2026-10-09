@@ -1,4 +1,5 @@
 from .algorithms import *
+from .uncertainty import *
 from .test_functions import *
 from .cec import *
 from .benchmark import *
@@ -8,7 +9,7 @@ from .cec import CEC2011Functions as CEC2011
 from .cec import CEC20142017Functions as CEC20142017
 
 # Define the package's version
-__version__ = "1.9.1"
+__version__ = "2.0.1"
 
 # Optionally, define the package name
 __name__ = "minionpy"

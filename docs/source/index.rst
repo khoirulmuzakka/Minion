@@ -23,6 +23,7 @@ This documentation covers the installation, usage, and details of both the C++ a
    algolist
    BFGS
    Convergence
+   Uncertainty
    Vectorization
    Algorithms
    cec

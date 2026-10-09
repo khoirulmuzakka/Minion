@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(Minion VERSION 1.9.1 LANGUAGES C CXX)
+project(Minion VERSION 2.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,6 +32,7 @@ option(MINION_BUILD_TESTS "Build repository test targets" OFF)
 file(GLOB MINION_ALGO_IMPL_SOURCES CONFIGURE_DEPENDS minion/algorithms/*.cpp)
 list(REMOVE_ITEM MINION_ALGO_IMPL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms/bindings.cpp)
 file(GLOB MINION_UTILS_SOURCE_FILES CONFIGURE_DEPENDS minion/utils/*.cpp)
+file(GLOB MINION_UNCERTAINTY_SOURCE_FILES CONFIGURE_DEPENDS minion/uncertainty/*.cpp)
 file(GLOB MINION_CEC_SOURCE_FILES CONFIGURE_DEPENDS minion/cec/*.cpp)
 
 include(FetchContent)
@@ -196,15 +197,17 @@ endif()
 # + ----------------------------------------- +
 # | Compiled algorithms core target           |
 # + ----------------------------------------- +
-set(MINION_CORE_SOURCE_FILES ${MINION_ALGO_IMPL_SOURCES} ${MINION_UTILS_SOURCE_FILES})
+set(MINION_CORE_SOURCE_FILES ${MINION_ALGO_IMPL_SOURCES} ${MINION_UTILS_SOURCE_FILES} ${MINION_UNCERTAINTY_SOURCE_FILES})
 add_library(minion SHARED ${MINION_CORE_SOURCE_FILES})
 
 target_include_directories(minion PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/utils>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/minion/uncertainty>
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/minion/algorithms>
     $<INSTALL_INTERFACE:include/minion/utils>
+    $<INSTALL_INTERFACE:include/minion/uncertainty>
 )
 if(WIN32)
     target_compile_definitions(minion PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
@@ -312,6 +315,7 @@ if(MINION_BUILD_PYTHON)
         minion/algorithms/bindings.cpp
         ${MINION_ALGO_IMPL_SOURCES}
         ${MINION_UTILS_SOURCE_FILES}
+        ${MINION_UNCERTAINTY_SOURCE_FILES}
         ${MINION_CEC_SOURCE_FILES}
     )
 
@@ -321,6 +325,7 @@ if(MINION_BUILD_PYTHON)
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/utils
+        ${CMAKE_CURRENT_SOURCE_DIR}/minion/uncertainty
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/cec
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/benchmark
     )
@@ -371,6 +376,9 @@ if(DEFINED SKBUILD AND SKBUILD)
     endif()
 else()
     include(CMakePackageConfigHelpers)
+
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/uncertainty/
+        DESTINATION include/minion/uncertainty FILES_MATCHING PATTERN "*.h")
 
     if(MINION_BUILD_BENCHMARK)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms/ DESTINATION include/minion/algorithms FILES_MATCHING PATTERN "*.h")

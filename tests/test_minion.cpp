@@ -239,6 +239,54 @@ bool check_callback_stop() {
            result.message == "Callback requested optimization stop.";
 }
 
+bool check_hessian_uncertainty() {
+    minion::MinionFunction objective = [](const auto& points, void*) {
+        std::vector<double> values;
+        for (const auto& p : points) {
+            values.push_back(0.5 * (4*p[0]*p[0] + 2*p[0]*p[1] + 3*p[1]*p[1]));
+        }
+        return values;
+    };
+    minion::uncertainty::Uncertainty analysis(objective, {0, 0}, {{-3, 3}, {-3, 3}});
+    auto result = analysis.hessian(1);
+    if (!result.covariance_valid || result.std.size() != 2) return false;
+    Eigen::Matrix2d hessian, covariance;
+    hessian << 4, 1, 1, 3;
+    covariance << 3.0/11, -1.0/11, -1.0/11, 4.0/11;
+    return (result.hessian-hessian).norm() < 1e-6 &&
+           (result.covariance-covariance).norm() < 1e-6 &&
+           std::fabs(result.std[0]-std::sqrt(3.0/11)) < 1e-6 &&
+           std::fabs(result.std[1]-std::sqrt(4.0/11)) < 1e-6;
+}
+
+bool check_bootstrap_uncertainty() {
+    minion::uncertainty::Uncertainty analysis(sphere_batch, {0}, {{-3, 3}});
+    minion::uncertainty::BootstrapOptions options;
+    options.n_samples = 3;
+    options.optimizer = "NelderMead";
+    options.maxevals = 2000;
+    options.seed = 17;
+    options.require_convergence = true;
+    options.optimizer_options = {{"x_tol", 1e-9}, {"f_tol", -1.0}};
+    auto result = analysis.bootstrap([](size_t index, uint64_t) -> minion::MinionFunction {
+        return [index](const auto& points, void*) {
+            std::vector<double> values;
+            for (const auto& point : points) {
+                const double residual = point[0]-static_cast<double>(index);
+                values.push_back(residual*residual);
+            }
+            return values;
+        };
+    }, options);
+    // Fits at 0, 1, 2 have sample mean 1 and unbiased sample variance 1.
+    if (!result.covariance_valid || result.n_used != 3) return false;
+    return std::fabs(result.mean[0]-1) < 1e-6 &&
+           std::fabs(result.covariance(0,0)-1) < 1e-6 &&
+           std::fabs(result.std[0]-1) < 1e-6 &&
+           std::fabs(result.ci_lower[0]-0.05) < 1e-6 &&
+           std::fabs(result.ci_upper[0]-1.95) < 1e-6;
+}
+
 }  // namespace
 
 int main() {
@@ -248,6 +296,8 @@ int main() {
         {"core algorithms solve Rosenbrock within budget", check_rosenbrock_benchmark},
         {"core algorithms run finite CEC2017 benchmark cases within budget", check_cec2017_benchmarks},
         {"C++ callback true stops optimization", check_callback_stop},
+        {"Hessian uncertainty matches analytic correlated covariance", check_hessian_uncertainty},
+        {"Bootstrap uncertainty matches empirical covariance and percentiles", check_bootstrap_uncertainty},
     };
 
     return CheckRunner().run(checks);

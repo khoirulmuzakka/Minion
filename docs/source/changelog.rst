@@ -5,6 +5,13 @@ Changelog
    :local:
    :depth: 2
 
+Version 2.0.1 - 2026-10-10
+--------------------------
+
+**Added**
+
+- Implemented error analysis based on Hessian and bootstrap methods.
+
 Version 1.9.1 - 2026-08-24
 --------------------------
 
