@@ -659,10 +659,16 @@ def check_hessian_parameter_units_and_batch_accounting():
     np.testing.assert_allclose(r.covariance, np.diag(scales) @ np.linalg.inv(matrix) @ np.diag(scales))
     assert math.isclose(r.condition_number, np.linalg.cond(matrix), rel_tol=1e-6)
     np.testing.assert_allclose(np.asarray(r.ci_upper) / r.std, NormalDist().inv_cdf(.95))
+    calls.clear()
+    multiple = minionpy.Uncertainty(objective, [0, 0]).hessian(
+        1, parameter_scales=scales, n_scales=3)
+    assert calls == [25] and multiple.objective_calls == 1
+    np.testing.assert_allclose(multiple.hessian, np.diag(1/scales) @ matrix @ np.diag(1/scales))
+    np.testing.assert_allclose(multiple.covariance, r.covariance)
 
 
 def check_hessian_step_sensitivity_and_nonstationarity_are_reported():
-    quartic = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**4, [0]).hessian(1, step_sizes=[.1])
+    quartic = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**4, [0]).hessian(1, step_sizes=[.1], n_scales=3)
     assert quartic.differentiation_error > .5
     assert any("sensitive" in w for w in quartic.warnings)
     off_center = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [1]).hessian(1)
@@ -688,10 +694,50 @@ def check_hessian_all_points_in_one_call():
         assert result.nfev == 289
         calls.clear()
         result = analysis.hessian(1, **kwargs)
-        assert calls == [289, 289]
-        assert result.objective_calls == 2
-        assert result.nfev == 578
+        assert calls == [289]
+        assert result.objective_calls == 1
+        assert result.nfev == 289
+        for count in (2, 3):
+            calls.clear()
+            result = analysis.hessian(1, n_scales=count, **kwargs)
+            assert calls == [1 + 288 * count]
+            assert result.objective_calls == 1
+            assert result.nfev == 1 + 288 * count
+            np.testing.assert_allclose(result.step_sizes, [.002] * 12)
+        calls.clear()
+        result = analysis.hessian(1, check_stability=True, **kwargs)
+        assert calls == [577]
+        assert result.objective_calls == 1
         np.testing.assert_allclose(result.hessian, 2 * np.eye(12), atol=1e-12)
+
+
+    # A reproducible evaluation error at the center is amplified by small steps.
+    def noisy_objective(points):
+        p = np.asarray(points)
+        return np.sum(p**2, axis=1) + 1e-8 * np.all(p == 0, axis=1)
+    analysis = minionpy.Uncertainty(noisy_objective, [0, 0])
+    small = analysis.hessian(1)
+    robust = analysis.hessian(1, n_scales=4, stability_tolerance=.001)
+    assert robust.objective_calls == 1 and robust.nfev == 33
+    np.testing.assert_allclose(robust.step_sizes, [.008, .008])
+    assert np.linalg.norm(robust.hessian - 2*np.eye(2)) < np.linalg.norm(small.hessian - 2*np.eye(2)) / 50
+
+    # Bounded scales can share capped stencils; evaluate shared points only once.
+    calls = []
+    def bounded_objective(points):
+        p = np.asarray(points)
+        assert np.all((p >= 0) & (p <= 1))
+        calls.append(len(p))
+        return np.sum(p**2, axis=1)
+    bounded = minionpy.Uncertainty(bounded_objective, [0], [(0, 1)]).hessian(
+        1, step_sizes=[1], n_scales=3)
+    assert calls == [4] and bounded.nfev == 4
+    np.testing.assert_allclose(bounded.hessian, [[2]], atol=1e-12)
+    calls.clear()
+    chunked = minionpy.Uncertainty(bounded_objective, [.5], [(0, 1)]).hessian(
+        1, n_scales=3, batch_size=2)
+    assert calls == [2, 2, 2, 1]
+    assert chunked.nfev == 7 and chunked.objective_calls == 4
 
 
 def check_hessian_invalid_options():
@@ -699,7 +745,8 @@ def check_hessian_invalid_options():
         [
             {"scale": 0}, {"scale": float("nan")}, {"scale": 1, "confidence_level": 1},
             {"scale": 1, "batch_size": 0}, {"scale": 1, "step_sizes": [0]},
-            {"scale": 1, "batch_size": -2},
+            {"scale": 1, "batch_size": -2}, {"scale": 1, "n_scales": 0},
+            {"scale": 1, "n_scales": 31},
             {"scale": 1, "step_sizes": [1, 2]}, {"scale": 1, "parameter_scales": [-1]},
         ]
     ):

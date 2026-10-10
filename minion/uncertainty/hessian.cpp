@@ -17,61 +17,72 @@ struct Curvature {
     size_t nfev = 0, calls = 0;
 };
 
-Curvature differentiate(const MinionFunction& f, void* data, const std::vector<double>& x,
+std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const std::vector<double>& x,
                        const std::vector<std::pair<double,double>>& bounds,
-                       const std::vector<double>& steps, int batch_size) {
+                       const std::vector<double>& base_steps, int batch_size, int n_scales) {
     const size_t n = x.size();
-    std::vector<Stencil> stencils;
-    for (size_t i = 0; i < n; ++i) {
-        double h = steps[i];
-        const double up = bounds.empty() ? INFINITY : bounds[i].second - x[i];
-        const double down = bounds.empty() ? INFINITY : x[i] - bounds[i].first;
-        Stencil s;
-        if (up >= h && down >= h) {
-            s = {{-1,1}, {-0.5,0.5}, {-1,0,1}, {1,-2,1}, "central", h};
-        } else {
-            const double sign = up >= down ? 1.0 : -1.0;
-            h = std::min(h, std::max(up, down) / 3.0);
-            s = {{0,sign,2*sign}, {-1.5*sign,2*sign,-0.5*sign},
-                 {0,sign,2*sign,3*sign}, {2,-5,4,-1},
-                 sign > 0 ? "forward" : "backward", h};
-        }
-        if (!(h > 0) || !std::isfinite(h) || x[i] + h == x[i] || x[i] - h == x[i])
-            throw std::invalid_argument("Hessian step is not representable at the supplied point.");
-        stencils.push_back(s);
-    }
+    using Terms = std::vector<std::pair<size_t,double>>;
+    struct Plan {
+        std::vector<Stencil> stencils;
+        std::vector<Terms> diagonal, gradients;
+        std::vector<std::vector<Terms>> mixed;
+    };
+    std::vector<Plan> plans;
     std::map<std::vector<double>,size_t> indices;
     std::vector<std::vector<double>> points;
-    auto point_index = [&](size_t i, double a, size_t j, double b) {
-        auto p = x;
-        p[i] += a * stencils[i].step;
-        if (b != 0) p[j] += b * stencils[j].step;
-        for (size_t k = 0; k < n; ++k)
-            if (!bounds.empty() && (p[k] < bounds[k].first || p[k] > bounds[k].second))
-                throw std::runtime_error("Hessian stencil falls outside bounds.");
-        auto inserted = indices.emplace(p, points.size());
-        if (inserted.second) points.push_back(p);
-        return inserted.first->second;
-    };
-    using Terms = std::vector<std::pair<size_t,double>>;
-    std::vector<Terms> diagonal(n), gradients(n);
-    std::vector<std::vector<Terms>> mixed(n, std::vector<Terms>(n));
-    const size_t center = point_index(0,0,0,0);
-    for (size_t i=0; i<n; ++i) {
-        const auto& s = stencils[i];
-        for (size_t k=0;k<s.second_nodes.size();++k)
-            diagonal[i].push_back({point_index(i,s.second_nodes[k],0,0),s.second_weights[k]/(s.step*s.step)});
-        for (size_t k=0;k<s.first_nodes.size();++k)
-            gradients[i].push_back({point_index(i,s.first_nodes[k],0,0),s.first_weights[k]/s.step});
-        for (size_t j=0;j<i;++j) {
-            const auto& t=stencils[j];
-            for (size_t k=0;k<s.first_nodes.size();++k)
-                for (size_t l=0;l<t.first_nodes.size();++l)
-                    mixed[i][j].push_back({point_index(i,s.first_nodes[k],j,t.first_nodes[l]),
-                        s.first_weights[k]*t.first_weights[l]/(s.step*t.step)});
+    for (int level=0; level<n_scales; ++level) {
+        auto steps=base_steps;
+        for (double& h:steps) h=std::ldexp(h,level);
+        std::vector<Stencil> stencils;
+        for (size_t i = 0; i < n; ++i) {
+            double h = steps[i];
+            const double up = bounds.empty() ? INFINITY : bounds[i].second - x[i];
+            const double down = bounds.empty() ? INFINITY : x[i] - bounds[i].first;
+            Stencil s;
+            if (up >= h && down >= h) {
+                s = {{-1,1}, {-0.5,0.5}, {-1,0,1}, {1,-2,1}, "central", h};
+            } else {
+                const double sign = up >= down ? 1.0 : -1.0;
+                h = std::min(h, std::max(up, down) / 3.0);
+                s = {{0,sign,2*sign}, {-1.5*sign,2*sign,-0.5*sign},
+                     {0,sign,2*sign,3*sign}, {2,-5,4,-1},
+                     sign > 0 ? "forward" : "backward", h};
+            }
+            if (!(h > 0) || !std::isfinite(h) || x[i] + h == x[i] || x[i] - h == x[i])
+                throw std::invalid_argument("Hessian step is not representable at the supplied point.");
+            stencils.push_back(s);
         }
+        auto point_index = [&](size_t i, double a, size_t j, double b) {
+            auto p = x;
+            p[i] += a * stencils[i].step;
+            if (b != 0) p[j] += b * stencils[j].step;
+            for (size_t k = 0; k < n; ++k)
+                if (!bounds.empty() && (p[k] < bounds[k].first || p[k] > bounds[k].second))
+                    throw std::runtime_error("Hessian stencil falls outside bounds.");
+            auto inserted = indices.emplace(p, points.size());
+            if (inserted.second) points.push_back(p);
+            return inserted.first->second;
+        };
+        std::vector<Terms> diagonal(n), gradients(n);
+        std::vector<std::vector<Terms>> mixed(n, std::vector<Terms>(n));
+        point_index(0,0,0,0);
+        for (size_t i=0; i<n; ++i) {
+            const auto& s = stencils[i];
+            for (size_t k=0;k<s.second_nodes.size();++k)
+                diagonal[i].push_back({point_index(i,s.second_nodes[k],0,0),s.second_weights[k]/(s.step*s.step)});
+            for (size_t k=0;k<s.first_nodes.size();++k)
+                gradients[i].push_back({point_index(i,s.first_nodes[k],0,0),s.first_weights[k]/s.step});
+            for (size_t j=0;j<i;++j) {
+                const auto& t=stencils[j];
+                for (size_t k=0;k<s.first_nodes.size();++k)
+                    for (size_t l=0;l<t.first_nodes.size();++l)
+                        mixed[i][j].push_back({point_index(i,s.first_nodes[k],j,t.first_nodes[l]),
+                            s.first_weights[k]*t.first_weights[l]/(s.step*t.step)});
+            }
+        }
+        plans.push_back({std::move(stencils),std::move(diagonal),std::move(gradients),std::move(mixed)});
     }
-    Curvature result;
+    size_t calls=0;
     std::vector<double> values;
     const size_t batch_limit = batch_size == -1 ? points.size() : static_cast<size_t>(batch_size);
     for (size_t start=0; start<points.size(); start+=batch_limit) {
@@ -81,25 +92,36 @@ Curvature differentiate(const MinionFunction& f, void* data, const std::vector<d
         if (v.size()!=batch.size()) throw std::runtime_error("Objective returned an incorrect batch length.");
         for (double value:v) if (!std::isfinite(value)) throw std::runtime_error("Objective returned a non-finite value during Hessian estimation.");
         values.insert(values.end(),v.begin(),v.end());
-        ++result.calls;
+        ++calls;
     }
-    // Subtract the common objective offset before weighted summation.
-    auto sum = [&](const Terms& terms) {
-        long double value=0;
-        for (const auto& term:terms) value+=static_cast<long double>(term.second)*(values[term.first]-values[center]);
-        return static_cast<double>(value);
-    };
-    result.H=Eigen::MatrixXd::Zero(n,n);
-    result.gradient.resize(n);
-    for (size_t i=0;i<n;++i) {
-        result.H(i,i)=sum(diagonal[i]); result.gradient[i]=sum(gradients[i]);
-        result.steps.push_back(stencils[i].step); result.types.push_back(stencils[i].type);
-        for (size_t j=0;j<i;++j) result.H(i,j)=result.H(j,i)=sum(mixed[i][j]);
+    const size_t center=indices.at(x);
+    std::vector<Curvature> results;
+    for (const auto& plan:plans) {
+        const auto& stencils=plan.stencils;
+        const auto& diagonal=plan.diagonal;
+        const auto& gradients=plan.gradients;
+        const auto& mixed=plan.mixed;
+        Curvature result;
+        // Subtract the common objective offset before weighted summation.
+        auto sum = [&](const Terms& terms) {
+            long double value=0;
+            for (const auto& term:terms) value+=static_cast<long double>(term.second)*(values[term.first]-values[center]);
+            return static_cast<double>(value);
+        };
+        result.H=Eigen::MatrixXd::Zero(n,n);
+        result.gradient.resize(n);
+        for (size_t i=0;i<n;++i) {
+            result.H(i,i)=sum(diagonal[i]); result.gradient[i]=sum(gradients[i]);
+            result.steps.push_back(stencils[i].step); result.types.push_back(stencils[i].type);
+            for (size_t j=0;j<i;++j) result.H(i,j)=result.H(j,i)=sum(mixed[i][j]);
+        }
+        if (!result.H.allFinite() || !result.gradient.allFinite())
+            throw std::runtime_error("Non-finite numerical derivatives.");
+        result.nfev=points.size();
+        result.calls=calls;
+        results.push_back(std::move(result));
     }
-    if (!result.H.allFinite() || !result.gradient.allFinite())
-        throw std::runtime_error("Non-finite numerical derivatives.");
-    result.nfev=points.size();
-    return result;
+    return results;
 }
 
 double normal_quantile(double probability) {
@@ -130,7 +152,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         !(o.confidence_level>0 && o.confidence_level<1) ||
         !(o.eigenvalue_tolerance>0 && o.eigenvalue_tolerance<1) ||
         !(o.stability_tolerance>0) || !std::isfinite(o.stability_tolerance) ||
-        (o.batch_size != -1 && o.batch_size <= 0))
+        (o.batch_size != -1 && o.batch_size <= 0) || o.n_scales < 1 || o.n_scales > 30)
         throw std::invalid_argument("Invalid Hessian options or scale.");
     const size_t n=x_.size();
     std::vector<double> scales(n),steps(n);
@@ -143,19 +165,26 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         if (!(scales[i]>0) || !std::isfinite(scales[i]) || !(steps[i]>0) || !std::isfinite(steps[i]))
             throw std::invalid_argument("Steps and parameter scales must be finite and positive.");
     }
-    const auto a=differentiate(objective_,data_,x_,bounds_,steps,o.batch_size);
+    const auto candidates=differentiate(objective_,data_,x_,bounds_,steps,o.batch_size,
+        o.check_stability ? std::max(2,o.n_scales) : o.n_scales);
+    Eigen::VectorXd s=Eigen::Map<Eigen::VectorXd>(scales.data(),n);
+    size_t selected=0;
+    double error=0, best=std::numeric_limits<double>::infinity();
+    for (size_t k=1;k<candidates.size();++k) {
+        const auto lhs=(s.asDiagonal()*candidates[k-1].H*s.asDiagonal()).eval();
+        const auto rhs=(s.asDiagonal()*candidates[k].H*s.asDiagonal()).eval();
+        const double difference=(lhs-rhs).norm()/std::max({lhs.norm(),rhs.norm(),std::numeric_limits<double>::min()});
+        if (difference<best) {best=difference;selected=k;error=difference;}
+        if (difference<=o.stability_tolerance) {selected=k;error=difference;break;}
+    }
+    const auto& a=candidates[selected];
     HessianResult r;
     r.estimate=x_;r.hessian=a.H;r.gradient=a.gradient;r.step_sizes=a.steps;r.stencil_types=a.types;
     r.nfev=a.nfev;r.objective_calls=a.calls;r.confidence_level=o.confidence_level;
-    Eigen::VectorXd s=Eigen::Map<Eigen::VectorXd>(scales.data(),n);
     const Eigen::MatrixXd scaled=s.asDiagonal()*a.H*s.asDiagonal();
-    if (o.check_stability) {
-        auto smaller=a.steps;for (double& h:smaller) h*=0.5;
-        const auto b=differentiate(objective_,data_,x_,bounds_,smaller,o.batch_size);
-        r.nfev+=b.nfev;r.objective_calls+=b.calls;
-        r.differentiation_error=(s.asDiagonal()*(a.H-b.H)*s.asDiagonal()).norm()/std::max(scaled.norm(),std::numeric_limits<double>::min());
-        if (r.differentiation_error>o.stability_tolerance) r.warnings.push_back("Hessian is sensitive to differentiation step sizes.");
-    }
+    r.differentiation_error=error;
+    if (error>o.stability_tolerance)
+        r.warnings.push_back("Hessian is sensitive to differentiation step sizes; no consistent adjacent candidate scales were found. Numerical noise or changing curvature may make uncertainty unreliable.");
     for (size_t i=0;i<n;++i) {
         if (a.types[i]!="central") r.warnings.push_back("One-sided differentiation used for parameter "+std::to_string(i)+".");
         if (!bounds_.empty() && std::min(x_[i]-bounds_[i].first,bounds_[i].second-x_[i])<=a.steps[i])

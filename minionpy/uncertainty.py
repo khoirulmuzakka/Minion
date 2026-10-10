@@ -23,7 +23,7 @@ class Uncertainty:
     def hessian(self, scale, *, step_sizes=None, parameter_scales=None,
                 relative_step=1e-3, confidence_level=0.95,
                 eigenvalue_tolerance=1e-10, stability_tolerance=0.05,
-                batch_size=-1, check_stability=True, discard_nonpositive=True):
+                batch_size=-1, n_scales=1, check_stability=False, discard_nonpositive=True):
         """Return local Gaussian uncertainty and numerical diagnostics.
 
         Explicit scale is required: 1 for negative log likelihood, 2 for
@@ -43,7 +43,11 @@ class Uncertainty:
         positive modes, uncertainty arrays are empty. Set discard_nonpositive=False
         to require positive definite curvature and retain strict behavior.
         Warnings identify bounds, step sensitivity and nonstationary points.
-        batch_size=-1 evaluates each complete stencil in one objective call;
+        n_scales selects candidate steps h, 2h, ... (default: one scale).
+        With multiple scales, choose the larger member of the most consistent
+        adjacent pair, preferring the first pair within stability_tolerance.
+        check_stability=True requests at least two scales for compatibility.
+        batch_size=-1 evaluates all candidate stencils in one objective call;
         positive values limit the number of parameter vectors per call.
         """
         options = HessianOptions()
@@ -54,6 +58,7 @@ class Uncertainty:
         options.eigenvalue_tolerance = eigenvalue_tolerance
         options.stability_tolerance = stability_tolerance
         options.batch_size = batch_size
+        options.n_scales = n_scales
         options.check_stability = check_stability
         options.discard_nonpositive = discard_nonpositive
         return self._backend.hessian(scale, options)

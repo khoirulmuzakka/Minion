@@ -40,6 +40,7 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readwrite("eigenvalue_tolerance", &HessianOptions::eigenvalue_tolerance)
         .def_readwrite("stability_tolerance", &HessianOptions::stability_tolerance)
         .def_readwrite("batch_size", &HessianOptions::batch_size)
+        .def_readwrite("n_scales", &HessianOptions::n_scales)
         .def_readwrite("check_stability", &HessianOptions::check_stability)
         .def_readwrite("discard_nonpositive", &HessianOptions::discard_nonpositive);
     py::class_<HessianResult>(m, "HessianResult")

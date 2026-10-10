@@ -19,7 +19,10 @@ struct HessianOptions {
     double stability_tolerance = 0.05;
     // -1 evaluates all stencil points in one objective call.
     int batch_size = -1;
-    bool check_stability = true;
+    // Candidate steps are h, 2h, ...; all candidates share one batch.
+    int n_scales = 1;
+    // Compatibility option: request at least two scales.
+    bool check_stability = false;
     // Return incomplete positive-mode contributions rather than fail strictly.
     bool discard_nonpositive = true;
 };
