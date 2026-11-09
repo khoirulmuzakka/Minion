@@ -20,6 +20,12 @@ void ARRDE::initialize() {
         boundStrategy = "reflect-random";
     }
 
+    if (bounds.empty()) throw std::invalid_argument("ARRDE requires nonempty bounds.");
+    for (const auto& bound : bounds) {
+        const double width = bound.second - bound.first;
+        if (!std::isfinite(bound.first) || !std::isfinite(width) || width < 0.0)
+            throw std::invalid_argument("ARRDE requires finite, ordered bounds.");
+    }
     const auto dimension = bounds.size();
     const double eta = double(maxevals)/double(dimension);
     double logeta = log10(eta);
@@ -47,24 +53,50 @@ void ARRDE::initialize() {
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
 
-    reltol = 1e-8;
-    restartRelTol = 1e-4;
-    refineRelTol = 1e-6;
+    restartXTol = options.get<double>("x_tol_restart", 1e-4);
+    refineXTol = options.get<double>("x_tol_refine", 1e-6);
+    if (!std::isfinite(restartXTol) || !std::isfinite(refineXTol))
+        throw std::invalid_argument("ARRDE x_tol_restart and x_tol_refine must be finite.");
+    phaseXTol = restartXTol;
+    support_tol = false; // Spatial collapse changes phase; it does not terminate ARRDE.
 
     reduction_strategy = "custom";
-    decrease = 1.0; 
     maxRestart = 1; 
     useLatin = true;
     hasInitialized = true;
 }
 
 
+double ARRDE::normalizedPopulationSpread() const {
+    if (population.empty()) return std::numeric_limits<double>::infinity();
+    double largest = 0.0;
+    for (size_t d = 0; d < bounds.size(); ++d) {
+        const double width = bounds[d].second - bounds[d].first;
+        if (width == 0.0) continue;
+        double mean = 0.0, sumSquares = 0.0;
+        size_t count = 0;
+        for (const auto& point : population) {
+            const double value = (point[d] - bounds[d].first) / width;
+            if (!std::isfinite(value)) return std::numeric_limits<double>::infinity();
+            ++count;
+            const double delta = value - mean;
+            mean += delta / double(count);
+            sumSquares += delta * (value - mean);
+        }
+        largest = std::max(largest, std::sqrt(std::max(0.0, sumSquares / double(count))));
+    }
+    return largest;
+}
+
+bool ARRDE::spatiallyConverged() const {
+    return phaseXTol >= 0.0 && spatialSpread <= phaseXTol;
+}
+
 void ARRDE::adaptParameters() {
     adjustPopulationSize();
     adjustArchiveSize();
-    spread = calcStdDev(fitness) / std::fabs(calcMean(fitness));
-    if (spread <= reltol || do_refine) {
-        //std::cout << Nevals << " " << restart << " " << best_fitness << " " << spread << " " << reltol << " " << population.size()<<"\n";
+    spatialSpread = normalizedPopulationSpread();
+    if (spatiallyConverged() || do_refine) {
         processRestartCycle();
     }
     updateParameterMemory();
@@ -154,7 +186,7 @@ void ARRDE::processRestartCycle() {
         MF_records.insert(MF_records.end(), M_F.begin(), M_F.end());
     }
     
-    if (first_run || spread <= reltol){
+    if (first_run || spatiallyConverged()){
         for (const auto& individual : population) {
             population_records.push_back(individual);
         }
@@ -230,7 +262,7 @@ void ARRDE::executeRestart(size_t targetSize) {
     const size_t bestIndex = findArgMin(fitness);
     best_fitness = fitness[bestIndex];
     best = population[bestIndex];
-    reltol = restartRelTol;
+    phaseXTol = restartXTol;
 
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
@@ -325,9 +357,7 @@ void ARRDE::executeRefine(size_t targetSize) {
     }
 
 
-    refineRelTol *= decrease;
-    reltol = refineRelTol;
-    if (Nevals>0.9*maxevals) reltol = 0.0;
+    phaseXTol = refineXTol;
     memoryIndex = 0;
 
     const size_t bestIndex = findArgMin(fitness);

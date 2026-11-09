@@ -41,8 +41,7 @@ void LSHADE::initialize  (){
 
     minPopSize = options.get<int>("minimum_population_size", 4);
     configureConvergenceTolerances(options);
-    if (populationSize == minPopSize) popreduce = false;
-    else popreduce = true;
+    popreduce = options.get<bool>("reducePop", true) && populationSize != minPopSize;
     hasInitialized=true;
 }
 

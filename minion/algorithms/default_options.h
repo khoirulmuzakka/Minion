@@ -75,12 +75,14 @@ class DefaultSettings{
             {"mutation_rate", 0.5}, 
             {"crossover_rate", 0.8}, 
             {"mutation_strategy", std::string("best1bin")}, 
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")} 
         };
 
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
+            {"x_tol_restart", 1e-5},
+            {"x_tol_refine", 1e-7},
             {"population_size", 0},
             {"bound_strategy" , std::string("reflect-random")} ,
         };
@@ -98,7 +100,7 @@ class DefaultSettings{
             {"population_size", 0},
             {"memory_size", 5},
             {"success_rate" , 0.5} ,
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("random")}
         };
@@ -110,7 +112,7 @@ class DefaultSettings{
             {"success_rate", 0.5},
             {"eb_hybrid_rate_init", 0.7},
             {"perturbation_rate", 0.4},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy", std::string("random")}
         };
@@ -121,7 +123,7 @@ class DefaultSettings{
             {"minimum_population_size", 4},
             {"memory_size", 100},
             {"archive_size_ratio" , 2.6} ,
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
@@ -132,12 +134,13 @@ class DefaultSettings{
             {"minimum_population_size", 4},
             {"memory_size", 0},
             {"archive_size_ratio", 1.0},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy", std::string("midpoint-target")}
         };
 
         std::map<std::string, ConfigValue> default_settings_JADE  = {
+            {"reducePop", false},
             {"maxiters", -1},
             {"population_size", 0},
             {"c", 0.1}, 
@@ -145,7 +148,7 @@ class DefaultSettings{
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")} 
         };
@@ -157,7 +160,7 @@ class DefaultSettings{
             {"archive_size_ratio", 1.0}, 
             {"minimum_population_size", 4}, 
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("random")} 
         };
@@ -168,7 +171,7 @@ class DefaultSettings{
             {"minimum_population_size", 4},
             {"memory_size", 0},
             {"archive_size_ratio", 2.6},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
@@ -177,13 +180,14 @@ class DefaultSettings{
             {"maxiters", -1},
             {"population_size", 0},
             {"minimum_population_size", 12},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
 
 
         std::map<std::string, ConfigValue>  default_settings_LSHADE = {
+            {"reducePop", true},
             {"maxiters", -1},
             {"population_size", 0},
             {"memory_size", 6},
@@ -191,7 +195,7 @@ class DefaultSettings{
             {"archive_size_ratio", 2.6},
             {"minimum_population_size", 4},
             {"reduction_strategy", std::string("linear")}, //linear, exponential, or agsk
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("random")}
         };
@@ -210,7 +214,7 @@ class DefaultSettings{
             {"cognitive_coefficient", 1.5},
             {"social_coefficient", 1.5},
             {"velocity_clamp", 0.2},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
@@ -227,7 +231,7 @@ class DefaultSettings{
             {"informant_degree", 3},
             {"velocity_clamp", 0.0},
             {"normalize", false},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
@@ -243,7 +247,7 @@ class DefaultSettings{
             {"subswarm_count", 4},
             {"regroup_period", 5},
             {"velocity_clamp", 0.2},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("reflect-random")}
         };
@@ -261,7 +265,7 @@ class DefaultSettings{
             {"learning_period", 20},
             {"sin_freq_base", 0.5},
             {"epsilon", 1e-8},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
@@ -270,7 +274,7 @@ class DefaultSettings{
             {"maxiters", -1},
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
@@ -279,7 +283,7 @@ class DefaultSettings{
             {"maxiters", -1},
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy", std::string("reflect-random")}
         };
@@ -287,7 +291,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_BIPOP_aCMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"max_restarts", -1},
             {"bound_strategy", std::string("reflect-random")}
@@ -296,7 +300,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue> default_settings_RCMAES = {
             {"population_size", 0},
             {"rel_initial_step", 0.3},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"max_restarts", -1},
             {"bound_strategy", std::string("reflect-random")}
@@ -312,7 +316,7 @@ class DefaultSettings{
             {"local_search_algo", "L_BFGS_B"},
             {"func_noise_ratio", 1e-16},
             {"N_points_derivative", 3},
-            {"x_tol", 1e-8},
+            {"x_tol", 1e-6},
             {"f_tol", -1.0},
             {"bound_strategy" , std::string("periodic")} 
         };
@@ -320,7 +324,7 @@ class DefaultSettings{
         std::map<std::string, ConfigValue>  default_settings_NelderMead = {
                 {"maxiters", -1},
                 {"locality_factor", 0.05},
-                {"x_tol", 1e-8},
+                {"x_tol", 1e-6},
                 {"f_tol", -1.0},
                 {"bound_strategy" , std::string("reflect-random")}, 
         };
@@ -380,7 +384,7 @@ class DefaultSettings{
 
         std::map <std::string, std::map<std::string, ConfigValue> > algoToSettingsMap = {
                 {"DE", default_settings_DE}, 
-                {"LSHADE", default_settings_LSHADE}, 
+                {"LSHADE", default_settings_LSHADE},
                 {"JADE", default_settings_JADE}, 
                 {"j2020", default_settings_j2020}, 
                 {"NLSHADE_RSP", default_settings_NLSHADE_RSP}, 

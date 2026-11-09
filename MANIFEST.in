@@ -2,6 +2,7 @@ include LICENSE.txt
 include minionpy.md
 
 # Exclude generated build and metadata trees from source distributions.
+prune .dependencies
 prune _skbuild
 prune minionpy.egg-info
 

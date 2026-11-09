@@ -11,6 +11,8 @@ endif()
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    # Compile source files within each MSBuild project concurrently.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/MP8>)
 elseif (MINGW OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-result")
 elseif (APPLE)
@@ -35,6 +37,17 @@ file(GLOB MINION_UTILS_SOURCE_FILES CONFIGURE_DEPENDS minion/utils/*.cpp)
 file(GLOB MINION_UNCERTAINTY_SOURCE_FILES CONFIGURE_DEPENDS minion/uncertainty/*.cpp)
 file(GLOB MINION_CEC_SOURCE_FILES CONFIGURE_DEPENDS minion/cec/*.cpp)
 
+# Keep dependency sources and population metadata across clean build directories.
+# Separate generators/platforms because FetchContent also caches sub-build projects.
+string(MAKE_C_IDENTIFIER "${CMAKE_GENERATOR}-${CMAKE_GENERATOR_PLATFORM}" _minion_dependency_config)
+set(_minion_dependency_dir "${CMAKE_CURRENT_SOURCE_DIR}/.dependencies/${_minion_dependency_config}")
+# Migrate the old CMake default while respecting custom cache locations.
+if(DEFINED FETCHCONTENT_BASE_DIR AND FETCHCONTENT_BASE_DIR STREQUAL "${CMAKE_BINARY_DIR}/_deps")
+    set(FETCHCONTENT_BASE_DIR "${_minion_dependency_dir}" CACHE PATH "Directory for downloaded build dependencies" FORCE)
+else()
+    set(FETCHCONTENT_BASE_DIR "${_minion_dependency_dir}" CACHE PATH "Directory for downloaded build dependencies")
+endif()
+option(FETCHCONTENT_UPDATES_DISCONNECTED "Reuse downloaded dependencies without checking upstream" ON)
 include(FetchContent)
 option(MINION_FETCH_EIGEN "Fetch Eigen headers when Eigen3 package is not found" ON)
 
@@ -71,6 +84,7 @@ if(NOT Eigen3_FOUND)
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG 3.4.0
         GIT_SHALLOW TRUE
+        GIT_SUBMODULES ""
         SOURCE_SUBDIR _minion_no_cmake_project
     )
     FetchContent_MakeAvailable(eigen)
@@ -143,6 +157,7 @@ if(MINION_BUILD_BENCHMARK)
         GIT_REPOSITORY https://github.com/numbbo/coco.git
         GIT_TAG master
         GIT_SHALLOW TRUE
+        GIT_SUBMODULES ""
     )
     FetchContent_MakeAvailable(coco)
 
@@ -302,11 +317,15 @@ endif()
 if(MINION_BUILD_PYTHON)
     find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
     execute_process(
-        COMMAND python -m pybind11 --cmakedir
+        COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
         OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+        RESULT_VARIABLE _minion_pybind11_result
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    set(pybind11_DIR ${PYBIND11_CMAKE_DIR})
+    if(NOT _minion_pybind11_result EQUAL 0)
+        message(FATAL_ERROR "Could not locate pybind11 using ${Python3_EXECUTABLE}")
+    endif()
+    set(pybind11_DIR "${PYBIND11_CMAKE_DIR}")
     find_package(pybind11 REQUIRED CONFIG)
 
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/minionpy)

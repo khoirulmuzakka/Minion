@@ -649,6 +649,10 @@ class LSHADE(MinimizerBase):
     """
     Implementation of the Linear Population Reduction - Success History Adaptive Differential Evolution (LSHADE) algorithm.
 
+    ``options={"reducePop": False}`` disables population reduction, giving
+    SHADE-style constant-population adaptation. The default is ``True``;
+    ``reduction_strategy`` controls the reduction schedule when enabled.
+
     Reference : R. Tanabe and A. S. Fukunaga, "Improving the search performance of SHADE using linear population size reduction," 2014 IEEE Congress on Evolutionary Computation (CEC), Beijing, China, 2014, pp. 1658-1665, doi: 10.1109/CEC.2014.6900380.
 
     This class inherits from `MinimizerBase`.
@@ -2433,10 +2437,22 @@ class ARRDE(MinimizerBase):
         :param callback: Optional callback invoked after each iteration. Return True to stop optimization early; return False or None to continue.
         :param seed: Optional random seed.
         :param options: Optional algorithm settings. Defaults to
-            ``{"population_size": 0, "bound_strategy": "reflect-random"}``.
+            ``{"population_size": 0, "bound_strategy": "reflect-random",
+            "x_tol_restart": 1e-4, "x_tol_refine": 1e-6}``.
             Supported keys:
 
             - ``population_size`` (int): Initial population size.
+            - ``x_tol_restart`` (float): Normalized spatial-collapse threshold
+              for the initial search and restarted searches. Default ``1e-4``.
+            - ``x_tol_refine`` (float): Spatial-collapse threshold during
+              refinement, including final refinement. Default ``1e-6``.
+              Both thresholds use the largest population standard deviation
+              divided by that coordinate's bound width. Negative values disable
+              that phase's spatial trigger; zero requires exact collapse.
+              These thresholds change phase rather than terminate optimization.
+              The budget-driven final refinement remains active even when both
+              spatial thresholds are disabled. Standard ``x_tol``/``f_tol`` do
+              not terminate ARRDE.
             - ``bound_strategy`` (str): Boundary handling strategy:
               ``"random"``, ``"reflect-random"``, or ``"clip"``.
 

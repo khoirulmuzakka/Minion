@@ -13,6 +13,7 @@ namespace minion {
 /**
  * @class ARRDE
  * @brief Class implementing the Adaptive Restart-Refine Differential Evolution algorithm.
+ * x_tol_restart and x_tol_refine control normalized spatial phase transitions.
  */
 class ARRDE : public Differential_Evolution {
     public:
@@ -35,17 +36,17 @@ class ARRDE : public Differential_Evolution {
         std::string reduction_strategy;
         bool popreduce;
         bool do_refine=false;
-        double spread;
+        double spatialSpread = std::numeric_limits<double>::infinity();
 
         bool refine = false;
         bool restart = false;
         bool first_run = true;
         bool population_converged = false;
         double bestOverall =  std::numeric_limits<double>::max();
-        double decrease=0.9;
-        double reltol;
-        double restartRelTol;
-        double refineRelTol;
+        double phaseXTol = 1e-4;
+        double restartXTol = 1e-4;
+        double refineXTol = 1e-6;
+        bool spatiallyConverged() const;
         size_t Nrestart=1; //nitially set to 1, first run is consedered a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 
         bool update_records = false;
@@ -155,6 +156,8 @@ class ARRDE : public Differential_Evolution {
         void initialize  () override;
 
     protected:
+        // Maximum coordinate population standard deviation / bound width.
+        double normalizedPopulationSpread() const;
         void onBestUpdated(const std::vector<double>& candidate, double fitnessValue, bool improved) override;
 };
 

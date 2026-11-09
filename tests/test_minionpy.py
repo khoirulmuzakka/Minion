@@ -482,6 +482,75 @@ def check_gradient_descent_backtracking_improves_large_step():
     assert with_ls.fun < without_ls.fun, (without_ls.fun, with_ls.fun)
 
 
+def check_arrde_spatial_phase_tolerances():
+    def run(restart, refine, offset=0.0, direct=True):
+        events = []
+
+        def constant(points):
+            events.append(np.asarray(points).tolist())
+            return [offset] * len(points)
+
+        kwargs = {} if direct else {"algo": "ARRDE"}
+        solver = (minionpy.ARRDE if direct else minionpy.Minimizer)(
+            constant, [(-1.0, 1.0)] * 2, maxevals=400, seed=3,
+            options={"population_size": 16, "x_tol_restart": restart,
+                     "x_tol_refine": refine, "x_tol": 1.0, "f_tol": 1.0}, **kwargs,
+        )
+        result = solver.optimize()
+        assert result.status == minionpy.TerminationStatus.MaxEvaluationsReached
+        assert result.nfev >= 400
+        return result, events
+
+    for direct in (True, False):
+        disabled, events = run(-1.0, -1.0, direct=direct)
+        assert len(events) == disabled.nit + 1
+        _, shifted = run(-1.0, -1.0, offset=1000.0, direct=direct)
+        assert events == shifted, "Spatial triggers changed under an objective offset"
+        _, loose = run(1.0, 1.0, direct=direct)
+        _, tight_refine = run(1.0, -1.0, direct=direct)
+        assert len(loose) > len(tight_refine), "Refinement tolerance has no effect"
+        assert len(tight_refine) > 1
+    for key in ("x_tol_restart", "x_tol_refine"):
+        for value in (float("nan"), float("inf")):
+            try:
+                minionpy.ARRDE(sphere_batch, [(-1.0, 1.0)] * 2,
+                              options={key: value}).optimize()
+            except (ValueError, RuntimeError):
+                pass
+            else:
+                raise AssertionError(f"Non-finite {key} was accepted")
+
+
+def check_lshade_population_reduction():
+    for strategy in ("linear", "exponential", "agsk"):
+        for reduce in (None, False, True):
+            for direct in (True, False):
+                sizes = []
+
+                def objective(points):
+                    sizes.append(len(points))
+                    return sphere_batch(points)
+
+                options = {"population_size": 20, "reduction_strategy": strategy,
+                           "x_tol": -1.0, "f_tol": -1.0}
+                if reduce is not None:
+                    options["reducePop"] = reduce
+                kwargs = {} if direct else {"algo": "LSHADE"}
+                solver = (minionpy.LSHADE if direct else minionpy.Minimizer)(
+                    objective, [(-1.0, 1.0)] * 2, maxevals=240, seed=3,
+                    options=options, **kwargs,
+                )
+                result = solver.optimize()
+                assert math.isfinite(result.fun)
+                assert sizes[0] == 20 and len(sizes) > 2
+                if reduce is False:
+                    assert set(sizes) == {20}
+                else:
+                    assert min(sizes) >= 4 and min(sizes) < 20
+                if direct:
+                    assert len(solver.meanF) > 1 and len(solver.meanF) == len(solver.meanCR)
+
+
 def check_rdex_direct_wrapper():
     direct = minionpy.RDEX(
         func=sphere_batch,
@@ -1020,6 +1089,8 @@ def main() -> int:
         ("L-BFGS line-search fallback stagnates", check_lbfgs_line_search_fallback_stagnates),
         ("GradientDescent backtracking rescues an oversized step", check_gradient_descent_backtracking_improves_large_step),
         ("RDEX direct and generic wrappers run", check_rdex_direct_wrapper),
+        ("LSHADE population reduction defaults on and can be disabled", check_lshade_population_reduction),
+        ("ARRDE spatial phase thresholds and objective-offset invariance", check_arrde_spatial_phase_tolerances),
     ]
     checks.extend([
         ('hessian: polynomial fit with known observation errors', check_hessian_polynomial_fit_with_known_observation_errors),

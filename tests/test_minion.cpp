@@ -239,6 +239,68 @@ bool check_callback_stop() {
            result.message == "Callback requested optimization stop.";
 }
 
+bool check_arrde_spatial_phase_tolerances() {
+    struct Probe : minion::ARRDE {
+        using minion::ARRDE::ARRDE;
+        using minion::ARRDE::normalizedPopulationSpread;
+    };
+    Probe metric(sphere_batch, {{0, 10}, {0, 1000}});
+    metric.population = {{1, 100}, {9, 900}, {1, 900}, {9, 100}};
+    if (std::fabs(metric.normalizedPopulationSpread() - 0.4) > 1e-12) return false;
+    Probe scaled(sphere_batch, {{0, 100}, {-100, 900}});
+    scaled.population = {{10, 0}, {90, 800}, {10, 800}, {90, 0}};
+    if (std::fabs(scaled.normalizedPopulationSpread() - metric.normalizedPopulationSpread()) > 1e-12) return false;
+    for (double refineTol : {-1.0, 1.0}) {
+        size_t calls = 0;
+        minion::MinionFunction constant = [&calls](const auto& points, void*) {
+            ++calls;
+            return std::vector<double>(points.size(), 0.0);
+        };
+        std::map<std::string, minion::ConfigValue> options = {
+            {"population_size", 8}, {"x_tol_restart", 1.0}, {"x_tol_refine", refineTol}
+        };
+        Probe solver(constant, {{-1, 1}, {-1, 1}}, {}, nullptr, nullptr, 1000, 3, options);
+        solver.initialize();
+        solver.population = {{-0.8,-0.8},{0.8,0.8},{-0.6,0.6},{0.6,-0.6},
+                             {-0.4,0.4},{0.4,-0.4},{-0.2,0.2},{0.2,-0.2}};
+        solver.fitness.assign(8, 0.0);
+        solver.best = solver.population.front();
+        solver.best_fitness = 0.0;
+        solver.Nevals = 8;
+        solver.adaptParameters(); // Initial spatial convergence -> restart.
+        if (calls != 1 || solver.population_records.empty()) return false;
+        solver.adaptParameters(); // Restart allowance exhausted -> refinement.
+        if (calls != 1) return false; // Refinement uses cached fitness.
+        solver.adaptParameters(); // Only the enabled refine tolerance restarts.
+        if (calls != (refineTol < 0 ? 1u : 2u)) return false;
+    }
+    return true;
+}
+
+bool check_lshade_population_reduction() {
+    for (const std::string strategy : {"linear", "exponential", "agsk"}) {
+        for (const int initialSize : {0, 20}) {
+            for (int mode = 0; mode < 3; ++mode) {
+                std::map<std::string, minion::ConfigValue> options = {
+                    {"population_size", initialSize}, {"reduction_strategy", strategy},
+                    {"x_tol", -1.0}, {"f_tol", -1.0}
+                };
+                // Default and explicit true reduce; explicit false stays constant.
+                if (mode != 0) options["reducePop"] = (mode == 2);
+                minion::LSHADE solver(sphere_batch, {{-5, 5}, {-5, 5}}, {},
+                                     nullptr, nullptr, 720, 17, options);
+                solver.optimize();
+                const size_t initial = initialSize == 0 ? 36 : 20;
+                const size_t size = solver.population.size();
+                if (mode == 1 ? size != initial : (size < 4 || size >= initial)) return false;
+                if (solver.F.size() != size || solver.CR.size() != size || solver.meanF.size() < 2) return false;
+                if (solver.M_F == std::vector<double>(solver.memorySize, 0.5)) return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool check_hessian_uncertainty() {
     minion::MinionFunction objective = [](const auto& points, void*) {
         std::vector<double> values;
@@ -296,6 +358,8 @@ int main() {
         {"core algorithms solve Rosenbrock within budget", check_rosenbrock_benchmark},
         {"core algorithms run finite CEC2017 benchmark cases within budget", check_cec2017_benchmarks},
         {"C++ callback true stops optimization", check_callback_stop},
+        {"LSHADE population reduction switch and adaptation", check_lshade_population_reduction},
+        {"ARRDE normalized spatial restart and refine thresholds", check_arrde_spatial_phase_tolerances},
         {"Hessian uncertainty matches analytic correlated covariance", check_hessian_uncertainty},
         {"Bootstrap uncertainty matches empirical covariance and percentiles", check_bootstrap_uncertainty},
     };

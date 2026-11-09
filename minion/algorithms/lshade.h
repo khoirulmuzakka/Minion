@@ -11,6 +11,7 @@ namespace minion {
  * 
  * The LSHADE class is an extension of the Differential Evolution algorithm 
  * with mechanisms for self-adaptation of control parameters.
+ * Set reducePop=false to use the same adaptation with a constant population.
  */
 class LSHADE : public Differential_Evolution {
     public:

@@ -1,5 +1,6 @@
 .vscode/
 build/
+.dependencies/
 Logs/*.log
 src/__pycache__
 */*/__pycache__

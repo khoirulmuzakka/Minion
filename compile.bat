@@ -8,9 +8,16 @@ set "PYTHON_CMD=py -3"
 %PYTHON_CMD% --version >nul 2>nul
 if errorlevel 1 (
     set "PYTHON_CMD=python"
-    %PYTHON_CMD% --version >nul 2>nul
+    !PYTHON_CMD! --version >nul 2>nul
     if errorlevel 1 (
         set "PYTHON_CMD="
+    )
+)
+
+set "PYTHON_CMAKE_ARG="
+if defined PYTHON_CMD (
+    for /f "delims=" %%P in ('!PYTHON_CMD! -c "import sys; print(sys.executable)"') do (
+        set PYTHON_CMAKE_ARG="-DPython3_EXECUTABLE=%%P"
     )
 )
 
@@ -59,12 +66,12 @@ if defined CURRENT_GENERATOR if /I "!CURRENT_GENERATOR!"=="%CMAKE_GENERATOR%" if
     echo Existing build directory uses platform "!CURRENT_GENERATOR_PLATFORM!". Resetting build directory...
     call :reset_build_dir
 )
-call :reset_fetchcontent_subbuilds
 
 cmake -G "%CMAKE_GENERATOR%" -A x64 ^
   -DMINION_BUILD_BENCHMARK=ON ^
   -DMINION_BUILD_EXAMPLES=ON ^
   -DMINION_BUILD_PYTHON=ON ^
+  %PYTHON_CMAKE_ARG% ^
   ..
 if errorlevel 1 exit /b 1
 
@@ -135,16 +142,6 @@ for /f "delims=" %%G in ('dir /b /a') do (
         ) else (
             del /f /q "%%G"
         )
-    )
-)
-exit /b 0
-
-:reset_fetchcontent_subbuilds
-if not exist "_deps" exit /b 0
-for /d %%G in ("_deps\*-subbuild") do (
-    if exist "%%~G\CMakeCache.txt" (
-        echo Resetting FetchContent sub-build cache: %%~nxG
-        rmdir /s /q "%%~G"
     )
 )
 exit /b 0
