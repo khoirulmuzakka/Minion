@@ -10,7 +10,7 @@
 ![PyPI downloads](https://img.shields.io/pypi/dm/minionpy.svg)
 ![PyPI License](https://img.shields.io/pypi/l/minionpy.svg)
 [![Documentation Status](https://readthedocs.org/projects/minion-py/badge/?version=latest)](https://minion-py.readthedocs.io/en/latest/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14794240.svg)](https://doi.org/10.5281/zenodo.14794240)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.10145/status.svg)](https://doi.org/10.21105/joss.10145)
 
 
 MinionPy is the Python interface to the Minion C++ optimization library. It focuses on single-objective, derivative-free optimization. The package includes several population-based and local optimization methods, along with CEC benchmark suites that can be used for testing and comparison.
@@ -68,6 +68,4 @@ For full usage instructions, API reference, and examples, visit the official doc
 
 If you use **MinionPy** in your research or projects, we would be grateful if you could cite the following publication:
 
-> Muzakka, K. F., Möller, S., & Finsterbusch, M. (2025).  
-> *Minion: A high-performance derivative-free optimization library designed for solving complex optimization problems.*  
-> Zenodo. [https://doi.org/10.5281/zenodo.14794239](https://doi.org/10.5281/zenodo.14794239)  
+> Muzakka, K. F., Möller, S., & Finsterbusch, M. (2026). *Minion: A C++ and Python Library for Single-Objective Optimization.* Journal of Open Source Software, 11(127), 10145. [https://doi.org/10.21105/joss.10145](https://doi.org/10.21105/joss.10145)
