@@ -188,6 +188,65 @@ print("message =", result.message)
 In Python, `func(X)` receives `X` as `list[list[float]]` and returns one value per candidate point.
 Python callbacks receive a `MinionResult`; return `True` to stop optimization early, or `False`/`None` to continue.
 
+## Statistical Uncertainty
+
+Minion provides statistical uncertainty estimates for fitted parameters in both
+C++ and Python through the same C++ implementation:
+
+- **Hessian analysis** estimates local parameter uncertainties, covariance,
+  correlations, and marginal normal confidence intervals at a supplied optimum.
+- **Bootstrap analysis** repeatedly fits user-generated datasets and reports
+  parameter standard deviations, covariance, correlations, and marginal
+  percentile intervals.
+
+For example, estimate uncertainties for a straight-line fit with known Gaussian
+measurement errors:
+
+```python
+import numpy as np
+import minionpy as mpy
+
+t = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+y = np.array([1.1, 2.9, 5.2, 6.8, 9.1])
+errors = np.full(t.shape, 0.2)
+
+def chi_squared(parameters):
+    p = np.asarray(parameters)
+    predictions = p[:, 0, None] + p[:, 1, None] * t
+    return np.sum(((predictions - y) / errors) ** 2, axis=1).tolist()
+
+bounds = [(-10.0, 10.0), (-10.0, 10.0)]
+fit = mpy.Minimizer(
+    chi_squared, bounds=bounds, x0=[[1.0, 2.0]],
+    algo="NelderMead", maxevals=4000, seed=42,
+    options={"x_tol": 1e-9},
+).optimize()
+
+analysis = mpy.Uncertainty(chi_squared, fit.x, bounds)
+uncertainty = analysis.hessian(scale=2)
+if uncertainty.covariance_available:
+    print("parameter estimates:", fit.x)
+    print("standard uncertainties:", uncertainty.std)
+    print("covariance:", uncertainty.covariance)
+    print("correlation:", uncertainty.correlation)
+print("diagnostics:", uncertainty.warnings)
+```
+
+Hessian covariance is `scale * inverse(Hessian)`: use `scale=2` for chi-squared
+with known observation variances, or `scale=1` for negative log likelihood.
+Other objectives need a justified statistical scaling. For bootstrap analysis,
+`analysis.bootstrap(objective_sampler, ...)` accepts a callback that returns a
+vectorized objective for each fixed resampled dataset.
+
+Inspect the returned validity flags and diagnostics before interpreting the
+results. Statistical uncertainty describes variation under the assumed data
+model; it is distinct from optimization error. Hessian estimates are local
+approximations and may be incomplete for poorly identified parameters.
+
+See the [statistical uncertainty guide](https://minion-py.readthedocs.io/en/latest/Uncertainty.html)
+for C++ usage, bootstrap examples, confidence intervals, and diagnostics, and the
+[curve-fitting notebook](examples/curve_fit.ipynb) for a worked comparison.
+
 ## CEC and BBOB2009 Benchmark Usage
 
 Minion exposes the CEC suites and the BBOB2009 suite through the same benchmark API.
