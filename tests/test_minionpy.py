@@ -483,7 +483,7 @@ def check_gradient_descent_backtracking_improves_large_step():
 
 
 def check_arrde_spatial_phase_tolerances():
-    def run(restart, refine, offset=0.0, direct=True):
+    def run(restart, refine, offset=0.0, direct=True, final_start=None):
         events = []
 
         def constant(points):
@@ -491,10 +491,11 @@ def check_arrde_spatial_phase_tolerances():
             return [offset] * len(points)
 
         kwargs = {} if direct else {"algo": "ARRDE"}
+        phase_options = {} if final_start is None else {"final_refine_start": final_start}
         solver = (minionpy.ARRDE if direct else minionpy.Minimizer)(
             constant, [(-1.0, 1.0)] * 2, maxevals=400, seed=3,
             options={"population_size": 16, "x_tol_restart": restart,
-                     "x_tol_refine": refine, "x_tol": 1.0, "f_tol": 1.0}, **kwargs,
+                     "x_tol_refine": refine, "x_tol": 1.0, "f_tol": 1.0, **phase_options}, **kwargs,
         )
         result = solver.optimize()
         assert result.status == minionpy.TerminationStatus.MaxEvaluationsReached
@@ -504,12 +505,24 @@ def check_arrde_spatial_phase_tolerances():
     for direct in (True, False):
         disabled, events = run(-1.0, -1.0, direct=direct)
         assert len(events) == disabled.nit + 1
+        _, explicit_default = run(-1.0, -1.0, direct=direct, final_start=0.9)
+        assert events == explicit_default, "Default final-refinement schedule changed"
+        _, earlier = run(-1.0, -1.0, direct=direct, final_start=0.5)
+        assert [len(batch) for batch in events] != [len(batch) for batch in earlier], "Final-refinement setting has no effect on population schedule"
         _, shifted = run(-1.0, -1.0, offset=1000.0, direct=direct)
         assert events == shifted, "Spatial triggers changed under an objective offset"
         _, loose = run(1.0, 1.0, direct=direct)
         _, tight_refine = run(1.0, -1.0, direct=direct)
         assert loose != tight_refine, "Refinement tolerance has no effect"
         assert len(tight_refine) > 1
+    for value in (0.0, 1.0, -0.1, 1.1, float("nan"), float("inf")):
+        for direct in (True, False):
+            try:
+                run(-1.0, -1.0, direct=direct, final_start=value)
+            except (ValueError, RuntimeError):
+                pass
+            else:
+                raise AssertionError(f"Invalid final_refine_start {value} was accepted")
     for key in ("x_tol_restart", "x_tol_refine"):
         for value in (float("nan"), float("inf")):
             try:

@@ -53,8 +53,11 @@ void ARRDE::initialize() {
     M_CR = std::vector<double>(memorySize, 0.8) ;
     M_F =  std::vector<double>(memorySize, 0.3) ;
 
-    restartXTol = options.get<double>("x_tol_restart", 1e-4);
-    refineXTol = options.get<double>("x_tol_refine", 1e-6);
+    finalRefineStart = options.get<double>("final_refine_start", 0.9);
+    if (!std::isfinite(finalRefineStart) || finalRefineStart <= 0.0 || finalRefineStart >= 1.0)
+        throw std::invalid_argument("ARRDE final_refine_start must be finite and strictly between 0 and 1.");
+    restartXTol = options.get<double>("x_tol_restart", 1e-5);
+    refineXTol = options.get<double>("x_tol_refine", 1e-7);
     if (!std::isfinite(restartXTol) || !std::isfinite(refineXTol))
         throw std::invalid_argument("ARRDE x_tol_restart and x_tol_refine must be finite.");
     phaseXTol = restartXTol;
@@ -112,13 +115,13 @@ void ARRDE::adjustPopulationSize() {
     const double D = std::max(2*dim, 0.25*A);
     double pp = 1.17+2.075*exp(-0.0567*dim) ;
     double value;
-    if (progress <= 0.9) {
+    if (progress <= finalRefineStart) {
         // Nonlinear fast decrease from A to C
-        const double t = progress / 0.9;
+        const double t = progress / finalRefineStart;
         value = A - (A - C) * (1.0 - std::pow(1.0 - t, pp));
     } else {
         pp=2.0;
-        const double t = (progress-0.9) /0.1 ;
+        const double t = (progress-finalRefineStart) / (1.0-finalRefineStart) ;
         value = D - (D - B) * (1.0 - std::pow(1.0 - t, pp));
     }
 
@@ -287,7 +290,7 @@ void ARRDE::executeRefine(size_t targetSize) {
         population.push_back(population_records[idx]);
         fitness.push_back(fitness_records[idx]);
     }; 
-    if (Nevals>0.9*maxevals && do_refine) {
+    if (Nevals>finalRefineStart*maxevals && do_refine) {
         auto best_sofar_ind = findArgMin(fitness_records);
         population[0] = population_records[best_sofar_ind];
         fitness[0] = fitness_records[best_sofar_ind];
@@ -470,9 +473,9 @@ void ARRDE::resampleControlParameters() {
 
         // jSO-specific parameter adjustments based on progress
         if (first_run){
-            if (Nevals < 0.25*0.9*maxevals && newCR[i] < 0.7) newCR[i] = 0.7;
-            if (Nevals < 0.5*0.9*maxevals && newCR[i] < 0.6) newCR[i] = 0.6;
-            if (Nevals < 0.6*0.9*maxevals && newF[i] > 0.7) newF[i] = 0.7;
+            if (Nevals < 0.25*finalRefineStart*maxevals && newCR[i] < 0.7) newCR[i] = 0.7;
+            if (Nevals < 0.5*finalRefineStart*maxevals && newCR[i] < 0.6) newCR[i] = 0.6;
+            if (Nevals < 0.6*finalRefineStart*maxevals && newF[i] > 0.7) newF[i] = 0.7;
         };
     }
 

@@ -132,7 +132,7 @@ Start from defaults, then override only what you need.
 
     // Common overrides
     settings["population_size"] = 80;
-    settings["x_tol"] = 1e-8;
+    settings["x_tol"] = 1e-6;
     settings["f_tol"] = 1e-6;
     settings["bound_strategy"] = std::string("reflect-random");
 

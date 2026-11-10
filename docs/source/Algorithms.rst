@@ -60,7 +60,7 @@ Callbacks receive the current result; return ``True`` to stop early, or ``False`
 Tolerance-based convergence is configured with ``x_tol`` and ``f_tol`` for algorithms that support it.
 ``x_tol`` is the maximum coordinate spread of the active population, swarm, offspring set, or simplex.
 ``f_tol`` is the relative spread of the active objective values. Optimization stops when either tolerance is satisfied.
-The default values are ``x_tol = 1e-8`` and ``f_tol = -1.0``. Restarting CMA-ES variants use these tolerances as restart triggers.
+The default values are ``x_tol = 1e-6`` (``1e-8`` for GradientDescent) and ``f_tol = -1.0``. Restarting CMA-ES variants use these tolerances as restart triggers.
 Set ``x_tol`` or ``f_tol`` to a negative value to disable that convergence check.
 Algorithms without built-in restart strategies also accept ``maxiters`` as a uniform iteration cap. The default is ``maxiters = -1``, which disables
 iteration-based stopping and leaves ``maxevals`` as the primary budget. ``ARRDE``, ``j2020``, ``RCMAES``, and ``BIPOP_aCMAES`` use their restart strategies instead and do not expose ``maxiters``.
@@ -111,7 +111,7 @@ Parameters :
 
   .. note:: Mutation / crossover strategy. Available strategies include ``"best1bin"``, ``"best1exp"``, ``"rand1bin"``, ``"rand1exp"``, ``"current_to_best1bin"``, ``"current_to_best1exp"``, ``"current_to_pbest1bin"``, ``"current_to_pbest1exp"``, ``"current_to_pbest_A_1bin"``, ``"current_to_pbest_A_1exp"``, ``"current_to_pbest_AW_1bin"``, and ``"current_to_pbest_AW_1exp"``.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -159,7 +159,7 @@ Parameters :
 
   .. note:: Fraction of the search range used as a velocity limit. ``0`` disables clamping.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -227,7 +227,7 @@ Parameters :
 
   .. note:: Whether to transform search vectors into a normalised unit hypercube before mapping back to bounds.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -289,7 +289,7 @@ Parameters :
 
   .. note:: Fraction of the search range that caps particle velocities. ``0`` disables clamping.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -361,7 +361,7 @@ Parameters :
 
   .. note:: Small constant used to stabilise probability updates.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -421,7 +421,7 @@ Parameters :
 
   .. note:: Damping parameter controlling how aggressively the step size adapts.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance measured in original coordinates.
 
@@ -455,7 +455,7 @@ Parameters :
 
   .. note:: Initial global step size, scaled by the average bound width.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance measured in original coordinates.
 
@@ -487,7 +487,7 @@ Parameters :
 
   .. note:: Initial global step size, scaled by the average bound width.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Restart trigger based on the effective step size.
 
@@ -521,7 +521,7 @@ Parameters :
 
   .. note:: Initial global step size, scaled by the average bound width.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Restart trigger based on the effective step size.
 
@@ -544,7 +544,29 @@ ARRDE is an extension of the Differential Evolution algorithm with adaptive rest
 
 Algorithm name : ``"ARRDE"``
 
+The final-refinement population schedule begins after ``final_refine_start``
+times ``maxevals``. This is checked between generations; refinement is triggered
+when that schedule expands the population. Spatial tolerances may trigger
+refinement earlier.
+
 Parameters :
+
+- ``final_refine_start``: ``0.9``
+
+  Fraction of the evaluation budget at which the final population schedule
+  begins. Must be finite and strictly between 0 and 1. For example, ``0.8``
+  allocates approximately the last 20% to the final phase. This also rescales
+  the preceding population reduction and early control-parameter schedules.
+
+- ``x_tol_restart``: ``1e-5``
+
+  Spatial trigger during initial and restarted searches.
+
+- ``x_tol_refine``: ``1e-7``
+
+  Spatial trigger during refinement. Both tolerances use the largest coordinate
+  population standard deviation divided by its bound width. Negative values
+  disable the respective spatial trigger; scheduled final refinement remains active.
 
 
 - ``population_size``: 0
@@ -642,7 +664,7 @@ Parameters :
 
   .. note:: The success rate required for selecting an individual for the next generation.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -688,7 +710,7 @@ Parameters :
 
   .. note:: Perturbation probability used by the RDEX mutation mechanism.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -737,7 +759,7 @@ Parameters :
 
   .. note:: Minimum population size used during population reduction.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -778,7 +800,7 @@ Parameters :
 
   .. note:: The ratio of the archive size relative to the population size.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -838,7 +860,7 @@ Parameters :
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -891,7 +913,7 @@ Parameters :
 
   .. note:: Strategy used to reduce the population size. Available strategies:  ``"linear"``, ``"exponential"``, ``"agsk"``.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -951,7 +973,7 @@ Parameters :
 
   .. note:: The strategy for reducing the population size over time. Options include linear, exponential, or agsk.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -1000,7 +1022,7 @@ Parameters :
 
   .. note:: Archive size relative to the population size.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -1044,7 +1066,7 @@ Parameters :
 
   .. note:: Minimum population size allowed during AGSK's nonlinear reduction schedule. Must be >= 4.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance.
 
@@ -1133,7 +1155,7 @@ Parameters :
 
   .. note:: Number of sample points used by the local-search derivative approximation. Even values are rounded up internally.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance between the best and current annealing candidates.
 
@@ -1163,7 +1185,7 @@ Parameters :
 
   .. note:: The factor controlling the step size for reflection and expansion during optimization.
 
-- ``x_tol``: 1e-8
+- ``x_tol``: 1e-6
 
   .. note:: Coordinate-spread convergence tolerance across the simplex.
 

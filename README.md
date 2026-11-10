@@ -70,22 +70,6 @@ On Windows, MSVC compiles C++ files with up to eight processes per project.
 Detailed installation, native package, C++ build, and usage instructions are available in the official documentation.
 
 ## Algorithm Usage
-
-L-SHADE reduces its population by default (`reducePop=True`). Use
-`options={"reducePop": False}` to keep its population constant while retaining
-the same adaptation mechanism (SHADE-style behavior).
-
-ARRDE uses `x_tol_restart` (default `1e-4`) and `x_tol_refine` (default `1e-6`)
-to trigger spatial phase transitions. Spread is the maximum coordinate standard
-deviation divided by its bound width. The initial search uses `x_tol_restart`;
-refinement retains `x_tol_refine` through the final phase. Negative values disable
-the corresponding spatial trigger. The scheduled final refinement still runs,
-and these settings do not terminate the overall optimizer. For example:
-
-```python
-options={"x_tol_restart": 1e-4, "x_tol_refine": 1e-6}
-```
-
 Across both C++ and Python, Minion uses the same core model:
 - The objective must be vectorized: it receives a batch of candidate points and returns one objective value per point.
 - `x0` contains multiple initial guesses, where each inner vector/list is one candidate start.
@@ -133,7 +117,7 @@ int main() {
     auto options = minion::DefaultSettings().getDefaultSettings("DE");
     options["maxiters"] = -1;
     options["population_size"] = 50;
-    options["x_tol"] = 1e-8;
+    options["x_tol"] = 1e-6;
     options["f_tol"] = 1e-12;
 
     minion::Minimizer optimizer(
@@ -180,7 +164,7 @@ x0 = [
 options = {
     "maxiters": -1,
     "population_size": 50,
-    "x_tol": 1e-8,
+    "x_tol": 1e-6,
     "f_tol": 1e-6,
 }
 

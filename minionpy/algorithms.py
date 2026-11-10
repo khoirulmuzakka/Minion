@@ -221,7 +221,7 @@ class MinimizerBase:
             Algorithms without built-in restart strategies accept ``maxiters``; the default ``-1`` disables the iteration cap.
             Algorithms with tolerance-based stopping use ``x_tol`` for coordinate
             spread and ``f_tol`` for relative objective-value spread. The default values
-            are ``x_tol=1e-8`` and ``f_tol=-1.0`` where supported. Set either
+            are ``x_tol=1e-6`` (``1e-8`` for GradientDescent) and ``f_tol=-1.0`` where supported. Set either
             tolerance to a negative value to disable that specific convergence check.
 
         Raises
@@ -377,7 +377,7 @@ class NelderMead(MinimizerBase):
                 options = {
                     "maxiters"               : -1,
                     "locality_factor"         : 0.05,
-                    "x_tol"                   : 1e-8,
+                    "x_tol"                   : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"          : "reflect-random"
                 }
@@ -530,7 +530,7 @@ class SPSO2011(MinimizerBase):
             "informant_degree"      : 3,
             "velocity_clamp"        : 0.0,
             "normalize"             : False,
-            "x_tol"                 : 1e-8,
+            "x_tol"                 : 1e-6,
             "f_tol": -1.0,
             "bound_strategy"        : "reflect-random"
         }
@@ -712,7 +712,7 @@ class LSHADE(MinimizerBase):
                     "archive_size_ratio"      :  2.6, 
                     "minimum_population_size" :  4, 
                     "reduction_strategy"      : "linear",
-                    "x_tol"                   : 1e-8,
+                    "x_tol"                   : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"          : "random"
                 }
@@ -791,7 +791,7 @@ class AGSK(MinimizerBase):
             "maxiters"                 : -1,
             "population_size"         : 0,      # auto -> 40*D if D>5 else 100
             "minimum_population_size" : 12,
-            "x_tol"                   : 1e-8,
+            "x_tol"                   : 1e-6,
             "f_tol": -1.0,
             "bound_strategy"          : "reflect-random"
         }
@@ -848,7 +848,7 @@ class IMODE(MinimizerBase):
             "minimum_population_size" : 4,
             "memory_size"             : 0,      # auto -> 20*D
             "archive_size_ratio"      : 2.6,
-            "x_tol"                   : 1e-8,
+            "x_tol"                   : 1e-6,
             "f_tol": -1.0,
             "bound_strategy"          : "reflect-random"
         }
@@ -938,7 +938,7 @@ class LSHADE_cnEpSin(MinimizerBase):
                     "learning_period"        :  20,
                     "sin_freq_base"          :   0.5,
                     "epsilon"                : 1e-8,
-                    "x_tol"                  : 1e-8,
+                    "x_tol"                  : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"         : "reflect-random"
                 }
@@ -1008,7 +1008,7 @@ class CMAES(MinimizerBase):
                 options = {
                     "population_size"  : 0,
                     "rel_initial_step" : 0.3,
-                    "x_tol"            : 1e-8,
+                    "x_tol"            : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"   : "reflect-random"
                 }
@@ -1053,7 +1053,7 @@ class ACMAES(MinimizerBase):
             "maxiters"                 : -1,
             "population_size"  : 0,
                 "rel_initial_step" : 0.3,
-                "x_tol"            : 1e-8,
+                "x_tol"            : 1e-6,
                 "f_tol": -1.0,
                 "bound_strategy"   : "reflect-random",
             }
@@ -1115,7 +1115,7 @@ class RCMAES(MinimizerBase):
                 options = {
                     "population_size"  : 0,
                     "rel_initial_step" : 0.3,
-                    "x_tol"            : 1e-8,
+                    "x_tol"            : 1e-6,
                     "f_tol": -1.0,
                     "max_restarts"     : -1,
                     "bound_strategy"   : "reflect-random"
@@ -1180,7 +1180,7 @@ class BIPOP_aCMAES(MinimizerBase):
                 options = {
                     "population_size"  : 0,    # If 0, determined automatically
                     "rel_initial_step" : 0.3,  # Initial CMA-ES step size
-                    "x_tol"            : 1e-8,
+                    "x_tol"            : 1e-6,
                     "f_tol": -1.0,
                     "max_restarts"     : -1,   # -1 means unlimited restarts
                     "bound_strategy"   : "reflect-random"
@@ -1265,7 +1265,7 @@ class jSO(MinimizerBase):
                     "archive_size_ratio"        : 1.0, 
                     "minimum_population_size"   :  4, 
                     "reduction_strategy"        : "linear",
-                    "x_tol"                     : 1e-8,
+                    "x_tol"                     : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"            : "random"
                 }
@@ -1388,7 +1388,7 @@ class JADE(MinimizerBase):
                     "archive_size_ratio"            :  1.0, 
                     "minimum_population_size"       :  4, 
                     "reduction_strategy"            : "linear",
-                    "x_tol"                         : 1e-8,
+                    "x_tol"                         : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"                : "reflect-random"
                 }
@@ -1513,7 +1513,7 @@ class NLSHADE_RSP(MinimizerBase):
                     "minimum_population_size": 4,
                     "memory_size"           : 100,
                     "archive_size_ratio"    : 2.6 , 
-                    "x_tol"                 : 1e-8,
+                    "x_tol"                 : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"        : "reflect-random"
                 }
@@ -1731,7 +1731,7 @@ class Dual_Annealing(MinimizerBase):
                     "local_search_algo" : "L_BFGS_B",
                     "func_noise_ratio": 1e-16,
                     "N_points_derivative": 3,
-                    "x_tol": 1e-8,
+                    "x_tol": 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"        : "periodic"
                 }
@@ -2258,7 +2258,7 @@ class LSRTDE(MinimizerBase):
                     "population_size"       : 0,  
                     "memory_size"           :  5,
                     "success_rate"          : 0.5 , 
-                    "x_tol"                 : 1e-8,
+                    "x_tol"                 : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"        : "random"
                 }
@@ -2374,7 +2374,7 @@ class RDEX(MinimizerBase):
                     "success_rate"        : 0.5,
                     "eb_hybrid_rate_init" : 0.7,
                     "perturbation_rate"   : 0.4,
-                    "x_tol"               : 1e-8,
+                    "x_tol"               : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"      : "random",
                 }
@@ -2438,14 +2438,21 @@ class ARRDE(MinimizerBase):
         :param seed: Optional random seed.
         :param options: Optional algorithm settings. Defaults to
             ``{"population_size": 0, "bound_strategy": "reflect-random",
-            "x_tol_restart": 1e-4, "x_tol_refine": 1e-6}``.
+            "x_tol_restart": 1e-5, "x_tol_refine": 1e-7,
+            "final_refine_start": 0.9}``.
             Supported keys:
 
             - ``population_size`` (int): Initial population size.
+            - ``final_refine_start`` (float): Fraction of ``maxevals`` at which
+              the final-refinement population schedule begins. Default ``0.9``;
+              must be finite and strictly between 0 and 1. The transition is
+              checked between generations and refinement starts when the final
+              schedule expands the population. Earlier tolerance-driven
+              refinements remain possible.
             - ``x_tol_restart`` (float): Normalized spatial-collapse threshold
-              for the initial search and restarted searches. Default ``1e-4``.
+              for the initial search and restarted searches. Default ``1e-5``.
             - ``x_tol_refine`` (float): Spatial-collapse threshold during
-              refinement, including final refinement. Default ``1e-6``.
+              refinement, including final refinement. Default ``1e-7``.
               Both thresholds use the largest population standard deviation
               divided by that coordinate's bound width. Negative values disable
               that phase's spatial trigger; zero requires exact collapse.
@@ -2542,7 +2549,7 @@ class Differential_Evolution(MinimizerBase):
                     "mutation_strategy"       : "best1bin",
                     "mutation_rate"           : 0.5, 
                     "crossover_rate"          : 0.8,
-                    "x_tol"                   : 1e-8,
+                    "x_tol"                   : 1e-6,
                     "f_tol": -1.0,
                     "bound_strategy"          : "reflect-random"
                 }

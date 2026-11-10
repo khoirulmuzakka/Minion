@@ -5,7 +5,7 @@ Minion/MinionPy is designed to solve black-box, potentially expensive objective 
 As a result, the computational budget is primarily limited by the maximum number of function calls (maxevals). Nevertheless,
 Minion also implements tolerance-based convergence criteria for algorithms that support them. The tolerances are
 configured through the algorithm options map or dictionary, using
-``"x_tol"`` and ``"f_tol"`` for algorithms that support them. The default values are ``x_tol = 1e-8`` and
+``"x_tol"`` and ``"f_tol"`` for algorithms that support them. The default values are ``x_tol = 1e-6`` (``1e-8`` for GradientDescent) and
 ``f_tol = -1.0``. We do not use a global constructor-level tolerance anymore.
 Set either tolerance to a negative value to disable that side of the convergence check. For example,
 ``f_tol = -1.0`` disables objective-value spread convergence while leaving ``x_tol`` active.

@@ -43,9 +43,10 @@ class ARRDE : public Differential_Evolution {
         bool first_run = true;
         bool population_converged = false;
         double bestOverall =  std::numeric_limits<double>::max();
-        double phaseXTol = 1e-4;
-        double restartXTol = 1e-4;
-        double refineXTol = 1e-6;
+        double finalRefineStart = 0.9;
+        double phaseXTol = 1e-5;
+        double restartXTol = 1e-5;
+        double refineXTol = 1e-7;
         bool spatiallyConverged() const;
         size_t Nrestart=1; //nitially set to 1, first run is consedered a restart
         std::vector<std::vector<std::pair<double, double>>> locals; 

@@ -81,6 +81,7 @@ class DefaultSettings{
         };
 
         std::map<std::string, ConfigValue>  default_settings_ARRDE  = {
+            {"final_refine_start", 0.9},
             {"x_tol_restart", 1e-5},
             {"x_tol_refine", 1e-7},
             {"population_size", 0},
