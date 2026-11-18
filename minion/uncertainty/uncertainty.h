@@ -21,16 +21,27 @@ struct HessianOptions {
     int batch_size = -1;
     // Candidate steps are h, 2h, ...; all candidates share one batch.
     int n_scales = 1;
+    // Default: four axis-only scales in one preliminary batch; 0 disables.
+    // Nonzero counts must be 3..30.
+    // Select the largest step with three consistent positive curvature scales.
+    int probe_scales = 4;
     // Compatibility option: request at least two scales.
     bool check_stability = false;
     // Return incomplete positive-mode contributions rather than fail strictly.
     bool discard_nonpositive = true;
+    // MINUIT-style diagonal repair; takes precedence over discard_nonpositive.
+    bool force_positive_definite = false;
 };
 
 struct HessianResult {
     std::vector<double> estimate, std, ci_lower, ci_upper, step_sizes;
     std::vector<std::string> stencil_types, warnings;
+    std::vector<double> step_probe_errors;
     Eigen::MatrixXd hessian, covariance, correlation, eigenvectors;
+    // Effective Hessian used for covariance, in original parameter units.
+    Eigen::MatrixXd regularized_hessian;
+    bool forced_positive_definite = false;
+    double regularization_relative_change = 0.0;
     Eigen::VectorXd eigenvalues, gradient;
     Eigen::VectorXd scaled_eigenvalues;
     Eigen::MatrixXd scaled_eigenvectors;

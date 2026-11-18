@@ -11,7 +11,7 @@ struct Stencil {
 };
 struct Curvature {
     Eigen::MatrixXd H;
-    Eigen::VectorXd gradient;
+    Eigen::VectorXd gradient, diagonal;
     std::vector<double> steps;
     std::vector<std::string> types;
     size_t nfev = 0, calls = 0;
@@ -19,7 +19,7 @@ struct Curvature {
 
 std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const std::vector<double>& x,
                        const std::vector<std::pair<double,double>>& bounds,
-                       const std::vector<double>& base_steps, int batch_size, int n_scales) {
+                       const std::vector<double>& base_steps, int batch_size, int n_scales, bool diagonal_only=false) {
     const size_t n = x.size();
     using Terms = std::vector<std::pair<size_t,double>>;
     struct Plan {
@@ -64,7 +64,8 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
             return inserted.first->second;
         };
         std::vector<Terms> diagonal(n), gradients(n);
-        std::vector<std::vector<Terms>> mixed(n, std::vector<Terms>(n));
+        std::vector<std::vector<Terms>> mixed;
+        if (!diagonal_only) mixed.assign(n, std::vector<Terms>(n));
         point_index(0,0,0,0);
         for (size_t i=0; i<n; ++i) {
             const auto& s = stencils[i];
@@ -72,7 +73,7 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
                 diagonal[i].push_back({point_index(i,s.second_nodes[k],0,0),s.second_weights[k]/(s.step*s.step)});
             for (size_t k=0;k<s.first_nodes.size();++k)
                 gradients[i].push_back({point_index(i,s.first_nodes[k],0,0),s.first_weights[k]/s.step});
-            for (size_t j=0;j<i;++j) {
+            for (size_t j=0;!diagonal_only && j<i;++j) {
                 const auto& t=stencils[j];
                 for (size_t k=0;k<s.first_nodes.size();++k)
                     for (size_t l=0;l<t.first_nodes.size();++l)
@@ -108,14 +109,17 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
             for (const auto& term:terms) value+=static_cast<long double>(term.second)*(values[term.first]-values[center]);
             return static_cast<double>(value);
         };
-        result.H=Eigen::MatrixXd::Zero(n,n);
+        if (!diagonal_only) result.H=Eigen::MatrixXd::Zero(n,n);
+        result.diagonal.resize(n);
         result.gradient.resize(n);
         for (size_t i=0;i<n;++i) {
-            result.H(i,i)=sum(diagonal[i]); result.gradient[i]=sum(gradients[i]);
+            result.diagonal[i]=sum(diagonal[i]);
+            if (!diagonal_only) result.H(i,i)=result.diagonal[i];
+            result.gradient[i]=sum(gradients[i]);
             result.steps.push_back(stencils[i].step); result.types.push_back(stencils[i].type);
-            for (size_t j=0;j<i;++j) result.H(i,j)=result.H(j,i)=sum(mixed[i][j]);
+            for (size_t j=0;!diagonal_only && j<i;++j) result.H(i,j)=result.H(j,i)=sum(mixed[i][j]);
         }
-        if (!result.H.allFinite() || !result.gradient.allFinite())
+        if (!result.H.allFinite() || !result.gradient.allFinite() || !result.diagonal.allFinite())
             throw std::runtime_error("Non-finite numerical derivatives.");
         result.nfev=points.size();
         result.calls=calls;
@@ -152,7 +156,8 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         !(o.confidence_level>0 && o.confidence_level<1) ||
         !(o.eigenvalue_tolerance>0 && o.eigenvalue_tolerance<1) ||
         !(o.stability_tolerance>0) || !std::isfinite(o.stability_tolerance) ||
-        (o.batch_size != -1 && o.batch_size <= 0) || o.n_scales < 1 || o.n_scales > 30)
+        (o.batch_size != -1 && o.batch_size <= 0) || o.n_scales < 1 || o.n_scales > 30 ||
+        (o.probe_scales!=0 && (o.probe_scales<3 || o.probe_scales>30)))
         throw std::invalid_argument("Invalid Hessian options or scale.");
     const size_t n=x_.size();
     std::vector<double> scales(n),steps(n);
@@ -165,7 +170,64 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         if (!(scales[i]>0) || !std::isfinite(scales[i]) || !(steps[i]>0) || !std::isfinite(steps[i]))
             throw std::invalid_argument("Steps and parameter scales must be finite and positive.");
     }
-    const auto candidates=differentiate(objective_,data_,x_,bounds_,steps,o.batch_size,
+    std::vector<std::string> probe_warnings;
+    std::vector<double> probe_errors;
+    size_t actual_nfev=0, actual_calls=0;
+    std::map<std::vector<double>,double> cache;
+    // Reuse axis evaluations from the one-shot probe in the final Hessian.
+    MinionFunction cached_objective = [&](const std::vector<std::vector<double>>& points, void* data) {
+        std::vector<std::vector<double>> missing;
+        for (const auto& point:points) if (cache.find(point)==cache.end()) missing.push_back(point);
+        if (!missing.empty()) {
+            const auto values=objective_(missing,data);
+            if (values.size()!=missing.size()) throw std::runtime_error("Objective returned an incorrect batch length.");
+            for (double v:values) if (!std::isfinite(v)) throw std::runtime_error("Objective returned a non-finite value during Hessian estimation.");
+            for (size_t i=0;i<missing.size();++i) cache.emplace(missing[i],values[i]);
+            actual_nfev+=missing.size();++actual_calls;
+        }
+        std::vector<double> values;
+        for (const auto& point:points) values.push_back(cache.at(point));
+        return values;
+    };
+    if (o.probe_scales) {
+        // Only O(n * probe_scales) axis points; no mixed derivatives here.
+        // All candidate scales are planned before the single objective call.
+        const auto probes=differentiate(cached_objective,data_,x_,bounds_,steps,-1,o.probe_scales,true);
+        probe_errors.resize(n,std::numeric_limits<double>::infinity());
+        for (size_t i=0;i<n;++i) {
+            size_t chosen=0;
+            double best=std::numeric_limits<double>::infinity();
+            bool stable=false;
+            double previous=std::numeric_limits<double>::infinity();
+            for (size_t k=1;k<probes.size();++k) {
+                if (probes[k].steps[i]<=probes[k-1].steps[i] ||
+                    probes[k].types[i]!=probes[k-1].types[i]) {
+                    previous=std::numeric_limits<double>::infinity();continue;
+                }
+                const double lhs=probes[k-1].diagonal[i], rhs=probes[k].diagonal[i];
+                const double difference=lhs>0 && rhs>0 ?
+                    std::fabs(lhs-rhs)/std::max(lhs,rhs) : std::numeric_limits<double>::infinity();
+                // Require three distinct scales, not a single lucky pair.
+                const double consistency=std::max(previous,difference);
+                if (consistency<=o.stability_tolerance) {
+                    // Prefer the largest stable step to reduce noise amplification.
+                    chosen=k;probe_errors[i]=consistency;stable=true;
+                } else if (!stable && difference<best) {
+                    chosen=k;probe_errors[i]=difference;best=difference;
+                }
+                previous=difference;
+            }
+            if (!stable) {
+                // With no resolved positive pair, try the largest available step,
+                // but explicitly report that this selection was not validated.
+                if (!std::isfinite(best)) chosen=probes.size()-1;
+                probe_warnings.push_back("Step probes found no three distinct, consistent positive curvature scales for parameter "+std::to_string(i)+"; the selected step is unverified.");
+            }
+            steps[i]=std::ldexp(steps[i],static_cast<int>(chosen));
+        }
+        probe_warnings.push_back("Step probing checks coordinate curvature only; weak parameter combinations may remain unresolved.");
+    }
+    const auto candidates=differentiate(o.probe_scales ? cached_objective : objective_,data_,x_,bounds_,steps,o.batch_size,
         o.check_stability ? std::max(2,o.n_scales) : o.n_scales);
     Eigen::VectorXd s=Eigen::Map<Eigen::VectorXd>(scales.data(),n);
     size_t selected=0;
@@ -180,7 +242,10 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     const auto& a=candidates[selected];
     HessianResult r;
     r.estimate=x_;r.hessian=a.H;r.gradient=a.gradient;r.step_sizes=a.steps;r.stencil_types=a.types;
-    r.nfev=a.nfev;r.objective_calls=a.calls;r.confidence_level=o.confidence_level;
+    r.nfev=o.probe_scales ? actual_nfev : a.nfev;
+    r.objective_calls=o.probe_scales ? actual_calls : a.calls;
+    r.confidence_level=o.confidence_level;
+    r.step_probe_errors=probe_errors;r.warnings=probe_warnings;
     const Eigen::MatrixXd scaled=s.asDiagonal()*a.H*s.asDiagonal();
     r.differentiation_error=error;
     if (error>o.stability_tolerance)
@@ -199,12 +264,66 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     r.scaled_eigenvalues=eigen;r.scaled_eigenvectors=solver.eigenvectors();
     const double largest=eigen.cwiseAbs().maxCoeff();
     const double threshold=o.eigenvalue_tolerance*largest;
+    Eigen::VectorXd effective_eigen=eigen;
+    Eigen::MatrixXd effective_vectors=solver.eigenvectors();
+    if (o.force_positive_definite && eigen.minCoeff()<=threshold) {
+        // Inspired by MINUIT2 MnPosDef: normalize by the diagonal, then
+        // add to that normalized diagonal. Work in parameter-scaled units.
+        // https://root.cern.ch/doc/master/MnPosDef_8cxx_source.html
+        if (!(largest>0) || !std::isfinite(largest)) {
+            r.status="singular";
+            r.warnings.push_back("No curvature scale is available for positive-definite repair.");
+            return r;
+        }
+        Eigen::MatrixXd repaired=scaled/largest;
+        const double eps=std::max(o.eigenvalue_tolerance,
+            2*std::sqrt(std::numeric_limits<double>::epsilon()));
+        const double min_diagonal=repaired.diagonal().minCoeff();
+        if (min_diagonal<=0) repaired.diagonal().array()+=0.5+eps-min_diagonal;
+        const Eigen::VectorXd diagonal=repaired.diagonal();
+        const Eigen::VectorXd inverse_root=diagonal.array().sqrt().inverse();
+        const Eigen::MatrixXd normalized=inverse_root.asDiagonal()*repaired*inverse_root.asDiagonal();
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> normalized_solver(normalized);
+        if (normalized_solver.info()!=Eigen::Success) {
+            r.status="decomposition_failed";return r;
+        }
+        const double pmin=normalized_solver.eigenvalues().minCoeff();
+        const double pmax=std::max(1.0,normalized_solver.eigenvalues().maxCoeff());
+        if (pmin<=eps*pmax) {
+            const double addition=std::max(0.001,2*eps)*pmax-pmin;
+            repaired.diagonal().array()+=addition*diagonal.array();
+        }
+        repaired*=largest;
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> repaired_solver(repaired);
+        if (repaired_solver.info()!=Eigen::Success || !repaired_solver.eigenvalues().allFinite() ||
+            repaired_solver.eigenvalues().minCoeff()<=0) {
+            r.status="regularization_failed";return r;
+        }
+        // Also resolve modes below the API's scaled rank tolerance, even
+        // when diagonal normalization alone makes them look well conditioned.
+        const double target=2*o.eigenvalue_tolerance*repaired_solver.eigenvalues().maxCoeff();
+        if (repaired_solver.eigenvalues().minCoeff()<=target) {
+            repaired.diagonal().array()+=target-repaired_solver.eigenvalues().minCoeff();
+            repaired_solver.compute(repaired);
+            if (repaired_solver.info()!=Eigen::Success || !repaired_solver.eigenvalues().allFinite() ||
+                repaired_solver.eigenvalues().minCoeff()<=0) {
+                r.status="regularization_failed";return r;
+            }
+        }
+        effective_eigen=repaired_solver.eigenvalues();
+        effective_vectors=repaired_solver.eigenvectors();
+        r.regularized_hessian=s.cwiseInverse().asDiagonal()*repaired*s.cwiseInverse().asDiagonal();
+        if (!r.regularized_hessian.allFinite()) {r.status="regularization_failed";return r;}
+        r.regularization_relative_change=(repaired/largest-scaled/largest).norm()/(scaled/largest).norm();
+        r.forced_positive_definite=true;
+        r.warnings.push_back("Hessian forced positive-definite using MINUIT-style diagonal inflation. Reported uncertainty is a regularized approximation; check step sizes and the optimum.");
+    }
     double smallest_positive=std::numeric_limits<double>::infinity();
     Eigen::MatrixXd factors=Eigen::MatrixXd::Zero(n,n);
     for (size_t k=0;k<n;++k) {
-        if (eigen[k]>threshold) {
-            ++r.retained_rank;smallest_positive=std::min(smallest_positive,eigen[k]);
-            factors.col(k)=s.asDiagonal()*solver.eigenvectors().col(k)*std::sqrt(scale/eigen[k]);
+        if (r.forced_positive_definite || eigen[k]>threshold) {
+            ++r.retained_rank;smallest_positive=std::min(smallest_positive,effective_eigen[k]);
+            factors.col(k)=s.asDiagonal()*effective_vectors.col(k)*std::sqrt(scale/effective_eigen[k]);
         } else r.discarded_modes.push_back(k);
     }
     const bool incomplete=!r.discarded_modes.empty();
@@ -221,7 +340,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         r.warnings.push_back("Discarded "+std::to_string(r.discarded_modes.size())+
             " non-positive or unresolved Hessian modes. Reported covariance, standard uncertainties and intervals include only retained positive modes and are incomplete. Zero contributions from discarded modes do not mean zero uncertainty. Try larger differentiation steps and check the optimum.");
     } else {
-        r.condition_number=eigen.maxCoeff()/smallest_positive;
+        r.condition_number=effective_eigen.maxCoeff()/smallest_positive;
         if (r.condition_number>1/std::sqrt(o.eigenvalue_tolerance)) r.warnings.push_back("Scaled Hessian is poorly conditioned.");
     }
     r.covariance=factors*factors.transpose();
@@ -242,8 +361,8 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     if ((r.gradient.array()*s.array()).matrix().norm()>1e-3*std::max(1.0,std::sqrt(scale*scaled.norm())))
         r.warnings.push_back("Supplied point may not be stationary.");
     r.covariance_available=true;r.uncertainty_complete=!incomplete;
-    r.covariance_valid=!incomplete;
-    r.status=incomplete?"partial":(r.warnings.empty()?"ok":"warning");
+    r.covariance_valid=!incomplete && !r.forced_positive_definite;
+    r.status=r.forced_positive_definite?"forced_positive_definite":incomplete?"partial":(r.warnings.empty()?"ok":"warning");
     return r;
 }
 }

@@ -208,22 +208,85 @@ Numerical controls and interpretation
 -------------------------------------
 
 ``step_sizes`` and ``parameter_scales`` are optional positive vectors in parameter
-units. Automatic steps equal ``relative_step`` (default 0.001) times the supplied
-parameter scale, or ``max(1, abs(x[i]))`` when no scale is supplied. ``batch_size``
-defaults to -1, evaluating all candidate stencil points in one objective call.
-Positive values limit the number of points in each call; zero and values below
--1 are rejected. ``n_scales`` defaults to 1 and accepts integers from 1 to 30.
-Candidate steps are h, 2h, 4h, etc. Central stencils use
+units. The initial step is ``relative_step`` (default 0.001) times the supplied
+parameter scale, or ``max(1, abs(x[i]))`` when no scale is supplied. Explicit
+``step_sizes`` replace these initial steps; when probing is enabled they are
+starting values, not necessarily the final steps.
+
+By default, ``probe_scales=4`` probes ``h, 2h, 4h, 8h`` before calculating mixed
+derivatives. All candidate coordinate points are evaluated in **one preliminary
+objective call**. The probes vary one parameter at a time, holding the others
+fixed. Central probes evaluate both signs and share the center across all
+parameters and scales.
+
+For each parameter independently, the selection examines consecutive triples of
+candidate steps. All three curvature estimates must be positive, and each
+adjacent pair must satisfy
+
+.. math::
+
+   \frac{|d_i(h_a)-d_i(h_b)|}{\max(d_i(h_a),d_i(h_b))}
+   \leq \texttt{stability\_tolerance},
+
+where :math:`d_i(h)` is the diagonal second-derivative estimate. The default
+``stability_tolerance`` is 0.05. Select the largest step in the last passing
+triple. For example, if ``h, 2h, 4h`` passes but ``2h, 4h, 8h`` fails, select
+``4h``. Different parameters can receive different steps.
+
+If no triple passes, select the larger step of the most consistent positive
+adjacent pair. If no positive pair exists, select the largest candidate. Both
+fallbacks issue a warning that step selection is unverified. Repeated
+bound-capped steps and pairs that change stencil type do not establish
+stability. ``step_probe_errors`` contains the selected relative consistency
+measure (the maximum of the two pair differences for a passing triple), or
+infinity when none can be assessed.
+
+Set ``probe_scales=0`` to disable probing; nonzero counts must be from 3 to 30.
+For example, ``probe_scales=9`` tests ``h, 2h, ..., 256h`` in the same single
+probe call. Increasing ``relative_step`` or ``step_sizes`` shifts the candidate
+range without increasing the number of probes. The method favors the largest
+stable step to suppress evaluation noise, but larger steps can introduce
+nonlocal curvature bias. Coordinate consistency does not validate weak
+combinations of parameters; inspect the final eigenvalues and warnings.
+
+The final Hessian reuses probe values and evaluates only missing points. For
+:math:`D` parameters and :math:`m` probe scales, central stencils require
+
+.. math::
+
+   N_{\mathrm{probe}}=1+2mD,\qquad
+   N_{\mathrm{mixed}}=4\binom{D}{2}=2D(D-1).
+
+With the default four probe scales, the first batch therefore contains
+:math:`8D+1` points, not :math:`4D`. With :math:`D=12`, there are 97 probe points
+and 264 mixed points: 361 function evaluations across two objective calls.
+The probes may contain all final points in one dimension, so only one call is
+needed. Bounds, one-sided stencils, or coincident points can change these counts.
+Probe storage and evaluation cost are linear in dimension per candidate scale;
+the full Hessian still requires a quadratic number of points.
+
+``batch_size=-1`` (default) evaluates all missing final stencil points in one
+objective call after the probe call. Positive values limit final batch sizes;
+zero and values below -1 are rejected. The preliminary probes always remain
+one batch, regardless of ``batch_size``. ``nfev`` counts actual unique points
+and ``objective_calls`` counts actual objective callbacks across both phases.
+There are no sequential probing retries.
+
+``n_scales`` is a separate control: it requests multiple **full Hessians** after
+probe selection. It defaults to 1 and accepts integers from 1 to 30. Candidate
+full-Hessian steps are the selected steps, twice those steps, and so on. Leave
+``n_scales=1`` and ``check_stability=False`` to calculate just one full Hessian.
+With probing disabled, central full-Hessian stencils use
 ``1 + 2*n_scales*D*D`` unique points, sharing the center across scales.
-With multiple scales, the larger member of the first consistent adjacent pair
-is selected; if none meets ``stability_tolerance``, the most consistent pair is
-used with a warning. Consistency is the relative Frobenius difference of scaled
-Hessians, normalized by the larger norm. It is reported as
-``differentiation_error`` (zero when only one scale is requested), and is not a
-rigorous error bound or proof that evaluation noise is absent.
-``check_stability=True`` requests at least two scales for compatibility.
+With multiple full Hessians, the larger member of the first consistent adjacent
+pair is selected; if none meets ``stability_tolerance``, the most consistent pair
+is used with a warning. Consistency is the relative Frobenius difference of
+scaled Hessians, normalized by the larger norm. It is reported as
+``differentiation_error`` (zero when only one full scale is requested), separately
+from ``step_probe_errors``. This whole-matrix diagnostic can miss errors in weak
+curvature directions and is not a rigorous error bound.
+``check_stability=True`` requests at least two full scales for compatibility.
 Near bounds, steps may be capped and candidate stencils may coincide.
-``nfev`` counts unique points and ``objective_calls`` counts batches.
 
 For a central stencil, diagonal and mixed entries are estimated by
 
@@ -246,7 +309,8 @@ computed and mirrored. A single central scale needs
 :math:`1+2D+4\binom{D}{2}=1+2D^2` evaluations. Evaluation noise is amplified by
 :math:`h_i^{-2}` on the diagonal and :math:`(h_i h_j)^{-1}` off the diagonal;
 larger candidate steps can reduce that amplification but increase truncation
-bias. One scale does not perform a step-sensitivity comparison.
+bias. With ``n_scales=1``, no comparison of full Hessians is made; the default
+coordinate probes still compare diagonal curvature across candidate steps.
 
 The implementation uses one-sided stencils where central stencils do not fit;
 it never evaluates beyond bounds. Fixed parameters (zero-width bounds) are
@@ -299,9 +363,73 @@ the optimum; discarding modes does not resolve these causes.
 
 Set ``discard_nonpositive=False`` for strict behavior: non-positive or unresolved
 curvature leaves uncertainty arrays empty. Arrays are also empty when no resolved
-positive modes remain, regardless of the option. Inspect ``status`` and
+positive modes remain, unless positive-definite repair is requested. Inspect ``status`` and
 ``warnings`` before using results. Step-sensitive positive curvature can still
 produce covariance, accompanied by warnings.
+
+For an explicit MINUIT-style repair, set ``force_positive_definite=True`` in
+Python or ``options.force_positive_definite = true`` in C++. This takes precedence
+over ``discard_nonpositive``. The algorithm works in parameter-scaled coordinates,
+shifts non-positive diagonal elements, normalizes by the resulting diagonal, and
+inflates that diagonal using the normalized eigenvalues (as in MINUIT2 MnPosDef).
+An additional scaled diagonal shift is applied if needed to resolve modes below
+``eigenvalue_tolerance``.
+A completely zero Hessian remains unavailable because no curvature scale exists.
+
+Repaired results have ``status="forced_positive_definite"`` and
+``forced_positive_definite=True``. They return all parameter uncertainties with
+``uncertainty_complete=True``, but ``covariance_valid=False``: this is a regularized
+approximation, not evidence that the original curvature was reliable. The original
+``hessian`` and eigenvalue diagnostics are preserved. ``regularized_hessian`` is
+the effective matrix in original parameter units used for covariance, and
+``regularization_relative_change`` reports its relative Frobenius change in
+parameter-scaled coordinates. This matrix is empty when no repair occurred.
+``retained_rank`` is full and ``discarded_modes`` is empty after successful repair;
+original eigenvalues still reveal the problematic modes. Inspect the correction,
+step sensitivity and optimum before interpreting repaired intervals.
+
+A numerical validation with a nearly degenerate two-parameter Gaussian fit
+illustrates the limitation. Its exact Hessian eigenvalues were 200 and 0.0002;
+both exact parameter standard deviations were 50. A deterministic objective
+error of only ``1e-8`` at the stencil center gave the following results:
+
+.. list-table:: Noisy-fit validation against 50,000 simulated refits
+   :header-rows: 1
+   :widths: 50 20 30
+
+   * - Configuration
+     - Reported standard deviation
+     - Coverage of nominal 95% intervals
+   * - Four probes, initial h=0.001, positive-definite repair enabled
+     - 1.58
+     - 4.97%
+   * - Four probes, initial h=0.032
+     - 50.04
+     - 95.00%
+   * - Nine probes, initial h=0.001
+     - 50.04
+     - 95.00%
+
+The default four probes only reach ``h=0.008`` in this example, which is too
+small to resolve the weak curvature. Without repair, the default returns a
+``partial`` result; enabling repair makes the matrix positive definite but does
+not recover the missing curvature. In a separate 300-trial random evaluation
+noise test, four default probes with repair achieved only 64.4% mean expected
+coverage, compared with approximately 95% when the initial step was enlarged.
+
+These results do not make ``relative_step=0.032`` a universal setting. The
+needed step depends on parameter units, numerical noise, and local nonlinearity.
+Four scales limit evaluation cost but do not guarantee reliable uncertainty.
+A small relative matrix correction is also insufficient evidence of accuracy:
+weak directions may be changed substantially while the strong directions
+barely change. ``covariance_valid=True`` indicates numerical admissibility,
+not independently demonstrated statistical coverage.
+
+The reproducible experiment is ``examples/validate_hessian_noise.py``; detailed
+results are recorded in ``docs/hessian_noise_validation.md``.
+
+Reference: `MINUIT2 MnPosDef source
+<https://root.cern.ch/doc/master/MnPosDef_8cxx_source.html>`_.
 
 Intervals are marginal Gaussian intervals at ``confidence_level`` (default 0.95).
 They assume a smooth, locally quadratic objective and the supplied statistical
