@@ -34,13 +34,12 @@ underlying model; computational noise is not re-simulated for each refit.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Clean, h=0.01 | warning | 0.01 | 0.0002 | 50 | 1 | 94.982% | 2.28132e-07 |
 | Noisy, strict, h=0.001 | indefinite | 0.001 | -0.0198 | unavailable | unavailable | unavailable | unavailable |
-| Noisy, discard, h=0.001 | partial | 0.001 | -0.0198 | 0.0500025 | 0.00100005 | 0.140% | 1 |
+| Noisy, positive modes, h=0.001 | partial | 0.001 | -0.0198 | 0.0500025 | 0.00100005 | 0.140% | 1 |
 | Noisy, repair, h=0.001 | forced_positive_definite | 0.001 | -0.0198 | 1.58201 | 0.0316401 | 4.970% | 0.999 |
-| Noisy, repair, n_scales=9 | forced_positive_definite | 0.002 | -0.0048 | 1.58195 | 0.0316389 | 4.970% | 0.999 |
-| Noisy, default probes=4 | partial | 0.008 | -0.0001125 | 0.05 | 0.001 | 0.140% | 1 |
-| Noisy, default probes=4, repair | forced_positive_definite | 0.008 | -0.0001125 | 1.58193 | 0.0316386 | 4.970% | 0.999 |
-| Noisy, default probes=4, h0=0.032 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
-| Noisy, one-shot probes=9 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
+| Noisy, default candidates=4 | forced_positive_definite | 0.008 | -0.0001125 | 1.58193 | 0.0316386 | 4.970% | 0.999 |
+| Noisy, four candidates, strict | indefinite | 0.008 | -0.0001125 | unavailable | unavailable | unavailable | unavailable |
+| Noisy, default candidates=4, h0=0.032 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
+| Noisy, one-shot candidates=9 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
 | Noisy, repair, h=0.256 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
 
 ## Independent random evaluation noise
@@ -54,16 +53,15 @@ realizations. It is not an additional Monte Carlo estimate of the fit distributi
 | Configuration | Repaired | covariance_valid=True | SD/exact SD: 5th / median / 95th percentile | Mean expected 95% coverage |
 | --- | --- | --- | --- | --- |
 | h=0.001 | 163/300 | 137/300 | 0.03164 / 0.03164 / 0.2332 | 12.500% |
-| n_scales=9 | 127/300 | 173/300 | 0.03164 / 0.1502 / 0.6053 | 25.757% |
-| default probes=4 | 78/300 | 222/300 | 0.03164 / 0.6539 / 1.676 | 64.435% |
-| four probes, h0=0.032 | 0/300 | 300/300 | 0.9985 / 0.9999 / 1.001 | 94.999% |
-| one-shot probes=9 | 0/300 | 300/300 | 0.9987 / 1 / 1.001 | 95.001% |
-| h=0.256 | 0/300 | 300/300 | 0.9987 / 1 / 1.001 | 95.000% |
+| default candidates=4 | 90/300 | 210/300 | 0.03164 / 0.6264 / 1.758 | 61.118% |
+| four probes, h0=0.032 | 0/300 | 300/300 | 0.9988 / 1 / 1.001 | 95.002% |
+| one-shot candidates=9 | 0/300 | 300/300 | 0.9987 / 1 / 1.001 | 95.001% |
+| h=0.256 | 0/300 | 300/300 | 0.9986 / 1 / 1.001 | 95.000% |
 
 ## Interpretation
 
 The clean calculation and adequately enlarged steps agree with the independent
-covariance and achieve approximately nominal coverage. Strict mode correctly
+covariance and achieve approximately nominal coverage. The explicit strict policy correctly
 declines uncertainty for the indefinite numerical Hessian. Discarding the weak
 mode severely understates uncertainty.
 
@@ -73,13 +71,11 @@ narrow, despite a relative matrix correction of only
 0.00155423. A small whole-matrix correction does not
 imply a small error in uncertainty along a nearly flat direction.
 
-Nine candidate scales do not fix this example: the whole-matrix stability metric
-accepts an early adjacent pair because the strong mode masks changes in the weak
-mode. Explicit h=0.256 resolves the curvature without repair. The new one-shot
-coordinate probe option selects that same step and also recovers the uncertainty,
+Explicit h=0.256 resolves the curvature without repair. Nine coordinate
+candidates select that same step and also recover the uncertainty,
 using 37 axis probe points in one call followed by 4 mixed points in a second
-call. Nine full candidate Hessians cost 73 points in this two-dimensional case;
-the savings grow with dimension. This succeeds here because the largest stable
+call. Only one full Hessian is calculated after the preliminary probe batch.
+This succeeds here because the largest stable
 coordinate step is preferred, not because coordinate probes resolve degeneracy.
 
 The random-noise experiment checks whether the result extends beyond a special
@@ -92,8 +88,8 @@ that all repaired covariances fail. It demonstrates that positive definiteness
 and finite intervals are insufficient validation. The existing
 `covariance_valid=False` flag on repaired results is essential. More reliable
 automatic handling needs mode-sensitive step checks or independent profile or
-resampling checks. The default is now four probe scales (h through 8h). This range does not reach
-the steps needed for this adverse example; increasing probe_scales to 9 or
+resampling checks. The default is four step candidates (h through 8h), with regularized curvature handling. This range does not reach
+the steps needed for this adverse example; increasing step_candidates to 9 or
 supplying a larger initial step remains necessary. Starting four probes at
 relative_step=0.032 reaches h=0.256 and recovers the reference uncertainty. The default change reduces
 cost relative to nine scales but does not guarantee trustworthy uncertainty.

@@ -39,21 +39,20 @@ def main():
     z = NormalDist().inv_cdf(.975)
     cases = [
         ('Clean, h=0.01', objective, dict(step_sizes=[.01]*2)),
-        ('Noisy, strict, h=0.001', noisy, dict(discard_nonpositive=False)),
-        ('Noisy, discard, h=0.001', noisy, {}),
-        ('Noisy, repair, h=0.001', noisy, dict(force_positive_definite=True)),
-        ('Noisy, repair, n_scales=9', noisy, dict(force_positive_definite=True, n_scales=9)),
-        ('Noisy, default probes=4', noisy, {}),
-        ('Noisy, default probes=4, repair', noisy, dict(force_positive_definite=True)),
-        ('Noisy, default probes=4, h0=0.032', noisy, dict(relative_step=.032)),
-        ('Noisy, one-shot probes=9', noisy, dict(probe_scales=9)),
-        ('Noisy, repair, h=0.256', noisy, dict(force_positive_definite=True, step_sizes=[.256]*2)),
+        ('Noisy, strict, h=0.001', noisy, dict(curvature_policy="strict")),
+        ('Noisy, positive modes, h=0.001', noisy, dict(curvature_policy='positive_modes')),
+        ('Noisy, repair, h=0.001', noisy, dict(curvature_policy="regularize")),
+        ('Noisy, default candidates=4', noisy, {}),
+        ('Noisy, four candidates, strict', noisy, dict(step_candidates=4, curvature_policy="strict")),
+        ('Noisy, default candidates=4, h0=0.032', noisy, dict(relative_step=.032)),
+        ('Noisy, one-shot candidates=9', noisy, dict(step_candidates=9)),
+        ('Noisy, repair, h=0.256', noisy, dict(curvature_policy="regularize", step_sizes=[.256]*2)),
     ]
     rows, results = [], {}
     for name, f, options in cases:
         # Preserve fixed-step reference cases; default cases exercise the API default.
-        if 'default probes=4' not in name:
-            options = {'probe_scales': 0, **options}
+        if 'default candidates=4' not in name:
+            options = {'step_candidates': 1, **options}
         r = Uncertainty(f, [0., 0.]).hessian(1, **options)
         results[name] = r
         if r.covariance_available:
@@ -67,15 +66,15 @@ def main():
         rows.append('| ' + ' | '.join([name, r.status, f'{r.step_sizes[0]:.6g}',
                     f'{r.scaled_eigenvalues[0]:.6g}']+values) + ' |')
 
-    clean, recovered = results[cases[0][0]], results[cases[-1][0]]
+    clean = results['Clean, h=0.01']
+    recovered = results['Noisy, repair, h=0.256']
     bad = results[cases[3][0]]
     assert np.allclose(clean.covariance, exact_cov, rtol=.005)
     assert np.allclose(recovered.covariance, exact_cov, rtol=.005)
     assert bad.forced_positive_definite and not bad.covariance_valid
     assert bad.std[0] < .1*exact_std[0]
     assert not recovered.forced_positive_definite and recovered.covariance_valid
-    assert results[cases[4][0]].forced_positive_definite
-    probed = results['Noisy, one-shot probes=9']
+    probed = results['Noisy, one-shot candidates=9']
     assert np.allclose(probed.covariance, exact_cov, rtol=.005)
     assert probed.objective_calls == 2 and probed.nfev == 41
 
@@ -85,20 +84,19 @@ def main():
     normal = NormalDist()
     for label, options in [
         ('h=0.001', {}),
-        ('n_scales=9', dict(n_scales=9)),
-        ('default probes=4', {}),
-        ('four probes, h0=0.032', dict(probe_scales=4, relative_step=.032)),
-        ('one-shot probes=9', dict(probe_scales=9)),
+        ('default candidates=4', {}),
+        ('four probes, h0=0.032', dict(step_candidates=4, relative_step=.032)),
+        ('one-shot candidates=9', dict(step_candidates=9)),
         ('h=0.256', dict(step_sizes=[.256]*2)),
     ]:
-        if label != 'default probes=4':
-            options = {'probe_scales': 0, **options}
+        if label != 'default candidates=4':
+            options = {'step_candidates': 1, **options}
         ratios, coverage, forced, valid = [], [], 0, 0
         for _ in range(300):
             def random_noisy(points):
                 return objective(points) + rng.normal(0., 1e-8, len(points))
             r = Uncertainty(random_noisy, [0., 0.]).hessian(
-                1, force_positive_definite=True, **options)
+                1, curvature_policy="regularize", **options)
             assert r.covariance_available
             ratio = r.std[0]/exact_std[0]
             ratios.append(ratio)
@@ -110,7 +108,7 @@ def main():
         random_rows.append(
             f'| {label} | {forced}/300 | {valid}/300 | '
             f'{lo:.4g} / {med:.4g} / {hi:.4g} | {100*np.mean(coverage):.3f}% |')
-        if label in ('h=0.256', 'one-shot probes=9', 'four probes, h0=0.032'):
+        if label in ('h=0.256', 'one-shot candidates=9', 'four probes, h0=0.032'):
             assert abs(med-1) < .005
             assert .945 < np.mean(coverage) < .955
 
@@ -165,7 +163,7 @@ realizations. It is not an additional Monte Carlo estimate of the fit distributi
 ## Interpretation
 
 The clean calculation and adequately enlarged steps agree with the independent
-covariance and achieve approximately nominal coverage. Strict mode correctly
+covariance and achieve approximately nominal coverage. The explicit strict policy correctly
 declines uncertainty for the indefinite numerical Hessian. Discarding the weak
 mode severely understates uncertainty.
 
@@ -175,13 +173,11 @@ narrow, despite a relative matrix correction of only
 {bad.regularization_relative_change:.6g}. A small whole-matrix correction does not
 imply a small error in uncertainty along a nearly flat direction.
 
-Nine candidate scales do not fix this example: the whole-matrix stability metric
-accepts an early adjacent pair because the strong mode masks changes in the weak
-mode. Explicit h=0.256 resolves the curvature without repair. The new one-shot
-coordinate probe option selects that same step and also recovers the uncertainty,
+Explicit h=0.256 resolves the curvature without repair. Nine coordinate
+candidates select that same step and also recover the uncertainty,
 using 37 axis probe points in one call followed by 4 mixed points in a second
-call. Nine full candidate Hessians cost 73 points in this two-dimensional case;
-the savings grow with dimension. This succeeds here because the largest stable
+call. Only one full Hessian is calculated after the preliminary probe batch.
+This succeeds here because the largest stable
 coordinate step is preferred, not because coordinate probes resolve degeneracy.
 
 The random-noise experiment checks whether the result extends beyond a special
@@ -194,8 +190,8 @@ that all repaired covariances fail. It demonstrates that positive definiteness
 and finite intervals are insufficient validation. The existing
 `covariance_valid=False` flag on repaired results is essential. More reliable
 automatic handling needs mode-sensitive step checks or independent profile or
-resampling checks. The default is now four probe scales (h through 8h). This range does not reach
-the steps needed for this adverse example; increasing probe_scales to 9 or
+resampling checks. The default is four step candidates (h through 8h), with regularized curvature handling. This range does not reach
+the steps needed for this adverse example; increasing step_candidates to 9 or
 supplying a larger initial step remains necessary. Starting four probes at
 relative_step=0.032 reaches h=0.256 and recovers the reference uncertainty. The default change reduces
 cost relative to nine scales but does not guarantee trustworthy uncertainty.

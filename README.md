@@ -223,29 +223,111 @@ fit = mpy.Minimizer(
 ).optimize()
 
 analysis = mpy.Uncertainty(chi_squared, fit.x, bounds)
-uncertainty = analysis.hessian(scale=2)
+uncertainty = analysis.hessian(
+    scale=2,
+    step_candidates=4,               # Default: h, 2h, 4h, 8h in one probe batch.
+    curvature_policy="regularize",    # Default: MINUIT-style repair if needed.
+)
 if uncertainty.covariance_available:
     print("parameter estimates:", fit.x)
     print("standard uncertainties:", uncertainty.std)
     print("covariance:", uncertainty.covariance)
     print("correlation:", uncertainty.correlation)
+print("status:", uncertainty.status)
+print("covariance valid:", uncertainty.covariance_valid)
+print("uncertainty complete:", uncertainty.uncertainty_complete)
+print("selected steps:", uncertainty.step_sizes)
 print("diagnostics:", uncertainty.warnings)
 ```
 
-Hessian covariance is `scale * inverse(Hessian)`: use `scale=2` for chi-squared
-with known observation variances, or `scale=1` for negative log likelihood.
-Other objectives need a justified statistical scaling. For bootstrap analysis,
-`analysis.bootstrap(objective_sampler, ...)` accepts a callback that returns a
-vectorized objective for each fixed resampled dataset.
+For resolved positive-definite curvature, Hessian covariance is
+`scale * inverse(Hessian)`: use `scale=2` for chi-squared with known observation
+variances, or `scale=1` for negative log likelihood. Other objectives need a
+justified statistical scaling. Repaired results use the adjusted Hessian instead.
 
-Inspect the returned validity flags and diagnostics before interpreting the
-results. Statistical uncertainty describes variation under the assumed data
-model; it is distinct from optimization error. Hessian estimates are local
-approximations and may be incomplete for poorly identified parameters.
+The equivalent C++ configuration uses `minion::uncertainty`:
+
+```cpp
+// chi_squared_batch is a MinionFunction for the same statistical objective;
+// fit and bounds come from the corresponding C++ fit.
+minion::uncertainty::Uncertainty analysis(chi_squared_batch, fit.x, bounds);
+minion::uncertainty::HessianOptions options;
+options.step_candidates = 4;
+options.curvature_policy = minion::uncertainty::CurvaturePolicy::Regularize;
+auto uncertainty = analysis.hessian(2.0, options);
+```
+
+### Hessian controls and diagnostics
+
+The Python and C++ APIs share the following options and defaults:
+
+| Option | Default | Meaning |
+|---|---|---|
+| `step_candidates` | `4` | Probe `h, 2h, 4h, 8h`; use `1` for fixed steps without probing, or `3–30` for automatic selection. |
+| `relative_step` | `1e-3` | Initial step relative to the parameter scale. |
+| `step_sizes` | Not supplied | Explicit initial steps, overriding `relative_step`; probing may enlarge them. |
+| `parameter_scales` | `max(1, abs(x[i]))` | Parameter units used for initial steps and conditioning. |
+| `step_tolerance` | `0.05` | Relative agreement required between coordinate curvature estimates. |
+| `eigenvalue_tolerance` | `1e-10` | Relative cutoff for unresolved scaled Hessian modes. |
+| `curvature_policy` | `"regularize"` | Handling of non-positive or unresolved curvature; choices below. |
+| `confidence_level` | `0.95` | Confidence level for marginal Gaussian intervals. |
+| `batch_size` | `-1` | All missing final stencil points in one callback; positive values limit final batch size. |
+
+All coordinate probes are evaluated in **one preliminary batch**. For each
+parameter, select the largest candidate with three consistent positive curvature
+estimates, then calculate **one full Hessian**, reusing probe evaluations. If no
+triple passes, select the best positive pair or the largest candidate, with an
+explicit warning. Probing always uses one batch, even when `batch_size` limits
+the final batches. With central stencils and four candidates, the probe batch
+contains `8*D + 1` points and the final batch adds `2*D*(D - 1)` mixed points.
+`nfev` counts evaluated points; `objective_calls` counts actual callbacks.
+
+The curvature policies are:
+
+- **`"regularize"` (default):** apply MINUIT-style diagonal inflation when needed.
+  Repaired results have `status="forced_positive_definite"`,
+  `covariance_available=True`, and `covariance_valid=False`.
+- **`"strict"`:** return Hessian diagnostics without covariance when any mode is
+  non-positive or unresolved.
+- **`"positive_modes"`:** return only resolved positive-mode contributions. Partial
+  results have `status="partial"` and `uncertainty_complete=False`; zero
+  contributions from omitted modes do not establish zero uncertainty.
+
+C++ uses `CurvaturePolicy::Regularize`, `Strict`, or `PositiveModes` rather than
+policy strings. A completely zero Hessian cannot be repaired without an
+arbitrary curvature scale and leaves covariance unavailable.
+
+Inspect `status`, `warnings`, `step_sizes`, and `eigenvalues` before interpreting
+results. `regularized_hessian` and `regularization_relative_change` describe any
+repair; the original Hessian remains available. Regularization provides a finite
+approximation, but can substantially underestimate uncertainty in weak directions.
+Even `covariance_valid=True` does not establish Gaussian interval coverage for
+nonlinear fits or parameters at active bounds. Four candidates may not reach a
+large enough step for a noisy objective; enlarge the initial steps or candidate
+range and compare the resulting uncertainties.
+
+### Bootstrap and worked examples
+
+`analysis.bootstrap(objective_sampler, ...)` refits statistically resampled data.
+The sampler returns one vectorized objective for each fixed resampled dataset;
+it must not regenerate observations on each objective evaluation. Minion runs
+the refits and computes the covariance, correlations, and percentile intervals
+in C++.
+
+The executed [curve-fitting notebook](examples/curve_fit.ipynb) includes:
+
+- A Gaussian polynomial fit with an analytic covariance and 100 Minion bootstrap fits.
+- Nearly collinear parameters with tiny numerical errors, showing when repair fails
+  and larger differentiation steps recover the reference uncertainty.
+- A curved nonlinear parameter distribution, compared with exact transformed
+  refits and another 100 Minion bootstrap fits.
+- A non-negative amplitude at its bound, where symmetric Gaussian intervals miss
+  the constrained estimator's point mass and support.
 
 See the [statistical uncertainty guide](https://minion-py.readthedocs.io/en/latest/Uncertainty.html)
-for C++ usage, bootstrap examples, confidence intervals, and diagnostics, and the
-[curve-fitting notebook](examples/curve_fit.ipynb) for a worked comparison.
+for the full API, numerical details, and interval interpretation. The
+[reproducible noise experiment](examples/validate_hessian_noise.py) and its
+[validation report](docs/hessian_noise_validation.md) provide additional checks.
 
 ## CEC and BBOB2009 Benchmark Usage
 

@@ -19,7 +19,7 @@ struct Curvature {
 
 std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const std::vector<double>& x,
                        const std::vector<std::pair<double,double>>& bounds,
-                       const std::vector<double>& base_steps, int batch_size, int n_scales, bool diagonal_only=false) {
+                       const std::vector<double>& base_steps, int batch_size, int candidate_count, bool diagonal_only=false) {
     const size_t n = x.size();
     using Terms = std::vector<std::pair<size_t,double>>;
     struct Plan {
@@ -30,7 +30,7 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
     std::vector<Plan> plans;
     std::map<std::vector<double>,size_t> indices;
     std::vector<std::vector<double>> points;
-    for (int level=0; level<n_scales; ++level) {
+    for (int level=0; level<candidate_count; ++level) {
         auto steps=base_steps;
         for (double& h:steps) h=std::ldexp(h,level);
         std::vector<Stencil> stencils;
@@ -155,9 +155,11 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     if (!(scale>0) || !std::isfinite(scale) || !(o.relative_step>0) || !std::isfinite(o.relative_step) ||
         !(o.confidence_level>0 && o.confidence_level<1) ||
         !(o.eigenvalue_tolerance>0 && o.eigenvalue_tolerance<1) ||
-        !(o.stability_tolerance>0) || !std::isfinite(o.stability_tolerance) ||
-        (o.batch_size != -1 && o.batch_size <= 0) || o.n_scales < 1 || o.n_scales > 30 ||
-        (o.probe_scales!=0 && (o.probe_scales<3 || o.probe_scales>30)))
+        !(o.step_tolerance>0) || !std::isfinite(o.step_tolerance) ||
+        (o.batch_size != -1 && o.batch_size <= 0) ||
+        (o.step_candidates!=1 && (o.step_candidates<3 || o.step_candidates>30)) ||
+        (o.curvature_policy!=CurvaturePolicy::Strict && o.curvature_policy!=CurvaturePolicy::Regularize &&
+         o.curvature_policy!=CurvaturePolicy::PositiveModes))
         throw std::invalid_argument("Invalid Hessian options or scale.");
     const size_t n=x_.size();
     std::vector<double> scales(n),steps(n);
@@ -189,10 +191,10 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         for (const auto& point:points) values.push_back(cache.at(point));
         return values;
     };
-    if (o.probe_scales) {
-        // Only O(n * probe_scales) axis points; no mixed derivatives here.
+    if (o.step_candidates>1) {
+        // Only O(n * step_candidates) axis points; no mixed derivatives here.
         // All candidate scales are planned before the single objective call.
-        const auto probes=differentiate(cached_objective,data_,x_,bounds_,steps,-1,o.probe_scales,true);
+        const auto probes=differentiate(cached_objective,data_,x_,bounds_,steps,-1,o.step_candidates,true);
         probe_errors.resize(n,std::numeric_limits<double>::infinity());
         for (size_t i=0;i<n;++i) {
             size_t chosen=0;
@@ -209,7 +211,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
                     std::fabs(lhs-rhs)/std::max(lhs,rhs) : std::numeric_limits<double>::infinity();
                 // Require three distinct scales, not a single lucky pair.
                 const double consistency=std::max(previous,difference);
-                if (consistency<=o.stability_tolerance) {
+                if (consistency<=o.step_tolerance) {
                     // Prefer the largest stable step to reduce noise amplification.
                     chosen=k;probe_errors[i]=consistency;stable=true;
                 } else if (!stable && difference<best) {
@@ -227,29 +229,16 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         }
         probe_warnings.push_back("Step probing checks coordinate curvature only; weak parameter combinations may remain unresolved.");
     }
-    const auto candidates=differentiate(o.probe_scales ? cached_objective : objective_,data_,x_,bounds_,steps,o.batch_size,
-        o.check_stability ? std::max(2,o.n_scales) : o.n_scales);
+    const auto final=differentiate(o.step_candidates>1 ? cached_objective : objective_,data_,x_,bounds_,steps,o.batch_size,1);
+    const auto& a=final.front();
     Eigen::VectorXd s=Eigen::Map<Eigen::VectorXd>(scales.data(),n);
-    size_t selected=0;
-    double error=0, best=std::numeric_limits<double>::infinity();
-    for (size_t k=1;k<candidates.size();++k) {
-        const auto lhs=(s.asDiagonal()*candidates[k-1].H*s.asDiagonal()).eval();
-        const auto rhs=(s.asDiagonal()*candidates[k].H*s.asDiagonal()).eval();
-        const double difference=(lhs-rhs).norm()/std::max({lhs.norm(),rhs.norm(),std::numeric_limits<double>::min()});
-        if (difference<best) {best=difference;selected=k;error=difference;}
-        if (difference<=o.stability_tolerance) {selected=k;error=difference;break;}
-    }
-    const auto& a=candidates[selected];
     HessianResult r;
     r.estimate=x_;r.hessian=a.H;r.gradient=a.gradient;r.step_sizes=a.steps;r.stencil_types=a.types;
-    r.nfev=o.probe_scales ? actual_nfev : a.nfev;
-    r.objective_calls=o.probe_scales ? actual_calls : a.calls;
+    r.nfev=o.step_candidates>1 ? actual_nfev : a.nfev;
+    r.objective_calls=o.step_candidates>1 ? actual_calls : a.calls;
     r.confidence_level=o.confidence_level;
     r.step_probe_errors=probe_errors;r.warnings=probe_warnings;
     const Eigen::MatrixXd scaled=s.asDiagonal()*a.H*s.asDiagonal();
-    r.differentiation_error=error;
-    if (error>o.stability_tolerance)
-        r.warnings.push_back("Hessian is sensitive to differentiation step sizes; no consistent adjacent candidate scales were found. Numerical noise or changing curvature may make uncertainty unreliable.");
     for (size_t i=0;i<n;++i) {
         if (a.types[i]!="central") r.warnings.push_back("One-sided differentiation used for parameter "+std::to_string(i)+".");
         if (!bounds_.empty() && std::min(x_[i]-bounds_[i].first,bounds_[i].second-x_[i])<=a.steps[i])
@@ -266,7 +255,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     const double threshold=o.eigenvalue_tolerance*largest;
     Eigen::VectorXd effective_eigen=eigen;
     Eigen::MatrixXd effective_vectors=solver.eigenvectors();
-    if (o.force_positive_definite && eigen.minCoeff()<=threshold) {
+    if (o.curvature_policy==CurvaturePolicy::Regularize && eigen.minCoeff()<=threshold) {
         // Inspired by MINUIT2 MnPosDef: normalize by the diagonal, then
         // add to that normalized diagonal. Work in parameter-scaled units.
         // https://root.cern.ch/doc/master/MnPosDef_8cxx_source.html
@@ -329,7 +318,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     const bool incomplete=!r.discarded_modes.empty();
     if (eigen.minCoeff() < -threshold)
         r.warnings.push_back("Hessian has negative curvature; this may reflect numerical differentiation (including too-small steps) or a point that is not a local minimum.");
-    if (incomplete && (!o.discard_nonpositive || r.retained_rank==0)) {
+    if (incomplete && (o.curvature_policy!=CurvaturePolicy::PositiveModes || r.retained_rank==0)) {
         r.status=eigen.minCoeff() < -threshold ? "indefinite" : "singular";
         r.warnings.push_back(r.retained_rank==0 ?
             "No resolved positive Hessian modes; uncertainty is unavailable." :

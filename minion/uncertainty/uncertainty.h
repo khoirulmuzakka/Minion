@@ -9,28 +9,28 @@
 
 namespace minion::uncertainty {
 
-// Steps are in parameter units. Empty steps use relative_step * parameter scale.
+/** Action when the final scaled Hessian contains non-positive or unresolved modes. */
+enum class CurvaturePolicy {
+    Strict,        ///< Return diagnostics without covariance unless every mode is resolved positive.
+    Regularize,    ///< Apply MINUIT-style diagonal inflation and mark covariance as regularized.
+    PositiveModes  ///< Return only positive-mode contributions, marked as incomplete.
+};
+
+/** Controls for one numerical Hessian, optionally preceded by one batch of axis probes. */
 struct HessianOptions {
+    /// Initial positive steps in parameter units; empty uses relative_step * parameter scale.
     std::vector<double> step_sizes;
+    /// Parameter units for step construction and conditioning; empty uses max(1, abs(x[i])).
     std::vector<double> parameter_scales;
-    double relative_step = 1e-3;
-    double confidence_level = 0.95;
-    double eigenvalue_tolerance = 1e-10;
-    double stability_tolerance = 0.05;
-    // -1 evaluates all stencil points in one objective call.
-    int batch_size = -1;
-    // Candidate steps are h, 2h, ...; all candidates share one batch.
-    int n_scales = 1;
-    // Default: four axis-only scales in one preliminary batch; 0 disables.
-    // Nonzero counts must be 3..30.
-    // Select the largest step with three consistent positive curvature scales.
-    int probe_scales = 4;
-    // Compatibility option: request at least two scales.
-    bool check_stability = false;
-    // Return incomplete positive-mode contributions rather than fail strictly.
-    bool discard_nonpositive = true;
-    // MINUIT-style diagonal repair; takes precedence over discard_nonpositive.
-    bool force_positive_definite = false;
+    double relative_step = 1e-3;       ///< Initial relative step when step_sizes is empty.
+    double confidence_level = 0.95;   ///< Marginal Gaussian interval confidence level in (0, 1).
+    double eigenvalue_tolerance = 1e-10; ///< Relative scaled eigenvalue cutoff in (0, 1).
+    double step_tolerance = 0.05;     ///< Positive relative agreement required between axis probes.
+    int batch_size = -1;              ///< Final batch limit; -1 means all points. Probes use one call.
+    /// 1 uses initial steps directly; 3..30 probes h, 2h, ... in one preliminary call.
+    /// Select the largest step with three consistent positive coordinate curvatures.
+    int step_candidates = 4;
+    CurvaturePolicy curvature_policy = CurvaturePolicy::Regularize;
 };
 
 struct HessianResult {
@@ -48,7 +48,6 @@ struct HessianResult {
     std::vector<size_t> discarded_modes;
     size_t retained_rank = 0;
     double condition_number = std::numeric_limits<double>::infinity();
-    double differentiation_error = 0.0;
     double confidence_level = 0.95;
     size_t nfev = 0, objective_calls = 0;
     // Partial covariance is available but is not a complete uncertainty estimate.
@@ -110,6 +109,7 @@ private:
 namespace minion {
 using uncertainty::Uncertainty;
 using uncertainty::HessianOptions;
+using uncertainty::CurvaturePolicy;
 using uncertainty::HessianResult;
 using uncertainty::BootstrapSampler;
 using uncertainty::BootstrapOptions;

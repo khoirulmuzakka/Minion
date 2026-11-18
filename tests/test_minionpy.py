@@ -602,7 +602,7 @@ def check_hessian_polynomial_fit_with_known_observation_errors():
         algo="NelderMead", maxevals=5000, seed=17,
         options={"x_tol": 1e-9, "f_tol": 1e-12}).optimize()
     np.testing.assert_allclose(fit.x, expected_x, atol=2e-5)
-    result = minionpy.Uncertainty(chi_squared, fit.x, [(-3, 3)] * 3).hessian(scale=2, probe_scales=0)
+    result = minionpy.Uncertainty(chi_squared, fit.x, [(-3, 3)] * 3).hessian(scale=2, step_candidates=1)
     assert result.covariance_valid
     assert result.covariance_available
     assert result.uncertainty_complete
@@ -617,8 +617,7 @@ def check_hessian_polynomial_fit_with_known_observation_errors():
     z = NormalDist().inv_cdf(0.975)
     np.testing.assert_allclose(result.ci_lower, np.asarray(fit.x) - z * expected_std, rtol=2e-7)
     np.testing.assert_allclose(result.ci_upper, np.asarray(fit.x) + z * expected_std, rtol=2e-7)
-    assert result.differentiation_error < 1e-6
-    half = minionpy.Uncertainty(lambda p: chi_squared(p) / 2, fit.x).hessian(scale=1, probe_scales=0)
+    half = minionpy.Uncertainty(lambda p: chi_squared(p) / 2, fit.x).hessian(scale=1, step_candidates=1)
     np.testing.assert_allclose(half.covariance, result.covariance, rtol=2e-7)
 
 
@@ -632,7 +631,7 @@ def check_hessian_bounds_and_one_sided_mixed_derivatives():
         seen.extend(points)
         return np.einsum("bi,ij,bj->b", p, matrix, p) / 2
 
-    result = minionpy.Uncertainty(objective, [0, 0], [(0, 1), (-1, 0)]).hessian(1, probe_scales=0)
+    result = minionpy.Uncertainty(objective, [0, 0], [(0, 1), (-1, 0)]).hessian(1, step_candidates=1)
     assert result.stencil_types == ["forward", "backward"]
     assert result.warnings
     np.testing.assert_allclose(result.hessian, matrix, atol=1e-10)
@@ -648,7 +647,7 @@ def check_hessian_unidentified_or_negative_curvature_has_no_covariance():
             (lambda p: np.zeros(len(p)), "singular"),
         ]
     ):
-        r = minionpy.Uncertainty(objective, [0, 0]).hessian(1, discard_nonpositive=False, probe_scales=0)
+        r = minionpy.Uncertainty(objective, [0, 0]).hessian(1, step_candidates=1, curvature_policy="strict")
         assert r.status == status
         assert not r.covariance_valid
         assert not r.covariance_available
@@ -669,7 +668,7 @@ def check_hessian_partial_uncertainty_discards_unresolved_modes():
             p = np.asarray(points)
             return np.einsum("bi,ij,bj->b", p, matrix, p) / 2
 
-        r = minionpy.Uncertainty(objective, [0, 0]).hessian(2, probe_scales=0)
+        r = minionpy.Uncertainty(objective, [0, 0]).hessian(2, step_candidates=1, curvature_policy="positive_modes")
         expected = .5 * np.outer(rotation[:, 0], rotation[:, 0])
         assert r.status == "partial"
         assert r.covariance_available
@@ -686,7 +685,7 @@ def check_hessian_partial_uncertainty_discards_unresolved_modes():
 
 
 def check_hessian_discarded_parameter_zero_is_not_reported_as_a_valid_uncertainty():
-    r = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [0, 0]).hessian(1, probe_scales=0)
+    r = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [0, 0]).hessian(1, step_candidates=1, curvature_policy="positive_modes")
     assert r.status == "partial"
     np.testing.assert_allclose(r.std, [np.sqrt(.5), 0])
     assert np.isnan(r.correlation[1]).all()
@@ -700,7 +699,7 @@ def check_hessian_no_positive_modes_leaves_uncertainty_unavailable():
     for sign in (
         [0, -1]
     ):
-        r = minionpy.Uncertainty(lambda p: sign*np.sum(np.asarray(p)**2, axis=1), [0, 0]).hessian(1, probe_scales=0)
+        r = minionpy.Uncertainty(lambda p: sign*np.sum(np.asarray(p)**2, axis=1), [0, 0]).hessian(1, step_candidates=1, curvature_policy="strict")
         assert not r.covariance_available
         assert not r.covariance_valid
         assert r.retained_rank == 0
@@ -719,8 +718,8 @@ def check_hessian_minuit_positive_definite_repair():
         p = np.asarray(points) / scales
         return np.einsum("bi,ij,bj->b", p, matrix, p) / 2
     r = minionpy.Uncertainty(objective, [0, 0]).hessian(
-        2, parameter_scales=scales, force_positive_definite=True,
-        discard_nonpositive=False, probe_scales=0)
+        2, parameter_scales=scales, curvature_policy="regularize",
+        step_candidates=1)
     addition = .001 * 2.000001 + .000001
     expected = matrix + addition*np.eye(2)
     assert r.status == "forced_positive_definite"
@@ -739,18 +738,18 @@ def check_hessian_minuit_positive_definite_repair():
         def quadratic(points):
             return np.sum(np.asarray(points)**2*diagonal, axis=1)/2
         repaired = minionpy.Uncertainty(quadratic, [0.]*len(diagonal)).hessian(
-            1, force_positive_definite=True, probe_scales=0)
+            1, curvature_policy="regularize", step_candidates=1)
         assert repaired.status == "forced_positive_definite"
         assert np.linalg.eigvalsh(repaired.regularized_hessian).min() > 0
         assert repaired.regularization_relative_change > 0
         np.testing.assert_allclose(repaired.regularized_hessian @ repaired.covariance,
                                    np.eye(len(diagonal)), atol=1e-9)
     good = minionpy.Uncertainty(lambda p: np.sum(np.asarray(p)**2, axis=1), [0, 0]).hessian(
-        1, force_positive_definite=True, probe_scales=0)
+        1, curvature_policy="regularize", step_candidates=1)
     assert good.covariance_valid and not good.forced_positive_definite
     assert good.regularized_hessian.size == 0
     zero = minionpy.Uncertainty(lambda p: np.zeros(len(p)), [0, 0]).hessian(
-        1, force_positive_definite=True, probe_scales=0)
+        1, curvature_policy="regularize", step_candidates=1)
     assert zero.status == "singular" and not zero.covariance_available
 
 
@@ -760,7 +759,7 @@ def check_hessian_partial_covariance_uses_reported_scaled_modes():
     def objective(points):
         p = np.asarray(points) / scales
         return np.einsum("bi,ij,bj->b", p, matrix, p)/2
-    r = minionpy.Uncertainty(objective, [0, 0]).hessian(1, parameter_scales=scales, probe_scales=0)
+    r = minionpy.Uncertainty(objective, [0, 0]).hessian(1, parameter_scales=scales, step_candidates=1, curvature_policy="positive_modes")
     np.testing.assert_allclose(r.scaled_eigenvalues, [-1, 3], atol=1e-12)
     v = scales*r.scaled_eigenvectors[:, 1]
     np.testing.assert_allclose(r.covariance, np.outer(v,v)/3, atol=1e-12)
@@ -777,27 +776,21 @@ def check_hessian_parameter_units_and_batch_accounting():
         return np.einsum("bi,ij,bj->b", z, matrix, z) / 2
 
     r = minionpy.Uncertainty(objective, [0, 0]).hessian(
-        1, parameter_scales=scales, batch_size=3, check_stability=False,
-        confidence_level=.9, probe_scales=0)
+        1, parameter_scales=scales, batch_size=3, confidence_level=.9, step_candidates=1)
     assert r.covariance_valid
     assert r.nfev == 9 == sum(calls)
     assert r.objective_calls == len(calls) == 3
     np.testing.assert_allclose(r.covariance, np.diag(scales) @ np.linalg.inv(matrix) @ np.diag(scales))
     assert math.isclose(r.condition_number, np.linalg.cond(matrix), rel_tol=1e-6)
     np.testing.assert_allclose(np.asarray(r.ci_upper) / r.std, NormalDist().inv_cdf(.95))
-    calls.clear()
-    multiple = minionpy.Uncertainty(objective, [0, 0]).hessian(
-        1, parameter_scales=scales, n_scales=3, probe_scales=0)
-    assert calls == [25] and multiple.objective_calls == 1
-    np.testing.assert_allclose(multiple.hessian, np.diag(1/scales) @ matrix @ np.diag(1/scales))
-    np.testing.assert_allclose(multiple.covariance, r.covariance)
 
 
 def check_hessian_step_sensitivity_and_nonstationarity_are_reported():
-    quartic = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**4, [0]).hessian(1, step_sizes=[.1], n_scales=3, probe_scales=0)
-    assert quartic.differentiation_error > .5
-    assert any("sensitive" in w for w in quartic.warnings)
-    off_center = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [1]).hessian(1, probe_scales=0)
+    quartic = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**4, [0]).hessian(
+        1, step_sizes=[.1], step_candidates=3)
+    assert quartic.step_probe_errors[0] > .5
+    assert any("unverified" in w for w in quartic.warnings)
+    off_center = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [1]).hessian(1, step_candidates=1)
     assert any("stationary" in w for w in off_center.warnings)
 
 
@@ -814,27 +807,10 @@ def check_hessian_all_points_in_one_call():
         # Twelve parameters give 289 points, exceeding the old default of 256.
         analysis = minionpy.Uncertainty(objective, [0] * 12)
         kwargs = {} if batch_size is None else {"batch_size": batch_size}
-        result = analysis.hessian(1, check_stability=False, **kwargs, probe_scales=0)
+        result = analysis.hessian(1, **kwargs, step_candidates=1)
         assert calls == [289]
-        assert result.objective_calls == 1
-        assert result.nfev == 289
-        calls.clear()
-        result = analysis.hessian(1, **kwargs, probe_scales=0)
-        assert calls == [289]
-        assert result.objective_calls == 1
-        assert result.nfev == 289
-        for count in (2, 3):
-            calls.clear()
-            result = analysis.hessian(1, n_scales=count, **kwargs, probe_scales=0)
-            assert calls == [1 + 288 * count]
-            assert result.objective_calls == 1
-            assert result.nfev == 1 + 288 * count
-            np.testing.assert_allclose(result.step_sizes, [.002] * 12)
-        calls.clear()
-        result = analysis.hessian(1, check_stability=True, **kwargs, probe_scales=0)
-        assert calls == [577]
-        assert result.objective_calls == 1
-        np.testing.assert_allclose(result.hessian, 2 * np.eye(12), atol=1e-12)
+        assert result.objective_calls == 1 and result.nfev == 289
+        assert not result.step_probe_errors
 
 
     # A reproducible evaluation error at the center is amplified by small steps.
@@ -842,9 +818,9 @@ def check_hessian_all_points_in_one_call():
         p = np.asarray(points)
         return np.sum(p**2, axis=1) + 1e-8 * np.all(p == 0, axis=1)
     analysis = minionpy.Uncertainty(noisy_objective, [0, 0])
-    small = analysis.hessian(1, probe_scales=0)
-    robust = analysis.hessian(1, n_scales=4, stability_tolerance=.001, probe_scales=0)
-    assert robust.objective_calls == 1 and robust.nfev == 33
+    small = analysis.hessian(1, step_candidates=1)
+    robust = analysis.hessian(1, step_candidates=4, step_tolerance=.001)
+    assert robust.objective_calls == 2 and robust.nfev == 21
     np.testing.assert_allclose(robust.step_sizes, [.008, .008])
     assert np.linalg.norm(robust.hessian - 2*np.eye(2)) < np.linalg.norm(small.hessian - 2*np.eye(2)) / 50
 
@@ -856,18 +832,18 @@ def check_hessian_all_points_in_one_call():
         calls.append(len(p))
         return np.sum(p**2, axis=1)
     bounded = minionpy.Uncertainty(bounded_objective, [0], [(0, 1)]).hessian(
-        1, step_sizes=[1], n_scales=3, probe_scales=0)
+        1, step_sizes=[1], step_candidates=1)
     assert calls == [4] and bounded.nfev == 4
     np.testing.assert_allclose(bounded.hessian, [[2]], atol=1e-12)
     calls.clear()
     chunked = minionpy.Uncertainty(bounded_objective, [.5], [(0, 1)]).hessian(
-        1, n_scales=3, batch_size=2, probe_scales=0)
-    assert calls == [2, 2, 2, 1]
-    assert chunked.nfev == 7 and chunked.objective_calls == 4
+        1, batch_size=2, step_candidates=1)
+    assert calls == [2, 1]
+    assert chunked.nfev == 3 and chunked.objective_calls == 2
 
 
-def check_hessian_default_four_probe_scales():
-    assert minionpy.HessianOptions().probe_scales == 4
+def check_hessian_default_four_step_candidates():
+    assert minionpy.HessianOptions().step_candidates == 4
     calls = []
     def objective(points):
         calls.append(np.asarray(points).copy())
@@ -891,7 +867,7 @@ def check_hessian_axis_probes_share_one_batch():
     def objective(points):
         calls.append(np.asarray(points).copy())
         return np.sum(np.asarray(points)**2, axis=1)
-    r = minionpy.Uncertainty(objective, [0.]*12).hessian(1, probe_scales=9)
+    r = minionpy.Uncertainty(objective, [0.]*12).hessian(1, step_candidates=9)
     assert [len(p) for p in calls] == [217, 264]
     assert np.all(np.count_nonzero(calls[0], axis=1) <= 1)
     assert r.objective_calls == 2 and r.nfev == 481
@@ -900,7 +876,7 @@ def check_hessian_axis_probes_share_one_batch():
     np.testing.assert_allclose(r.step_probe_errors, np.zeros(12))
     calls.clear()
     chunked = minionpy.Uncertainty(objective, [0., 0.]).hessian(
-        1, probe_scales=3, batch_size=2)
+        1, step_candidates=3, batch_size=2)
     assert len(calls[0]) == 13  # Probe batch ignores final batch_size.
     assert all(len(p)<=2 for p in calls[1:])
     assert sum(map(len, calls[1:])) == 4  # Only mixed points remain.
@@ -914,7 +890,7 @@ def check_hessian_axis_probes_noise_and_bounds():
         p = np.asarray(points)
         calls.append(len(p))
         return np.sum(p**2, axis=1) + 1e-8*np.all(p == 0, axis=1)
-    r = minionpy.Uncertainty(noisy, [0., 0.]).hessian(1, probe_scales=9)
+    r = minionpy.Uncertainty(noisy, [0., 0.]).hessian(1, step_candidates=9)
     assert calls == [37, 4]
     np.testing.assert_allclose(r.hessian, 2*np.eye(2), atol=4e-7)
     np.testing.assert_allclose(r.step_sizes, [.256, .256])
@@ -925,28 +901,60 @@ def check_hessian_axis_probes_noise_and_bounds():
         calls.append(len(p))
         return p[:, 0]**2
     r = minionpy.Uncertainty(bounded, [0.], [(0., 1.)]).hessian(
-        1, step_sizes=[1.], probe_scales=4)
+        1, step_sizes=[1.], step_candidates=4)
     assert calls == [4] and r.objective_calls == 1 and r.nfev == 4
     assert any('no three distinct' in w for w in r.warnings)
     assert np.isinf(r.step_probe_errors[0])
     np.testing.assert_allclose(r.hessian, [[2.]])
     # A quartic has no locally constant second derivative across these steps.
     quartic = minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**4, [0.]).hessian(
-        1, probe_scales=5)
+        1, step_candidates=5)
     assert any('no three distinct' in w for w in quartic.warnings)
     assert quartic.step_probe_errors[0] > .05
     # Select per-parameter steps and stop increasing once nonlocal bias grows.
     def nonquadratic(points):
         p = np.asarray(points)
         return .5*np.sum(p**2, axis=1) + 100*p[:, 1]**4
-    different = minionpy.Uncertainty(nonquadratic, [0., 0.]).hessian(1, probe_scales=9)
+    different = minionpy.Uncertainty(nonquadratic, [0., 0.]).hessian(1, step_candidates=9)
     assert different.step_sizes[0] == .256
     assert different.step_sizes[1] < .256
     assert max(different.step_probe_errors) <= .05
     # Reject invalid probe counts before calling the objective.
-    for count in (-1, 1, 2, 31):
+    for count in (-1, 0, 2, 31):
         with _UNCERTAINTY_ASSERTIONS.assertRaises((ValueError, RuntimeError)):
-            minionpy.Uncertainty(noisy, [0., 0.]).hessian(1, probe_scales=count)
+            minionpy.Uncertainty(noisy, [0., 0.]).hessian(1, step_candidates=count)
+
+
+def check_hessian_curvature_policy_api():
+    def indefinite(points):
+        p = np.asarray(points)
+        return p[:, 0]**2 - 1e-6*p[:, 1]**2
+    analysis = minionpy.Uncertainty(indefinite, [0., 0.])
+    default = analysis.hessian(1)
+    assert default.forced_positive_definite and default.covariance_available
+    assert not default.covariance_valid
+    assert not analysis.hessian(1, curvature_policy="strict").covariance_available
+    policies = (("strict", minionpy.CurvaturePolicy.Strict),
+                ("regularize", minionpy.CurvaturePolicy.Regularize),
+                ("positive_modes", minionpy.CurvaturePolicy.PositiveModes))
+    for name, enum in policies:
+        python = analysis.hessian(1, step_candidates=1, curvature_policy=name)
+        options = minionpy.HessianOptions()
+        options.step_candidates = 1
+        options.curvature_policy = enum
+        cpp = analysis._backend.hessian(1, options)
+        assert python.status == cpp.status
+        np.testing.assert_allclose(python.covariance, cpp.covariance)
+    for policy in ("unknown", "Strict", None, [], 1):
+        with _UNCERTAINTY_ASSERTIONS.assertRaises(ValueError):
+            analysis.hessian(1, curvature_policy=policy)
+    options = minionpy.HessianOptions()
+    assert options.curvature_policy == minionpy.CurvaturePolicy.Regularize
+    for old in ("n_scales", "check_stability", "probe_scales", "stability_tolerance",
+                "discard_nonpositive", "force_positive_definite"):
+        assert not hasattr(options, old)
+        with _UNCERTAINTY_ASSERTIONS.assertRaises(TypeError):
+            analysis.hessian(1, **{old: 1})
 
 
 def check_hessian_invalid_options():
@@ -954,13 +962,13 @@ def check_hessian_invalid_options():
         [
             {"scale": 0}, {"scale": float("nan")}, {"scale": 1, "confidence_level": 1},
             {"scale": 1, "batch_size": 0}, {"scale": 1, "step_sizes": [0]},
-            {"scale": 1, "batch_size": -2}, {"scale": 1, "n_scales": 0},
-            {"scale": 1, "n_scales": 31},
+            {"scale": 1, "batch_size": -2}, {"scale": 1, "step_tolerance": 0},
+            {"scale": 1, "step_tolerance": float("nan")},
             {"scale": 1, "step_sizes": [1, 2]}, {"scale": 1, "parameter_scales": [-1]},
         ]
     ):
         with _UNCERTAINTY_ASSERTIONS.assertRaises((ValueError, RuntimeError, TypeError)):
-            minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [0]).hessian(**kwargs, probe_scales=0)
+            minionpy.Uncertainty(lambda p: np.asarray(p)[:, 0]**2, [0]).hessian(**kwargs, step_candidates=1)
 
 
 def check_hessian_bad_objective_results():
@@ -968,14 +976,14 @@ def check_hessian_bad_objective_results():
         [lambda p: [], lambda p: [float("nan")] * len(p)]
     ):
         with _UNCERTAINTY_ASSERTIONS.assertRaises(RuntimeError):
-            minionpy.Uncertainty(objective, [0]).hessian(1, probe_scales=0)
+            minionpy.Uncertainty(objective, [0]).hessian(1, step_candidates=1)
 
 
 def check_hessian_callback_exception_propagates():
     def objective(points):
         raise ValueError("user objective failed")
     with _UNCERTAINTY_ASSERTIONS.assertRaisesRegex(ValueError, "user objective failed"):
-        minionpy.Uncertainty(objective, [0]).hessian(1, probe_scales=0)
+        minionpy.Uncertainty(objective, [0]).hessian(1, step_candidates=1)
 
 
 def check_hessian_invalid_analysis_inputs():
@@ -1039,7 +1047,7 @@ def check_bootstrap_gaussian_polynomial_bootstrap_matches_reference_statistics()
     np.testing.assert_allclose(r.std, np.std(r.samples, axis=0, ddof=1), atol=1e-12)
     np.testing.assert_allclose(r.correlation, np.corrcoef(r.samples, rowvar=False), atol=1e-12)
     np.testing.assert_allclose([r.ci_lower, r.ci_upper], np.percentile(r.samples, [5, 95], axis=0), atol=1e-12)
-    h = analysis.hessian(2, probe_scales=0)
+    h = analysis.hessian(2, step_candidates=1)
     assert np.all((np.asarray(r.std)/h.std > .7) & (np.asarray(r.std)/h.std < 1.4))
     assert r.nfev == sum(f.nfev for f in r.realization_results)
 
@@ -1244,9 +1252,10 @@ def main() -> int:
         ('hessian: parameter units and batch accounting', check_hessian_parameter_units_and_batch_accounting),
         ('hessian: step sensitivity and nonstationarity are reported', check_hessian_step_sensitivity_and_nonstationarity_are_reported),
         ('hessian: all points in one call', check_hessian_all_points_in_one_call),
-        ('hessian: default four probe scales', check_hessian_default_four_probe_scales),
+        ('hessian: default four probe scales', check_hessian_default_four_step_candidates),
         ('hessian: axis probes share one batch', check_hessian_axis_probes_share_one_batch),
         ('hessian: axis probes noise and bounds', check_hessian_axis_probes_noise_and_bounds),
+        ('hessian: curvature policy API', check_hessian_curvature_policy_api),
         ('hessian: invalid options', check_hessian_invalid_options),
         ('hessian: bad objective results', check_hessian_bad_objective_results),
         ('hessian: callback exception propagates', check_hessian_callback_exception_propagates),

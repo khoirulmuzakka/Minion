@@ -31,6 +31,10 @@ void translate_exception(const std::exception &e) {
 
 
 PYBIND11_MODULE(minionpycpp, m) {
+    py::enum_<minion::uncertainty::CurvaturePolicy>(m, "CurvaturePolicy")
+        .value("Strict", minion::uncertainty::CurvaturePolicy::Strict)
+        .value("Regularize", minion::uncertainty::CurvaturePolicy::Regularize)
+        .value("PositiveModes", minion::uncertainty::CurvaturePolicy::PositiveModes);
     py::class_<HessianOptions>(m, "HessianOptions")
         .def(py::init<>())
         .def_readwrite("step_sizes", &HessianOptions::step_sizes)
@@ -38,13 +42,10 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readwrite("relative_step", &HessianOptions::relative_step)
         .def_readwrite("confidence_level", &HessianOptions::confidence_level)
         .def_readwrite("eigenvalue_tolerance", &HessianOptions::eigenvalue_tolerance)
-        .def_readwrite("stability_tolerance", &HessianOptions::stability_tolerance)
+        .def_readwrite("step_tolerance", &HessianOptions::step_tolerance)
         .def_readwrite("batch_size", &HessianOptions::batch_size)
-        .def_readwrite("n_scales", &HessianOptions::n_scales)
-        .def_readwrite("probe_scales", &HessianOptions::probe_scales)
-        .def_readwrite("check_stability", &HessianOptions::check_stability)
-        .def_readwrite("discard_nonpositive", &HessianOptions::discard_nonpositive)
-        .def_readwrite("force_positive_definite", &HessianOptions::force_positive_definite);
+        .def_readwrite("step_candidates", &HessianOptions::step_candidates)
+        .def_readwrite("curvature_policy", &HessianOptions::curvature_policy);
     py::class_<HessianResult>(m, "HessianResult")
         .def_readonly("estimate", &HessianResult::estimate)
         .def_readonly("std", &HessianResult::std)
@@ -64,7 +65,6 @@ PYBIND11_MODULE(minionpycpp, m) {
         .def_readonly("discarded_modes", &HessianResult::discarded_modes)
         .def_readonly("retained_rank", &HessianResult::retained_rank)
         .def_readonly("condition_number", &HessianResult::condition_number)
-        .def_readonly("differentiation_error", &HessianResult::differentiation_error)
         .def_readonly("step_sizes", &HessianResult::step_sizes)
         .def_readonly("step_probe_errors", &HessianResult::step_probe_errors)
         .def_readonly("stencil_types", &HessianResult::stencil_types)

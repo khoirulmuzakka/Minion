@@ -321,6 +321,33 @@ bool check_hessian_uncertainty() {
            std::fabs(result.std[1]-std::sqrt(4.0/11)) < 1e-6;
 }
 
+bool check_hessian_curvature_policies() {
+    using namespace minion::uncertainty;
+    minion::MinionFunction saddle = [](const auto& points, void*) {
+        std::vector<double> values;
+        for (const auto& p:points) values.push_back(p[0]*p[0]-1e-6*p[1]*p[1]);
+        return values;
+    };
+    Uncertainty analysis(saddle, {0,0});
+    HessianOptions options;
+    if (options.step_candidates!=4 || options.curvature_policy!=CurvaturePolicy::Regularize) return false;
+    options.step_candidates=1;
+    options.curvature_policy=CurvaturePolicy::Strict;
+    auto strict=analysis.hessian(1,options);
+    if (strict.status!="indefinite" || strict.covariance_available || strict.nfev!=9 || strict.objective_calls!=1) return false;
+    options.curvature_policy=CurvaturePolicy::Regularize;
+    auto repaired=analysis.hessian(1,options);
+    if (!repaired.forced_positive_definite || !repaired.covariance_available || repaired.covariance_valid ||
+        !repaired.uncertainty_complete || repaired.std.size()!=2) return false;
+    options.curvature_policy=CurvaturePolicy::PositiveModes;
+    auto partial=analysis.hessian(1,options);
+    if (partial.status!="partial" || !partial.covariance_available || partial.uncertainty_complete || partial.retained_rank!=1) return false;
+    options.curvature_policy=static_cast<CurvaturePolicy>(-1);
+    try { analysis.hessian(1,options); return false; }
+    catch (const std::invalid_argument&) {}
+    return true;
+}
+
 bool check_bootstrap_uncertainty() {
     minion::uncertainty::Uncertainty analysis(sphere_batch, {0}, {{-3, 3}});
     minion::uncertainty::BootstrapOptions options;
@@ -361,6 +388,7 @@ int main() {
         {"LSHADE population reduction switch and adaptation", check_lshade_population_reduction},
         {"ARRDE normalized spatial restart and refine thresholds", check_arrde_spatial_phase_tolerances},
         {"Hessian uncertainty matches analytic correlated covariance", check_hessian_uncertainty},
+        {"Hessian strict, regularized and positive-mode policies", check_hessian_curvature_policies},
         {"Bootstrap uncertainty matches empirical covariance and percentiles", check_bootstrap_uncertainty},
     };
 

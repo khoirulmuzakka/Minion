@@ -199,7 +199,18 @@ C++
    minion::uncertainty::Uncertainty analysis(objective, fit.x, bounds, data);
    minion::uncertainty::HessianOptions options;
    options.confidence_level = 0.95;
+   options.step_candidates = 4;  // Default: h, 2h, 4h, 8h in one probe batch.
+   options.curvature_policy = minion::uncertainty::CurvaturePolicy::Regularize;  // Default.
    auto result = analysis.hessian(2.0, options);
+
+For fixed steps without preliminary probing, set ``step_candidates=1``:
+
+.. code-block:: python
+
+   analysis = minionpy.Uncertainty(chi_squared, fit.x, bounds)
+   fixed = analysis.hessian(scale=2, step_candidates=1, step_sizes=[0.01, 0.01])
+   repaired = analysis.hessian(scale=2, curvature_policy="regularize")
+   partial = analysis.hessian(scale=2, curvature_policy="positive_modes")
 
 The caller owns the optional C++ ``data`` pointer and keeps it alive for the
 analysis lifetime. Bounds can be omitted for an unconstrained objective.
@@ -213,7 +224,7 @@ parameter scale, or ``max(1, abs(x[i]))`` when no scale is supplied. Explicit
 ``step_sizes`` replace these initial steps; when probing is enabled they are
 starting values, not necessarily the final steps.
 
-By default, ``probe_scales=4`` probes ``h, 2h, 4h, 8h`` before calculating mixed
+By default, ``step_candidates=4`` probes ``h, 2h, 4h, 8h`` before calculating mixed
 derivatives. All candidate coordinate points are evaluated in **one preliminary
 objective call**. The probes vary one parameter at a time, holding the others
 fixed. Central probes evaluate both signs and share the center across all
@@ -229,7 +240,7 @@ adjacent pair must satisfy
    \leq \texttt{stability\_tolerance},
 
 where :math:`d_i(h)` is the diagonal second-derivative estimate. The default
-``stability_tolerance`` is 0.05. Select the largest step in the last passing
+``step_tolerance`` is 0.05. Select the largest step in the last passing
 triple. For example, if ``h, 2h, 4h`` passes but ``2h, 4h, 8h`` fails, select
 ``4h``. Different parameters can receive different steps.
 
@@ -241,8 +252,10 @@ stability. ``step_probe_errors`` contains the selected relative consistency
 measure (the maximum of the two pair differences for a passing triple), or
 infinity when none can be assessed.
 
-Set ``probe_scales=0`` to disable probing; nonzero counts must be from 3 to 30.
-For example, ``probe_scales=9`` tests ``h, 2h, ..., 256h`` in the same single
+Set ``step_candidates=1`` to use the initial steps directly without probing.
+Other accepted counts are 3 through 30. The value 2 is rejected because automatic
+selection requires three distinct scales.
+For example, ``step_candidates=9`` tests ``h, 2h, ..., 256h`` in the same single
 probe call. Increasing ``relative_step`` or ``step_sizes`` shifts the candidate
 range without increasing the number of probes. The method favors the largest
 stable step to suppress evaluation noise, but larger steps can introduce
@@ -272,21 +285,10 @@ one batch, regardless of ``batch_size``. ``nfev`` counts actual unique points
 and ``objective_calls`` counts actual objective callbacks across both phases.
 There are no sequential probing retries.
 
-``n_scales`` is a separate control: it requests multiple **full Hessians** after
-probe selection. It defaults to 1 and accepts integers from 1 to 30. Candidate
-full-Hessian steps are the selected steps, twice those steps, and so on. Leave
-``n_scales=1`` and ``check_stability=False`` to calculate just one full Hessian.
-With probing disabled, central full-Hessian stencils use
-``1 + 2*n_scales*D*D`` unique points, sharing the center across scales.
-With multiple full Hessians, the larger member of the first consistent adjacent
-pair is selected; if none meets ``stability_tolerance``, the most consistent pair
-is used with a warning. Consistency is the relative Frobenius difference of
-scaled Hessians, normalized by the larger norm. It is reported as
-``differentiation_error`` (zero when only one full scale is requested), separately
-from ``step_probe_errors``. This whole-matrix diagnostic can miss errors in weak
-curvature directions and is not a rigorous error bound.
-``check_stability=True`` requests at least two full scales for compatibility.
-Near bounds, steps may be capped and candidate stencils may coincide.
+Exactly one full Hessian is calculated after selecting the steps. There is no
+second selection over full Hessians. ``step_probe_errors`` reports coordinate
+consistency only; it is not a rigorous error bound. Near bounds, steps may be
+capped and candidate stencils may coincide.
 
 For a central stencil, diagonal and mixed entries are estimated by
 
@@ -309,8 +311,8 @@ computed and mirrored. A single central scale needs
 :math:`1+2D+4\binom{D}{2}=1+2D^2` evaluations. Evaluation noise is amplified by
 :math:`h_i^{-2}` on the diagonal and :math:`(h_i h_j)^{-1}` off the diagonal;
 larger candidate steps can reduce that amplification but increase truncation
-bias. With ``n_scales=1``, no comparison of full Hessians is made; the default
-coordinate probes still compare diagonal curvature across candidate steps.
+bias. Coordinate probes compare diagonal curvature across candidate steps;
+the full Hessian is evaluated once.
 
 The implementation uses one-sided stencils where central stencils do not fit;
 it never evaluates beyond bounds. Fixed parameters (zero-width bounds) are
@@ -319,10 +321,23 @@ the differentiation and stationarity diagnostics.
 
 ``eigenvalues`` and ``eigenvectors`` describe the Hessian in original parameter
 units. ``condition_number`` and the relative ``eigenvalue_tolerance`` (default
-1e-10) use the Hessian transformed by parameter scales. By default,
-``discard_nonpositive=True`` excludes eigenvalues at or below the tolerance and
-calculates covariance using only resolved positive modes. When modes are
-discarded, ``status`` is ``partial``, ``covariance_available`` is true,
+1e-10) use the Hessian transformed by parameter scales. ``curvature_policy``
+controls how non-positive or unresolved curvature is handled:
+
+* ``"strict"``: return diagnostics without covariance if any mode is
+  non-positive or unresolved.
+* ``"regularize"`` (default): apply MINUIT-style diagonal inflation and return a
+  covariance explicitly marked as regularized.
+* ``"positive_modes"``: return only resolved positive-mode contributions,
+  explicitly marked as partial.
+
+Python accepts these policy strings. C++ uses
+``minion::uncertainty::CurvaturePolicy::Strict``, ``Regularize``, or
+``PositiveModes`` in ``HessianOptions::curvature_policy``.
+
+With ``curvature_policy="positive_modes"``, eigenvalues at or below the tolerance
+are excluded and covariance is calculated using only resolved positive modes.
+When modes are discarded, ``status`` is ``partial``, ``covariance_available`` is true,
 ``uncertainty_complete`` and ``covariance_valid`` are false. The resulting standard
 uncertainties and intervals describe only retained contributions and are
 incomplete. A zero contribution from a discarded direction does not mean zero
@@ -361,15 +376,15 @@ curvature can arise from differentiation error (including too-small steps),
 nonstationarity, or actual non-positive curvature. Try larger steps and inspect
 the optimum; discarding modes does not resolve these causes.
 
-Set ``discard_nonpositive=False`` for strict behavior: non-positive or unresolved
+With ``curvature_policy="strict"``, non-positive or unresolved
 curvature leaves uncertainty arrays empty. Arrays are also empty when no resolved
 positive modes remain, unless positive-definite repair is requested. Inspect ``status`` and
 ``warnings`` before using results. Step-sensitive positive curvature can still
 produce covariance, accompanied by warnings.
 
-For an explicit MINUIT-style repair, set ``force_positive_definite=True`` in
-Python or ``options.force_positive_definite = true`` in C++. This takes precedence
-over ``discard_nonpositive``. The algorithm works in parameter-scaled coordinates,
+For MINUIT-style repair (the default), use ``curvature_policy="regularize"`` in
+Python or ``options.curvature_policy = CurvaturePolicy::Regularize`` in C++.
+The algorithm works in parameter-scaled coordinates,
 shifts non-positive diagonal elements, normalizes by the resulting diagonal, and
 inflates that diagonal using the normalized eigenvalues (as in MINUIT2 MnPosDef).
 An additional scaled diagonal shift is applied if needed to resolve modes below
@@ -410,12 +425,15 @@ error of only ``1e-8`` at the stencil center gave the following results:
      - 50.04
      - 95.00%
 
-The default four probes only reach ``h=0.008`` in this example, which is too
-small to resolve the weak curvature. Without repair, the default returns a
-``partial`` result; enabling repair makes the matrix positive definite but does
-not recover the missing curvature. In a separate 300-trial random evaluation
-noise test, four default probes with repair achieved only 64.4% mean expected
-coverage, compared with approximately 95% when the initial step was enlarged.
+The default four candidates only reach ``h=0.008`` in this example, which is too
+small to resolve the weak curvature. The default regularization returns
+``status="forced_positive_definite"`` and ``covariance_valid=False``. The
+``"strict"`` policy instead returns ``status="indefinite"`` without covariance;
+``"positive_modes"`` returns partial contributions. Making the matrix positive
+definite does not recover the missing curvature. In a separate 300-trial random evaluation
+noise test, four default candidates with regularization achieved mean expected
+coverage substantially below 95%, compared with approximately 95% when the
+initial step was enlarged.
 
 These results do not make ``relative_step=0.032`` a universal setting. The
 needed step depends on parameter units, numerical noise, and local nonlinearity.
