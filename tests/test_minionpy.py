@@ -859,7 +859,8 @@ def check_hessian_default_four_step_candidates():
     assert np.all(np.count_nonzero(calls[0], axis=1) <= 1)
     assert r.objective_calls == 2 and r.nfev == 361
     np.testing.assert_allclose(r.step_sizes, [.008]*12)
-    np.testing.assert_allclose(r.covariance, np.eye(12)/2)
+    # Eigensolver roundoff can produce tiny entries where covariance is zero.
+    np.testing.assert_allclose(r.covariance, np.eye(12)/2, atol=1e-12)
     calls.clear()
     # Exercise the C++ option default independently of the Python wrapper.
     backend = analysis._backend.hessian(1, minionpy.HessianOptions())
@@ -877,8 +878,9 @@ def check_hessian_axis_probes_share_one_batch():
     assert np.all(np.count_nonzero(calls[0], axis=1) <= 1)
     assert r.objective_calls == 2 and r.nfev == 481
     np.testing.assert_allclose(r.step_sizes, [.256]*12)
-    np.testing.assert_allclose(r.covariance, np.eye(12)/2)
-    np.testing.assert_allclose(r.step_probe_errors, np.zeros(12))
+    # Eigensolver roundoff can produce tiny entries where covariance is zero.
+    np.testing.assert_allclose(r.covariance, np.eye(12)/2, atol=1e-12)
+    np.testing.assert_allclose(r.step_probe_errors, np.zeros(12), atol=1e-12)
     calls.clear()
     chunked = minionpy.Uncertainty(objective, [0., 0.]).hessian(
         1, step_candidates=3, batch_size=2)
@@ -886,7 +888,7 @@ def check_hessian_axis_probes_share_one_batch():
     assert all(len(p)<=2 for p in calls[1:])
     assert sum(map(len, calls[1:])) == 4  # Only mixed points remain.
     assert chunked.objective_calls == len(calls) and chunked.nfev == 17
-    np.testing.assert_allclose(chunked.covariance, np.eye(2)/2)
+    np.testing.assert_allclose(chunked.covariance, np.eye(2)/2, atol=1e-12)
 
 
 def check_hessian_axis_probes_noise_and_bounds():
