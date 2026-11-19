@@ -742,8 +742,13 @@ def check_hessian_minuit_positive_definite_repair():
         assert repaired.status == "forced_positive_definite"
         assert np.linalg.eigvalsh(repaired.regularized_hessian).min() > 0
         assert repaired.regularization_relative_change > 0
-        np.testing.assert_allclose(repaired.regularized_hessian @ repaired.covariance,
-                                   np.eye(len(diagonal)), atol=1e-9)
+        # H @ covariance amplifies cross-mode roundoff by the condition number
+        # (about 5e9 for the last case). Check the inverse in dimensionless
+        # coordinates instead: H = L @ L.T implies L.T @ covariance @ L = I.
+        # This still resolves relative variance errors in the weakest mode.
+        chol = np.linalg.cholesky(repaired.regularized_hessian)
+        np.testing.assert_allclose(chol.T @ repaired.covariance @ chol,
+                                   np.eye(len(diagonal)), rtol=1e-9, atol=1e-9)
     good = minionpy.Uncertainty(lambda p: np.sum(np.asarray(p)**2, axis=1), [0, 0]).hessian(
         1, curvature_policy="regularize", step_candidates=1)
     assert good.covariance_valid and not good.forced_positive_definite
