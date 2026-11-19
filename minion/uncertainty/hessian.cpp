@@ -8,18 +8,21 @@ struct Stencil {
     std::vector<double> first_nodes, first_weights, second_nodes, second_weights;
     std::string type;
     double step;
+    bool bound_limited = false;
 };
 struct Curvature {
     Eigen::MatrixXd H;
     Eigen::VectorXd gradient, diagonal;
     std::vector<double> steps;
     std::vector<std::string> types;
+    std::vector<bool> bound_limited;
     size_t nfev = 0, calls = 0;
 };
 
 std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const std::vector<double>& x,
                        const std::vector<std::pair<double,double>>& bounds,
-                       const std::vector<double>& base_steps, int batch_size, int candidate_count, bool diagonal_only=false) {
+                       const std::vector<double>& base_steps, int batch_size, int candidate_count, bool diagonal_only=false,
+                       const std::vector<std::string>& selected_types={}) {
     const size_t n = x.size();
     using Terms = std::vector<std::pair<size_t,double>>;
     struct Plan {
@@ -38,16 +41,27 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
             double h = steps[i];
             const double up = bounds.empty() ? INFINITY : bounds[i].second - x[i];
             const double down = bounds.empty() ? INFINITY : x[i] - bounds[i].first;
+            // Choose the stencil orientation once for all candidate scales.
+            // Near a bound, move inward rather than force a vanishing central step.
+            const double nearest=std::min(up,down), inward=std::max(up,down);
+            const double central_step=std::min(base_steps[i],0.1*nearest);
+            const bool central=selected_types.empty() ?
+                nearest>=std::min(base_steps[i],0.1*inward) && central_step>0 &&
+                    x[i]+central_step!=x[i] && x[i]-central_step!=x[i] :
+                selected_types[i]=="central";
+            const double requested=h;
             Stencil s;
-            if (up >= h && down >= h) {
+            if (central) {
+                h=std::min(h,0.1*nearest);
                 s = {{-1,1}, {-0.5,0.5}, {-1,0,1}, {1,-2,1}, "central", h};
             } else {
                 const double sign = up >= down ? 1.0 : -1.0;
-                h = std::min(h, std::max(up, down) / 3.0);
+                h=std::min(h,0.1*inward);
                 s = {{0,sign,2*sign}, {-1.5*sign,2*sign,-0.5*sign},
                      {0,sign,2*sign,3*sign}, {2,-5,4,-1},
                      sign > 0 ? "forward" : "backward", h};
             }
+            s.bound_limited=h<requested;
             if (!(h > 0) || !std::isfinite(h) || x[i] + h == x[i] || x[i] - h == x[i])
                 throw std::invalid_argument("Hessian step is not representable at the supplied point.");
             stencils.push_back(s);
@@ -117,6 +131,7 @@ std::vector<Curvature> differentiate(const MinionFunction& f, void* data, const 
             if (!diagonal_only) result.H(i,i)=result.diagonal[i];
             result.gradient[i]=sum(gradients[i]);
             result.steps.push_back(stencils[i].step); result.types.push_back(stencils[i].type);
+            result.bound_limited.push_back(stencils[i].bound_limited);
             for (size_t j=0;!diagonal_only && j<i;++j) result.H(i,j)=result.H(j,i)=sum(mixed[i][j]);
         }
         if (!result.H.allFinite() || !result.gradient.allFinite() || !result.diagonal.allFinite())
@@ -174,6 +189,8 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     }
     std::vector<std::string> probe_warnings;
     std::vector<double> probe_errors;
+    std::vector<bool> verified(n,false), selected_bound_limited;
+    std::vector<std::string> selected_types;
     size_t actual_nfev=0, actual_calls=0;
     std::map<std::vector<double>,double> cache;
     // Reuse axis evaluations from the one-shot probe in the final Hessian.
@@ -196,6 +213,7 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
         // All candidate scales are planned before the single objective call.
         const auto probes=differentiate(cached_objective,data_,x_,bounds_,steps,-1,o.step_candidates,true);
         probe_errors.resize(n,std::numeric_limits<double>::infinity());
+        selected_types.resize(n);selected_bound_limited.resize(n);
         for (size_t i=0;i<n;++i) {
             size_t chosen=0;
             double best=std::numeric_limits<double>::infinity();
@@ -225,11 +243,14 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
                 if (!std::isfinite(best)) chosen=probes.size()-1;
                 probe_warnings.push_back("Step probes found no three distinct, consistent positive curvature scales for parameter "+std::to_string(i)+"; the selected step is unverified.");
             }
-            steps[i]=std::ldexp(steps[i],static_cast<int>(chosen));
+            verified[i]=stable;
+            steps[i]=probes[chosen].steps[i];
+            selected_types[i]=probes[chosen].types[i];
+            selected_bound_limited[i]=probes[chosen].bound_limited[i];
         }
         probe_warnings.push_back("Step probing checks coordinate curvature only; weak parameter combinations may remain unresolved.");
     }
-    const auto final=differentiate(o.step_candidates>1 ? cached_objective : objective_,data_,x_,bounds_,steps,o.batch_size,1);
+    const auto final=differentiate(o.step_candidates>1 ? cached_objective : objective_,data_,x_,bounds_,steps,o.batch_size,1,false,selected_types);
     const auto& a=final.front();
     Eigen::VectorXd s=Eigen::Map<Eigen::VectorXd>(scales.data(),n);
     HessianResult r;
@@ -238,6 +259,10 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     r.objective_calls=o.step_candidates>1 ? actual_calls : a.calls;
     r.confidence_level=o.confidence_level;
     r.step_probe_errors=probe_errors;r.warnings=probe_warnings;
+    r.step_selection_verified=verified;
+    r.step_limited_by_bounds=o.step_candidates>1 ? selected_bound_limited : a.bound_limited;
+    for (size_t i=0;i<n;++i) if (r.step_limited_by_bounds[i])
+        r.warnings.push_back("Parameter "+std::to_string(i)+" step was limited to 10% of the available bound distance; unresolved curvature may require more accurate objective evaluations.");
     const Eigen::MatrixXd scaled=s.asDiagonal()*a.H*s.asDiagonal();
     for (size_t i=0;i<n;++i) {
         if (a.types[i]!="central") r.warnings.push_back("One-sided differentiation used for parameter "+std::to_string(i)+".");
@@ -253,6 +278,8 @@ HessianResult Uncertainty::hessian(double scale, const HessianOptions& o) const 
     r.scaled_eigenvalues=eigen;r.scaled_eigenvectors=solver.eigenvectors();
     const double largest=eigen.cwiseAbs().maxCoeff();
     const double threshold=o.eigenvalue_tolerance*largest;
+    for (size_t k=0;k<n;++k) if (eigen[k]<=threshold) r.unresolved_modes.push_back(k);
+    r.curvature_resolved=r.unresolved_modes.empty();
     Eigen::VectorXd effective_eigen=eigen;
     Eigen::MatrixXd effective_vectors=solver.eigenvectors();
     if (o.curvature_policy==CurvaturePolicy::Regularize && eigen.minCoeff()<=threshold) {

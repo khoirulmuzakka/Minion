@@ -334,11 +334,13 @@ bool check_hessian_curvature_policies() {
     options.step_candidates=1;
     options.curvature_policy=CurvaturePolicy::Strict;
     auto strict=analysis.hessian(1,options);
-    if (strict.status!="indefinite" || strict.covariance_available || strict.nfev!=9 || strict.objective_calls!=1) return false;
+    if (strict.status!="indefinite" || strict.covariance_available || strict.nfev!=9 || strict.objective_calls!=1 ||
+        strict.curvature_resolved || strict.unresolved_modes.size()!=1 || strict.step_selection_verified[0]) return false;
     options.curvature_policy=CurvaturePolicy::Regularize;
     auto repaired=analysis.hessian(1,options);
     if (!repaired.forced_positive_definite || !repaired.covariance_available || repaired.covariance_valid ||
-        !repaired.uncertainty_complete || repaired.std.size()!=2) return false;
+        !repaired.uncertainty_complete || repaired.std.size()!=2 ||
+        repaired.objective_calls!=1) return false;
     options.curvature_policy=CurvaturePolicy::PositiveModes;
     auto partial=analysis.hessian(1,options);
     if (partial.status!="partial" || !partial.covariance_available || partial.uncertainty_complete || partial.retained_rank!=1) return false;

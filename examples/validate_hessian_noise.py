@@ -49,12 +49,16 @@ def main():
         ('Noisy, repair, h=0.256', noisy, dict(curvature_policy="regularize", step_sizes=[.256]*2)),
     ]
     rows, results = [], {}
+    diagnostic_rows = []
     for name, f, options in cases:
         # Preserve fixed-step reference cases; default cases exercise the API default.
         if 'default candidates=4' not in name:
             options = {'step_candidates': 1, **options}
         r = Uncertainty(f, [0., 0.]).hessian(1, **options)
         results[name] = r
+        diagnostic_rows.append('| ' + ' | '.join([
+            name, str(all(r.step_selection_verified)), str(r.curvature_resolved),
+            str(r.unresolved_modes)]) + ' |')
         if r.covariance_available:
             sd = np.asarray(r.std)
             coverage = np.mean(np.abs(estimates) <= z*sd, axis=0)
@@ -73,6 +77,9 @@ def main():
     assert np.allclose(recovered.covariance, exact_cov, rtol=.005)
     assert bad.forced_positive_definite and not bad.covariance_valid
     assert bad.std[0] < .1*exact_std[0]
+    assert not bad.curvature_resolved
+    assert bad.unresolved_modes == [0]
+    assert bad.objective_calls == 1 and bad.nfev == 9
     assert not recovered.forced_positive_definite and recovered.covariance_valid
     probed = results['Noisy, one-shot candidates=9']
     assert np.allclose(probed.covariance, exact_cov, rtol=.005)
@@ -147,6 +154,16 @@ underlying model; computational noise is not re-simulated for each refit.
 | Case | Status | Selected h | Raw minimum eigenvalue | Reported SD | SD / exact SD | 95% coverage | Relative covariance error |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 """ + '\n'.join(rows) + f"""
+
+## Step verification and unresolved curvature
+
+Fixed steps have no probe verification. Unresolved mode indices refer to the
+original scaled Hessian, even if regularization returns a full covariance.
+These diagnostics do not change the returned covariance or add function calls.
+
+| Case | All coordinate steps verified | Raw curvature resolved | Unresolved modes |
+| --- | --- | --- | --- |
+""" + '\n'.join(diagnostic_rows) + f"""
 
 ## Independent random evaluation noise
 

@@ -314,10 +314,29 @@ larger candidate steps can reduce that amplification but increase truncation
 bias. Coordinate probes compare diagonal curvature across candidate steps;
 the full Hessian is evaluated once.
 
-The implementation uses one-sided stencils where central stencils do not fit;
-it never evaluates beyond bounds. Fixed parameters (zero-width bounds) are
-rejected. ``stencil_types``, ``step_sizes``, ``gradient`` and ``warnings`` expose
-the differentiation and stationarity diagnostics.
+Central step sizes are capped at 10% of the distance to the nearest bound.
+At or near an active bound, differentiation moves inward, capped at 10% of the
+available distance in that direction. The one-sided second-derivative stencil
+uses points at one, two, and three steps, so its farthest point reaches at most
+30% of that inward distance. The orientation is fixed across probe candidates
+and preserved for the final calculation.
+
+A parameter is treated as near a bound when the nearest-bound distance is
+smaller than both its initial requested step and 10% of the available inward
+distance; inward differentiation is also used if a central step is not
+representable. Thus an oversized requested step in the interior is capped
+locally rather than automatically switching to one-sided differentiation.
+The implementation never evaluates beyond bounds. Fixed parameters
+(zero-width bounds) are rejected.
+
+``step_limited_by_bounds`` records caps for the selected steps.
+``step_selection_verified`` contains one boolean per parameter: true requires
+three distinct, consistent positive coordinate curvature estimates. Fixed steps
+and probe fallbacks are false. These flags describe step selection, not proof
+of a reliable full Hessian. If a bound cap prevents resolving curvature above
+numerical noise, the derivative remains unverified or unresolved; making the
+steps still smaller does not solve the problem. ``stencil_types``, ``step_sizes``,
+``gradient`` and ``warnings`` provide additional diagnostics.
 
 ``eigenvalues`` and ``eigenvectors`` describe the Hessian in original parameter
 units. ``condition_number`` and the relative ``eigenvalue_tolerance`` (default
@@ -368,6 +387,13 @@ negative curvature cannot define a Gaussian variance. Setting those inverse
 eigenvalues to zero is a computational fallback, not a claim that the omitted
 directions are known exactly. The partial intervals consequently do not carry
 the complete Gaussian coverage interpretation described above.
+
+``unresolved_modes`` indexes raw ``scaled_eigenvalues`` at or below the numerical
+cutoff. It is preserved even when regularization supplies a full covariance.
+``curvature_resolved`` is true only if no raw mode is unresolved. A numerically
+positive raw Hessian can still be inaccurate under noise; this flag is not a
+coverage guarantee. In contrast, ``discarded_modes`` describes modes omitted
+from the returned covariance and is empty after successful regularization.
 
 ``retained_rank`` counts retained modes. ``discarded_modes`` contains indices into
 ``scaled_eigenvalues`` and columns of ``scaled_eigenvectors``. Covariance is computed

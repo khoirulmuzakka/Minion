@@ -42,6 +42,24 @@ underlying model; computational noise is not re-simulated for each refit.
 | Noisy, one-shot candidates=9 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
 | Noisy, repair, h=0.256 | warning | 0.256 | 0.000199695 | 50.0382 | 1.00076 | 95.000% | 0.00152821 |
 
+## Step verification and unresolved curvature
+
+Fixed steps have no probe verification. Unresolved mode indices refer to the
+original scaled Hessian, even if regularization returns a full covariance.
+These diagnostics do not change the returned covariance or add function calls.
+
+| Case | All coordinate steps verified | Raw curvature resolved | Unresolved modes |
+| --- | --- | --- | --- |
+| Clean, h=0.01 | False | True | [] |
+| Noisy, strict, h=0.001 | False | False | [0] |
+| Noisy, positive modes, h=0.001 | False | False | [0] |
+| Noisy, repair, h=0.001 | False | False | [0] |
+| Noisy, default candidates=4 | True | False | [0] |
+| Noisy, four candidates, strict | True | False | [0] |
+| Noisy, default candidates=4, h0=0.032 | True | True | [] |
+| Noisy, one-shot candidates=9 | True | True | [] |
+| Noisy, repair, h=0.256 | False | True | [] |
+
 ## Independent random evaluation noise
 
 Each configuration is repeated 300 times with independent N(0, 1e-8^2) errors

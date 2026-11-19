@@ -1,0 +1,212 @@
+{
+  "baseline": "546a835",
+  "source_sha256": {
+    "baseline/uncertainty.h": "43cc0c29697b8d05989554f754a8f40205ec92ed28a4ef419145272c27541543",
+    "baseline/hessian.cpp": "c12343d6358417599e3492b45396a1d5821fc64451be732da655a005339437db",
+    "current/uncertainty.h": "de5aa9a8f4780b3e2d265b7a1aa8b443521d8a24382a43548c62fa32c339e7d6",
+    "current/hessian.cpp": "430896f51ab0c44d6d9f41543ac3bb2ecdf2f208e88935bfd8e0d7b3db6a3996"
+  },
+  "results": {
+    "local_curvature": [
+      {
+        "case": "Interior nonlinear curvature",
+        "exact_local_sd": 1.0,
+        "results": {
+          "baseline": {
+            "status": "warning",
+            "step": 0.08,
+            "stencil": "central",
+            "raw_curvature": 2.2800000000000002,
+            "sd": 0.6622661785325219,
+            "relative_sd_error": 0.3377338214674781,
+            "nfev": 8,
+            "calls": 1,
+            "repaired": false,
+            "verified": null,
+            "limited": null
+          },
+          "current": {
+            "status": "warning",
+            "step": 0.010000000000000002,
+            "stencil": "central",
+            "raw_curvature": 1.0200000000000002,
+            "sd": 0.9901475429766742,
+            "relative_sd_error": 0.009852457023325822,
+            "nfev": 3,
+            "calls": 1,
+            "repaired": false,
+            "verified": [
+              false
+            ],
+            "limited": [
+              true
+            ]
+          }
+        }
+      },
+      {
+        "case": "Active-bound nonlinear curvature",
+        "exact_local_sd": 1.0,
+        "results": {
+          "baseline": {
+            "status": "forced_positive_definite",
+            "step": 0.3333333333333333,
+            "stencil": "forward",
+            "raw_curvature": -0.22222222222222143,
+            "sd": 2.999999910593042,
+            "relative_sd_error": 1.9999999105930422,
+            "nfev": 4,
+            "calls": 1,
+            "repaired": true,
+            "verified": null,
+            "limited": null
+          },
+          "current": {
+            "status": "warning",
+            "step": 0.1,
+            "stencil": "forward",
+            "raw_curvature": 0.8899999999999988,
+            "sd": 1.0599978800063607,
+            "relative_sd_error": 0.05999788000636075,
+            "nfev": 4,
+            "calls": 1,
+            "repaired": false,
+            "verified": [
+              false
+            ],
+            "limited": [
+              true
+            ]
+          }
+        }
+      },
+      {
+        "case": "Clean bounded quadratic",
+        "exact_local_sd": 0.1,
+        "results": {
+          "baseline": {
+            "status": "warning",
+            "step": 0.16,
+            "stencil": "central",
+            "raw_curvature": 100.00000000000004,
+            "sd": 0.09999999999999998,
+            "relative_sd_error": 2.220446049250313e-16,
+            "nfev": 9,
+            "calls": 1,
+            "repaired": false,
+            "verified": null,
+            "limited": null
+          },
+          "current": {
+            "status": "warning",
+            "step": 0.05,
+            "stencil": "central",
+            "raw_curvature": 100.00000000000006,
+            "sd": 0.09999999999999998,
+            "relative_sd_error": 2.220446049250313e-16,
+            "nfev": 7,
+            "calls": 1,
+            "repaired": false,
+            "verified": [
+              true
+            ],
+            "limited": [
+              true
+            ]
+          }
+        }
+      }
+    ],
+    "coverage": [
+      {
+        "case": "Clean interior Gaussian fits",
+        "trials": 1000,
+        "results": {
+          "baseline": {
+            "available": 1000,
+            "repairs": 0,
+            "median_sd_ratio": 0.9999999999999996,
+            "coverage_available": 0.956,
+            "covered_fraction_all": 0.956,
+            "mean_evaluations": 9.002,
+            "mean_calls": 1.0,
+            "unverified": null
+          },
+          "current": {
+            "available": 1000,
+            "repairs": 0,
+            "median_sd_ratio": 1.0,
+            "coverage_available": 0.956,
+            "covered_fraction_all": 0.956,
+            "mean_evaluations": 6.35,
+            "mean_calls": 1.0,
+            "unverified": 321
+          }
+        }
+      },
+      {
+        "case": "Tight bounds and quantized objective",
+        "trials": 1000,
+        "results": {
+          "baseline": {
+            "available": 1000,
+            "repairs": 0,
+            "median_sd_ratio": 1.0127393670836666,
+            "coverage_available": 0.938,
+            "covered_fraction_all": 0.938,
+            "mean_evaluations": 9.0,
+            "mean_calls": 1.0,
+            "unverified": null
+          },
+          "current": {
+            "available": 701,
+            "repairs": 0,
+            "median_sd_ratio": 0.8600183055228093,
+            "coverage_available": 0.8801711840228246,
+            "covered_fraction_all": 0.617,
+            "mean_evaluations": 5.0,
+            "mean_calls": 1.0,
+            "unverified": 1000
+          }
+        }
+      },
+      {
+        "case": "Gaussian fits at an active bound",
+        "trials": 1000,
+        "results": {
+          "baseline": {
+            "available": 1000,
+            "repairs": 0,
+            "median_sd_ratio": 1.0,
+            "coverage_available": 0.975,
+            "covered_fraction_all": 0.975,
+            "mean_evaluations": 6.495,
+            "mean_calls": 1.0,
+            "unverified": null
+          },
+          "current": {
+            "available": 1000,
+            "repairs": 0,
+            "median_sd_ratio": 1.0,
+            "coverage_available": 0.975,
+            "covered_fraction_all": 0.975,
+            "mean_evaluations": 4.0,
+            "mean_calls": 1.0,
+            "unverified": 1000
+          }
+        }
+      }
+    ],
+    "controls": [
+      {
+        "case": "Noisy nearly-degenerate unbounded fit",
+        "exact_sd": 50.00002499999375,
+        "previous_sd": 1.581929648009992,
+        "current_sd": 1.581929648009992,
+        "evaluations": 21,
+        "calls": 2,
+        "curvature_resolved": false
+      }
+    ]
+  }
+}

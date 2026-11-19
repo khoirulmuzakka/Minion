@@ -18,6 +18,7 @@ enum class CurvaturePolicy {
 
 /** Controls for one numerical Hessian, optionally preceded by one batch of axis probes. */
 struct HessianOptions {
+    /// Steps are capped at 10% of nearest-bound distance (central), or inward distance (one-sided).
     /// Initial positive steps in parameter units; empty uses relative_step * parameter scale.
     std::vector<double> step_sizes;
     /// Parameter units for step construction and conditioning; empty uses max(1, abs(x[i])).
@@ -37,6 +38,12 @@ struct HessianResult {
     std::vector<double> estimate, std, ci_lower, ci_upper, step_sizes;
     std::vector<std::string> stencil_types, warnings;
     std::vector<double> step_probe_errors;
+    /// True only for parameters with three distinct consistent positive probe scales.
+    /// Fixed steps and probe fallbacks are unverified.
+    std::vector<bool> step_selection_verified, step_limited_by_bounds;
+    /// Raw scaled modes at or below the rank tolerance, preserved even after repair.
+    std::vector<size_t> unresolved_modes;
+    bool curvature_resolved = false;
     Eigen::MatrixXd hessian, covariance, correlation, eigenvectors;
     // Effective Hessian used for covariance, in original parameter units.
     Eigen::MatrixXd regularized_hessian;

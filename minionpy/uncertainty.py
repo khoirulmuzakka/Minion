@@ -102,7 +102,13 @@ class Uncertainty:
             ``covariance_available``, ``covariance_valid``, and
             ``uncertainty_complete`` describe availability and completeness.
             ``nfev`` and ``objective_calls`` count actual evaluations and
-            callbacks across probing and final differentiation.
+            callbacks across probing and final differentiation. Per-parameter
+            ``step_selection_verified`` distinguishes passing probe triples
+            from fixed or fallback steps; ``step_limited_by_bounds`` records
+            bound caps. ``unresolved_modes`` indexes the raw scaled eigenpairs,
+            even after repair; ``curvature_resolved`` is true only when all raw
+            modes pass the numerical eigenvalue cutoff. Neither flag establishes
+            statistical coverage.
 
         Raises
         ------
@@ -128,6 +134,14 @@ class Uncertainty:
         selected consistency measures, or infinity when unavailable. Coordinate
         probes cannot validate weak combinations of parameters. Four probes
         may not reach a large enough step for a noisy objective.
+
+        Central steps are capped at 10% of the nearest-bound distance. Near
+        or at a bound, an inward one-sided stencil is used instead, with steps
+        capped at 10% of the available inward distance; its farthest point is
+        at three steps. Inward stencils avoid shrinking central steps to zero.
+        A cap can prevent resolving curvature above noise; repeated capped
+        candidates do not establish verified step selection. Fixed steps also
+        have ``step_selection_verified=False`` because no comparison was made.
 
         Only one full Hessian is calculated after step selection. Set
         ``step_candidates=1`` to use fixed initial steps without probing.

@@ -964,6 +964,69 @@ def check_hessian_curvature_policy_api():
             analysis.hessian(1, **{old: 1})
 
 
+def check_hessian_bound_distance_step_caps():
+    calls = []
+    def quadratic(points):
+        p = np.asarray(points)
+        assert np.all((p>=0) & (p<=1))
+        calls.append(p.copy())
+        return (p[:, 0]-.5)**2
+    # All central probes stay within 10% of the nearest-bound distance.
+    r = minionpy.Uncertainty(quadratic, [.5], [(0, 1)]).hessian(
+        1, step_sizes=[.02])
+    assert r.stencil_types == ['central']
+    np.testing.assert_allclose(r.step_sizes, [.05], rtol=1e-12)
+    assert r.step_selection_verified == [True]
+    assert r.step_limited_by_bounds == [True]
+    assert np.max(np.abs(np.concatenate(calls)[:, 0]-.5)) <= .05+1e-15
+    np.testing.assert_allclose(r.hessian, [[2.]], atol=1e-12)
+    # Even an oversized fixed step uses a local central stencil in the interior.
+    fixed = minionpy.Uncertainty(quadratic, [.5], [(0, 1)]).hessian(
+        1, step_candidates=1, step_sizes=[10.])
+    assert fixed.stencil_types == ['central']
+    assert fixed.step_selection_verified == [False]
+    assert fixed.step_limited_by_bounds == [True]
+    np.testing.assert_allclose(fixed.step_sizes, [.05])
+    # At or very near either bound, retain an inward orientation for all scales.
+    for x, direction in ((0., 'forward'), (1e-8, 'forward'), (1., 'backward'), (1-1e-8, 'backward')):
+        calls.clear()
+        inward = minionpy.Uncertainty(quadratic, [x], [(0, 1)]).hessian(
+            1, step_candidates=1, step_sizes=[10.])
+        assert inward.stencil_types == [direction]
+        np.testing.assert_allclose(inward.step_sizes, [.1*max(x,1-x)])
+        points = np.concatenate(calls)[:, 0]
+        assert np.max(np.abs(points-x)) <= .3*max(x,1-x)+1e-15
+        np.testing.assert_allclose(inward.hessian, [[2.]], atol=1e-12)
+    # Small initial steps near a bound should not collapse to the nearest distance.
+    near = minionpy.Uncertainty(quadratic, [1e-8], [(0, 1)]).hessian(1)
+    assert near.stencil_types == ['forward']
+    assert near.step_selection_verified == [True]
+    np.testing.assert_allclose(near.step_sizes, [.008])
+
+
+def check_hessian_unverified_and_unresolved_diagnostics():
+    calls = []
+    def noisy(points):
+        p = np.asarray(points)
+        calls.append(len(p))
+        return (p[:, 0]-.5)**2 + 1e-4*(p[:, 0]==.5)
+    r = minionpy.Uncertainty(noisy, [.5], [(.49, .51)]).hessian(1)
+    assert r.step_selection_verified == [False]
+    assert r.step_limited_by_bounds == [True]
+    assert not r.curvature_resolved and r.unresolved_modes == [0]
+    assert r.forced_positive_definite and not r.covariance_valid
+    assert r.objective_calls == len(calls) and r.nfev == sum(calls)
+    assert r.objective_calls == 1  # All final points were already probed.
+    assert any('limited to 10%' in w for w in r.warnings)
+    assert any('unverified' in w for w in r.warnings)
+    # Fixed steps are unverified, even if the raw matrix is numerically admissible.
+    good = minionpy.Uncertainty(lambda p: np.sum(np.asarray(p)**2, axis=1), [0,0]).hessian(
+        1, step_candidates=1)
+    assert good.step_selection_verified == [False, False]
+    assert good.curvature_resolved and not good.unresolved_modes
+    assert good.covariance_valid
+
+
 def check_hessian_invalid_options():
     for kwargs in (
         [
@@ -1263,6 +1326,8 @@ def main() -> int:
         ('hessian: axis probes share one batch', check_hessian_axis_probes_share_one_batch),
         ('hessian: axis probes noise and bounds', check_hessian_axis_probes_noise_and_bounds),
         ('hessian: curvature policy API', check_hessian_curvature_policy_api),
+        ('hessian: bound-distance step caps', check_hessian_bound_distance_step_caps),
+        ('hessian: unresolved curvature diagnostics', check_hessian_unverified_and_unresolved_diagnostics),
         ('hessian: invalid options', check_hessian_invalid_options),
         ('hessian: bad objective results', check_hessian_bad_objective_results),
         ('hessian: callback exception propagates', check_hessian_callback_exception_propagates),

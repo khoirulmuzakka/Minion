@@ -299,7 +299,13 @@ arbitrary curvature scale and leaves covariance unavailable.
 
 Inspect `status`, `warnings`, `step_sizes`, and `eigenvalues` before interpreting
 results. `regularized_hessian` and `regularization_relative_change` describe any
-repair; the original Hessian remains available. Regularization provides a finite
+repair; the original Hessian remains available. `step_selection_verified` and
+`step_limited_by_bounds` describe coordinate step selection. Central steps
+are capped at 10% of the nearest-bound distance; near a bound, inward one-sided
+steps use at most 10% of the available inward distance. `unresolved_modes`
+and `curvature_resolved` describe the raw scaled curvature, even after repair.
+
+Regularization provides a finite
 approximation, but can substantially underestimate uncertainty in weak directions.
 Even `covariance_valid=True` does not establish Gaussian interval coverage for
 nonlinear fits or parameters at active bounds. Four candidates may not reach a
