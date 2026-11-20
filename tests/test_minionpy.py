@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from statistics import NormalDist
 from typing import Callable
@@ -1109,7 +1111,7 @@ def check_bootstrap_gaussian_polynomial_bootstrap_matches_reference_statistics()
     assert r.n_requested == r.n_valid == r.n_converged == r.n_used == 100
     assert r.covariance_available and r.covariance_valid
     assert r.status == "ok"
-    assert len(r.realization_results) == 100
+    assert len(r.replica_results) == 100
     assert r.used_indices == list(range(100))
     np.testing.assert_allclose(r.samples, reference, atol=2e-6)
     np.testing.assert_allclose(r.mean, r.samples.mean(axis=0), atol=1e-12)
@@ -1119,7 +1121,7 @@ def check_bootstrap_gaussian_polynomial_bootstrap_matches_reference_statistics()
     np.testing.assert_allclose([r.ci_lower, r.ci_upper], np.percentile(r.samples, [5, 95], axis=0), atol=1e-12)
     h = analysis.hessian(2, step_candidates=1)
     assert np.all((np.asarray(r.std)/h.std > .7) & (np.asarray(r.std)/h.std < 1.4))
-    assert r.nfev == sum(f.nfev for f in r.realization_results)
+    assert r.nfev == sum(f.nfev for f in r.replica_results)
 
 
 def check_bootstrap_reproducible_sampling_and_optimizer_seeds():
@@ -1142,7 +1144,7 @@ def check_bootstrap_reproducible_sampling_and_optimizer_seeds():
     assert a.optimizer_seeds == d.optimizer_seeds
 
 
-def check_bootstrap_sampler_called_once_and_realizations_remain_fixed():
+def check_bootstrap_sampler_called_once_and_replicas_remain_fixed():
     calls, evaluations = [], [0]*6
     def sampler(index, seed):
         calls.append(index)
@@ -1186,9 +1188,9 @@ def check_bootstrap_failures_preserved_and_exclusions_reported():
     assert r.status == "warning"
     assert np.isnan(r.samples[1:5]).all()
     for i in range(1, 5):
-        assert r.realization_results[i].status == minionpy.TerminationStatus.RuntimeError
-        assert r.realization_results[i].message
-    assert "invalid simulated data" in r.realization_results[1].message
+        assert r.replica_results[i].status == minionpy.TerminationStatus.RuntimeError
+        assert r.replica_results[i].message
+    assert "invalid simulated data" in r.replica_results[1].message
     assert any("bias" in warning for warning in r.warnings)
     np.testing.assert_allclose(r.std, np.std(r.samples[[0, 5]], axis=0, ddof=1))
 
@@ -1218,10 +1220,130 @@ def check_bootstrap_zero_spread_has_undefined_correlation():
     assert any("zero observed" in w for w in r.warnings)
 
 
+def check_bootstrap_parallel_workers_call_sampler_and_objective():
+    jobs = 4
+    sampler_barrier, objective_barrier = threading.Barrier(jobs), threading.Barrier(jobs)
+    lock = threading.Lock()
+    main_thread = threading.get_ident()
+    sampled, evaluated = {}, {}
+    def sampler(index, seed):
+        identity = threading.get_ident()
+        with lock:
+            assert index not in sampled
+            sampled[index] = (identity, seed)
+        if index < jobs:
+            sampler_barrier.wait(timeout=10)
+        center = np.random.default_rng(seed).uniform(-1,1)
+        first = True
+        def objective(points):
+            nonlocal first
+            assert threading.get_ident() == identity
+            with lock:
+                evaluated[index] = identity
+            if first and index < jobs:
+                first = False
+                objective_barrier.wait(timeout=10)
+            return (np.asarray(points)[:,0]-center)**2
+        return objective
+    analysis = minionpy.Uncertainty(_bootstrap_quadratic([0]), [0], [(-5,5)])
+    r = _bootstrap_for_test(analysis, sampler, n_samples=12, n_jobs=jobs)
+    assert r.n_used == 12 and r.n_jobs_used == jobs
+    assert sorted(sampled) == sorted(evaluated) == list(range(12))
+    assert len({identity for identity, seed in sampled.values()}) == jobs
+    assert all(identity != main_thread for identity, seed in sampled.values())
+    assert r.sample_seeds == [sampled[i][1] for i in range(12)]
+    reference = [np.random.default_rng(seed).uniform(-1,1) for seed in r.sample_seeds]
+    np.testing.assert_allclose(r.samples[:,0], reference, atol=1e-7)
+
+
+def check_bootstrap_parallel_matches_serial_and_preserves_failures():
+    analysis = minionpy.Uncertainty(_bootstrap_quadratic([0,0]), [0,0], [(-5,5)]*2)
+    def sampler(index, seed):
+        if index == 2:
+            raise ValueError('parallel sampler failure')
+        if index == 5:
+            return lambda p: (_ for _ in ()).throw(ValueError('parallel objective failure'))
+        if index == 7:
+            return lambda p: []
+        return _bootstrap_quadratic(np.random.default_rng(seed).uniform(-1,1,2))
+    # Include a population optimizer to exercise thread-local random draws.
+    for optimizer, settings in (
+        ('NelderMead', dict(options=_BOOTSTRAP_FIT_OPTIONS, maxevals=3000)),
+        ('DE', dict(options={'population_size':12}, maxevals=120)),
+        ('ARRDE', dict(options={'population_size':12}, maxevals=120)),
+    ):
+        serial = _bootstrap_for_test(analysis, sampler, n_samples=10, n_jobs=1,
+                    optimizer=optimizer, require_convergence=False, **settings)
+        parallel = _bootstrap_for_test(analysis, sampler, n_samples=10, n_jobs=4,
+                    optimizer=optimizer, require_convergence=False, **settings)
+        assert serial.n_jobs_used == 1 and parallel.n_jobs_used == 4
+        assert serial.sample_seeds == parallel.sample_seeds
+        assert serial.optimizer_seeds == parallel.optimizer_seeds
+        assert serial.used_indices == parallel.used_indices == [0,1,3,4,6,8,9]
+        assert serial.nfev == parallel.nfev
+        assert serial.warnings == parallel.warnings
+        np.testing.assert_array_equal(serial.samples, parallel.samples)
+        np.testing.assert_array_equal(serial.covariance, parallel.covariance)
+        for index, (a,b) in enumerate(zip(serial.replica_results,parallel.replica_results)):
+            assert a.status == b.status and a.nfev == b.nfev
+            if index in (2,5,7):
+                assert b.status == minionpy.TerminationStatus.RuntimeError
+                assert f'Bootstrap replica {index}:' in b.message
+        assert 'parallel sampler failure' in parallel.replica_results[2].message
+        assert 'parallel objective failure' in parallel.replica_results[5].message
+    # Requests larger than the replica count are capped without dropping tasks.
+    capped = _bootstrap_for_test(analysis, lambda i,s: _bootstrap_quadratic([i/10,0]),
+                                n_samples=3, n_jobs=8)
+    assert capped.n_jobs_used == capped.n_used == 3
+    np.testing.assert_allclose(capped.samples[:,0], [0,.1,.2], atol=1e-7)
+
+
+def check_bootstrap_parallel_allows_nested_batch_threads():
+    lock = threading.Lock()
+    fit_ready = threading.Barrier(2)
+    pools, fit_threads, inner_threads = {}, set(), {}
+    def sampler(index, seed):
+        fit_thread = threading.get_ident()
+        with lock:
+            if fit_thread not in pools:
+                pools[fit_thread] = ThreadPoolExecutor(max_workers=2)
+            pool = pools[fit_thread]
+        center = np.random.default_rng(seed).uniform(-1,1,2)
+        with lock:
+            fit_threads.add(fit_thread)
+            inner_threads.setdefault(fit_thread,set())
+        if index < 2:
+            fit_ready.wait(timeout=10)
+        def objective(points):
+            p = np.asarray(points)
+            if len(p)<2:
+                return np.sum((p-center)**2,axis=1)
+            ready = threading.Barrier(2)
+            def chunk_eval(chunk):
+                with lock:
+                    inner_threads[fit_thread].add(threading.get_ident())
+                ready.wait(timeout=10)
+                return np.sum((chunk-center)**2,axis=1)
+            return np.concatenate(list(pool.map(chunk_eval,np.array_split(p,2))))
+        return objective
+    try:
+        analysis = minionpy.Uncertainty(_bootstrap_quadratic([0,0]), [0,0], [(-5,5)]*2)
+        result = _bootstrap_for_test(analysis, sampler, n_jobs=2, n_samples=6,
+                   optimizer='DE', maxevals=36, require_convergence=False,
+                   options={'population_size':12})
+        assert result.n_used == 6 and result.n_jobs_used == 2
+        assert len(fit_threads) == len(pools) == 2
+        assert all(len(inner_threads[t]) == 2 for t in fit_threads)
+        assert all(not (inner_threads[t] & fit_threads) for t in fit_threads)
+    finally:
+        for pool in pools.values():
+            pool.shutdown(wait=True)
+
+
 def check_bootstrap_invalid_configuration_is_rejected_before_sampling():
     for kwargs in (
         [
-            {"n_samples": 1}, {"maxevals": 0}, {"seed": -2},
+            {"n_samples": 1}, {"n_jobs": 0}, {"n_jobs": -1}, {"maxevals": 0}, {"seed": -2},
             {"confidence_level": 0}, {"confidence_level": 1},
             {"optimizer": "invalid"},
         ]
@@ -1334,11 +1456,14 @@ def main() -> int:
         ('hessian: invalid analysis inputs', check_hessian_invalid_analysis_inputs),
         ('bootstrap: gaussian polynomial bootstrap matches reference statistics', check_bootstrap_gaussian_polynomial_bootstrap_matches_reference_statistics),
         ('bootstrap: reproducible sampling and optimizer seeds', check_bootstrap_reproducible_sampling_and_optimizer_seeds),
-        ('bootstrap: sampler called once and realizations remain fixed', check_bootstrap_sampler_called_once_and_realizations_remain_fixed),
+        ('bootstrap: sampler called once and replicas remain fixed', check_bootstrap_sampler_called_once_and_replicas_remain_fixed),
         ('bootstrap: automatically generated master seed can be reused', check_bootstrap_automatically_generated_master_seed_can_be_reused),
         ('bootstrap: failures preserved and exclusions reported', check_bootstrap_failures_preserved_and_exclusions_reported),
         ('bootstrap: convergence policy and insufficient samples', check_bootstrap_convergence_policy_and_insufficient_samples),
         ('bootstrap: zero spread has undefined correlation', check_bootstrap_zero_spread_has_undefined_correlation),
+        ('bootstrap: parallel workers call their samplers and objectives', check_bootstrap_parallel_workers_call_sampler_and_objective),
+        ('bootstrap: parallel matches serial and preserves failures', check_bootstrap_parallel_matches_serial_and_preserves_failures),
+        ('bootstrap: parallel fits allow nested batch threads', check_bootstrap_parallel_allows_nested_batch_threads),
         ('bootstrap: invalid configuration is rejected before sampling', check_bootstrap_invalid_configuration_is_rejected_before_sampling),
         ('bootstrap: no accepted fits', check_bootstrap_no_accepted_fits),
         ('bootstrap: default arrde keeps finite budget limited fits with warning', check_bootstrap_default_arrde_keeps_finite_budget_limited_fits_with_warning),

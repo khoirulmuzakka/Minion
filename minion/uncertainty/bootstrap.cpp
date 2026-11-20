@@ -1,5 +1,8 @@
 #include "uncertainty.h"
 #include "minimizer.h"
+#include <atomic>
+#include <exception>
+#include <thread>
 
 namespace minion::uncertainty {
 namespace {
@@ -29,9 +32,9 @@ double percentile(std::vector<double> values, double probability) {
 }
 
 BootstrapResult Uncertainty::bootstrap(BootstrapSampler sampler, const BootstrapOptions& o) const {
-    if (!sampler || o.n_samples < 2 || o.maxevals == 0 || o.seed < -1 ||
+    if (!sampler || o.n_samples < 2 || o.n_jobs < 1 || o.maxevals == 0 || o.seed < -1 ||
         !(o.confidence_level > 0 && o.confidence_level < 1))
-        throw std::invalid_argument("Bootstrap requires a sampler, at least two samples, a positive budget, seed >= -1, and a confidence level in (0,1).");
+        throw std::invalid_argument("Bootstrap requires a sampler, at least two samples, a positive n_jobs and budget, seed >= -1, and a confidence level in (0,1).");
     const std::string algorithm = DefaultSettings::canonicalAlgoName(o.optimizer);
     if (algorithm == "L_BFGS") {
         if (!o.warm_start) throw std::invalid_argument("Unbounded L_BFGS bootstrap requires warm_start=True.");
@@ -57,10 +60,19 @@ BootstrapResult Uncertainty::bootstrap(BootstrapSampler sampler, const Bootstrap
     const size_t n = x_.size();
     const double nan = std::numeric_limits<double>::quiet_NaN();
     r.samples = Eigen::MatrixXd::Constant(o.n_samples, n, nan);
-    for (size_t b = 0; b < o.n_samples; ++b) {
-        const uint64_t sample_seed = mix_seed(r.seed + 2 * b);
-        const int optimizer_seed = static_cast<int>(mix_seed(r.seed + 2 * b + 1) & UINT64_C(0x7fffffff));
-        r.sample_seeds.push_back(sample_seed); r.optimizer_seeds.push_back(optimizer_seed);
+    r.n_jobs_used=std::min(static_cast<size_t>(o.n_jobs),o.n_samples);
+    r.sample_seeds.resize(o.n_samples);r.optimizer_seeds.resize(o.n_samples);
+    r.replica_results.resize(o.n_samples);
+    std::vector<size_t> replica_evaluations(o.n_samples,0);
+    for (size_t b=0;b<o.n_samples;++b) {
+        r.sample_seeds[b]=mix_seed(r.seed+2*b);
+        r.optimizer_seeds[b]=static_cast<int>(mix_seed(r.seed+2*b+1)&UINT64_C(0x7fffffff));
+    }
+    // Workers own the entire replica lifecycle, including concurrent sampler calls.
+    // Only independent, preallocated result slots are written before all workers join.
+    const auto fit_replica = [&](size_t b) {
+        const uint64_t sample_seed=r.sample_seeds[b];
+        const int optimizer_seed=r.optimizer_seeds[b];
         MinionResult fit;
         size_t evaluations = 0;
         try {
@@ -80,11 +92,55 @@ BootstrapResult Uncertainty::bootstrap(BootstrapSampler sampler, const Bootstrap
             fit = optimizer.optimize();
         } catch (const std::exception& error) {
             fit.status = TerminationStatus::RuntimeError;
-            fit.message = "Bootstrap realization " + std::to_string(b) + ": " + error.what();
+            fit.message = "Bootstrap replica " + std::to_string(b) + ": " + error.what();
             fit.nfev = evaluations;
         }
-        r.nfev += evaluations;
-        r.realization_results.push_back(fit);
+        catch (...) {
+            fit.status=TerminationStatus::RuntimeError;
+            fit.message="Bootstrap replica "+std::to_string(b)+": unknown exception.";
+            fit.nfev=evaluations;
+        }
+        replica_evaluations[b]=evaluations;
+        r.replica_results[b]=std::move(fit);
+    };
+    if (r.n_jobs_used==1) {
+        for (size_t b=0;b<o.n_samples;++b) fit_replica(b);
+    } else {
+        std::atomic<size_t> next{0};
+        std::atomic<bool> stop{false};
+        std::vector<std::exception_ptr> errors(r.n_jobs_used);
+        std::vector<std::thread> workers;
+        workers.reserve(r.n_jobs_used);
+        try {
+            for (size_t worker=0;worker<r.n_jobs_used;++worker) {
+                workers.emplace_back([&,worker] {
+                    try {
+                        RngState worker_rng_state;
+                        while (!stop.load(std::memory_order_relaxed)) {
+                            const size_t b=next.fetch_add(1,std::memory_order_relaxed);
+                            if (b>=o.n_samples) break;
+                            fit_replica(b);
+                        }
+                    } catch (...) {
+                        // Allocation and other infrastructure failures must not terminate
+                        // the process or escape a std::thread entry point.
+                        errors[worker]=std::current_exception();
+                        stop.store(true,std::memory_order_relaxed);
+                    }
+                });
+            }
+        } catch (...) {
+            stop.store(true,std::memory_order_relaxed);
+            for (auto& worker:workers) worker.join();
+            throw;
+        }
+        for (auto& worker:workers) worker.join();
+        for (const auto& error:errors) if (error) std::rethrow_exception(error);
+    }
+    // Validate and summarize in replica order, independently of completion order.
+    for (size_t b=0;b<o.n_samples;++b) {
+        r.nfev+=replica_evaluations[b];
+        const auto& fit=r.replica_results[b];
         bool valid = fit.x.size() == n && std::isfinite(fit.fun) &&
             (fit.status == TerminationStatus::Converged ||
              fit.status == TerminationStatus::MaxEvaluationsReached ||
@@ -104,7 +160,7 @@ BootstrapResult Uncertainty::bootstrap(BootstrapSampler sampler, const Bootstrap
     }
     r.n_used = r.used_indices.size();
     if (r.n_valid < r.n_requested)
-        r.warnings.push_back(std::to_string(r.n_requested-r.n_valid) + " bootstrap realizations failed or returned invalid fits; inspect realization_results. Exclusions may bias uncertainty estimates.");
+        r.warnings.push_back(std::to_string(r.n_requested-r.n_valid) + " bootstrap replicas failed or returned invalid fits; inspect replica_results. Exclusions may bias uncertainty estimates.");
     if (r.n_converged < r.n_valid)
         r.warnings.push_back(std::to_string(r.n_valid-r.n_converged) + " valid fits did not report convergence. " +
             (o.require_convergence ? "They were excluded; exclusions may bias uncertainty estimates." :

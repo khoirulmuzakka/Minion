@@ -196,7 +196,7 @@ class Uncertainty:
         options.curvature_policy = policies[curvature_policy]
         return self._backend.hessian(scale, options)
 
-    def bootstrap(self, objective_sampler, n_samples=200, *, optimizer="ARRDE",
+    def bootstrap(self, objective_sampler, n_samples=200, *, n_jobs=1, optimizer="ARRDE",
                   maxevals=10000, seed=None, confidence_level=0.95,
                   warm_start=True, require_convergence=False, options=None):
         """Refit statistically resampled objectives and summarize parameter samples.
@@ -205,13 +205,19 @@ class Uncertainty:
         ----------
         objective_sampler : callable
             Called as ``objective_sampler(index, sample_seed)`` for each requested
-            realization. Must return a vectorized objective accepting parameter
+            replica. Must return a vectorized objective accepting parameter
             vectors and returning one value per vector. Generate and capture a
-            fixed realization in this sampler; do not resample on each objective
+            fixed replica in this sampler; do not resample on each objective
             evaluation. The sampling mechanism defines whether the bootstrap is
             parametric or nonparametric; Minion does not infer a data model.
         n_samples : int, default: 200
-            Number of requested bootstrap realizations. Must be at least 2.
+            Number of requested bootstrap replicas. Must be at least 2.
+        n_jobs : int, default: 1
+            Maximum number of concurrent replica fits. Must be positive;
+            actual workers are capped at `n_samples`. Each worker calls the
+            sampler with its replica index and seed, then fits that objective.
+            The sampler and any shared mutable state must be thread-safe when
+            greater than 1. This does not set threads inside batch objectives.
         optimizer : str, default: 'ARRDE'
             Optimizer used for each refit. Bounded optimizers require finite
             bounds. Use ``'L_BFGS'`` with ``warm_start=True`` for unconstrained
@@ -240,12 +246,14 @@ class Uncertainty:
         result : BootstrapResult
             Original estimate, bootstrap mean, standard uncertainties,
             covariance, correlation, and percentile intervals. ``samples`` has
-            one row per requested realization, with NaN rows for invalid fits;
+            one row per requested replica, with NaN rows for invalid fits;
             ``used_indices`` selects rows used in the summary.
-            ``realization_results`` preserves each fit or failure. Includes
+            ``replica_results`` preserves each fit or failure. Includes
             sampling and optimizer seeds, requested/valid/converged/used counts,
             total ``nfev``, ``status``, ``warnings``, ``covariance_available``,
-            and ``covariance_valid``.
+            and ``covariance_valid``. ``n_jobs_used`` reports the actual number
+            of fitting workers. Samples, seed arrays and replica results remain
+            indexed by replica, independently of execution/completion order.
 
         Raises
         ------
@@ -260,11 +268,28 @@ class Uncertainty:
 
         Notes
         -----
-        Repeated optimizations and statistical summaries execute sequentially
-        in C++. Covariance uses the sample denominator ``n_used - 1``; intervals
+        With ``n_jobs=1``, sampling and fitting execute sequentially on the
+        calling thread. For larger values, C++ worker threads perform complete
+        replicas, including concurrent sampler calls and batch objective calls.
+        Seeds depend on replica index, not worker scheduling. Use a separate
+        seeded generator and fixed dataset inside each sampler call. Shared
+        reference-data arrays should be read-only; collect diagnostics by
+        replica index or synchronize writes instead of relying on append order.
+        Exceptions are recorded per replica, and other fits continue.
+
+        Users configure any inner batch-objective threads themselves. For
+        CPU-bound work, the product of fitting workers and objective threads
+        is a starting point for the CPU budget, not a utilization guarantee.
+        Minion does not modify BLAS/OpenMP thread settings. In GIL-enabled
+        Python, CPU-heavy Python code can serialize; objectives that release
+        the GIL can execute concurrently. The Python callback bridge acquires
+        the GIL as needed while native fitting workers wait without holding it.
+
+        Statistical summaries are calculated after all fitting workers finish.
+        Covariance uses the sample denominator ``n_used - 1``; intervals
         use linearly interpolated percentiles. ``covariance_available`` requires
         at least two used fits. ``covariance_valid`` additionally requires every
-        requested realization to converge. Excluding fits may bias results.
+        requested replica to converge. Excluding fits may bias results.
         Sampler failures and failed refits are retained in the result diagnostics.
         """
         if not callable(objective_sampler):
@@ -278,6 +303,7 @@ class Uncertainty:
 
         config = BootstrapOptions()
         config.n_samples = n_samples
+        config.n_jobs = n_jobs
         config.optimizer = optimizer
         config.maxevals = maxevals
         config.seed = -1 if seed is None else seed

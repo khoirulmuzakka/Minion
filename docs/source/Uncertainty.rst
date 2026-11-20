@@ -550,23 +550,28 @@ to bootstrap Monte Carlo error and numerical fitting error.
 
    bootstrap = analysis.bootstrap(
        objective_sampler, n_samples=100, optimizer="NelderMead",
-       maxevals=6000, seed=2026,
+       maxevals=6000, seed=2026, n_jobs=4,
        options={"x_tol": 1e-9, "f_tol": 1e-12})
    print(bootstrap.std, bootstrap.covariance)
    print(bootstrap.ci_lower, bootstrap.ci_upper)
    print(bootstrap.n_converged, bootstrap.n_used, bootstrap.warnings)
 
-The sampler is called once per requested realization with its zero-based index
+The sampler is called once per requested replica with its zero-based index
 and a seed. Its returned vectorized objective must capture one fixed dataset
 and return one finite objective value per parameter vector. No data are
 resampled during evaluations. C++ performs all repeated optimizations and
 statistical calculations; Python only supplies callbacks. Optimizer options
-are passed through the existing configuration map. Execution is sequential.
+are passed through the existing configuration map. ``n_jobs=1`` (default)
+preserves sequential sampling and fitting. A positive ``n_jobs`` greater than
+one runs up to ``min(n_jobs, n_samples)`` concurrent fits on C++ workers. Each
+worker calls the sampler for its assigned replica and seed, then executes that
+replica's entire optimization. The sampler is not run on a separate coordinator.
 
 .. code-block:: cpp
 
    minion::uncertainty::BootstrapOptions options;
    options.n_samples = 100;
+   options.n_jobs = 4;  // Four concurrent replica fits, each calling sampler.
    options.optimizer = "NelderMead";
    options.maxevals = 6000;
    options.seed = 2026;
@@ -575,12 +580,38 @@ are passed through the existing configuration map. Execution is sequential.
 
 The C++ ``minion::uncertainty::BootstrapSampler`` signature is
 ``MinionFunction(size_t index, uint64_t sample_seed)``. Returned objectives own
-their captured realization and receive a null ``data`` pointer. Unlike the
+their captured replica and receive a null ``data`` pointer. Unlike the
 original objective, bootstrap objectives should capture any additional data
 directly. Sampling seeds are independent of optimizer draws and budgets.
 The recorded master ``seed``, ``sample_seeds`` and ``optimizer_seeds`` support
 reproducibility; use each supplied seed in the sampling callback. Minion's
 thread-local RNG state is restored after the analysis, including on failure.
+
+Parallel fitting and objective threads are separate controls. ``n_jobs`` sets
+outer fitting concurrency; the objective implementation sets its own batch
+thread count. Four concurrent fits with two objective threads each can use
+approximately eight computational threads. CPU utilization depends on the
+objective, memory bandwidth, and available work; Minion does not automatically
+change BLAS/OpenMP thread settings. Avoid unintentionally multiplying several
+nested parallel layers beyond the CPU budget.
+
+Samplers can execute concurrently and in any order. Each must create an
+independent seeded generator and capture fixed replica data; shared data should
+be read-only or synchronized. Do not infer replica order from appending to a
+shared list. Collect results by the supplied index instead. The Python bridge
+acquires the GIL for callbacks and releases it while waiting on native workers.
+Pure Python CPU-heavy objectives may serialize under the GIL; NumPy/native
+operations that release it can execute concurrently.
+
+``samples``, ``replica_results``, ``sample_seeds`` and ``optimizer_seeds`` are
+always stored in replica-index order. Seeds depend on replica index and the
+master seed, not the worker assigned to it. With deterministic, thread-safe
+callbacks, worker scheduling does not change optimization inputs; underlying
+numerical libraries can still introduce their own nondeterminism. Failures are
+recorded in the corresponding replica slot and do not stop other fits.
+``n_jobs_used`` reports the actual worker count. Statistics and warnings are
+aggregated after every worker has finished. Worker-local Minion RNG state and
+caller RNG state are preserved across analysis.
 
 ``warm_start=True`` supplies the original optimum to each fit; disabling it
 lets the bounded optimizer initialize independently. Bounded optimizers require
@@ -593,12 +624,12 @@ confirmed convergence are included with a warning about optimization error;
 global optimizers such as ARRDE commonly stop at the evaluation budget.
 Set ``require_convergence=True`` to accept only results with termination status
 ``Converged``. Failed fits
-and exceptions are recorded in ``realization_results`` and excluded. Inspect
+and exceptions are recorded in ``replica_results`` and excluded. Inspect
 these records: discarding failed or unconverged fits may bias the bootstrap,
 while accepting unconverged fits may introduce optimization error. There are
 no automatic retries or replacement samples.
 
-``samples`` has one row per requested realization; invalid fits have NaN rows.
+``samples`` has one row per requested replica; invalid fits have NaN rows.
 ``used_indices`` selects rows used for statistics. Counts ``n_requested``,
 ``n_valid``, ``n_converged`` and ``n_used`` distinguish the requested fits from
 the accepted ones. ``estimate`` is the original optimum and ``mean`` is the mean
@@ -610,9 +641,14 @@ sorted samples, equivalent to NumPy's default percentile calculation.
 At least two accepted fits are required. Otherwise ``status`` is
 ``insufficient_samples`` and uncertainty arrays are empty. ``covariance_available``
 indicates that numerical statistics were returned; ``covariance_valid`` additionally
-requires every requested realization to converge, without certifying the user's
+requires every requested replica to converge, without certifying the user's
 statistical assumptions. Small sample counts and bound hits produce diagnostics.
 Percentile intervals can have imperfect coverage, particularly with few replicas.
+
+Run ``python examples/bootstrap_parallel.py`` for a 1,000-replica comparison
+between ``n_jobs=1`` and ``n_jobs=4``, checked against exact Gaussian mean fits.
+Its small objective illustrates that thread overhead can outweigh the benefit;
+parallelism should be benchmarked with the actual expensive objective.
 
 See ``examples/curve_fit.ipynb`` for an executed Gaussian parametric bootstrap
 comparison with Hessian uncertainties. Run the integration tests with

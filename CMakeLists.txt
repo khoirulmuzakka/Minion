@@ -4,6 +4,8 @@ project(Minion VERSION 2.0.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Threads REQUIRED)
+
 if (POLICY CMP0148)
   cmake_policy(SET CMP0148 NEW)
 endif()
@@ -227,7 +229,7 @@ target_include_directories(minion PUBLIC
 if(WIN32)
     target_compile_definitions(minion PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
-target_link_libraries(minion PUBLIC Eigen3::Eigen)
+target_link_libraries(minion PUBLIC Eigen3::Eigen Threads::Threads)
 set_target_properties(minion PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(WIN32)
     # Export all symbols so MSVC generates minion.lib for downstream linking (e.g. pybind module).
@@ -339,7 +341,7 @@ if(MINION_BUILD_PYTHON)
     )
 
     pybind11_add_module(minionpycpp ${MINION_PYBIND_SOURCES})
-    target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen ${CMAKE_DL_LIBS} minion_benchmark)
+    target_link_libraries(minionpycpp PRIVATE Eigen3::Eigen Threads::Threads ${CMAKE_DL_LIBS} minion_benchmark)
     target_compile_definitions(minionpycpp PRIVATE MINION_BENCHMARK_LIBRARY)
     target_include_directories(minionpycpp PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/minion/algorithms

@@ -263,7 +263,7 @@ The Python and C++ APIs share the following options and defaults:
 
 | Option | Default | Meaning |
 |---|---|---|
-| `step_candidates` | `4` | Probe `h, 2h, 4h, 8h`; use `1` for fixed steps without probing, or `3–30` for automatic selection. |
+| `step_candidates` | `4` | Probe `h, 2h, 4h, 8h`; use `1` for fixed steps without probing, or `3ï¿½30` for automatic selection. |
 | `relative_step` | `1e-3` | Initial step relative to the parameter scale. |
 | `step_sizes` | Not supplied | Explicit initial steps, overriding `relative_step`; probing may enlarge them. |
 | `parameter_scales` | `max(1, abs(x[i]))` | Parameter units used for initial steps and conditioning. |
@@ -320,6 +320,18 @@ it must not regenerate observations on each objective evaluation. Minion runs
 the refits and computes the covariance, correlations, and percentile intervals
 in C++.
 
+Use `analysis.bootstrap(objective_sampler, n_samples=1000, n_jobs=4)` for up to
+four concurrent replica fits (`n_jobs=1` keeps sequential execution). Each C++
+worker calls the sampler with its replica's index and seed, then fits its
+returned batch objective. C++ uses `BootstrapOptions::n_jobs`. Results remain
+in replica order, and `n_jobs_used` reports actual workers. Samplers must use
+independent per-replica data/RNG state and synchronize shared mutable state.
+Inner objective threads are configured by the user; `n_jobs` does not change
+BLAS/OpenMP settings. Python objectives need GIL-releasing work for CPU-bound
+thread parallelism. The [parallel bootstrap example](examples/bootstrap_parallel.py)
+compares 1,000 serial and parallel fits against exact Gaussian mean refits;
+for such a tiny objective, thread overhead can exceed any speed benefit.
+
 The executed [curve-fitting notebook](examples/curve_fit.ipynb) includes:
 
 - A Gaussian polynomial fit with an analytic covariance and 100 Minion bootstrap fits.
@@ -331,9 +343,7 @@ The executed [curve-fitting notebook](examples/curve_fit.ipynb) includes:
   the constrained estimator's point mass and support.
 
 See the [statistical uncertainty guide](https://minion-py.readthedocs.io/en/latest/Uncertainty.html)
-for the full API, numerical details, and interval interpretation. The
-[reproducible noise experiment](examples/validate_hessian_noise.py) and its
-[validation report](docs/hessian_noise_validation.md) provide additional checks.
+for the full API, numerical details, and interval interpretation. 
 
 ## CEC and BBOB2009 Benchmark Usage
 

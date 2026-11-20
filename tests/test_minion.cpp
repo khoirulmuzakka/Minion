@@ -1,4 +1,9 @@
 #include <cmath>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -378,6 +383,68 @@ bool check_bootstrap_uncertainty() {
            std::fabs(result.ci_upper[0]-1.95) < 1e-6;
 }
 
+bool check_parallel_bootstrap() {
+    using namespace minion::uncertainty;
+    Uncertainty analysis(sphere_batch,{0},{{-3,3}});
+    BootstrapOptions options;
+    options.n_samples=8;options.n_jobs=1;options.optimizer="DE";
+    options.seed=37;options.maxevals=120;
+    options.optimizer_options={{"population_size",12}};
+    const auto sampler=[](size_t, uint64_t seed)->minion::MinionFunction {
+        std::mt19937_64 rng(seed);
+        const double center=std::uniform_real_distribution<double>(-.8,.8)(rng);
+        return [center](const auto& points,void*) {
+            std::vector<double> values;
+            for (const auto& p:points) values.push_back((p[0]-center)*(p[0]-center));
+            return values;
+        };
+    };
+    const auto serial=analysis.bootstrap(sampler,options);
+    std::mutex mutex;std::condition_variable ready;
+    size_t arrived=0;
+    std::vector<std::thread::id> sampler_threads(options.n_samples),objective_threads(options.n_samples);
+    const auto caller=std::this_thread::get_id();
+    options.n_jobs=3;
+    minion::set_global_seed(1234);
+    const auto rng_before=minion::get_rng();
+    const auto parallel=analysis.bootstrap([&](size_t b,uint64_t seed)->minion::MinionFunction {
+        sampler_threads[b]=std::this_thread::get_id();
+        if (b<3) {
+            std::unique_lock<std::mutex> lock(mutex);
+            ++arrived;ready.notify_all();
+            if (!ready.wait_for(lock,std::chrono::seconds(10),[&]{return arrived==3;}))
+                throw std::runtime_error("samplers did not execute concurrently");
+        }
+        auto objective=sampler(b,seed);
+        return [&,b,objective](const auto& points,void* data) {
+            objective_threads[b]=std::this_thread::get_id();
+            return objective(points,data);
+        };
+    },options);
+    if (minion::get_rng()!=rng_before || parallel.n_jobs_used!=3 || serial.n_jobs_used!=1) return false;
+    if (serial.sample_seeds!=parallel.sample_seeds || serial.optimizer_seeds!=parallel.optimizer_seeds ||
+        serial.nfev!=parallel.nfev || serial.used_indices!=parallel.used_indices ||
+        (serial.samples-parallel.samples).norm()!=0 || (serial.covariance-parallel.covariance).norm()!=0) return false;
+    for (size_t b=0;b<options.n_samples;++b)
+        if (sampler_threads[b]==caller || sampler_threads[b]!=objective_threads[b]) return false;
+    if (sampler_threads[0]==sampler_threads[1] || sampler_threads[0]==sampler_threads[2] ||
+        sampler_threads[1]==sampler_threads[2]) return false;
+    const auto failed=analysis.bootstrap([&](size_t b,uint64_t seed)->minion::MinionFunction {
+        if (b==2) throw std::runtime_error("sampler failure");
+        if (b==4) return [](const auto&,void*)->std::vector<double> {throw 42;};
+        return sampler(b,seed);
+    },options);
+    if (failed.n_used!=6 || failed.replica_results.size()!=8 ||
+        failed.replica_results[2].status!=minion::TerminationStatus::RuntimeError ||
+        failed.replica_results[4].status!=minion::TerminationStatus::RuntimeError) return false;
+    for (int invalid:{0,-1}) {
+        options.n_jobs=invalid;
+        try {analysis.bootstrap(sampler,options);return false;}
+        catch (const std::invalid_argument&) {}
+    }
+    return true;
+}
+
 }  // namespace
 
 int main() {
@@ -392,6 +459,7 @@ int main() {
         {"Hessian uncertainty matches analytic correlated covariance", check_hessian_uncertainty},
         {"Hessian strict, regularized and positive-mode policies", check_hessian_curvature_policies},
         {"Bootstrap uncertainty matches empirical covariance and percentiles", check_bootstrap_uncertainty},
+        {"Parallel bootstrap owns sampler/fit threads and preserves seeds", check_parallel_bootstrap},
     };
 
     return CheckRunner().run(checks);
