@@ -1,5 +1,5 @@
 # Changelog
-## [2.0.1] - 2026-10-10
+## [2.1.1] - 2026-11-20
 ### Added
 - Implemented error analysis based on hessian and bootstrap. 
 
